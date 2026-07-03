@@ -1,0 +1,341 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BlueprintUIEditorSchema",
+  "description": "UI editor schema for the blueprint-driven web crawler. Governs rendering of all editor sections.",
+  "type": "object",
+  "required": ["blueprint_id", "id", "target_topic", "seeds", "domains", "scoring", "expansion", "extraction", "stop_conditions"],
+  "properties": {
+
+    "blueprint_id": {
+      "ui:widget": "text",
+      "ui:label": "Blueprint ID",
+      "ui:placeholder": "e.g. wikimd_diabetes",
+      "type": "string"
+    },
+
+    "id": {
+      "ui:widget": "text",
+      "ui:label": "Run ID",
+      "ui:placeholder": "e.g. beta_3",
+      "type": "string"
+    },
+
+    "target_topic": {
+      "ui:widget": "text",
+      "ui:label": "Target Topic",
+      "ui:placeholder": "e.g. TYPE 2 DIABETES",
+      "type": "string"
+    },
+
+    "seeds": {
+      "ui:widget": "array",
+      "ui:label": "Seed URLs",
+      "ui:addLabel": "+ Add Seed",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["url", "domain"],
+        "properties": {
+          "url": {
+            "ui:widget": "text",
+            "ui:label": "Seed URL",
+            "type": "string"
+          },
+          "domain": {
+            "ui:widget": "text",
+            "ui:label": "Domain Base URL",
+            "type": "string"
+          }
+        }
+      }
+    },
+
+    "domains": {
+      "ui:widget": "domain_map",
+      "ui:label": "Domains",
+      "ui:addLabel": "+ Add Domain",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["base_url", "link_selector"],
+        "properties": {
+          "base_url": {
+            "ui:widget": "text",
+            "ui:label": "Base URL",
+            "type": "string"
+          },
+          "link_selector": {
+            "ui:widget": "text",
+            "ui:label": "Link XPath Selector",
+            "ui:placeholder": ".//a[starts-with(@href, '/wiki/')]",
+            "type": "string"
+          }
+        }
+      }
+    },
+
+    "scoring": {
+      "ui:section": "Scoring",
+      "ui:icon": "target",
+      "type": "object",
+      "required": ["strategy", "params"],
+      "properties": {
+
+        "strategy": {
+          "ui:widget": "single_select",
+          "ui:label": "Scoring Strategy",
+          "type": "string",
+          "enum": [
+            "TOPICAL",
+            "PATHFINDING",
+            "EXPLORATION",
+            "GOAL_ORIENTED",
+            "DENSITY_FOCUSED",
+            "UNCERTAINTY_BIASED"
+          ],
+          "ui:enumDescriptions": {
+            "TOPICAL": "Score nodes by semantic similarity to target topic.",
+            "PATHFINDING": "Prefer paths that lead toward a known target URL.",
+            "EXPLORATION": "Maximize coverage; favour unvisited graph regions.",
+            "GOAL_ORIENTED": "Bias scoring toward satisfying an explicit extraction goal.",
+            "DENSITY_FOCUSED": "Prefer high-link-density clusters.",
+            "UNCERTAINTY_BIASED": "Favour nodes whose score is least certain."
+          }
+        },
+
+        "params": {
+          "ui:section": "Strategy Parameters",
+          "type": "object",
+          "required": ["scoring_type", "model_information"],
+          "properties": {
+            "scoring_type": {
+              "ui:widget": "text",
+              "ui:label": "Scoring Backend",
+              "ui:placeholder": "e.g. openrouter",
+              "type": "string"
+            },
+            "model_information": {
+              "ui:widget": "text",
+              "ui:label": "Model Identifier",
+              "ui:placeholder": "e.g. openai/gpt-4o:free",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+
+    "expansion": {
+      "ui:section": "Expansion",
+      "ui:icon": "expand",
+      "type": "object",
+      "required": ["style", "num_descriptions", "llm_type", "llm_model"],
+      "properties": {
+
+        "style": {
+          "ui:widget": "single_select",
+          "ui:label": "Expansion Style",
+          "type": "string",
+          "enum": ["rich", "minimal"],
+          "ui:enumDescriptions": {
+            "rich": "Generate verbose, multi-faceted topic expansions.",
+            "minimal": "Generate concise, focused expansions."
+          }
+        },
+
+        "num_descriptions": {
+          "ui:widget": "number",
+          "ui:label": "Number of Descriptions",
+          "ui:min": 1,
+          "ui:max": 500,
+          "ui:step": 1,
+          "type": "integer"
+        },
+
+        "llm_type": {
+          "ui:widget": "text",
+          "ui:label": "LLM Backend",
+          "ui:placeholder": "e.g. openrouter",
+          "type": "string"
+        },
+
+        "llm_model": {
+          "ui:widget": "text",
+          "ui:label": "LLM Model Identifier",
+          "ui:placeholder": "e.g. openai/gpt-4o:free",
+          "type": "string"
+        }
+      }
+    },
+
+    "extraction": {
+      "ui:section": "Extraction",
+      "ui:icon": "database",
+      "type": "object",
+      "required": ["mode", "fields"],
+      "properties": {
+
+        "mode": {
+          "ui:widget": "hidden",
+          "type": "string",
+          "default": "document"
+        },
+
+        "profile_mode": {
+          "ui:widget": "toggle",
+          "ui:label": "Use Extraction Profile",
+          "ui:description": "Enable to load fields from a predefined domain profile. Disable to define fields manually.",
+          "type": "boolean",
+          "default": false
+        },
+
+        "profile_id": {
+          "ui:widget": "single_select",
+          "ui:label": "Domain Profile",
+          "ui:visibleWhen": { "profile_mode": true },
+          "ui:description": "Select a profile. Selectors, transforms, and types are resolved automatically.",
+          "type": "string",
+          "enum": [
+            "wikimd_standard",
+            "wikipedia_standard",
+            "pubmed_standard",
+            "generic_article"
+          ]
+        },
+
+        "profile_field_checklist": {
+          "ui:widget": "checklist",
+          "ui:label": "Fields to Include",
+          "ui:visibleWhen": { "profile_mode": true },
+          "ui:description": "Select which predefined fields to activate. Selectors and transforms are read-only.",
+          "type": "array",
+          "items": { "type": "string" }
+        },
+
+        "fields": {
+          "ui:widget": "field_editor",
+          "ui:label": "Extraction Fields",
+          "ui:visibleWhen": { "profile_mode": false },
+          "ui:addLabel": "+ Add Field",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["selector", "type", "export_type"],
+            "properties": {
+
+              "selector": {
+                "ui:widget": "text",
+                "ui:label": "XPath Selector",
+                "ui:placeholder": "//h1[@id='firstHeading']",
+                "type": "string"
+              },
+
+              "type": {
+                "ui:widget": "single_select",
+                "ui:label": "Field Type",
+                "type": "string",
+                "enum": ["scalar", "list"]
+              },
+
+              "transform": {
+                "ui:widget": "transform_pipeline",
+                "ui:label": "Transform Pipeline",
+                "ui:addLabel": "+ Add Transform",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["type"],
+                  "properties": {
+                    "type": {
+                      "ui:widget": "single_select",
+                      "ui:label": "Transform",
+                      "type": "string",
+                      "enum": [
+                        "strip",
+                        "lowercase",
+                        "deduplicate",
+                        "join",
+                        "truncate",
+                        "regex",
+                        "regex_extract"
+                      ]
+                    },
+                    "max_len": {
+                      "ui:widget": "number",
+                      "ui:label": "Max Length",
+                      "ui:visibleWhen": { "type": "truncate" },
+                      "ui:default": 300,
+                      "type": "integer"
+                    },
+                    "pattern": {
+                      "ui:widget": "text",
+                      "ui:label": "Regex Pattern",
+                      "ui:visibleWhen": { "type": ["regex", "regex_extract"] },
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+
+              "export_type": {
+                "ui:widget": "single_select",
+                "ui:label": "Export Type",
+                "type": "string",
+                "enum": ["text", "real", "int", "json"]
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "stop_conditions": {
+      "ui:section": "Stop Conditions",
+      "ui:icon": "stop-circle",
+      "type": "object",
+      "required": ["max_nodes", "max_depth", "max_duration", "no_progress_timeout", "stop_url"],
+      "properties": {
+
+        "max_nodes": {
+          "ui:widget": "number",
+          "ui:label": "Max Nodes",
+          "ui:description": "Maximum number of nodes to visit before halting.",
+          "ui:min": 1,
+          "type": "integer"
+        },
+
+        "max_depth": {
+          "ui:widget": "number",
+          "ui:label": "Max Depth",
+          "ui:description": "Maximum graph traversal depth.",
+          "ui:min": 1,
+          "type": "integer"
+        },
+
+        "max_duration": {
+          "ui:widget": "number",
+          "ui:label": "Max Duration (ms)",
+          "ui:description": "Wall-clock time limit in milliseconds.",
+          "ui:min": 0,
+          "type": "integer"
+        },
+
+        "no_progress_timeout": {
+          "ui:widget": "number",
+          "ui:label": "No-Progress Timeout (ms)",
+          "ui:description": "Stop if no new nodes are added within this window (ms).",
+          "ui:min": 0,
+          "type": "integer"
+        },
+
+        "stop_url": {
+          "ui:widget": "text",
+          "ui:label": "Stop URL (optional)",
+          "ui:description": "Halt crawl when this URL is reached. Leave empty to disable.",
+          "type": "string"
+        }
+      }
+    }
+
+  }
+}

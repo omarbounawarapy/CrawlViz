@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DomainExtractionProfileSystem",
+  "description": "Static, UI-selectable extraction profiles. Each profile resolves selectors, types, transforms, and export_types automatically when profile_mode=true.",
+
+  "profiles": {
+
+    "wikimd_standard": {
+      "profile_id": "wikimd_standard",
+      "domain_name": "wikimd.org",
+      "description": "Standard extraction profile for WikiMD medical wiki pages.",
+      "fields": {
+        "title": {
+          "name": "title",
+          "selector": "//h1[@id='firstHeading']",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "paragraphs": {
+          "name": "paragraphs",
+          "selector": "//div[contains(@class, 'mw-parser-output')]//p[normalize-space()]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "headings": {
+          "name": "headings",
+          "selector": "//div[contains(@class, 'mw-parser-output')]//*[self::h2 or self::h3]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "lowercase" }
+          ],
+          "export_type": "text"
+        },
+        "lists": {
+          "name": "lists",
+          "selector": "//div[contains(@class, 'mw-parser-output')]//ul/li[normalize-space()]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "infobox_items": {
+          "name": "infobox_items",
+          "selector": "//table[contains(@class, 'infobox')]//tr",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "categories": {
+          "name": "categories",
+          "selector": "//div[@id='mw-normal-catlinks']//li",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "lowercase" }
+          ],
+          "export_type": "text"
+        }
+      }
+    },
+
+    "wikipedia_standard": {
+      "profile_id": "wikipedia_standard",
+      "domain_name": "en.wikipedia.org",
+      "description": "Standard extraction profile for English Wikipedia articles.",
+      "fields": {
+        "title": {
+          "name": "title",
+          "selector": "//h1[@id='firstHeading']",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "paragraphs": {
+          "name": "paragraphs",
+          "selector": "//div[@id='mw-content-text']//p[normalize-space()]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "headings": {
+          "name": "headings",
+          "selector": "//div[@id='mw-content-text']//*[self::h2 or self::h3]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "lowercase" }
+          ],
+          "export_type": "text"
+        },
+        "lists": {
+          "name": "lists",
+          "selector": "//div[@id='mw-content-text']//ul/li[normalize-space()]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "infobox_items": {
+          "name": "infobox_items",
+          "selector": "//table[contains(@class, 'infobox')]//tr",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "references": {
+          "name": "references",
+          "selector": "//ol[@class='references']//li",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "categories": {
+          "name": "categories",
+          "selector": "//div[@id='mw-normal-catlinks']//li",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "lowercase" }
+          ],
+          "export_type": "text"
+        }
+      }
+    },
+
+    "pubmed_standard": {
+      "profile_id": "pubmed_standard",
+      "domain_name": "pubmed.ncbi.nlm.nih.gov",
+      "description": "Standard extraction profile for PubMed article pages.",
+      "fields": {
+        "title": {
+          "name": "title",
+          "selector": "//h1[@class='heading-title']",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "abstract": {
+          "name": "abstract",
+          "selector": "//div[@id='abstract']//p",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "authors": {
+          "name": "authors",
+          "selector": "//div[@class='authors-list']//a[@class='full-name']",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "keywords": {
+          "name": "keywords",
+          "selector": "//div[@class='abstract']//strong[contains(text(),'Keywords')]/following-sibling::p",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "lowercase" }
+          ],
+          "export_type": "text"
+        },
+        "pmid": {
+          "name": "pmid",
+          "selector": "//strong[@title='PubMed ID']",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "publication_date": {
+          "name": "publication_date",
+          "selector": "//span[@class='cit']",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        }
+      }
+    },
+
+    "generic_article": {
+      "profile_id": "generic_article",
+      "domain_name": "*",
+      "description": "Generic fallback profile for article-style web pages without a domain-specific profile.",
+      "fields": {
+        "title": {
+          "name": "title",
+          "selector": "//title",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        },
+        "headings": {
+          "name": "headings",
+          "selector": "//*[self::h1 or self::h2 or self::h3]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "lowercase" }
+          ],
+          "export_type": "text"
+        },
+        "paragraphs": {
+          "name": "paragraphs",
+          "selector": "//article//p[normalize-space()] | //main//p[normalize-space()]",
+          "type": "list",
+          "default_transforms": [
+            { "type": "strip" },
+            { "type": "truncate", "max_len": 300 }
+          ],
+          "export_type": "text"
+        },
+        "meta_description": {
+          "name": "meta_description",
+          "selector": "//meta[@name='description']/@content",
+          "type": "scalar",
+          "default_transforms": [
+            { "type": "strip" }
+          ],
+          "export_type": "text"
+        }
+      }
+    }
+
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "blueprint_id": "wiki_isi",
+  "id": "pfe",
+  "target_topic": "institut superieur informatique ISI (tunisia / ariana)",
+  "seeds": [
+    {
+      "url": "https://fr.wikipedia.org/wiki/Trou_noir_(homonymie)",
+      "domain": "https://fr.wikipedia.org"
+    }
+  ],
+  "domains": {
+    "wikipedia": {
+      "base_url": "https://fr.wikipedia.org",
+      "link_selector": ".//a[starts-with(@href, '/wiki/') and not(contains(@href, ':')) and not(contains(@href, 'Main_Page'))]"
+    }
+  },
+  "scoring": {
+    "strategy": "PATHFINDING",
+    "params": {
+      "scoring_type": "openrouter",
+      "model_information": "openai/gpt-oss-120b:free"
+    }
+  },
+  "expansion": {
+    "style": "rich",
+    "num_descriptions": 50,
+    "llm_type": "openrouter",
+    "llm_model": "openai/gpt-oss-120b:free"
+  },
+  "extraction": {
+    "mode": "document",
+    "fields": {
+      "title": {
+        "selector": "//h1[@id='firstHeading']",
+        "type": "scalar",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "paragraphs": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//p[normalize-space()]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "headings": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//*[self::h2 or self::h3]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          },
+          {
+            "type": "lowercase"
+          }
+        ],
+        "export_type": "text"
+      },
+      "lists": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//ul/li[normalize-space()]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "infobox_items": {
+        "selector": "//table[contains(@class, 'infobox')]//tr",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "categories": {
+        "selector": "//div[@id='mw-normal-catlinks']//li",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          },
+          {
+            "type": "lowercase"
+          }
+        ],
+        "export_type": "text"
+      }
+    }
+  },
+  "stop_conditions": {
+    "max_nodes": 120000,
+    "max_depth": 6000,
+    "max_duration": 900000,
+    "no_progress_timeout": 1000000,
+    "stop_url": "https://fr.wikipedia.org/wiki/Institut_sup%C3%A9rieur_d'informatique_(Tunisie)"
+  }
+}
