@@ -2,24 +2,25 @@
 
 Everything here is a plain module-level constant so the rest of the
 codebase can do ``from config import X`` without carrying a settings
-object around. Paths are ``pathlib.Path`` instances; anything that
-plausibly needs to differ between environments (currently just the
+object around. Filesystem roots are ``pathlib.Path`` instances; anything
+that plausibly needs to differ between environments (currently just the
 CORS origin) can be overridden with an environment variable.
 """
 
 import os
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
+# =========================================================================
+# PATHS
+# =========================================================================
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
-TEMPLATES_DIR: Path = BASE_DIR / "templates"
 EXPORT_PATH: Path = BASE_DIR / "export"
+ITEMS_DB_PATH: Path = BASE_DIR / "items.db"
+TEMPLATES_DIR: Path = BASE_DIR / "templates"
 
-# ---------------------------------------------------------------------------
-# General
-# ---------------------------------------------------------------------------
+# =========================================================================
+# GENERAL
+# =========================================================================
 DEBUG: bool = True
 
 # API server CORS. A comma-separated CRAWLVIZ_CORS_ORIGINS overrides the
@@ -28,9 +29,9 @@ CORS_ORIGINS: list[str] = os.environ.get(
     "CRAWLVIZ_CORS_ORIGINS", "http://localhost:5173"
 ).split(",")
 
-# ---------------------------------------------------------------------------
-# NLP embeddings
-# ---------------------------------------------------------------------------
+# =========================================================================
+# NLP EMBEDDINGS
+# =========================================================================
 EMBEDDING_BACKEND: str = "sentence_transformers"
 EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
 SPACE_STORE_DIR: str = ".space_store"
@@ -42,9 +43,9 @@ FLUSH_INTERVAL_SECONDS: float = 60.0
 FLUSH_THRESHOLD: int = 50
 BUFFER_MAX_SIZE: int = 500
 
-# ---------------------------------------------------------------------------
-# Scoring cascade (report section 0.13 "Evaluation multi-etapes")
-# ---------------------------------------------------------------------------
+# =========================================================================
+# SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")
+# =========================================================================
 # A link's NLP similarity score buckets it into low / mid / high confidence.
 NLP_LOW_SCORE_THRESHOLD: float = 0.20
 NLP_HIGH_SCORE_THRESHOLD: float = 0.75
@@ -60,7 +61,7 @@ LOW_SCORE_SAMPLE_FRACTION: float = 0.01
 
 DEFAULT_PRIORITY_STRATEGY: str = "balanced"
 
-# ---------------------------------------------------------------------------
-# Export
-# ---------------------------------------------------------------------------
+# =========================================================================
+# EXPORT
+# =========================================================================
 EXPORT_BATCH_SIZE: int = 1
