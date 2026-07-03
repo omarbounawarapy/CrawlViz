@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List
-
+from typing import Any, Literal
 
 # =========================================================
 # 1. ENQUEUE / BACKPRESSURE
@@ -11,13 +10,6 @@ class ScoringEnqueuedEvent:
     correlation_id: str
     node_id: str
     queue_size: int
-
-
-@dataclass 
-class EmptyScoreResults:
-    correlation_id: str
-    node: Any
- 
 
 
 # =========================================================
@@ -37,8 +29,8 @@ class ScoringInputSnapshotEvent:
 
 @dataclass
 class ScoringStartedEvent:
-    worker_id: int
     correlation_id: str
+    worker_id: int
     node_id: str
 
 
@@ -50,49 +42,59 @@ class ScoringStartedEvent:
 class ScoringCompletedEvent:
     correlation_id: str
     node: Any
-
-    scored_links: List[Any]
+    scored_links: list[Any]
     output_count: int
 
 
 # =========================================================
-# 5. FAILURE EVENT (STRICT DEBUG CONTEXT)
+# 5. EMPTY RESULT (RETRY TRIGGER)
+# =========================================================
+
+@dataclass
+class EmptyScoreResultsEvent:
+    correlation_id: str
+    node: Any
+
+
+# =========================================================
+# 6. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
 @dataclass
 class ScoringFailedEvent:
     correlation_id: str
     node: Any
-
-    stage: str  # "SCORING_SERVICE"
-
+    stage: Literal["SCORING_SERVICE"]
     error_type: str
     error_message: str
 
 
 # =========================================================
-# 6. DOWNSTREAM EVENT (PIPELINE COMPATIBILITY)
+# 7. DOWNSTREAM (PIPELINE COMPATIBILITY)
 # =========================================================
 
 @dataclass
 class LinksScoredEvent:
     correlation_id: str
     node: Any
-    scored_links: List[Any]
+    scored_links: list[Any]
+
 
 @dataclass
 class NoLinksToScoreEvent:
-    correlation_id : str 
+    correlation_id: str
     node: Any
+
 
 @dataclass
 class HighScoreLinksEvent:
-    correlation_id  : str 
-    node : Any
-    links : Any
+    correlation_id: str
+    node: Any
+    links: list[Any]
 
-@dataclass 
+
+@dataclass
 class LowScoreLinksEvent:
-    correlation_id :str 
-    node : Any 
-    links : Any
+    correlation_id: str
+    node: Any
+    links: list[Any]
