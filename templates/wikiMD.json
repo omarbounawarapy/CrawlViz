@@ -1,0 +1,108 @@
+{
+  "blueprint_id": "wikimd_diabetes",
+  "id": "beta_3",
+  "target_topic": "Type 2 Diabetes",
+  "seeds": [
+    {
+      "url": "https://www.wikimd.org/wiki/Diabetes",
+      "domain": "https://www.wikimd.org"
+    }
+  ],
+  "domains": {
+    "wikimd": {
+      "base_url": "https://www.wikimd.org",
+      "link_selector": ".//a[starts-with(@href, '/wiki/') and not(contains(@href, ':')) and not(contains(@href, 'Main_Page'))]"
+    }
+  },
+  "scoring": {
+    "strategy": "TOPICAL",
+    "params": {
+      "scoring_type": "openrouter",
+      "model_information": "openai/gpt-oss-120b:free"
+    }
+  },
+  "expansion": {
+    "style": "rich",
+    "num_descriptions": 50,
+    "llm_type": "openrouter",
+    "llm_model": "openai/gpt-oss-120b:free"
+  },
+  "extraction": {
+    "mode": "document",
+    "fields": {
+      "title": {
+        "selector": "//h1[@id='firstHeading']",
+        "type": "scalar",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "paragraphs": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//p[normalize-space()]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "headings": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//*[self::h2 or self::h3]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          },
+          {
+            "type": "lowercase"
+          }
+        ],
+        "export_type": "text"
+      },
+      "lists": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//ul/li[normalize-space()]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "infobox_items": {
+        "selector": "//table[contains(@class, 'infobox')]//tr",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "categories": {
+        "selector": "//div[@id='mw-normal-catlinks']//li",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          },
+          {
+            "type": "lowercase"
+          }
+        ],
+        "export_type": "text"
+      }
+    }
+  },
+  "stop_conditions": {
+    "max_nodes": 500,
+    "max_depth": 10,
+    "max_duration": 1800000,
+    "no_progress_timeout": 1000000,
+    "stop_url": ""
+  }
+}
