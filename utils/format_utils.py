@@ -1,11 +1,11 @@
 import logging
 from json import loads
-from typing import Any, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-def text_to_json(text: str) -> List[Any]:
+def text_to_json(text: str) -> list[Any]:
     """Extract every top-level ``{...}`` JSON object embedded in free text.
 
     Used as a fallback for LLM responses that wrap JSON in prose
