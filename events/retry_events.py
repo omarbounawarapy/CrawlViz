@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from typing import Any
 
@@ -13,7 +12,5 @@ class ScoreRescheduledEvent:
 class RetryOperationFailedEvent:
     correlation_id: str
     stage: str
-    error_type: Any
+    error_type: str
     error_message: str
-
-

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional
-
+from typing import Any, Literal
 
 # =========================================================
 # 1. NODE CREATION (GRAPH CONSTRUCTION CORE)
@@ -11,7 +10,6 @@ class StorageNodeCreatedEvent:
     correlation_id: str
     node_id: str
     parent_id: str
-
     url: str
     llm_score: float
     priority: float
@@ -35,9 +33,8 @@ class StorageNodeAddedEvent:
 class StorageNodeUpdatedEvent:
     correlation_id: str
     node: Any
-
-    links: List[Any]
-    items: List[Any]
+    links: list[Any]
+    items: list[Any]
 
 
 # =========================================================
@@ -63,7 +60,7 @@ class StorageLinkStoredEvent:
 
 
 # =========================================================
-# 6. GLOBAL NODE ADD EVENT (DOWNSTREAM COMPATIBILITY)
+# 6. GLOBAL NODE ADDITION (DOWNSTREAM COMPATIBILITY)
 # =========================================================
 
 @dataclass
@@ -73,24 +70,23 @@ class NodeAddedEvent:
 
 
 # =========================================================
-# 7. FAILURE EVENT (STRICT DEBUG CONTEXT)
+# 7. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
 @dataclass
 class StorageOperationFailedEvent:
-    correlation_id: Optional[str]
-
-    stage: str  # "WORKER" | "NODE_CREATION" | "ITEM_STORAGE" | "LINK_STORAGE"
-
+    correlation_id: str | None
+    stage: Literal["WORKER", "NODE_CREATION", "ITEM_STORAGE", "LINK_STORAGE"]
     error_type: str
     error_message: str
 
 
 # =========================================================
-# 8. CONTENT SETTED EVENT 
+# 8. NODE CONTENT UPDATE
 # =========================================================
-@dataclass 
+
+@dataclass
 class NodeContentSetEvent:
-    correlation_id : Optional[str]
-    node : Any
-    content : str 
+    correlation_id: str | None
+    node: Any
+    content: str

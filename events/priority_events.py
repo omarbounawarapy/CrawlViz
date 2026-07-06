@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Dict
-
+from typing import Any, Literal
 
 # =========================================================
 # 1. INPUT / INGESTION TRACE
@@ -19,8 +18,8 @@ class PriorityInputSnapshotEvent:
 
 @dataclass
 class PriorityCalculationStartedEvent:
-    worker_id: int
     correlation_id: str
+    worker_id: int
     node_id: str
     input_links_count: int
 
@@ -33,25 +32,21 @@ class PriorityCalculationStartedEvent:
 class PriorityCalculatedEvent:
     correlation_id: str
     parent: Any  # Node
-
-    links: List[Dict[str, Any]]  # {link, score, priority}
+    links: list[dict[str, Any]]  # {link, score, priority}
     output_count: int
 
 
 # =========================================================
-# 4. FAILURE TRACE (STRICT DEBUG CONTEXT)
+# 4. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
 @dataclass
 class PriorityCalculationFailedEvent:
     correlation_id: str
     node: Any  # Node
-
-    stage: str  # "PRIORITY_COMPUTATION"
-
+    stage: Literal["PRIORITY_COMPUTATION"]
     error_type: str
     error_message: str
-
     input_links_count: int
 
 
@@ -61,13 +56,12 @@ class PriorityCalculationFailedEvent:
 
 @dataclass
 class PriorityLinkTransformationEvent:
-    """
-    Optional fine-grained observability event.
-    Only enable if you want step-by-step animation in GUI.
+    """Optional fine-grained observability event.
+
+    Only enable if you want step-by-step animation in the GUI.
     """
     correlation_id: str
     node_id: str
-
     link: str
     score: float
     computed_priority: float

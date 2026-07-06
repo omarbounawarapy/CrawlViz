@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Tuple, Optional
-
+from typing import Any
 
 # =========================================================
 # 1. ENQUEUE / BACKPRESSURE
@@ -31,8 +30,8 @@ class TransformationInputSnapshotEvent:
 
 @dataclass
 class TransformationStartedEvent:
-    worker_id: Optional[int]
     correlation_id: str
+    worker_id: int
     node_id: str
     items_count: int
 
@@ -45,35 +44,29 @@ class TransformationStartedEvent:
 class TransformationCompletedEvent:
     correlation_id: str
     node: Any
-    links : Any
-    transformed_items: List[Tuple[Any, str]]
+    links: list[str]
+    transformed_items: list[tuple[Any, str]]
     output_count: int
 
 
 # =========================================================
-# 5. FAILURE EVENT (DEBUG CONTEXT)
+# 5. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
 @dataclass
 class TransformationFailedEvent:
     correlation_id: str
     node: Any
-
-
     error_type: str
     error_message: str
 
 
-
-
-
 # =========================================================
-# 6. DOWNSTREAM EVENT (PIPELINE OUTPUT)
+# 6. DOWNSTREAM (PIPELINE OUTPUT)
 # =========================================================
 
 @dataclass
 class ItemsTransformedEvent:
     correlation_id: str
     node: Any
-
-    transformed_items: List[Tuple[Any, str]]
+    transformed_items: list[tuple[Any, str]]
