@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Optional
-
+from typing import Any, Literal
 
 # =========================================================
 # 1. ENQUEUE / BACKPRESSURE
@@ -19,8 +18,8 @@ class FilteringEnqueuedEvent:
 
 @dataclass
 class FilteringWorkerCycleStartedEvent:
-    worker_id: int
     correlation_id: str
+    worker_id: int
     node_id: str
 
 
@@ -42,7 +41,7 @@ class FilteringInputSnapshotEvent:
 @dataclass
 class LinkFilteringCompletedEvent:
     correlation_id: str
-    accepted: List[str]
+    accepted: list[str]
     rejected_count: int
 
 
@@ -53,39 +52,34 @@ class LinkFilteringCompletedEvent:
 @dataclass
 class ItemFilteringCompletedEvent:
     correlation_id: str
-    accepted: List[Any]          # (item, hash)
+    accepted: list[Any]          # (item, hash)
     rejected_count: int
 
 
 # =========================================================
-# 6. OUTPUT EVENT (MAIN RESULT)
+# 6. SUCCESS OUTPUT (DOWNSTREAM INPUT)
 # =========================================================
 
 @dataclass
 class ContentFilteredEvent:
     correlation_id: str
     node: Any
-
-    links: List[str]
-    items: List[Any]
-
+    links: list[str]
+    items: list[Any]
     accepted_links_count: int
     rejected_links_count: int
-
     accepted_items_count: int
     rejected_items_count: int
 
 
 # =========================================================
-# 7. ERROR / FAILURE (FULL CONTEXT)
+# 7. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
 @dataclass
 class FilteringPipelineErrorEvent:
-    correlation_id: Optional[str]
+    correlation_id: str | None
     node: Any
-
-    stage: str  # WORKER | LINK_FILTER | ITEM_FILTER | EMISSION
-
+    stage: Literal["WORKER", "LINK_FILTER", "ITEM_FILTER", "EMISSION"]
     error_type: str
     error_message: str

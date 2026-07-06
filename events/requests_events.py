@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
 
-
 # =========================================================
 # 1. ENQUEUE / BACKPRESSURE
 # =========================================================
@@ -19,8 +18,8 @@ class RequestEnqueuedEvent:
 
 @dataclass
 class RequestStartedEvent:
-    worker_id: int
     correlation_id: str
+    worker_id: int
     node_id: str
     url: str
 
@@ -48,14 +47,13 @@ class PageFetchedEvent:
 
 
 # =========================================================
-# 5. FAILURE EVENT (STRICT DEBUG CONTEXT)
+# 5. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
 @dataclass
 class RequestFailedEvent:
     correlation_id: str
     node: Any
-
     error_type: str
     error_message: str
 
@@ -66,11 +64,8 @@ class RequestFailedEvent:
 
 @dataclass
 class RequestTimingEvent:
-    """
-    Optional event for latency analysis (GUI charts, SLA tracking).
-    """
+    """Optional event for latency analysis (GUI charts, SLA tracking)."""
     correlation_id: str
     node_id: str
-
     url: str
     duration_ms: float
