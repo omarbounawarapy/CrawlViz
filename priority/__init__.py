@@ -1,6 +1,6 @@
-from .strategy import get_strategy, StrategyFn
+from .strategy import StrategyFn, get_strategy
 
 __all__ = [
-    "get_strategy",
     "StrategyFn",
+    "get_strategy",
 ]
