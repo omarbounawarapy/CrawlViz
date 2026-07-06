@@ -1,9 +1,10 @@
 import asyncio
 import logging
-from typing import Any, Set
+from typing import Any
+
+from events import StopCrawlEvent
 
 from .event_registry import EventRegistry
-from events import StopCrawlEvent
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +22,14 @@ class EventBroker:
         self.event_bus = asyncio.Queue()
         self.registry = EventRegistry()
         self.running = True
-        self.active_tasks: Set[asyncio.Task] = set()
+        self.active_tasks: set[asyncio.Task] = set()
 
     async def start(self) -> None:
+        """Drain the event bus, fanning each event out to its subscribers.
+
+        Runs until `running` is False and the bus has been fully drained,
+        then waits for any in-flight dispatch tasks before returning.
+        """
         while self.running or not self.event_bus.empty():
             event: Any = await self.event_bus.get()
 
@@ -56,11 +62,16 @@ class EventBroker:
             logger.exception("Consumer failed to handle %s", type(event).__name__)
 
     async def emit(self, event: Any) -> None:
+        """Publish `event` to every subscriber registered for its type.
+
+        Silently dropped once the broker has stopped accepting new work.
+        """
         if not self.running:
             return  # drop events after stop
         await self.event_bus.put(event)
 
     def subscribe(self, pipeline, event_types) -> None:
+        """Register `pipeline` to receive every event type in `event_types`."""
         self.registry.subscribe(pipeline, event_types)
 
     async def _handle_stop(self, event: StopCrawlEvent) -> None:
