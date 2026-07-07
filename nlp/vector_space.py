@@ -1,9 +1,10 @@
 import logging
-import numpy as np
 import pickle
-from pathlib import Path
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional, Dict
+from pathlib import Path
+from typing import Any
+
+import numpy as np
 from scipy.spatial.distance import cosine
 from sklearn.cluster import DBSCAN
 
@@ -14,19 +15,19 @@ logger = logging.getLogger(__name__)
 class VectorEntry:
     key: str          # url or sentence hash
     vector: np.ndarray
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class VectorSpace:
-    """
-    Persistent semantic embedding space.
-    Remains STABLE during a crawl session — only batch-updated via flush.
+    """Persistent semantic embedding space.
+
+    Remains stable during a crawl session -- only batch-updated via flush.
     """
 
     def __init__(self, dim: int = 384):
         self.dim = dim
-        self.entries: List[VectorEntry] = []
-        self.matrix: Optional[np.ndarray] = None  # shape (N, dim) — rebuilt on demand
+        self.entries: list[VectorEntry] = []
+        self.matrix: np.ndarray | None = None  # shape (N, dim) -- rebuilt on demand
         self._dirty = False
         self.version: int = 0
 
@@ -34,13 +35,15 @@ class VectorSpace:
     # CORE MUTATIONS
     # =========================================================
 
-    def add_vector(self, key: str, vector: np.ndarray, metadata: Dict = None) -> None:
+    def add_vector(
+        self, key: str, vector: np.ndarray, metadata: dict[str, Any] | None = None
+    ) -> None:
         """Add a single vector. Marks matrix as dirty (rebuild on next access)."""
         entry = VectorEntry(key=key, vector=vector, metadata=metadata or {})
         self.entries.append(entry)
         self._dirty = True
 
-    def add_batch(self, entries: List[Tuple[str, np.ndarray, Dict]]) -> None:
+    def add_batch(self, entries: list[tuple[str, np.ndarray, dict[str, Any]]]) -> None:
         """Batch-add vectors efficiently."""
         for key, vec, meta in entries:
             self.entries.append(VectorEntry(key=key, vector=vec, metadata=meta))
@@ -71,11 +74,13 @@ class VectorSpace:
         self,
         query: np.ndarray,
         top_k: int = 5,
-        threshold: float = 0.0
-    ) -> List[Tuple[str, float]]:
-        """
-        Returns list of (key, similarity) sorted descending.
-        similarity = 1 - cosine_distance.
+        threshold: float = 0.0,
+    ) -> list[tuple[str, float]]:
+        """Find the entries most similar to `query`.
+
+        Returns:
+            (key, similarity) pairs sorted by descending similarity, where
+            similarity = 1 - cosine_distance.
         """
         mat = self.get_matrix()
         if mat.shape[0] == 0:
@@ -101,7 +106,7 @@ class VectorSpace:
         return results[:top_k]
 
     def mean_similarity(self, query: np.ndarray) -> float:
-        """Average cosine similarity of query to all vectors in space."""
+        """Average cosine similarity of `query` to every vector in the space."""
         mat = self.get_matrix()
         if mat.shape[0] == 0:
             return 0.0
@@ -109,9 +114,10 @@ class VectorSpace:
         return float(np.mean(sims))
 
     def novelty_score(self, query: np.ndarray, top_k: int = 5) -> float:
-        """
-        How novel is this vector relative to the space?
-        Returns 0.0 (not novel) to 1.0 (very novel).
+        """How novel is `query` relative to the space?
+
+        Returns:
+            A score from 0.0 (not novel) to 1.0 (very novel).
         """
         results = self.similarity_search(query, top_k=top_k)
         if not results:
@@ -120,9 +126,9 @@ class VectorSpace:
         return float(1.0 - top_sim)
 
     def density_score(self, query: np.ndarray, radius: float = 0.3) -> float:
-        """
-        Fraction of space vectors within cosine distance `radius` of query.
-        Measures how dense the region is around query.
+        """Fraction of space vectors within cosine distance `radius` of `query`.
+
+        Measures how dense the region around `query` is.
         """
         mat = self.get_matrix()
         if mat.shape[0] == 0:
@@ -138,12 +144,13 @@ class VectorSpace:
     def get_clusters(
         self,
         eps: float = 0.3,
-        min_samples: int = 2
-    ) -> Dict[int, List[str]]:
-        """
-        DBSCAN clustering on current space.
-        Returns dict: cluster_id -> [keys]
-        cluster_id = -1 means noise/outliers
+        min_samples: int = 2,
+    ) -> dict[int, list[str]]:
+        """Run DBSCAN clustering on the current space.
+
+        Returns:
+            A mapping of cluster_id to the keys in that cluster.
+            cluster_id == -1 means noise/outliers.
         """
         mat = self.get_matrix()
         if mat.shape[0] < 2:
@@ -152,16 +159,16 @@ class VectorSpace:
         db = DBSCAN(eps=eps, min_samples=min_samples, metric="cosine")
         labels = db.fit_predict(mat)
 
-        clusters: Dict[int, List[str]] = {}
+        clusters: dict[int, list[str]] = {}
         for idx, label in enumerate(labels):
             clusters.setdefault(int(label), []).append(self.entries[idx].key)
 
         return clusters
 
     def coverage_gap_score(self, query: np.ndarray) -> float:
-        """
-        Estimates whether query falls in an under-covered region.
-        Uses inverse of density as a proxy.
+        """Estimate whether `query` falls in an under-covered region.
+
+        Uses the inverse of density as a proxy.
         """
         density = self.density_score(query)
         return float(1.0 - density)
@@ -171,7 +178,7 @@ class VectorSpace:
     # =========================================================
 
     def save(self, path: str) -> None:
-        """Pickle the entire space including version metadata."""
+        """Pickle the entire space, including version metadata, to `path`."""
         payload = {
             "version": self.version,
             "dim": self.dim,
@@ -183,7 +190,7 @@ class VectorSpace:
         logger.info("Saved %d vectors (v%d) to %s", len(self.entries), self.version, path)
 
     def load(self, path: str) -> None:
-        """Load from disk. Replaces current state."""
+        """Load a previously saved space from `path`, replacing current state."""
         with open(path, "rb") as f:
             payload = pickle.load(f)
         self.version = payload["version"]

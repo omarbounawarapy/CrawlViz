@@ -1,16 +1,16 @@
 import re
+
 import numpy as np
-from typing import Dict, Optional
 from scipy.spatial.distance import cosine
-from nlp import VectorSpace
+
+from .vector_space import VectorSpace
 
 
 class FeatureExtractor:
-    """
-    Computes all document-level features for a (link, parent, target) triple.
+    """Computes all document-level features for a (link, parent, target) triple.
 
-    Does NOT call the LLM. Pure math + embeddings.
-    All inputs must already be embedded.
+    Does NOT call the LLM. Pure math + embeddings. All inputs must
+    already be embedded.
     """
 
     # =========================================================
@@ -18,15 +18,16 @@ class FeatureExtractor:
     # =========================================================
 
     def lexical_overlap(self, anchor: str, parent_content: str) -> float:
-        """
-        Token-level Jaccard overlap between anchor text and parent content.
-        Returns 0.0 - 1.0
+        """Token-level Jaccard overlap between anchor text and parent content.
+
+        Returns:
+            A value from 0.0 to 1.0.
         """
         if not anchor or not parent_content:
             return 0.0
 
-        anchor_tokens = set(re.findall(r'\w+', anchor.lower()))
-        parent_tokens = set(re.findall(r'\w+', parent_content.lower()))
+        anchor_tokens = set(re.findall(r"\w+", anchor.lower()))
+        parent_tokens = set(re.findall(r"\w+", parent_content.lower()))
 
         if not anchor_tokens or not parent_tokens:
             return 0.0
@@ -38,12 +39,14 @@ class FeatureExtractor:
     def semantic_delta(
         self,
         link_vec: np.ndarray,
-        parent_vec: np.ndarray
+        parent_vec: np.ndarray,
     ) -> float:
-        """
-        How much does the link semantically diverge from parent?
-        Returns cosine distance (0 = same, 1 = orthogonal, 2 = opposite).
+        """How much does the link semantically diverge from its parent?
+
         High delta = exploration candidate.
+
+        Returns:
+            Cosine distance: 0 = same, 1 = orthogonal, 2 = opposite.
         """
         if link_vec is None or parent_vec is None:
             return 0.0
@@ -52,11 +55,12 @@ class FeatureExtractor:
     def contextual_consistency(
         self,
         context_vec: np.ndarray,
-        parent_vec: np.ndarray
+        parent_vec: np.ndarray,
     ) -> float:
-        """
-        How consistent is the link's surrounding context with the parent node?
-        Returns cosine similarity (1 = identical context, 0 = unrelated).
+        """How consistent is the link's surrounding context with the parent node?
+
+        Returns:
+            Cosine similarity: 1 = identical context, 0 = unrelated.
         """
         if context_vec is None or parent_vec is None:
             return 0.0
@@ -70,7 +74,7 @@ class FeatureExtractor:
     def distance_to_nearest_cluster(
         self,
         link_vec: np.ndarray,
-        cluster_centroids: Dict[int, np.ndarray]
+        cluster_centroids: dict[int, np.ndarray],
     ) -> float:
         if not cluster_centroids or link_vec is None:
             return 1.0
@@ -104,11 +108,12 @@ class FeatureExtractor:
         self,
         link_vec: np.ndarray,
         space_matrix: np.ndarray,
-        radius: float = 0.3
+        radius: float = 0.3,
     ) -> float:
-        """
-        What fraction of the space is within cosine distance `radius` of link?
-        0 = isolated region, 1 = saturated region.
+        """What fraction of the space is within cosine distance `radius` of `link_vec`?
+
+        Returns:
+            0 for an isolated region, 1 for a saturated region.
         """
         if space_matrix is None or space_matrix.shape[0] == 0 or link_vec is None:
             return 0.0
@@ -120,11 +125,12 @@ class FeatureExtractor:
         self,
         link_vec: np.ndarray,
         space_matrix: np.ndarray,
-        top_k: int = 5
+        top_k: int = 5,
     ) -> float:
-        """
-        How novel is this vector relative to current space?
-        1.0 = fully novel, 0.0 = fully redundant.
+        """How novel is this vector relative to the current space?
+
+        Returns:
+            1.0 for fully novel, 0.0 for fully redundant.
         """
         if space_matrix is None or space_matrix.shape[0] == 0 or link_vec is None:
             return 1.0
@@ -141,9 +147,10 @@ class FeatureExtractor:
         link_vec: np.ndarray,
         space_matrix: np.ndarray,
     ) -> float:
-        """
-        Estimates whether link fills a gap between current space and target.
-        High score = link is in a region the space hasn't covered toward target.
+        """Estimate whether the link fills a gap between the current space and the target.
+
+        A high score means the link sits in a region the space hasn't
+        covered yet on the way toward the target.
         """
         if link_vec is None:
             return 0.0
@@ -166,11 +173,12 @@ class FeatureExtractor:
         parent_content: str,
         space_matrix: np.ndarray,
         vector_space: VectorSpace,
-        cluster_centroids: Optional[Dict[int, np.ndarray]] = None,
-    ) -> Dict[str, float]:
-        """
-        Full feature extraction for one link.
-        Returns a flat dict of all computed signals.
+        cluster_centroids: dict[int, np.ndarray] | None = None,
+    ) -> dict[str, float]:
+        """Compute the full feature vector for one link.
+
+        Returns:
+            A flat dict of every computed signal.
         """
         target_sim = self.target_similarity(link_vec, vector_space)
 

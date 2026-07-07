@@ -1,7 +1,7 @@
 import logging
-import numpy as np
 from abc import ABC, abstractmethod
-from typing import List, Union
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +14,11 @@ class BaseEmbeddingEngine(ABC):
     """Abstract interface for any embedding backend."""
 
     @abstractmethod
-    def encode(self, texts: Union[str, List[str]]) -> np.ndarray:
-        """
-        Encode text(s) into embedding vector(s).
-        Returns np.ndarray of shape (dim,) for single string,
-        or (N, dim) for list.
+    def encode(self, texts: str | list[str]) -> np.ndarray:
+        """Encode text(s) into embedding vector(s).
+
+        Returns:
+            An array of shape (dim,) for a single string, or (N, dim) for a list.
         """
 
     @property
@@ -32,9 +32,9 @@ class BaseEmbeddingEngine(ABC):
 # =========================================================
 
 class SentenceTransformerEngine(BaseEmbeddingEngine):
-    """
-    Wraps sentence-transformers. Lazy-loaded on first use.
-    Default model: all-MiniLM-L6-v2 (384d, fast, strong)
+    """Wraps sentence-transformers. Lazy-loaded on first use.
+
+    Default model: all-MiniLM-L6-v2 (384d, fast, strong).
 
     Loaded with local_files_only=True, so the model must already be
     cached (e.g. `python -c "from sentence_transformers import
@@ -47,8 +47,11 @@ class SentenceTransformerEngine(BaseEmbeddingEngine):
         self._model = None
         self._dim: int = 384
 
-    def _load(self):
+    def _load(self) -> None:
         if self._model is None:
+            # Deliberately local: sentence-transformers pulls in a full ML
+            # stack, so we don't pay that import cost for backends/crawls
+            # that never actually use this engine.
             from sentence_transformers import SentenceTransformer
             self._model = SentenceTransformer(
                 self.model_name, local_files_only=True, device="cpu"
@@ -56,7 +59,7 @@ class SentenceTransformerEngine(BaseEmbeddingEngine):
             self._dim = self._model.get_sentence_embedding_dimension()
             logger.info("Loaded embedding model '%s' (dim=%d)", self.model_name, self._dim)
 
-    def encode(self, texts: Union[str, List[str]]) -> np.ndarray:
+    def encode(self, texts: str | list[str]) -> np.ndarray:
         self._load()
         if isinstance(texts, str):
             texts = [texts]
@@ -73,11 +76,11 @@ class SentenceTransformerEngine(BaseEmbeddingEngine):
 # FACTORY
 # =========================================================
 
-def create_embedding_engine(backend: str = "sentence_transformers", **kwargs) -> BaseEmbeddingEngine:
-    """
-    Factory function. Extend here to add new backends.
-    """
+def create_embedding_engine(
+    backend: str = "sentence_transformers", **kwargs
+) -> BaseEmbeddingEngine:
+    """Factory function. Extend here to add new backends."""
     if backend == "sentence_transformers":
         model = kwargs.get("model_name", "all-MiniLM-L6-v2")
         return SentenceTransformerEngine(model_name=model)
-    raise ValueError(f"Unknown embedding backend: {backend}")
+    raise ValueError(f"Unknown embedding backend: {backend!r}")

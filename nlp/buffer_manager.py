@@ -1,26 +1,25 @@
 import asyncio
 import logging
-from typing import List, Tuple, Dict
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
 class BufferManager:
-    """
-    Thread-safe buffer for pending vector additions to the semantic space.
+    """Thread-safe buffer for pending vector additions to the semantic space.
 
-    Vectors are added from scoring results (LLM expansions).
-    The buffer is drained via flush() — space mutation happens only there.
+    Vectors are added from scoring results (LLM expansions). The buffer is
+    drained via drain() -- space mutation happens only there.
 
     Design constraints:
-    - Adding to buffer is non-blocking
-    - Flushing is explicit and controlled (not real-time)
-    - Buffer never directly touches the VectorSpace
+        - Adding to the buffer is non-blocking.
+        - Flushing is explicit and controlled (not real-time).
+        - The buffer never directly touches the VectorSpace.
     """
 
     def __init__(self, max_size: int = 500):
-        self._buffer: List[Tuple[str, np.ndarray, Dict]] = []
+        self._buffer: list[tuple[str, np.ndarray, dict]] = []
         self._lock = asyncio.Lock()
         self.max_size = max_size
         self._total_added = 0
@@ -30,7 +29,7 @@ class BufferManager:
     # ADD
     # =========================================================
 
-    async def add(self, key: str, vector: np.ndarray, metadata: Dict = None) -> None:
+    async def add(self, key: str, vector: np.ndarray, metadata: dict | None = None) -> None:
         """Add a single vector to the buffer."""
         async with self._lock:
             if len(self._buffer) >= self.max_size:
@@ -39,7 +38,7 @@ class BufferManager:
             self._buffer.append((key, vector, metadata or {}))
             self._total_added += 1
 
-    async def add_batch(self, items: List[Tuple[str, np.ndarray, Dict]]) -> None:
+    async def add_batch(self, items: list[tuple[str, np.ndarray, dict]]) -> None:
         """Add multiple vectors at once."""
         async with self._lock:
             available = self.max_size - len(self._buffer)
@@ -54,10 +53,9 @@ class BufferManager:
     # DRAIN
     # =========================================================
 
-    async def drain(self) -> List[Tuple[str, np.ndarray, Dict]]:
-        """
-        Atomically drain and return the full buffer.
-        Buffer is cleared after drain.
+    async def drain(self) -> list[tuple[str, np.ndarray, dict]]:
+        """Atomically drain and return the full buffer; the buffer is
+        cleared as part of the same locked operation.
         """
         async with self._lock:
             items = list(self._buffer)
@@ -74,10 +72,10 @@ class BufferManager:
             return len(self._buffer)
 
     def is_ready_for_flush(self, threshold: int = 50) -> bool:
-        """Check without lock — approximate, safe for monitoring."""
+        """Check without a lock -- approximate, safe for monitoring."""
         return len(self._buffer) >= threshold
 
-    def stats(self) -> Dict:
+    def stats(self) -> dict:
         return {
             "buffer_size": len(self._buffer),
             "total_added": self._total_added,

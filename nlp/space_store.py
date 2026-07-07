@@ -1,13 +1,13 @@
 import json
-from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from pathlib import Path
 
 
 class SpaceStore:
-    """
-    Manages file-system layout for VectorSpace persistence.
-    Supports versioning: each saved space gets a timestamped snapshot.
+    """Manages the filesystem layout for VectorSpace persistence.
+
+    Supports versioning: each saved space gets a timestamped snapshot
+    alongside the canonical "latest" copy.
     """
 
     def __init__(self, base_dir: str = ".space_store"):
@@ -21,11 +21,11 @@ class SpaceStore:
     # =========================================================
 
     def space_path(self, blueprint_id: str) -> str:
-        """Returns the canonical (latest) path for a blueprint's space."""
+        """Return the canonical (latest) path for a blueprint's space."""
         return str(self.base_dir / blueprint_id / "latest.pkl")
 
     def snapshot_path(self, blueprint_id: str) -> str:
-        """Returns a timestamped snapshot path."""
+        """Return a fresh timestamped snapshot path."""
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         snap_dir = self.base_dir / blueprint_id / "snapshots"
         snap_dir.mkdir(parents=True, exist_ok=True)
@@ -35,12 +35,12 @@ class SpaceStore:
         return Path(self.space_path(blueprint_id)).exists()
 
     # =========================================================
-    # INDEX (lightweight metadata)
+    # INDEX (LIGHTWEIGHT METADATA)
     # =========================================================
 
     def _load_index(self) -> dict:
         if self._index_path.exists():
-            with open(self._index_path, "r") as f:
+            with open(self._index_path) as f:
                 return json.load(f)
         return {}
 
@@ -57,8 +57,8 @@ class SpaceStore:
         }
         self._save_index()
 
-    def get_metadata(self, blueprint_id: str) -> Optional[dict]:
+    def get_metadata(self, blueprint_id: str) -> dict | None:
         return self._index.get(blueprint_id)
 
-    def list_spaces(self) -> list:
+    def list_spaces(self) -> list[str]:
         return list(self._index.keys())

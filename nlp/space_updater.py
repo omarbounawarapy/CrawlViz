@@ -1,17 +1,21 @@
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 from .buffer_manager import BufferManager
+
+if TYPE_CHECKING:
+    from services import NLPService
 
 logger = logging.getLogger(__name__)
 
 
 class SpaceUpdater:
-    """
-    Periodic background task that:
-    1. Drains the BufferManager
-    2. Commits buffered vectors to NLPService (which writes to VectorSpace)
-    3. Saves the updated space to disk
+    """Periodic background task that:
+
+    1. Drains the BufferManager.
+    2. Commits buffered vectors to NLPService (which writes to VectorSpace).
+    3. Saves the updated space to disk.
 
     NEVER called in the hot scoring path.
 
@@ -21,12 +25,12 @@ class SpaceUpdater:
     need the buffer to wake this loop on insert rather than relying on
     a fixed sleep, which is a bigger change than this pass makes.
 
-    Space remains stable between flushes — this is intentional.
+    Space remains stable between flushes -- this is intentional.
     """
 
     def __init__(
         self,
-        nlp_service,
+        nlp_service: "NLPService",
         buffer_manager: BufferManager,
         flush_interval: float = 60.0,
         flush_threshold: int = 50,
@@ -43,7 +47,7 @@ class SpaceUpdater:
     # =========================================================
 
     async def start(self) -> None:
-        """Main loop — runs until stopped."""
+        """Main loop -- runs until stopped."""
         self._running = True
         logger.info(
             "SpaceUpdater started (interval=%ss, threshold=%d)",
@@ -89,7 +93,7 @@ class SpaceUpdater:
         )
 
     async def force_flush(self) -> None:
-        """Explicitly trigger a flush — e.g., on crawl end."""
+        """Explicitly trigger a flush -- e.g., on crawl end."""
         logger.info("Force flush triggered")
         await self._flush()
 
