@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Type
+from collections.abc import Callable
+from typing import Any
 
 
 class EventRegistry:
@@ -10,11 +11,13 @@ class EventRegistry:
     """
 
     def __init__(self):
-        self.registry: Dict[Type[Any], List[Callable]] = defaultdict(list)
+        self.registry: dict[type[Any], list[Callable]] = defaultdict(list)
 
-    def subscribe(self, pipeline, event_types: List[Type[Any]]) -> None:
+    def subscribe(self, pipeline, event_types: list[type[Any]]) -> None:
+        """Register `pipeline` as a consumer of each event type in `event_types`."""
         for event_type in event_types:
             self.registry[event_type].append(pipeline)
 
-    def event_consumers(self, event: Any) -> List[Callable]:
+    def event_consumers(self, event: Any) -> list[Callable]:
+        """Return every pipeline subscribed to `event`'s type."""
         return self.registry[type(event)]
