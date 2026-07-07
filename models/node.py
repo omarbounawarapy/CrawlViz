@@ -1,7 +1,12 @@
 import logging
 from asyncio import Future
-from typing import Optional, Dict, List
+from typing import Any
+
 import numpy as np
+
+from utils import build_url
+
+from .domain import Domain
 from .link import Link
 
 logger = logging.getLogger(__name__)
@@ -15,19 +20,30 @@ class Node:
     their domain from the parent and carry the Link that discovered
     them (its anchor text and surrounding context feed the NLP/LLM
     scoring signals -- see nlp/feature_extractor.py).
+
+    Args:
+        node_id: This node's identifier, unique within one crawl's Storage.
+        link: The Link that discovered this node. Required for child nodes;
+            ignored for seed nodes, which synthesize their own from `url`.
+        url: Seed URL. Only used when `parent` is None.
+        domain: This node's Domain. Only used when `parent` is None; child
+            nodes inherit their domain from `parent`.
+        parent: The Node this one was discovered from, or None for a seed.
+        llm_score: Relevance score assigned by the scoring pipeline, if any.
+        priority: Initial crawl priority; refined as scoring/priority events arrive.
     """
 
     def __init__(
         self,
-        id: int,
-        link=None,
-        url=None,
-        domain=None,
-        parent=None,
-        llm_score=None,
+        node_id: int,
+        link: Link | None = None,
+        url: str | None = None,
+        domain: Domain | None = None,
+        parent: "Node | None" = None,
+        llm_score: int | None = None,
         priority: float = 0.01,
     ):
-        self.id = id
+        self.id = node_id
         self.link = link
         self.llm_score = llm_score
         self.priority = priority
@@ -35,34 +51,37 @@ class Node:
         self.ready: Future = Future()
 
         self.parent = parent
-        self.items: Dict = {}
-        self.links: List = []
+        self.items: dict[str, Any] = {}
+        self.links: list[Link] = []
         self.content: str = ""
 
         # NLP embedding (set by NLPService after content fetch)
-        self._embedding: Optional[np.ndarray] = None
+        self._embedding: np.ndarray | None = None
 
-        # ── Graph depth ───────────────────────────────────────────
+        # Graph depth
         self.depth = 0 if parent is None else parent.get_depth() + 1
 
-        # ── Domain resolution ─────────────────────────────────────
-        # Seed nodes get domain injected directly.
-        # Child nodes inherit from parent.
+        # Domain resolution: seed nodes get their domain injected directly;
+        # child nodes inherit it from their parent.
         if parent is None:
             self.domain = domain
-            self.link = Link(url=url,anchor="",context="")
+            self.link = Link(url=url, anchor="", context="")
         else:
             if link is None:
-                logger.error("Node %s has a parent but no link (invariant violation)", id)
+                logger.error("Node %s has a parent but no link (invariant violation)", node_id)
             self.link = link
             self.domain = parent.get_domain()
 
-    # ── Comparison (priority queue) ───────────────────────────────
+    # =========================================================
+    # COMPARISON (PRIORITY QUEUE)
+    # =========================================================
     def __lt__(self, other: "Node") -> bool:
         return self.priority < other.priority
 
-    # ── Domain API ───────────────────────────────────────────────
-    def get_domain(self):
+    # =========================================================
+    # DOMAIN API
+    # =========================================================
+    def get_domain(self) -> Domain:
         return self.domain
 
     def get_domain_name(self) -> str:
@@ -71,69 +90,54 @@ class Node:
     def get_domain_base_url(self) -> str:
         return self.domain.get_base_url()
 
-    def get_domain_scoring_type(self) -> str:
-        return self.domain.get_scoring_type()
-
-    def get_domain_model_information(self) -> str:
-        return self.domain.get_model_information()
-
-    def get_domain_scoring_prompt(self) -> str:
-        return self.domain.get_scoring_prompt()
-
-    # ── Crawler policy ───────────────────────────────────────────
-    def get_link_selector(self):
+    # =========================================================
+    # CRAWLER POLICY
+    # =========================================================
+    def get_link_selector(self) -> str:
         return self.domain.get_link_selector()
 
-    def get_extraction_blueprint(self):
-        return self.domain.get_extraction_blueprint()
-
-    # ── Scoring policy ───────────────────────────────────────────
-    def get_scoring_type(self) -> str:
-        return self.domain.get_scoring_type()
-
-    def get_scoring_model(self) -> str:
-        return self.domain.get_scoring_model()
-
-    def get_scoring_prompt(self) -> str:
-        return self.domain.get_scoring_prompt()
-
-    def get_scoring_config(self):
-        return self.domain.get_scoring_config()
-
-    # ── Identity ─────────────────────────────────────────────────
+    # =========================================================
+    # IDENTITY
+    # =========================================================
     def get_id(self) -> int:
         return self.id
 
-    # ── Graph info ───────────────────────────────────────────────
+    # =========================================================
+    # GRAPH INFO
+    # =========================================================
     def get_depth(self) -> int:
         return self.depth
 
-    def get_parent(self) -> Optional["Node"]:
+    def get_parent(self) -> "Node | None":
         return self.parent
 
-    # ── Content & extraction ─────────────────────────────────────
+    # =========================================================
+    # CONTENT & EXTRACTION
+    # =========================================================
     def set_content(self, content: str) -> None:
         self.content = content
 
-    def set_items(self, items: Dict) -> None:
+    def set_items(self, items: dict[str, Any]) -> None:
         self.items = items
 
-    def add_item(self, item, hash) -> None:
-        self.items[hash] = item
+    def add_item(self, item: Any, item_hash: str) -> None:
+        self.items[item_hash] = item
 
-    def set_links(self, links: List) -> None:
+    def set_links(self, links: list[Link]) -> None:
         self.links = links
 
-    def get_items(self) -> Dict:
+    def get_items(self) -> dict[str, Any]:
         return self.items
 
-    def get_links(self) -> List:
+    def get_links(self) -> list[Link]:
         return self.links
 
     def get_content(self) -> str:
         return self.content
 
-    # ── Scoring state ────────────────────────────────────────────
+    # =========================================================
+    # SCORING STATE
+    # =========================================================
     def set_llm_score(self, score: int) -> None:
         self.llm_score = score
 
@@ -146,33 +150,40 @@ class Node:
     def decrease_priority(self, value: int) -> None:
         self.priority -= value
 
-    # ── NLP embedding ────────────────────────────────────────────
+    # =========================================================
+    # NLP EMBEDDING
+    # =========================================================
     def set_embedding(self, vec: np.ndarray) -> None:
         self._embedding = vec
 
-    def get_embedding(self) -> Optional[np.ndarray]:
+    def get_embedding(self) -> np.ndarray | None:
         return self._embedding
 
     def has_embedding(self) -> bool:
         return self._embedding is not None
 
-    # ── URL handling ─────────────────────────────────────────────
-    def get_link(self):
+    # =========================================================
+    # URL HANDLING
+    # =========================================================
+    def get_link(self) -> str:
         return self.link.url
 
     def get_url(self) -> str:
-        return self.link.url if hasattr(self.link, 'url') else str(self.link)
+        return self.link.url if hasattr(self.link, "url") else str(self.link)
 
     def get_full_url(self) -> str:
-        from utils import build_url
         return build_url(self.get_domain_base_url(), self.link.url)
 
-    # ── Async readiness ──────────────────────────────────────────
+    # =========================================================
+    # ASYNC READINESS
+    # =========================================================
     def update_state(self) -> None:
         if not self.ready.done():
             self.ready.set_result(True)
 
-    # ── Debug ────────────────────────────────────────────────────
+    # =========================================================
+    # DEBUG
+    # =========================================================
     def __repr__(self) -> str:
         return (
             f"<Node id={self.id} url={self.get_url()!r} "
