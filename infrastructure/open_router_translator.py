@@ -1,15 +1,13 @@
 import json
 import logging
 import re
-from typing import Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
 class OpenRouterTranslator:
-    """
-    Translates between ScoringContext ↔ OpenRouter API format.
-    """
+    """Translates between ScoringContext and the OpenRouter API format."""
 
     @staticmethod
     def translate_request(context) -> dict:
@@ -30,10 +28,13 @@ class OpenRouterTranslator:
         }
 
     @staticmethod
-    def translate_response(response: Any) -> Dict:
-        """
-        Extract and parse the JSON payload from an OpenRouter response.
-        Handles: raw dict, stringified JSON, JSON wrapped in markdown fences.
+    def translate_response(response: Any) -> dict:
+        """Extract and parse the JSON payload from an OpenRouter response.
+
+        Handles a raw dict, stringified JSON, or JSON wrapped in markdown
+        fences. Any parse failure is logged and yields an empty dict rather
+        than raising, since a malformed LLM response should not crash the
+        pipeline that's scoring it.
         """
         try:
             raw = response["choices"][0]["message"]["content"]
