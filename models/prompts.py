@@ -1,6 +1,5 @@
 import json
-from typing import Dict, List, Any
-
+from typing import Any
 
 # =========================================================
 # SYSTEM PROMPT
@@ -19,17 +18,23 @@ No markdown.
 No explanation outside JSON.
 """.strip()
 
-
 # =========================================================
-# STRATEGIES (SOFT BIAS ONLY)
+# SCORING STRATEGIES (SOFT BIAS ONLY)
 # =========================================================
+# Kept in sync by hand with ALLOWED_STRATEGIES in
+# routes/blueprint_translator.py -- see that module's docstring.
 
-STRATEGIES: Dict[str, Dict[str, str]] = {
+STRATEGIES: dict[str, dict[str, str]] = {
     "TOPICAL": {
-        "context": "Focus on direct semantic relevance to the target topic. Penalize navigation pages."
+        "context": (
+            "Focus on direct semantic relevance to the target topic. "
+            "Penalize navigation pages."
+        )
     },
     "PATHFINDING": {
-        "context": "Prefer links that are useful intermediate steps toward reaching the target topic."
+        "context": (
+            "Prefer links that are useful intermediate steps toward reaching the target topic."
+        )
     },
     "EXPLORATION": {
         "context": "Prefer semantically diverse links to broaden coverage."
@@ -42,33 +47,34 @@ STRATEGIES: Dict[str, Dict[str, str]] = {
     },
     "UNCERTAINTY_BIASED": {
         "context": "Prefer ambiguous links that may reveal new semantic areas."
-    }
+    },
 }
 
 
-# =========================================================
-# PROMPT BUILDER
-# =========================================================
-
 class PromptBuilder:
+    """Builds the system and user prompts sent to the scoring LLM.
+
+    Args:
+        target_topic: The crawl's target topic, restated in every prompt.
+        strategy: One of the keys in `STRATEGIES`, biasing how candidates
+            are scored.
+
+    Raises:
+        ValueError: If `strategy` is not a key in `STRATEGIES`.
+    """
 
     def __init__(self, target_topic: str, strategy: str = "TOPICAL"):
         if strategy not in STRATEGIES:
-            raise ValueError(f"Unknown strategy: {strategy}")
+            raise ValueError(f"Unknown scoring strategy: {strategy!r}")
 
         self.target_topic = target_topic
         self.strategy = strategy
 
-    # -----------------------------
-    # SYSTEM PROMPT
-    # -----------------------------
     def build_system_prompt(self) -> str:
         return SCORING_SYSTEM_PROMPT
 
-    # -----------------------------
-    # USER PROMPT (STACKED BLOCKS)
-    # -----------------------------
-    def build_prompt(self, candidates: List[Any]) -> str:
+    def build_prompt(self, candidates: list[Any]) -> str:
+        """Assemble the full user prompt for one batch of candidate links."""
         strategy_cfg = STRATEGIES[self.strategy]
         candidate_dicts = [c.to_dict() for c in candidates]
 
@@ -132,13 +138,10 @@ CONSTRAINTS:
             candidates_block,
             rules_block,
             output_block,
-            constraints_block
+            constraints_block,
         ])
 
-    # -----------------------------
-    # STRATEGY SWITCH
-    # -----------------------------
     def set_strategy(self, strategy: str) -> None:
         if strategy not in STRATEGIES:
-            raise ValueError(f"Invalid strategy: {strategy}")
+            raise ValueError(f"Unknown scoring strategy: {strategy!r}")
         self.strategy = strategy

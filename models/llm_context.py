@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 class LlmContext:
     """Immutable request object passed to LlmHandler.
 
@@ -12,7 +9,7 @@ class LlmContext:
         self.llm_type = llm_type
         self.model_information = model_information
         self.prompt = prompt
-        self.key: Optional[str] = None
+        self.key: str | None = None
 
     def get_llm_type(self) -> str:
         return self.llm_type
@@ -20,16 +17,13 @@ class LlmContext:
     def get_scoring_type(self) -> str:
         return self.get_llm_type()
 
-    def get_key(self) -> Optional[str]:
+    def get_key(self) -> str | None:
         return self.key
 
     def set_key(self, key: str) -> None:
         self.key = key
 
     def get_model_information(self) -> str:
-        return self.model_information
-
-    def get_endpoint(self) -> str:
         return self.model_information
 
     def get_prompt(self) -> str:

@@ -1,8 +1,10 @@
 import logging
+from typing import Any
 
 from lxml import html as lxml_html
 
 from utils import build_url, is_relative_url
+
 from .link import Link
 
 logger = logging.getLogger(__name__)
@@ -17,7 +19,7 @@ class LinkExtractor:
     """
 
     @staticmethod
-    def extract_links(html_content, node):
+    def extract_links(html_content: str | Any, node: Any) -> list[Link]:
         link_selector = node.get_link_selector()
         if isinstance(html_content, str):
             tree = lxml_html.fromstring(html_content)
@@ -50,11 +52,7 @@ class LinkExtractor:
 
                 context_text = context_text[:min(len(context_text), MAX_CONTEXT_LEN)]
                 context_text = LinkExtractor._extract_sentence(context_text, anchor)
-                link = Link(
-                    href,
-                    anchor,
-                    context_text
-                )
+                link = Link(url=href, anchor=anchor, context=context_text)
                 results.append(link)
 
             except Exception:
@@ -63,9 +61,9 @@ class LinkExtractor:
 
         logger.debug("Extracted %d links from %s", len(results), node.get_url())
         return results
-    
+
     @staticmethod
-    def _extract_sentence(context_text, anchor):
+    def _extract_sentence(context_text: str, anchor: str) -> str:
         if not context_text or not anchor:
             return context_text
 
