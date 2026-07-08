@@ -1,30 +1,32 @@
 import time
 import uuid
+from typing import TYPE_CHECKING
 
-from traceability.trace_context import get_trace
-from traceability.network_trace_events import (
+from .network_trace_events import (
     NET_RequestCreated,
     NET_RequestDispatched,
-    NET_ResponseReceived,
     NET_RequestFailed,
+    NET_ResponseReceived,
 )
+from .trace_context import get_trace
+
+if TYPE_CHECKING:
+    from infrastructure import NetworkClient
+
+    from .emitter import TraceEmitter
 
 
 class TracedNetworkClient:
-    """
-    Drop-in wrapper around NetworkClient.
-    Emits NET_* trace events without modifying request/response logic.
+    """Drop-in wrapper around NetworkClient that emits NET_* trace events
+    without modifying request/response logic.
 
-    Usage in crawler.py
-    -------------------
-    from traceability.traced_network_client import TracedNetworkClient
-
-    raw_client = NetworkClient()
-    traced_client = TracedNetworkClient(raw_client, tracer)
-    llm_handler = LlmHandler(key_manager, client=traced_client)
+    Example:
+        raw_client = NetworkClient()
+        traced_client = TracedNetworkClient(raw_client, tracer)
+        llm_handler = LlmHandler(key_manager, client=traced_client)
     """
 
-    def __init__(self, inner, tracer):
+    def __init__(self, inner: "NetworkClient", tracer: "TraceEmitter"):
         self._inner = inner
         self._tracer = tracer
 
@@ -64,7 +66,7 @@ class TracedNetworkClient:
             response = await self._inner.emit_request(params)
             latency_ms = (time.monotonic() - t0) * 1000
 
-            # Response size heuristic — works for str/dict/bytes
+            # Response size heuristic -- works for str/dict/bytes.
             if isinstance(response, (str, bytes)):
                 size = len(response)
             elif isinstance(response, dict):
@@ -84,7 +86,6 @@ class TracedNetworkClient:
 
         except Exception as exc:
             latency_ms = (time.monotonic() - t0) * 1000
-            # Classify the error type
             exc_name = type(exc).__name__
             if "Timeout" in exc_name:
                 error_type = "timeout"
