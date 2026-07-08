@@ -1,29 +1,31 @@
-from typing import List, Dict, Any
+from typing import Any
 
 
 class ResultMapper:
-    """
-    Maps raw LLM scoring output back onto Link objects.
+    """Maps raw LLM scoring output back onto Link objects.
 
-    Expected LLM output format:
-    {
-        "https://example.com/page": {
-            "score": 85,
-            "relevance_type": "direct",
-            "expansions": ["sentence1", "sentence2"]
-        },
-        ...
-    }
+    Expected LLM output format::
+
+        {
+            "https://example.com/page": {
+                "score": 85,
+                "relevance_type": "direct",
+                "expansions": ["sentence1", "sentence2"]
+            },
+            ...
+        }
     """
 
     VALID_RELEVANCE_TYPES = {"direct", "partial", "irrelevant", "ambiguous"}
 
-    def map_results(self, results: Dict[str, Any], links: list) -> list:
-        """
-        Apply LLM scoring results to Link objects in-place.
-        Links not present in results receive a default score of 0.
+    def map_results(self, results: dict[str, Any], links: list) -> list:
+        """Apply LLM scoring results to `links` in place.
 
-        Returns the same links list (mutated).
+        Links not present in `results` receive safe defaults rather than
+        being left unscored.
+
+        Returns:
+            The same `links` list, mutated.
         """
         if not results or not isinstance(results, dict):
             return links
@@ -31,7 +33,7 @@ class ResultMapper:
         for link in links:
             entry = results.get(link.url)
             if entry is None:
-                # LLM didn't score this link — set safe defaults
+                # LLM didn't score this link -- set safe defaults.
                 link.score = link.score or 0
                 link.relevance_type = "irrelevant"
                 link.expansions = []
@@ -43,10 +45,10 @@ class ResultMapper:
 
         return links
 
-    def map_partial(self, results: Dict[str, Any], links: list) -> list:
-        """
-        Only apply scores to links that appear in results.
-        Links missing from results are left untouched.
+    def map_partial(self, results: dict[str, Any], links: list) -> list:
+        """Apply LLM scoring results only to links present in `results`.
+
+        Links missing from `results` are left untouched.
         """
         if not results:
             return links
@@ -67,7 +69,7 @@ class ResultMapper:
     # FIELD PARSERS
     # =========================================================
 
-    def _parse_score(self, raw) -> int:
+    def _parse_score(self, raw: Any) -> int:
         try:
             val = int(raw)
             return max(0, min(100, val))
@@ -79,7 +81,7 @@ class ResultMapper:
             return raw.lower()
         return "ambiguous"
 
-    def _parse_expansions(self, raw: Any) -> List[str]:
+    def _parse_expansions(self, raw: Any) -> list[str]:
         if not isinstance(raw, list):
             return []
         return [str(s).strip() for s in raw if isinstance(s, str) and s.strip()]

@@ -1,9 +1,11 @@
 import logging
 import time
+from typing import TYPE_CHECKING
+
 import numpy as np
-from typing import List, Dict, Optional, Tuple
 
 from infrastructure import LlmHandler
+from models import ExpansionContext
 from nlp import (
     BaseEmbeddingEngine,
     ExpansionPromptBuilder,
@@ -12,40 +14,51 @@ from nlp import (
     VectorSpace,
     create_embedding_engine,
 )
-from models import ExpansionContext
-
-from traceability.trace_context import get_trace, new_trace_id
-from traceability.nlp_trace_events import (
-    NLP_InputReceived,
-    NLP_FeaturesExtracted,
-    NLP_SimilarityScored,
-    NLP_VectorComposed,
-    NLP_ScoreEmitted,
-)
 from traceability.expansion_trace_events import (
-    EXP_Triggered,
+    EXP_CandidatePruned,
     EXP_PromptBuilt,
     EXP_SeedsGenerated,
-    EXP_CandidatePruned,
     EXP_SpaceBootstrapped,
+    EXP_Triggered,
 )
+from traceability.nlp_trace_events import (
+    NLP_FeaturesExtracted,
+    NLP_InputReceived,
+    NLP_ScoreEmitted,
+    NLP_SimilarityScored,
+    NLP_VectorComposed,
+)
+from traceability.trace_context import get_trace, new_trace_id
+
+if TYPE_CHECKING:
+    from traceability.emitter import TraceEmitter
 
 logger = logging.getLogger(__name__)
 
 
 class NLPService:
-    """
-    Core NLP subsystem.
+    """Core NLP subsystem.
 
     Responsibilities:
-    - Manage the semantic vector space lifecycle (build / load / save)
-    - Embed links, parent nodes, and target topics
-    - Compute per-link feature vectors (nlp_vector)
-    - Provide space-level signals for scoring pipeline
-    - Accept batch updates from the space updater (never real-time)
+        - Manage the semantic vector space lifecycle (build / load / save).
+        - Embed links, parent nodes, and target topics.
+        - Compute per-link feature vectors (nlp_vector).
+        - Provide space-level signals for the scoring pipeline.
+        - Accept batch updates from the space updater (never real-time).
 
-    The space is STABLE during a crawl session.
-    Only flush_buffer() mutates the space, and it must be called explicitly.
+    The space is stable during a crawl session. Only flush_buffer()
+    mutates the space, and it must be called explicitly.
+
+    Args:
+        blueprint_id: Identifies this blueprint's persisted semantic space.
+        target_topic: The crawl's target topic; anchors the space's target vector.
+        llm_handler: Used to generate the target topic's semantic expansions.
+        expansion_config: The blueprint's ``expansion`` sub-dict (llm_type,
+            llm_model, style, num_descriptions, ...).
+        embedding_backend: Name registered with `nlp.create_embedding_engine`.
+        model_name: Passed through to the embedding backend.
+        store_base_dir: Root directory for persisted spaces.
+        tracer: Optional TraceEmitter; when None, tracing is a no-op.
     """
 
     def __init__(
@@ -53,40 +66,35 @@ class NLPService:
         blueprint_id: str,
         target_topic: str,
         llm_handler: LlmHandler,
-        expansion_config,
+        expansion_config: dict,
         embedding_backend: str = "sentence_transformers",
         model_name: str = "all-MiniLM-L6-v2",
         store_base_dir: str = ".space_store",
-        tracer=None,                          # TraceEmitter — optional, injected by Crawler
+        tracer: "TraceEmitter | None" = None,
     ):
-        
         self.blueprint_id = blueprint_id
         self.target_topic = target_topic
 
         self.engine: BaseEmbeddingEngine = create_embedding_engine(
             backend=embedding_backend,
-            model_name=model_name
+            model_name=model_name,
         )
-        
 
         self.store = SpaceStore(base_dir=store_base_dir)
         self.extractor = FeatureExtractor()
         self.llm_handler = llm_handler
         self.prompt_builder = ExpansionPromptBuilder()
-        self.space: Optional[VectorSpace] = None
-        self.target_vec: Optional[np.ndarray] = None
+        self.space: VectorSpace | None = None
+        self.target_vec: np.ndarray | None = None
         self.expansion_config = expansion_config
         self.llm_type = expansion_config["llm_type"]
         self.model_information = expansion_config["llm_model"]
-        # update buffer: list of (key, vector, metadata)
-        self._buffer: List[Tuple[str, np.ndarray, dict]] = []
-
-        # tracer — emits NLP_* / EXP_* events; None = no-op
+        # Update buffer: list of (key, vector, metadata).
+        self._buffer: list[tuple[str, np.ndarray, dict]] = []
         self._tracer = tracer
 
-
-    # internal helper — emit only if tracer attached
     async def _emit(self, event) -> None:
+        """Forward `event` to the attached tracer, if any; a no-op otherwise."""
         if self._tracer is not None:
             await self._tracer.emit(event)
 
@@ -95,18 +103,15 @@ class NLPService:
     # =========================================================
 
     async def start(self) -> None:
-
         if self.store.exists(self.blueprint_id):
-
             self.load_space()
         else:
-
             await self.build_space()
 
     async def build_space(self) -> None:
         """Bootstrap the space from the target topic.
 
-        Generates seed sentences via LLM at init time.
+        Generates seed sentences via the LLM at init time.
         """
         target = self.target_topic
 
@@ -177,7 +182,7 @@ class NLPService:
             duration_ms=duration_ms,
         ))
 
-    async def create_expansions(self, target, expansion_config):
+    async def create_expansions(self, target: str, expansion_config: dict) -> dict:
         trace_id, node_id = get_trace()
 
         prompt = self.prompt_builder.build(target, expansion_config)
@@ -186,7 +191,7 @@ class NLPService:
             trace_id=trace_id,
             node_id=node_id,
             blueprint_id=self.blueprint_id,
-            style= expansion_config.get("style", "balanced"),
+            style=expansion_config.get("style", "balanced"),
             num_descriptions=expansion_config.get("num_descriptions", 6),
             prompt_len=len(prompt),
             prompt_preview=prompt[:300],
@@ -221,10 +226,15 @@ class NLPService:
         logger.info("Space saved to %s", path)
 
     # =========================================================
-    # LINK SCORING (main pipeline hook)
+    # LINK SCORING (MAIN PIPELINE HOOK)
     # =========================================================
 
     async def score_links(self, links: list, parent) -> list:
+        """Compute NLP feature vectors and a composite score for each link.
+
+        Raises:
+            RuntimeError: If called before `start()` has built or loaded a space.
+        """
         if self.space is None:
             raise RuntimeError("NLPService.start() must be called before score_links()")
 
@@ -238,7 +248,6 @@ class NLPService:
 
         for link in links:
             try:
-                # --- input trace ---
                 await self._emit(NLP_InputReceived(
                     trace_id=trace_id,
                     node_id=node_id,
@@ -266,7 +275,6 @@ class NLPService:
                     node_id=node_id,
                 )
 
-                # --- final score trace ---
                 await self._emit(NLP_ScoreEmitted(
                     trace_id=trace_id,
                     node_id=node_id,
@@ -283,7 +291,7 @@ class NLPService:
         return links
 
     # =========================================================
-    # VECTOR GENERATION (per link)
+    # VECTOR GENERATION (PER LINK)
     # =========================================================
 
     async def generate_vector(
@@ -292,10 +300,10 @@ class NLPService:
         parent_vec: np.ndarray,
         parent_content: str,
         space_matrix: np.ndarray,
-        cluster_centroids: Dict[int, np.ndarray],
+        cluster_centroids: dict[int, np.ndarray],
         trace_id: str = "",
         node_id: str = "",
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         link_text = f"[URL]{link.url} [ANCHOR]{link.anchor} [CTX]{link.context}"
         context_text = link.context or ""
 
@@ -313,7 +321,6 @@ class NLPService:
             vector_space=self.get_space(),
             cluster_centroids=cluster_centroids,
         )
-        # --- features trace ---
         if trace_id:
             await self._emit(NLP_FeaturesExtracted(
                 trace_id=trace_id,
@@ -340,7 +347,7 @@ class NLPService:
         return features
 
     # =========================================================
-    # SPACE UPDATES (batch only — space remains stable until flush)
+    # SPACE UPDATES (BATCH ONLY -- SPACE REMAINS STABLE UNTIL FLUSH)
     # =========================================================
 
     def update_space(self, scoring_results: list) -> None:
@@ -370,7 +377,7 @@ class NLPService:
     # INTERNAL HELPERS
     # =========================================================
 
-    async def _get_cluster_centroids(self) -> Dict[int, np.ndarray]:
+    async def _get_cluster_centroids(self) -> dict[int, np.ndarray]:
         if self.space is None or len(self.space) < 3:
             return {}
         clusters = self.space.get_clusters()
@@ -389,15 +396,13 @@ class NLPService:
 
     async def _composite_score(
         self,
-        features: Dict[str, float],
+        features: dict[str, float],
         link_url: str = "",
         trace_id: str = "",
         node_id: str = "",
     ) -> float:
         if not features:
             return 0.0
-        
-
 
         weights = {
             "target_similarity": 0.85,
@@ -431,10 +436,10 @@ class NLPService:
     # PUBLIC ACCESSORS
     # =========================================================
 
-    def get_space(self) -> Optional[VectorSpace]:
+    def get_space(self) -> VectorSpace | None:
         return self.space
 
-    def get_target_vec(self) -> Optional[np.ndarray]:
+    def get_target_vec(self) -> np.ndarray | None:
         return self.target_vec
 
     def buffer_size(self) -> int:
@@ -442,4 +447,3 @@ class NLPService:
 
     def space_size(self) -> int:
         return len(self.space) if self.space else 0
-
