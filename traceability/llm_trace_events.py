@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
-
+from typing import Literal
 
 # =========================================================
 # LLM HANDLER TRACE EVENTS
@@ -42,8 +41,8 @@ class LLM_ResponseParsed:
     trace_id: str
     node_id: str
     request_id: str
-    output_keys: List[str]
-    token_usage: Optional[Dict[str, int]]
+    output_keys: list[str]
+    token_usage: dict[str, int] | None
     output_preview: str         # first 300 chars of normalized result
 
 
@@ -52,7 +51,7 @@ class LLM_RequestFailed:
     trace_id: str
     node_id: str
     request_id: str
-    stage: str                  # "dispatch" | "translate_request" | "translate_response"
+    stage: Literal["dispatch", "translate_request", "translate_response"]
     error_type: str
     error_message: str
     retry_attempt: int = 0

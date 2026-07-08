@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict
-
 
 # =========================================================
 # NLP PIPELINE TRACE EVENTS
@@ -22,7 +20,7 @@ class NLP_FeaturesExtracted:
     trace_id: str
     node_id: str
     link_url: str
-    features: Dict[str, float]   # full feature dict from extract_all()
+    features: dict[str, float]   # full feature dict from extract_all()
     embedding_dim: int
     space_size: int
     cluster_count: int
@@ -46,8 +44,8 @@ class NLP_VectorComposed:
     trace_id: str
     node_id: str
     link_url: str
-    weights_used: Dict[str, float]
-    weighted_contributions: Dict[str, float]
+    weights_used: dict[str, float]
+    weighted_contributions: dict[str, float]
     raw_sum: float
     final_score: float           # after clamp to [0, 1]
 
