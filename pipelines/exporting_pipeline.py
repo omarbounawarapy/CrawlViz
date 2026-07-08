@@ -1,13 +1,13 @@
 import asyncio
-import sqlite3
 import json
 import logging
+import sqlite3
 import time
-import datetime
-from typing import Dict
+from datetime import UTC, datetime
 
+from config import ITEMS_DB_PATH
+from events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
 from models import Node
-from events import TransformationCompletedEvent, ExportBatchCompletedEvent, StopCrawlEvent
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,15 @@ class ExportingPipeline:
     transform on the same content is a no-op rather than a duplicate.
     """
 
-    def __init__(self, crawl_id, blueprint_id, blueprint, event_broker, db_path="items.db", batch_size=50):
+    def __init__(
+        self,
+        crawl_id,
+        blueprint_id,
+        blueprint,
+        event_broker,
+        db_path=ITEMS_DB_PATH,
+        batch_size=50,
+    ):
         self.event_broker = event_broker
         self.db_path = db_path
         self.batch_size = batch_size
@@ -38,57 +46,59 @@ class ExportingPipeline:
         self.running = True  # internal lifecycle flag
 
         self.handlers = {
-            TransformationCompletedEvent: self.transformation_completed,
-            StopCrawlEvent: self._on_stop_event,
+            TransformationCompletedEvent: self._on_transformation_completed,
+            StopCrawlEvent: self._on_stop_crawl,
         }
 
-    # =====================================================
+    # =========================================================
     # INIT
-    # =====================================================
-    def _init_db(self):
+    # =========================================================
+    def _init_db(self) -> None:
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.execute("PRAGMA journal_mode=WAL")
         self.conn.execute("PRAGMA synchronous=NORMAL")
         self.cursor = self.conn.cursor()
 
-    # =====================================================
+    # =========================================================
     # ENTRY
-    # =====================================================
-    async def put(self, event):
+    # =========================================================
+    async def put(self, event) -> None:
         handler = self.handlers.get(type(event))
         if handler:
             await handler(event)
 
-    async def transformation_completed(self, event):
+    async def _on_transformation_completed(self, event: TransformationCompletedEvent) -> None:
         await self.queue.put(event)
 
-    async def _on_stop_event(self, event):
+    async def _on_stop_crawl(self, event: StopCrawlEvent) -> None:
         self.running = False  # signal shutdown
 
-    # =====================================================
+    # =========================================================
     # START
-    # =====================================================
-    async def start(self):
+    # =========================================================
+    async def start(self) -> None:
         self._init_db()
         await self.worker()
 
-    # =====================================================
+    # =========================================================
     # WORKER LOOP
-    # =====================================================
-    async def worker(self):
+    # =========================================================
+    async def worker(self) -> None:
         while self.running or not self.queue.empty():
             event = await self.queue.get()
 
             try:
                 node = event.node
-                blueprint = self.extraction_blueprint
+                extraction_blueprint = self.extraction_blueprint
                 table = self._get_table_name(node)
 
-                self._ensure_table(table, blueprint)
+                self._ensure_table(table, extraction_blueprint)
 
                 for item, item_hash in event.transformed_items:
-                    normalized_item = self._normalize_item(item, blueprint)
-                    self._buffer.append((table, node, normalized_item, blueprint, item_hash))
+                    normalized_item = self._normalize_item(item, extraction_blueprint)
+                    self._buffer.append(
+                        (table, node, normalized_item, extraction_blueprint, item_hash)
+                    )
 
                 if len(self._buffer) >= self.batch_size:
                     self._flush_with_events(table)
@@ -103,7 +113,7 @@ class ExportingPipeline:
         # Final flush once the loop exits, so nothing buffered is lost.
         self._finalize()
 
-    def _finalize(self):
+    def _finalize(self) -> None:
         try:
             self._flush()
             if self.conn:
@@ -113,10 +123,10 @@ class ExportingPipeline:
                 self.conn.close()
                 logger.info("Export connection closed (crawl_id=%s)", self.crawl_id)
 
-    # =====================================================
+    # =========================================================
     # FLUSH
-    # =====================================================
-    def _flush_with_events(self, table):
+    # =========================================================
+    def _flush_with_events(self, table: str) -> None:
         """Batch flush that also emits ExportBatchCompletedEvent for observability."""
         if not self._buffer:
             return
@@ -125,8 +135,8 @@ class ExportingPipeline:
 
         try:
             self.cursor.execute("BEGIN")
-            for t, node, item, blueprint, item_hash in self._buffer:
-                self._insert_row(t, node, item, blueprint, item_hash)
+            for t, node, item, extraction_blueprint, item_hash in self._buffer:
+                self._insert_row(t, node, item, extraction_blueprint, item_hash)
             self.conn.commit()
 
             duration = (time.time() - start) * 1000
@@ -148,15 +158,15 @@ class ExportingPipeline:
         finally:
             self._buffer.clear()
 
-    def _flush(self):
+    def _flush(self) -> None:
         """Simple flush with no event emission -- used at shutdown."""
         if not self._buffer:
             return
 
         try:
             self.cursor.execute("BEGIN")
-            for table, node, item, blueprint, item_hash in self._buffer:
-                self._insert_row(table, node, item, blueprint, item_hash)
+            for table, node, item, extraction_blueprint, item_hash in self._buffer:
+                self._insert_row(table, node, item, extraction_blueprint, item_hash)
             self.conn.commit()
 
         except Exception:
@@ -166,17 +176,17 @@ class ExportingPipeline:
         finally:
             self._buffer.clear()
 
-    # =====================================================
+    # =========================================================
     # SCHEMA / ROW HELPERS
-    # =====================================================
-    def _get_table_name(self, node):
+    # =========================================================
+    def _get_table_name(self, node: Node) -> str:
         domain = node.get_domain_base_url().replace("https://", "").replace(".", "_")
         return f"{domain}_{self.blueprint_id}"
 
-    def _ensure_table(self, table_name: str, blueprint: Dict):
+    def _ensure_table(self, table_name: str, extraction_blueprint: dict) -> None:
         if table_name in self._initialized_tables:
             return
-        fields = blueprint.get("fields", {})
+        fields = extraction_blueprint.get("fields", {})
         columns = ["id TEXT PRIMARY KEY", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
         for field_name, spec in fields.items():
             store_type = spec.get("store", {}).get("type", "text")
@@ -205,7 +215,7 @@ class ExportingPipeline:
             logger.warning("Failed to cast field=%s value=%r as %s", field, value, t)
             return None
 
-    def _map_type(self, t: str):
+    def _map_type(self, t: str) -> str:
         return {
             "real": "REAL",
             "int": "INTEGER",
@@ -213,9 +223,11 @@ class ExportingPipeline:
             "text": "TEXT",
         }.get(t, "TEXT")
 
-    def _insert_row(self, table: str, node: Node, item: Dict, blueprint: Dict, item_hash: str):
-        fields = blueprint.get("fields", {})
-        utc_now = datetime.datetime.now(datetime.UTC)
+    def _insert_row(
+        self, table: str, node: Node, item: dict, extraction_blueprint: dict, item_hash: str
+    ) -> None:
+        fields = extraction_blueprint.get("fields", {})
+        utc_now = datetime.now(UTC)
         row = {
             "id": item_hash,
             "crawl_id": self.crawl_id,
@@ -236,8 +248,8 @@ class ExportingPipeline:
         sql = f"INSERT OR REPLACE INTO {table} ({cols}) VALUES ({placeholders})"
         self.cursor.execute(sql, vals)
 
-    def _normalize_item(self, item, blueprint):
-        fields = blueprint.get("fields", {})
+    def _normalize_item(self, item: dict, extraction_blueprint: dict) -> dict:
+        fields = extraction_blueprint.get("fields", {})
         normalized = {}
 
         for k, v in item.items():
