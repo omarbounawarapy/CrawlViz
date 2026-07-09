@@ -38,7 +38,7 @@ class NET_RequestFailed:
     trace_id: str
     node_id: str
     request_id: str
-    error_type: Literal["timeout", "connection", "http_error", "parse"]
+    error_type: Literal["timeout", "connection", "http_error", "unknown"]
     error_message: str
     status_code: int | None
 
