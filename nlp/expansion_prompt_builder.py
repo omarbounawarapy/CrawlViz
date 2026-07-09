@@ -1,7 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Literal
-
-
+from typing import Literal
 
 BASE_PROMPT = """
 You are a semantic feature generation engine for NLP retrieval systems.
@@ -13,7 +11,7 @@ You do NOT generate explanations, stories, or general knowledge content.
 STYLE_BLOCKS = {
     "concise": "Focus on minimal, high-information semantic statements.",
     "balanced": "Balance definition, function, and context.",
-    "rich": "Cover multiple semantic perspectives while remaining concise."
+    "rich": "Cover multiple semantic perspectives while remaining concise.",
 }
 OUTPUT_SCHEMA_BLOCK = """
 Return ONLY valid JSON:
@@ -47,17 +45,16 @@ class ExpansionConfig:
 
 
 class ExpansionPromptBuilder:
-    def __init__(self):
-        pass
+    """Builds the prompt used to generate semantic expansions for a topic."""
 
-    def build(self, topic: str, config: Optional[ExpansionConfig] = None) -> str:
+    def build(self, topic: str, config: ExpansionConfig | None = None) -> str:
         config = config or ExpansionConfig()
 
         return "\n\n".join([
             BASE_PROMPT,
-            f"TASK:\nGenerate {config["num_descriptions"]} semantic descriptions for:\n{topic}",
-            f"STYLE:\n{STYLE_BLOCKS[config["style"]]}",
+            f"TASK:\nGenerate {config['num_descriptions']} semantic descriptions for:\n{topic}",
+            f"STYLE:\n{STYLE_BLOCKS[config['style']]}",
             CONSTRAINTS_BLOCK,
             FACET_BLOCK,
-            OUTPUT_SCHEMA_BLOCK
-        ])  
+            OUTPUT_SCHEMA_BLOCK,
+        ])
