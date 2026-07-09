@@ -4,8 +4,8 @@ import logging
 import os
 from datetime import datetime
 
-from infrastructure.async_file_handler import AsyncFileHandler
 from events import PageFetchedEvent, StopCrawlEvent
+from infrastructure.async_file_handler import AsyncFileHandler
 
 logger = logging.getLogger(__name__)
 
@@ -24,33 +24,33 @@ class CanonicalizationPipeline:
 
         self.queue = asyncio.Queue()
 
-        # runtime control
+        # Runtime control
         self.running = False
         self._task = None
 
-        # file setup
+        # File setup
         self.dir_path = os.path.join(export_path, crawl_id)
         os.makedirs(self.dir_path, exist_ok=True)
 
         self.file_path = os.path.join(self.dir_path, "documents.jsonl")
         self.writer = AsyncFileHandler(self.file_path)
 
-        # event routing
+        # Event routing
         self.handlers = {
-            PageFetchedEvent: self.page_fetched,
-            StopCrawlEvent: self.stop,
+            PageFetchedEvent: self._on_page_fetched,
+            StopCrawlEvent: self._on_stop_crawl,
         }
 
-    # =====================================================
+    # =========================================================
     # ENTRY
-    # =====================================================
-    async def put(self, e):
-        await self.queue.put(e)
+    # =========================================================
+    async def put(self, event) -> None:
+        await self.queue.put(event)
 
-    # =====================================================
+    # =========================================================
     # START PIPELINE
-    # =====================================================
-    async def start(self):
+    # =========================================================
+    async def start(self) -> None:
         self.running = True
 
         await self.writer.create_file()
@@ -59,10 +59,10 @@ class CanonicalizationPipeline:
 
         await self._task
 
-    # =====================================================
-    # MAIN LOOP (single consumer)
-    # =====================================================
-    async def _run(self):
+    # =========================================================
+    # MAIN LOOP (SINGLE CONSUMER)
+    # =========================================================
+    async def _run(self) -> None:
         while True:
             event = await self.queue.get()
 
@@ -82,18 +82,16 @@ class CanonicalizationPipeline:
 
         await self.writer.close_file()
 
-    # =====================================================
+    # =========================================================
     # EVENT HANDLERS
-    # =====================================================
+    # =========================================================
 
-    async def page_fetched(self, e: PageFetchedEvent):
-        node = e.node
-        content = e.content
+    async def _on_page_fetched(self, event: PageFetchedEvent) -> None:
+        node = event.node
+        content = event.content
 
         doc_id = node.get_id()
-
-        url = node.get_full_url() 
-
+        url = node.get_full_url()
         now = datetime.now()
 
         doc = {
@@ -105,15 +103,15 @@ class CanonicalizationPipeline:
             "language": "en",
             "retrieved_at": now.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "metadata": {
-                "crawler": "arachne"
-            }
+                "crawler": "crawlviz",
+            },
         }
 
         # JSONL write (ensure string)
         await self.writer.write_line(json.dumps(doc, ensure_ascii=False))
 
-    async def stop(self, e: StopCrawlEvent):
+    async def _on_stop_crawl(self, event: StopCrawlEvent) -> None:
         self.running = False
 
-        # graceful shutdown signal
+        # Graceful shutdown signal (poison pill).
         await self.queue.put(None)
