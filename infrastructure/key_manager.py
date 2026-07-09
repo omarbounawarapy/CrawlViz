@@ -2,7 +2,6 @@ import asyncio
 import json
 import logging
 import time
-from typing import Optional
 
 from config import BASE_DIR
 
@@ -26,7 +25,13 @@ class KeyManager:
         }
         self.lock = asyncio.Lock()
 
-    async def next_key(self, provider_name: str) -> Optional[str]:
+    async def next_key(self, provider_name: str) -> str | None:
+        """Return the next key due for `provider_name`, or None if it has no keys.
+
+        Cycles through the provider's keys in order, skipping any still
+        within `cooldown` seconds of its last use. Falls back to the
+        least-recently-used key if every key is still cooling down.
+        """
         async with self.lock:
             keys = self.registry.get(provider_name, [])
             if not keys:
@@ -46,15 +51,24 @@ class KeyManager:
             return keys[start_idx]
 
     def load_keys(self) -> dict:
+        """Read and validate ``keys.json``.
+
+        Returns:
+            The parsed ``{provider: [key, ...]}`` registry.
+
+        Raises:
+            FileNotFoundError: If ``keys.json`` does not exist at the repo root.
+            ValueError: If the file's contents don't match the expected shape.
+        """
         file_path = BASE_DIR / "keys.json"
 
         if not file_path.exists():
             raise FileNotFoundError(
-                f"{file_path} not found. Copy keys.example.json to keys.json "
-                "and fill in your provider API keys."
+                f"API keys file not found: {file_path!r}. Copy keys.example.json "
+                "to keys.json and fill in your provider API keys."
             )
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
 
         if not isinstance(data, dict):

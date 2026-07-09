@@ -11,5 +11,5 @@ __all__ = [
     "LlmHandler",
     "LogWriter",
     "NetworkClient",
-    "OpenRouterTranslator"
+    "OpenRouterTranslator",
 ]
