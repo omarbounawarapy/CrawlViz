@@ -1,11 +1,12 @@
 import os
-from typing import Any
+from typing import Any, Literal
 
+TraceMode = Literal["full", "sampled", "minimal", "off"]
 
-# Events that are ALWAYS emitted regardless of mode
+# Events that are always emitted regardless of mode.
 _FORCE_EMIT_SUFFIXES = ("Failed", "Bootstrapped", "ScoreEmitted")
 
-# Minimal-mode allowlist — only these event type names pass in "minimal" mode
+# Minimal-mode allowlist -- only these event type names pass in "minimal" mode.
 _MINIMAL_ALLOWLIST = frozenset({
     "NLP_ScoreEmitted",
     "LLM_RequestFailed",
@@ -15,32 +16,29 @@ _MINIMAL_ALLOWLIST = frozenset({
 
 
 class TraceEmitter:
-    """
-    Thin publish wrapper around the existing event_broker.
-    Respects TRACE_MODE without touching any pipeline or business logic.
+    """Thin publish wrapper around the existing event broker that respects
+    TRACE_MODE without touching any pipeline or business logic.
 
-    Modes
-    -----
-    full     — emit everything (default for DEBUG=True)
-    sampled  — emit 1-in-N per link, but always emit failures
-    minimal  — emit only terminal/failure events (production default)
-    off      — emit nothing
+    Modes:
+        full: emit everything (default for DEBUG=True).
+        sampled: emit 1-in-N per link, but always emit failures.
+        minimal: emit only terminal/failure events (production default).
+        off: emit nothing.
     """
 
-    def __init__(self, event_broker, mode: str = "full", sample_rate: float = 0.1):
+    def __init__(self, event_broker, mode: TraceMode = "full", sample_rate: float = 0.1):
         self._broker = event_broker
         self.mode = mode
         self.sample_rate = max(0.0001, min(1.0, sample_rate))
         self._counter = 0
 
-    # ------------------------------------------------------------------
     async def emit(self, event: Any) -> None:
         if self.mode == "off":
             return
 
         event_name = type(event).__name__
 
-        # Failures always pass through
+        # Failures always pass through.
         is_critical = any(event_name.endswith(s) for s in _FORCE_EMIT_SUFFIXES)
 
         if self.mode == "minimal":
@@ -54,16 +52,15 @@ class TraceEmitter:
                 if self._counter % step != 0:
                     return
 
-        # "full" always falls through
+        # "full" always falls through.
         await self._broker.emit(event)
 
-    # ------------------------------------------------------------------
     @classmethod
     def from_env(cls, event_broker) -> "TraceEmitter":
-        """
-        Construct from environment variables.
-        TRACE_MODE = full | sampled | minimal | off   (default: full)
-        TRACE_SAMPLE_RATE = 0.0–1.0                   (default: 0.1)
+        """Construct from environment variables.
+
+        Reads TRACE_MODE (full | sampled | minimal | off; default "full")
+        and TRACE_SAMPLE_RATE (0.0-1.0; default 0.1).
         """
         mode = os.getenv("TRACE_MODE", "full").lower()
         rate = float(os.getenv("TRACE_SAMPLE_RATE", "0.1"))
