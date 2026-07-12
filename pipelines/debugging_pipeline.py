@@ -1,91 +1,108 @@
 import asyncio
+import os
 from datetime import datetime
 from urllib.parse import unquote
-import os
-
-from infrastructure import LogWriter
 
 from events import (
-    # REQUESTS
+    # Requests
     RequestStartedEvent,
     RequestResponseReceivedEvent,
     RequestFailedEvent,
 
-    # PROCESSING / EXTRACTION
+    # Extraction
     ExtractionStartedEvent,
     LinkExtractionCompletedEvent,
     ItemExtractionCompletedEvent,
     ProcessingExtractionFailedEvent,
 
-    # FILTERING
+    # Filtering
     FilteringInputSnapshotEvent,
     LinkFilteringCompletedEvent,
     ItemFilteringCompletedEvent,
     FilteringPipelineErrorEvent,
 
-    # SCORING
+    # Scoring
     ScoringStartedEvent,
     ScoringCompletedEvent,
     ScoringFailedEvent,
-    EmptyScoreResults,
+    EmptyScoreResultsEvent,
     NoLinksToScoreEvent,
 
-    # PRIORITY
+    # Priority
     PriorityCalculationStartedEvent,
     PriorityCalculatedEvent,
     PriorityCalculationFailedEvent,
 
-    # TRANSFORMATION
+    # Transformation
     TransformationStartedEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
 
-    # STORAGE
+    # Storage
     NodeContentSetEvent,
 
-    # EXPORT
+    # Export
     ExportBatchFailedEvent,
     ExportBatchStartedEvent,
     ExportRowFailedEvent,
 
-    # RETRY
+    # Retry
     RetryOperationFailedEvent,
 )
+from infrastructure import LogWriter
 
-# ── TRACE EVENTS ──────────────────────────────────────────────────────────────
-from traceability.nlp_trace_events import (
-    NLP_InputReceived,
-    NLP_FeaturesExtracted,
-    NLP_SimilarityScored,
-    NLP_VectorComposed,
-    NLP_ScoreEmitted,
+# Trace events
+from traceability.expansion_trace_events import (
+    EXP_CandidatePruned,
+    EXP_CandidateScored,
+    EXP_PromptBuilt,
+    EXP_SeedsGenerated,
+    EXP_SpaceBootstrapped,
+    EXP_Triggered,
 )
 from traceability.llm_trace_events import (
     LLM_PromptBuilt,
     LLM_RequestDispatched,
-    LLM_ResponseReceived,
-    LLM_ResponseParsed,
     LLM_RequestFailed,
+    LLM_ResponseParsed,
+    LLM_ResponseReceived,
 )
 from traceability.network_trace_events import (
     NET_RequestCreated,
     NET_RequestDispatched,
-    NET_ResponseReceived,
     NET_RequestFailed,
+    NET_ResponseReceived,
     NET_RetryAttempted,
 )
-from traceability.expansion_trace_events import (
-    EXP_Triggered,
-    EXP_PromptBuilt,
-    EXP_SeedsGenerated,
-    EXP_CandidateScored,
-    EXP_CandidatePruned,
-    EXP_SpaceBootstrapped,
+from traceability.nlp_trace_events import (
+    NLP_FeaturesExtracted,
+    NLP_InputReceived,
+    NLP_ScoreEmitted,
+    NLP_SimilarityScored,
+    NLP_VectorComposed,
 )
 
 
 class DebuggingPipeline:
-    def __init__(self, event_broker, crawl_id, enabled=True, max_queue_size=0, max_concurrency=2):
+    """Renders every business and trace event into a dense one-line
+    ``[TAG] STATUS field=value ...`` log entry, written to a per-crawl
+    debug file. This is the granular, high-volume counterpart to
+    pipelines.logging_pipeline's narrative crawl log; see
+    traceability.emitter.TraceEmitter for how trace-event volume is
+    controlled (TRACE_MODE).
+
+    A no-op entirely when `enabled` is False, so it can be always-wired
+    in Crawler without any cost in production.
+    """
+
+    def __init__(
+        self,
+        event_broker,
+        crawl_id,
+        enabled: bool = True,
+        max_queue_size: int = 0,
+        max_concurrency: int = 2,
+    ):
         self.event_broker = event_broker
         self.enabled = enabled
 
@@ -100,73 +117,73 @@ class DebuggingPipeline:
         self.workers = []
 
         self.handlers = {
-            # REQUESTS
+            # Requests
             RequestStartedEvent: self._request_started,
             RequestResponseReceivedEvent: self._response_received,
             RequestFailedEvent: self._request_failed,
 
-            # EXTRACTION
+            # Extraction
             ExtractionStartedEvent: self._extraction_started,
             LinkExtractionCompletedEvent: self._links_extracted,
             ItemExtractionCompletedEvent: self._items_extracted,
             ProcessingExtractionFailedEvent: self._extraction_failed,
 
-            # FILTERING
+            # Filtering
             FilteringInputSnapshotEvent: self._filter_input,
             LinkFilteringCompletedEvent: self._link_filter,
             ItemFilteringCompletedEvent: self._item_filter,
             FilteringPipelineErrorEvent: self._filter_failed,
 
-            # TRANSFORMATION
+            # Transformation
             TransformationStartedEvent: self._transformation_started,
             TransformationCompletedEvent: self._transformation_done,
             TransformationFailedEvent: self._transformation_failed,
 
-            # SCORING
+            # Scoring
             ScoringStartedEvent: self._scoring_started,
             ScoringCompletedEvent: self._scoring_done,
             ScoringFailedEvent: self._scoring_failed,
-            EmptyScoreResults: self._empty_score,
+            EmptyScoreResultsEvent: self._empty_score,
             NoLinksToScoreEvent: self._no_links_to_score,
 
-            # STORAGE
+            # Storage
             NodeContentSetEvent: self._content_set,
 
-            # PRIORITY
+            # Priority
             PriorityCalculationStartedEvent: self._priority_started,
             PriorityCalculatedEvent: self._priority_done,
             PriorityCalculationFailedEvent: self._priority_failed,
 
-            # EXPORT
+            # Export
             ExportRowFailedEvent: self._export_row_failed,
             ExportBatchFailedEvent: self._export_failed_event,
             ExportBatchStartedEvent: self._export_batch_started,
 
-            # RETRY
+            # Retry
             RetryOperationFailedEvent: self._retry_failed,
 
-            # ── NLP TRACE ─────────────────────────────────────────────────────
+            # NLP trace
             NLP_InputReceived: self._nlp_input_received,
             NLP_FeaturesExtracted: self._nlp_features_extracted,
             NLP_SimilarityScored: self._nlp_similarity_scored,
             NLP_VectorComposed: self._nlp_vector_composed,
             NLP_ScoreEmitted: self._nlp_score_emitted,
 
-            # ── LLM TRACE ─────────────────────────────────────────────────────
+            # LLM trace
             LLM_PromptBuilt: self._llm_prompt_built,
             LLM_RequestDispatched: self._llm_request_dispatched,
             LLM_ResponseReceived: self._llm_response_received,
             LLM_ResponseParsed: self._llm_response_parsed,
             LLM_RequestFailed: self._llm_request_failed,
 
-            # ── NETWORK TRACE ─────────────────────────────────────────────────
+            # Network trace
             NET_RequestCreated: self._net_request_created,
             NET_RequestDispatched: self._net_request_dispatched,
             NET_ResponseReceived: self._net_response_received,
             NET_RequestFailed: self._net_request_failed,
             NET_RetryAttempted: self._net_retry_attempted,
 
-            # ── EXPANSION TRACE ───────────────────────────────────────────────
+            # Expansion trace
             EXP_Triggered: self._exp_triggered,
             EXP_PromptBuilt: self._exp_prompt_built,
             EXP_SeedsGenerated: self._exp_seeds_generated,
@@ -175,17 +192,17 @@ class DebuggingPipeline:
             EXP_SpaceBootstrapped: self._exp_space_bootstrapped,
         }
 
-    # =====================================================
+    # =========================================================
     # ENTRY
-    # =====================================================
-    async def put(self, event):
+    # =========================================================
+    async def put(self, event) -> None:
         if self.enabled:
             await self.queue.put(event)
 
-    # =====================================================
+    # =========================================================
     # START
-    # =====================================================
-    async def start(self):
+    # =========================================================
+    async def start(self) -> None:
         if not self.enabled:
             return
 
@@ -198,11 +215,11 @@ class DebuggingPipeline:
 
         await asyncio.gather(*self.workers)
 
-    # =====================================================
+    # =========================================================
     # WORKER
-    # =====================================================
-    async def worker(self, worker_id):
-        while self.queue and self.event_broker.running:
+    # =========================================================
+    async def worker(self, worker_id: int) -> None:
+        while self.event_broker.running:
             event = await self.queue.get()
 
             try:
@@ -219,26 +236,27 @@ class DebuggingPipeline:
             finally:
                 self.queue.task_done()
 
-    # =====================================================
+    # =========================================================
     # HELPERS
-    # =====================================================
-    def _prefix(self, w):
+    # =========================================================
+    def _prefix(self, w: int) -> str:
         now = datetime.now()
         t = now.strftime("%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
         return f"[{t}][DW{w}]"
 
-    def _clean(self, url):
+    def _clean(self, url: str) -> str:
         return unquote(url)
 
-    def _truncate(self, s, n=120):
+    def _truncate(self, s: str, n: int = 120) -> str:
         return s[:n] + "…" if len(s) > n else s
 
-    def _tid(self, e):
+    def _tid(self, e) -> str:
+        """First 8 chars of the event's trace_id, or "" if it has none."""
         return getattr(e, "trace_id", "")[:8]
 
-    # =====================================================
-    # EXISTING HANDLERS (unchanged)
-    # =====================================================
+    # =========================================================
+    # REQUEST / EXTRACTION / FILTERING / TRANSFORMATION HANDLERS
+    # =========================================================
     def _request_started(self, e, w):
         return f"{self._prefix(w)} [REQ] START {self._clean(e.url)}"
 
@@ -261,13 +279,22 @@ class DebuggingPipeline:
         return f"{self._prefix(w)} [EXTRACT] FAILED {e.error_message}"
 
     def _filter_input(self, e, w):
-        return f"{self._prefix(w)} [FILTER] INPUT links={e.raw_links_count} items={e.raw_items_count}"
+        return (
+            f"{self._prefix(w)} [FILTER] INPUT "
+            f"links={e.raw_links_count} items={e.raw_items_count}"
+        )
 
     def _link_filter(self, e, w):
-        return f"{self._prefix(w)} [FILTER] LINKS kept={len(e.accepted)} rejected={e.rejected_count}"
+        return (
+            f"{self._prefix(w)} [FILTER] LINKS "
+            f"kept={len(e.accepted)} rejected={e.rejected_count}"
+        )
 
     def _item_filter(self, e, w):
-        return f"{self._prefix(w)} [FILTER] ITEMS kept={len(e.accepted)} rejected={e.rejected_count}"
+        return (
+            f"{self._prefix(w)} [FILTER] ITEMS "
+            f"kept={len(e.accepted)} rejected={e.rejected_count}"
+        )
 
     def _filter_failed(self, e, w):
         return f"{self._prefix(w)} [FILTER] FAILED stage={e.stage} error={e.error_message}"
@@ -291,7 +318,7 @@ class DebuggingPipeline:
         return f"{self._prefix(w)} [SCORING] FAILED {e.error_message}"
 
     def _content_set(self, e, w):
-        return f"{self._prefix(w)} [STORAGE] CONTENT SET node={e.correlation_id}"
+        return f"{self._prefix(w)} [STORAGE] CONTENT_SET node={e.correlation_id}"
 
     def _priority_started(self, e, w):
         return f"{self._prefix(w)} [PRIORITY] START node={e.node_id}"
@@ -338,9 +365,9 @@ class DebuggingPipeline:
     def _no_links_to_score(self, e, w):
         return f"{self._prefix(w)} [SCORING] NO_LINKS node={e.node.get_id()}"
 
-    # =====================================================
+    # =========================================================
     # NLP TRACE HANDLERS
-    # =====================================================
+    # =========================================================
 
     def _nlp_input_received(self, e, w):
         return (
@@ -388,9 +415,9 @@ class DebuggingPipeline:
             f"space_v={e.space_version}"
         )
 
-    # =====================================================
+    # =========================================================
     # LLM TRACE HANDLERS
-    # =====================================================
+    # =========================================================
 
     def _llm_prompt_built(self, e, w):
         return (
@@ -434,9 +461,9 @@ class DebuggingPipeline:
             f"error={e.error_type}: {self._truncate(e.error_message)}"
         )
 
-    # =====================================================
+    # =========================================================
     # NETWORK TRACE HANDLERS
-    # =====================================================
+    # =========================================================
 
     def _net_request_created(self, e, w):
         return (
@@ -481,9 +508,9 @@ class DebuggingPipeline:
             f"attempt={e.attempt} reason={e.reason}"
         )
 
-    # =====================================================
+    # =========================================================
     # EXPANSION TRACE HANDLERS
-    # =====================================================
+    # =========================================================
 
     def _exp_triggered(self, e, w):
         return (
