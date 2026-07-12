@@ -1,35 +1,38 @@
 import time
 import uuid
+from typing import TYPE_CHECKING
 
-from traceability.trace_context import get_trace
-from traceability.llm_trace_events import (
+from .llm_trace_events import (
     LLM_PromptBuilt,
     LLM_RequestDispatched,
-    LLM_ResponseReceived,
-    LLM_ResponseParsed,
     LLM_RequestFailed,
+    LLM_ResponseParsed,
+    LLM_ResponseReceived,
 )
+from .trace_context import get_trace
+
+if TYPE_CHECKING:
+    from infrastructure import LlmHandler
+
+    from .emitter import TraceEmitter
 
 
 class TracedLlmHandler:
-    """
-    Drop-in wrapper around LlmHandler.
-    Emits LLM_* trace events without modifying any translator or network logic.
+    """Drop-in wrapper around LlmHandler that emits LLM_* trace events
+    without modifying any translator or network logic.
 
-    Usage in crawler.py
-    -------------------
-    from traceability.traced_llm_handler import TracedLlmHandler
-
-    traced_llm = TracedLlmHandler(LlmHandler(key_manager), tracer)
-    # pass traced_llm wherever llm_handler is used
+    Example:
+        traced_llm = TracedLlmHandler(LlmHandler(key_manager), tracer)
+        # pass traced_llm wherever llm_handler is used
     """
 
-    def __init__(self, inner, tracer):
+    def __init__(self, inner: "LlmHandler", tracer: "TraceEmitter"):
         self._inner = inner
         self._tracer = tracer
 
-    # Proxy attribute access so downstream code that inspects the handler still works
     def __getattr__(self, name):
+        # Proxy attribute access so downstream code that inspects the
+        # handler directly (rather than through this wrapper) still works.
         return getattr(self._inner, name)
 
     async def send(self, context) -> dict:
@@ -96,9 +99,3 @@ class TracedLlmHandler:
                 error_message=str(exc),
             ))
             raise
-
-    @classmethod
-    def register_translator(cls, name: str, translator_cls) -> None:
-        """Proxy class-level method so existing call sites keep working."""
-        from infrastructure import LlmHandler
-        LlmHandler.register_translator(name, translator_cls)
