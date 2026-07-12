@@ -1,17 +1,24 @@
 import asyncio
-from utils import hash_item
+
 from events import (
     ContentExtractedEvent,
     ContentFilteredEvent,
     FilteringEnqueuedEvent,
     FilteringInputSnapshotEvent,
     FilteringPipelineErrorEvent,
-    FilteringWorkerCycleStartedEvent
+    FilteringWorkerCycleStartedEvent,
 )
+from utils import hash_item
 
 
 class FilteringPipeline:
-    def __init__(self, event_broker, storage, max_concurrency=10, max_queue_size=0):
+    """Drops links and items already seen elsewhere in the crawl.
+
+    Deduplication is storage-backed (Storage.link_seen / item_seen), so
+    it holds across the whole crawl graph, not just within one node.
+    """
+
+    def __init__(self, event_broker, storage, max_concurrency: int = 10, max_queue_size: int = 0):
         self.event_broker = event_broker
         self.storage = storage
 
@@ -19,25 +26,24 @@ class FilteringPipeline:
         self.max_concurrency = max_concurrency
         self.workers = []
 
-    # =====================================================
+    # =========================================================
     # ENTRY POINT
-    # =====================================================
-    async def put(self, event: ContentExtractedEvent):
+    # =========================================================
+    async def put(self, event: ContentExtractedEvent) -> None:
         await self.event_broker.emit(
             FilteringEnqueuedEvent(
                 correlation_id=event.correlation_id,
-                node_id=event.node.get_id(),
-                queue_size=self.queue.qsize()
+                node_id=str(event.node.get_id()),
+                queue_size=self.queue.qsize(),
             )
         )
         await self.queue.put(event)
 
-    # =====================================================
+    # =========================================================
     # WORKER LOOP
-    # =====================================================
-    async def worker(self, worker_id: int):
+    # =========================================================
+    async def worker(self, worker_id: int) -> None:
         while self.event_broker.running:
-
             event = await self.queue.get()
 
             try:
@@ -45,44 +51,34 @@ class FilteringPipeline:
 
                 await self.event_broker.emit(
                     FilteringWorkerCycleStartedEvent(
-                        worker_id=worker_id,
                         correlation_id=event.correlation_id,
-                        node_id=node.get_id()
+                        worker_id=worker_id,
+                        node_id=str(node.get_id()),
                     )
                 )
 
-                # -----------------------------
-                # SNAPSHOT
-                # -----------------------------
+                # Snapshot
                 await self.event_broker.emit(
                     FilteringInputSnapshotEvent(
-                        correlation_id=node.get_id(),
+                        correlation_id=str(node.get_id()),
                         raw_links_count=len(event.links),
                         raw_items_count=len(event.items),
                     )
                 )
 
-                # -----------------------------
-                # LINK FILTERING
-                # -----------------------------
+                # Link filtering
                 links_result = self._filter_links(event.links, node)
 
-                # -----------------------------
-                # ITEM FILTERING
-                # -----------------------------
-                
+                # Item filtering
                 items_result = self._filter_items(event.items, node)
-                # -----------------------------
-                # OUTPUT
-                # -----------------------------
+
+                # Output
                 await self.event_broker.emit(
                     ContentFilteredEvent(
-                        correlation_id=node.get_id(),
+                        correlation_id=str(node.get_id()),
                         node=node,
-
                         links=links_result["accepted"],
                         items=items_result["accepted"],
-
                         rejected_links_count=links_result["rejected_count"],
                         rejected_items_count=items_result["rejected_count"],
                         accepted_links_count=len(links_result["accepted"]),
@@ -104,10 +100,10 @@ class FilteringPipeline:
             finally:
                 self.queue.task_done()
 
-    # =====================================================
+    # =========================================================
     # LINK FILTERING
-    # =====================================================
-    def _filter_links(self, links, node):
+    # =========================================================
+    def _filter_links(self, links, node) -> dict:
         accepted = []
         rejected_count = 0
 
@@ -120,28 +116,24 @@ class FilteringPipeline:
 
         return {
             "accepted": accepted,
-            "rejected_count": rejected_count
+            "rejected_count": rejected_count,
         }
 
-    # =====================================================
+    # =========================================================
     # ITEM FILTERING
-    # =====================================================
-    def _filter_items(self, items, node):
+    # =========================================================
+    def _filter_items(self, items, node) -> dict:
         accepted = []
         rejected_count = 0
         for item in items:
-            
-        
-
-            # supports both:
-            # - raw dict (old)
-            # - (item, hash) tuple (new pipeline)
+            # Items arrive either as a plain dict, or as an (item, hash)
+            # tuple when the extractor has already computed the hash.
             if isinstance(item, tuple):
                 raw_item, item_hash = item
             else:
                 raw_item = item
                 item_hash = hash_item(raw_item)
-            
+
             if self.storage.item_seen(item_hash):
                 rejected_count += 1
                 continue
@@ -149,13 +141,13 @@ class FilteringPipeline:
             accepted.append((raw_item, item_hash))
         return {
             "accepted": accepted,
-            "rejected_count": rejected_count
+            "rejected_count": rejected_count,
         }
 
-    # =====================================================
+    # =========================================================
     # START
-    # =====================================================
-    async def start(self):
+    # =========================================================
+    async def start(self) -> None:
         self.workers = [
             asyncio.create_task(self.worker(i))
             for i in range(self.max_concurrency)
