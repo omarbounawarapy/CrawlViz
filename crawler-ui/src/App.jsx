@@ -12,12 +12,12 @@ import EventTimeline from "./components/timeline/EventTimeline";
 import MetricsPanel from "./components/metrics/MetricsPanel";
 import NodeDetailsPanel from "./components/graph/NodeDetailsPanel";
 
-import TemplateManager from "./pages/TemplateManager";
+import BlueprintManager from "./pages/BlueprintManager";
 import RunScreen from "./pages/RunScreen";
 import ValidationView from "./pages/ValidationView";
 
 const theme = getTheme();
-const shell = theme.colors.shell;
+const shell = theme.shell;
 
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
 
@@ -117,8 +117,8 @@ export default function App() {
     elapsed_seconds: metrics?.elapsed_seconds ?? 0,
   };
 
-  // full-page routes (templates, run, validation)
-  const isFullPage = ["/templates", "/run", "/validation"].includes(route);
+  // full-page routes (blueprints, run, validation)
+  const isFullPage = ["/blueprints", "/run", "/validation"].includes(route);
 
   if (isFullPage) {
     return (
@@ -148,17 +148,25 @@ export default function App() {
           >
             <Logo />
             <div style={{ display: "flex", gap: 2 }}>
-              <NavBtn label="Graph"      active={false}                   onClick={() => navigate("/")} />
-              <NavBtn label="Run"        active={route === "/run"}         onClick={() => navigate("/run")} />
-              <NavBtn label="Templates"  active={route === "/templates"}   onClick={() => navigate("/templates")} />
-              <NavBtn label="Validation" active={route === "/validation"}  onClick={() => navigate("/validation")} />
+              <NavBtn label="Graph" active={false} onClick={() => navigate("/")} />
+              <NavBtn label="Run" active={route === "/run"} onClick={() => navigate("/run")} />
+              <NavBtn
+                label="Blueprints"
+                active={route === "/blueprints"}
+                onClick={() => navigate("/blueprints")}
+              />
+              <NavBtn
+                label="Validation"
+                active={route === "/validation"}
+                onClick={() => navigate("/validation")}
+              />
             </div>
           </div>
 
           {/* Page */}
           <div style={{ overflow: "hidden" }}>
-            {route === "/templates"  && <TemplateManager />}
-            {route === "/run"        && <RunScreen onNavigate={navigate} />}
+            {route === "/blueprints" && <BlueprintManager />}
+            {route === "/run" && <RunScreen onNavigate={navigate} />}
             {route === "/validation" && <ValidationView />}
           </div>
         </div>
@@ -224,8 +232,8 @@ export default function App() {
 
             <div style={{ width: 1, background: shell.border, margin: "8px 6px" }} />
 
-            <NavBtn label="Run"        active={false} onClick={() => navigate("/run")} />
-            <NavBtn label="Templates"  active={false} onClick={() => navigate("/templates")} />
+            <NavBtn label="Run" active={false} onClick={() => navigate("/run")} />
+            <NavBtn label="Blueprints" active={false} onClick={() => navigate("/blueprints")} />
             <NavBtn label="Validation" active={false} onClick={() => navigate("/validation")} />
           </div>
         </div>
