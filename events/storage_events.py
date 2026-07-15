@@ -76,7 +76,7 @@ class NodeAddedEvent:
 @dataclass
 class StorageOperationFailedEvent:
     correlation_id: str | None
-    stage: Literal["WORKER", "NODE_CREATION", "ITEM_STORAGE", "LINK_STORAGE"]
+    stage: Literal["WORKER"]
     error_type: str
     error_message: str
 

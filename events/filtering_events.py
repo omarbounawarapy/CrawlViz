@@ -80,6 +80,6 @@ class ContentFilteredEvent:
 class FilteringPipelineErrorEvent:
     correlation_id: str | None
     node: Any
-    stage: Literal["WORKER", "LINK_FILTER", "ITEM_FILTER", "EMISSION"]
+    stage: Literal["WORKER_EXECUTION"]
     error_type: str
     error_message: str
