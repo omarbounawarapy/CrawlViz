@@ -33,7 +33,7 @@ from config import (
 from events import (
     ContentExtractedEvent,
     ContentFilteredEvent,
-    EmptyScoreResults,
+    EmptyScoreResultsEvent,
     ExportBatchCompletedEvent,
     ExportBatchFailedEvent,
     ExportBatchStartedEvent,
@@ -294,7 +294,7 @@ class Crawler:
                 ExportBatchStartedEvent,
                 ExportRowFailedEvent,
                 RetryOperationFailedEvent,
-                EmptyScoreResults,
+                EmptyScoreResultsEvent,
                 NoLinksToScoreEvent,
                 NodeContentSetEvent,
                 # trace events routed into the same debug pipeline
