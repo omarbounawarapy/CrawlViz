@@ -8,6 +8,7 @@ from infrastructure import LlmHandler
 from models import ExpansionContext
 from nlp import (
     BaseEmbeddingEngine,
+    BufferManager,
     ExpansionPromptBuilder,
     FeatureExtractor,
     SpaceStore,
@@ -46,8 +47,17 @@ class NLPService:
         - Provide space-level signals for the scoring pipeline.
         - Accept batch updates from the space updater (never real-time).
 
-    The space is stable during a crawl session. Only flush_buffer()
-    mutates the space, and it must be called explicitly.
+    The space is stable during a crawl session: link scoring only *reads*
+    it. Growth happens out of band, via ``update_space()`` (called once
+    per scored node from ``ScoringPipeline``) encoding each link's LLM
+    expansions and forwarding them to the shared ``BufferManager``.
+    ``SpaceUpdater`` (see ``nlp/space_updater.py``) periodically drains
+    that buffer and commits the vectors into ``self.space``, so the space
+    itself never mutates on the hot scoring path.
+
+    If no ``buffer_manager`` is wired in (e.g. standalone/test usage),
+    ``update_space()`` falls back to an internal buffer that a caller can
+    flush explicitly with ``flush_buffer()``.
 
     Args:
         blueprint_id: Identifies this blueprint's persisted semantic space.
@@ -59,6 +69,9 @@ class NLPService:
         model_name: Passed through to the embedding backend.
         store_base_dir: Root directory for persisted spaces.
         tracer: Optional TraceEmitter; when None, tracing is a no-op.
+        buffer_manager: The live crawl's BufferManager (drained by
+            SpaceUpdater). When provided, ``update_space()`` forwards
+            encoded expansions there instead of buffering locally.
     """
 
     def __init__(
@@ -71,6 +84,7 @@ class NLPService:
         model_name: str = "all-MiniLM-L6-v2",
         store_base_dir: str = ".space_store",
         tracer: "TraceEmitter | None" = None,
+        buffer_manager: "BufferManager | None" = None,
     ):
         self.blueprint_id = blueprint_id
         self.target_topic = target_topic
@@ -89,7 +103,8 @@ class NLPService:
         self.expansion_config = expansion_config
         self.llm_type = expansion_config["llm_type"]
         self.model_information = expansion_config["llm_model"]
-        # Update buffer: list of (key, vector, metadata).
+        self.buffer_manager = buffer_manager
+        # Local fallback buffer, only used when no buffer_manager is wired in.
         self._buffer: list[tuple[str, np.ndarray, dict]] = []
         self._tracer = tracer
 
@@ -350,19 +365,46 @@ class NLPService:
     # SPACE UPDATES (BATCH ONLY -- SPACE REMAINS STABLE UNTIL FLUSH)
     # =========================================================
 
-    def update_space(self, scoring_results: list) -> None:
+    async def update_space(self, scoring_results: list) -> None:
+        """Encode each scored link's LLM expansions and forward them for
+        eventual inclusion in the semantic space.
+
+        Called once per scored node from ``ScoringPipeline`` right after
+        the LLM scoring call returns. When a ``buffer_manager`` was wired
+        in at construction (the live crawl path), vectors go there and
+        ``SpaceUpdater`` commits them on its own schedule. Otherwise they
+        accumulate in a local buffer that must be flushed explicitly via
+        ``flush_buffer()``.
+        """
+        items: list[tuple[str, np.ndarray, dict]] = []
         for link in scoring_results:
             expansions = getattr(link, "expansions", []) or []
             for i, sentence in enumerate(expansions):
                 vec = self.engine.encode(sentence)
-                self._buffer.append((
+                items.append((
                     f"{link.url}::exp::{i}",
                     vec,
                     {"type": "expansion", "source_url": link.url, "text": sentence},
                 ))
-        logger.debug("Buffer has %d pending vectors", len(self._buffer))
+
+        if not items:
+            return
+
+        if self.buffer_manager is not None:
+            await self.buffer_manager.add_batch(items)
+            logger.debug("Forwarded %d expansion vectors to buffer manager", len(items))
+        else:
+            self._buffer.extend(items)
+            logger.debug("Buffer has %d pending vectors (local fallback)", len(self._buffer))
 
     def flush_buffer(self) -> None:
+        """Flush the local fallback buffer directly into the space.
+
+        Only relevant when this NLPService was constructed without a
+        ``buffer_manager`` (e.g. standalone/test usage) -- in the live
+        crawl path, SpaceUpdater drains buffer_manager instead and this
+        local buffer stays empty.
+        """
         if not self._buffer:
             return
         self.space.add_batch(self._buffer)
