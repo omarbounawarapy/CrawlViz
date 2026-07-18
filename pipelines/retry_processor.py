@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from events import (
     EmptyScoreResultsEvent,
@@ -7,15 +8,39 @@ from events import (
     ScoreRescheduledEvent,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class RetryProcessor:
-    """Reacts to soft scoring failures by demoting and rescheduling the
-    affected node, rather than dropping it from the crawl outright.
+    """Reacts to soft scoring failures and page-fetch failures by
+    demoting and rescheduling the affected node, rather than dropping it
+    from the crawl outright.
+
+    Args:
+        storage: Shared crawl Storage.
+        event_broker: The crawl's EventBroker.
+        requests_pipeline: The live RequestsPipeline instance. Required for
+            RequestFailedEvent handling to actually retry -- without it,
+            failures are logged but the node is not requeued.
+        max_request_retries: How many times a single node may be requeued
+            after a page-fetch failure before it's given up on.
     """
 
-    def __init__(self, storage, event_broker, max_queue_size: int = 0, max_concurrency: int = 1):
+    def __init__(
+        self,
+        storage,
+        event_broker,
+        requests_pipeline=None,
+        max_queue_size: int = 0,
+        max_concurrency: int = 1,
+        max_request_retries: int = 3,
+    ):
         self.event_broker = event_broker
         self.storage = storage
+        self.requests_pipeline = requests_pipeline
+        self.max_request_retries = max_request_retries
+        # Per-node retry attempt counter, keyed by node id.
+        self._retry_counts: dict[int, int] = {}
 
         self.queue = asyncio.Queue(maxsize=max_queue_size)
         self.max_concurrency = max_concurrency
@@ -82,7 +107,37 @@ class RetryProcessor:
         )
 
     async def _on_request_failed(self, event: RequestFailedEvent) -> None:
-        # Request failures are already captured for observability via
-        # RequestFailedEvent (see pipelines.debugging_pipeline); no active
-        # retry is triggered here yet.
-        pass
+        """Requeue a node whose page fetch failed, up to `max_request_retries`.
+
+        Requeues directly onto RequestsPipeline's own queue (bypassing the
+        broker) rather than re-emitting NodeAddedEvent, since NodeAddedEvent
+        also fans out to ScoringPipeline/StoppingPipeline/etc., which would
+        incorrectly treat a network retry as a brand-new node.
+        """
+        node = event.node
+        node_id = node.get_id()
+        attempts = self._retry_counts.get(node_id, 0) + 1
+        self._retry_counts[node_id] = attempts
+
+        if attempts > self.max_request_retries:
+            logger.warning(
+                "Node %s exceeded max retries (%d) after %s: %s -- giving up",
+                node_id, self.max_request_retries, event.error_type, event.error_message,
+            )
+            return
+
+        if self.requests_pipeline is None:
+            logger.warning(
+                "RequestFailedEvent for node %s but RetryProcessor has no "
+                "requests_pipeline wired in -- cannot retry (%s: %s)",
+                node_id, event.error_type, event.error_message,
+            )
+            return
+
+        node.decrease_priority(2)
+        logger.info(
+            "Retrying node %s (attempt %d/%d) after %s: %s",
+            node_id, attempts, self.max_request_retries,
+            event.error_type, event.error_message,
+        )
+        await self.requests_pipeline.queue.put(node)
