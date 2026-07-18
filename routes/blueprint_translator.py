@@ -20,6 +20,9 @@ import json
 import os
 from typing import Any
 
+from config import DEFAULT_PRIORITY_STRATEGY
+from priority.strategy import STRATEGY_REGISTRY
+
 # =========================================================
 # STRICT ENUMERATIONS
 # =========================================================
@@ -34,6 +37,12 @@ ALLOWED_STRATEGIES: frozenset[str] = frozenset(
         "UNCERTAINTY_BIASED",
     }
 )
+
+# Priority strategy (blueprint key: stop_conditions.priority_strategy) --
+# sourced directly from the registry rather than duplicated here by hand,
+# so it can't silently drift out of sync the way ALLOWED_STRATEGIES above
+# still has to be (see priority/strategy.py).
+ALLOWED_PRIORITY_STRATEGIES: frozenset[str] = frozenset(STRATEGY_REGISTRY)
 
 ALLOWED_EXPORT_TYPES: frozenset[str] = frozenset({"text", "real", "int", "json"})
 
@@ -88,6 +97,14 @@ def _validate_strategy(strategy: str) -> None:
         raise BlueprintValidationError(
             f"Unknown strategy {strategy!r}. "
             f"Allowed: {sorted(ALLOWED_STRATEGIES)}"
+        )
+
+
+def _validate_priority_strategy(priority_strategy: str) -> None:
+    if priority_strategy not in ALLOWED_PRIORITY_STRATEGIES:
+        raise BlueprintValidationError(
+            f"Unknown priority_strategy {priority_strategy!r}. "
+            f"Allowed: {sorted(ALLOWED_PRIORITY_STRATEGIES)}"
         )
 
 
@@ -292,6 +309,11 @@ class BlueprintTranslator:
                 raise BlueprintValidationError(
                     f"stop_conditions is missing required key {sk!r}."
                 )
+        # priority_strategy is optional -- falls back to
+        # config.DEFAULT_PRIORITY_STRATEGY when omitted -- but if the
+        # user did supply one, it must be a real priority/strategy.py entry.
+        if "priority_strategy" in sc:
+            _validate_priority_strategy(sc["priority_strategy"])
 
     # =========================================================
     # STEP 2: EXTRACTION FIELD RESOLUTION
@@ -393,6 +415,9 @@ class BlueprintTranslator:
                 "max_duration": ui["stop_conditions"]["max_duration"],
                 "no_progress_timeout": ui["stop_conditions"]["no_progress_timeout"],
                 "stop_url": ui["stop_conditions"]["stop_url"],
+                "priority_strategy": ui["stop_conditions"].get(
+                    "priority_strategy", DEFAULT_PRIORITY_STRATEGY
+                ),
             },
         }
         return blueprint
@@ -409,6 +434,7 @@ class BlueprintTranslator:
         """
         # Re-validate strategy (belt-and-suspenders).
         _validate_strategy(blueprint["scoring"]["strategy"])
+        _validate_priority_strategy(blueprint["stop_conditions"]["priority_strategy"])
 
         # Validate every field in extraction.
         for field_name, field_def in blueprint["extraction"]["fields"].items():
