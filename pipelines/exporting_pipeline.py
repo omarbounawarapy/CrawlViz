@@ -189,7 +189,7 @@ class ExportingPipeline:
         fields = extraction_blueprint.get("fields", {})
         columns = ["id TEXT PRIMARY KEY", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
         for field_name, spec in fields.items():
-            store_type = spec.get("store", {}).get("type", "text")
+            store_type = spec.get("export_type", "text")
             sql_type = self._map_type(store_type)
             columns.append(f"{field_name} {sql_type}")
         sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
@@ -238,7 +238,7 @@ class ExportingPipeline:
         for field, value in item.items():
             if field not in fields:
                 continue
-            store_type = fields[field].get("store", {}).get("type", "text")
+            store_type = fields[field].get("export_type", "text")
             row[field] = self._cast(value, store_type, field)
 
         cols = ", ".join(row.keys())
@@ -256,7 +256,7 @@ class ExportingPipeline:
             if k not in fields:
                 continue
 
-            t = fields[k].get("store", {}).get("type", "text")
+            t = fields[k].get("export_type", "text")
             if t == "json" and isinstance(v, str):
                 # Best-effort: if it's already a JSON string, parse it so
                 # it round-trips as structured data rather than double-encoded text.
