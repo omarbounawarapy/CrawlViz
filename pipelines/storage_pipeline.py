@@ -50,9 +50,11 @@ class StoragePipeline:
     # ENTRY POINT
     # =========================================================
     async def put(self, event) -> None:
-        handler = self.handlers.get(type(event))
-        if handler:
-            await handler(event)
+        # Enqueue rather than dispatching inline, so `worker()` actually
+        # serializes handler calls through `max_concurrency` -- storage
+        # mutations like `Storage.next_id()` / `add_node()` rely on that
+        # serialization to stay consistent (see models/storage.py).
+        await self.queue.put(event)
 
     # =========================================================
     # WORKER LOOP
