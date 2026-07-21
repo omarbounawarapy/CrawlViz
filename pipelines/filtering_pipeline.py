@@ -10,8 +10,10 @@ from events import (
 )
 from utils import hash_item
 
+from .base_pipeline import BasePipeline
 
-class FilteringPipeline:
+
+class FilteringPipeline(BasePipeline):
     """Drops links and items already seen elsewhere in the crawl.
 
     Deduplication is storage-backed (Storage.link_seen / item_seen), so
@@ -19,12 +21,11 @@ class FilteringPipeline:
     """
 
     def __init__(self, event_broker, storage, max_concurrency: int = 10, max_queue_size: int = 0):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.storage = storage
 
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
     # =========================================================
     # ENTRY POINT
@@ -40,65 +41,59 @@ class FilteringPipeline:
         await self.queue.put(event)
 
     # =========================================================
-    # WORKER LOOP
+    # PROCESS ONE QUEUED EVENT
     # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            event = await self.queue.get()
+    async def _process(self, event: ContentExtractedEvent, worker_id: int) -> None:
+        try:
+            node = event.node
 
-            try:
-                node = event.node
-
-                await self.event_broker.emit(
-                    FilteringWorkerCycleStartedEvent(
-                        correlation_id=event.correlation_id,
-                        worker_id=worker_id,
-                        node_id=str(node.get_id()),
-                    )
+            await self.event_broker.emit(
+                FilteringWorkerCycleStartedEvent(
+                    correlation_id=event.correlation_id,
+                    worker_id=worker_id,
+                    node_id=str(node.get_id()),
                 )
+            )
 
-                # Snapshot
-                await self.event_broker.emit(
-                    FilteringInputSnapshotEvent(
-                        correlation_id=str(node.get_id()),
-                        raw_links_count=len(event.links),
-                        raw_items_count=len(event.items),
-                    )
+            # Snapshot
+            await self.event_broker.emit(
+                FilteringInputSnapshotEvent(
+                    correlation_id=str(node.get_id()),
+                    raw_links_count=len(event.links),
+                    raw_items_count=len(event.items),
                 )
+            )
 
-                # Link filtering
-                links_result = self._filter_links(event.links, node)
+            # Link filtering
+            links_result = self._filter_links(event.links, node)
 
-                # Item filtering
-                items_result = self._filter_items(event.items, node)
+            # Item filtering
+            items_result = self._filter_items(event.items, node)
 
-                # Output
-                await self.event_broker.emit(
-                    ContentFilteredEvent(
-                        correlation_id=str(node.get_id()),
-                        node=node,
-                        links=links_result["accepted"],
-                        items=items_result["accepted"],
-                        rejected_links_count=links_result["rejected_count"],
-                        rejected_items_count=items_result["rejected_count"],
-                        accepted_links_count=len(links_result["accepted"]),
-                        accepted_items_count=len(items_result["accepted"]),
-                    )
+            # Output
+            await self.event_broker.emit(
+                ContentFilteredEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    links=links_result["accepted"],
+                    items=items_result["accepted"],
+                    rejected_links_count=links_result["rejected_count"],
+                    rejected_items_count=items_result["rejected_count"],
+                    accepted_links_count=len(links_result["accepted"]),
+                    accepted_items_count=len(items_result["accepted"]),
                 )
+            )
 
-            except Exception as e:
-                await self.event_broker.emit(
-                    FilteringPipelineErrorEvent(
-                        correlation_id=getattr(event, "correlation_id", None),
-                        node=getattr(event, "node", None),
-                        stage="WORKER_EXECUTION",
-                        error_type=type(e).__name__,
-                        error_message=str(e),
-                    )
+        except Exception as e:
+            await self.event_broker.emit(
+                FilteringPipelineErrorEvent(
+                    correlation_id=getattr(event, "correlation_id", None),
+                    node=getattr(event, "node", None),
+                    stage="WORKER_EXECUTION",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
                 )
-
-            finally:
-                self.queue.task_done()
+            )
 
     # =========================================================
     # LINK FILTERING
@@ -143,13 +138,3 @@ class FilteringPipeline:
             "accepted": accepted,
             "rejected_count": rejected_count,
         }
-
-    # =========================================================
-    # START
-    # =========================================================
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
