@@ -8,10 +8,12 @@ from events import (
     ScoreRescheduledEvent,
 )
 
+from .base_pipeline import BasePipeline
+
 logger = logging.getLogger(__name__)
 
 
-class RetryProcessor:
+class RetryProcessor(BasePipeline):
     """Reacts to soft scoring failures and page-fetch failures by
     demoting and rescheduling the affected node, rather than dropping it
     from the crawl outright.
@@ -35,6 +37,7 @@ class RetryProcessor:
         max_concurrency: int = 1,
         max_request_retries: int = 3,
     ):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.storage = storage
         self.requests_pipeline = requests_pipeline
@@ -42,57 +45,27 @@ class RetryProcessor:
         # Per-node retry attempt counter, keyed by node id.
         self._retry_counts: dict[int, int] = {}
 
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         self.handlers = {
             RequestFailedEvent: self._on_request_failed,
             EmptyScoreResultsEvent: self._on_empty_score_results,
         }
 
-    # =========================================================
-    # START
-    # =========================================================
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
-
-    # =========================================================
-    # ENTRY POINT
-    # =========================================================
-    async def put(self, event) -> None:
-        handler = self.handlers.get(type(event))
-        if handler:
-            await handler(event)
-
-    # =========================================================
-    # WORKER LOOP
-    # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            event = await self.queue.get()
-
-            try:
-                handler = self.handlers.get(type(event))
-                if handler:
-                    await handler(event)
-
-            except Exception as e:
-                await self.event_broker.emit(
-                    RetryOperationFailedEvent(
-                        correlation_id=getattr(event, "correlation_id", None),
-                        stage="WORKER",
-                        error_type=type(e).__name__,
-                        error_message=str(e),
-                    )
+    async def _process(self, event, worker_id: int) -> None:
+        try:
+            handler = self.handlers.get(type(event))
+            if handler:
+                await handler(event)
+        except Exception as e:
+            await self.event_broker.emit(
+                RetryOperationFailedEvent(
+                    correlation_id=getattr(event, "correlation_id", None),
+                    stage="WORKER",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
                 )
-
-            finally:
-                self.queue.task_done()
+            )
 
     async def _on_empty_score_results(self, event: EmptyScoreResultsEvent) -> None:
         """Demote and reschedule a node whose links came back with no scores."""
