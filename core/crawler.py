@@ -258,6 +258,11 @@ class Crawler:
             retry_processor, [EmptyScoreResultsEvent, RequestFailedEvent]
         )
 
+        # SpaceUpdater's flush loop otherwise runs forever -- this is
+        # what lets it notice the crawl ended and actually stop (see
+        # nlp/space_updater.py's docstring).
+        self.event_broker.subscribe(space_updater, [StopCrawlEvent])
+
         self.event_broker.subscribe(
             logging_pipeline,
             [
