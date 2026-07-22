@@ -11,8 +11,10 @@ from events import (
 )
 from models import ItemExtractor, LinkExtractor
 
+from .base_pipeline import BasePipeline
 
-class ProcessingPipeline:
+
+class ProcessingPipeline(BasePipeline):
     """Extracts links and structured items from each fetched page's HTML."""
 
     def __init__(
@@ -22,28 +24,16 @@ class ProcessingPipeline:
         max_concurrency: int = 1,
         max_queue_size: int = 0,
     ):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
 
-        self.queue = asyncio.PriorityQueue(maxsize=max_queue_size)
-
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
 
         self.handlers = {
             PageFetchedEvent: self._on_page_fetched,
         }
         self.link_extractor = LinkExtractor()
         self.item_extractor = ItemExtractor(extraction_blueprint)
-
-    # =========================================================
-    # START
-    # =========================================================
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
 
     # =========================================================
     # ENTRY
@@ -66,62 +56,58 @@ class ProcessingPipeline:
         await self.queue.put((event.node, event.content))
 
     # =========================================================
-    # WORKER
+    # PROCESS ONE QUEUED (node, content) PAIR
     # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            node, content = await self.queue.get()
+    async def _process(self, item, worker_id: int) -> None:
+        node, content = item
 
-            try:
-                await self.event_broker.emit(
-                    ExtractionStartedEvent(
-                        correlation_id=str(node.get_id()),
-                        worker_id=worker_id,
-                        node_id=str(node.get_id()),
-                        content_size=len(content) if content else 0,
-                    )
+        try:
+            await self.event_broker.emit(
+                ExtractionStartedEvent(
+                    correlation_id=str(node.get_id()),
+                    worker_id=worker_id,
+                    node_id=str(node.get_id()),
+                    content_size=len(content) if content else 0,
                 )
+            )
 
-                # Link extraction
-                links = self.link_extractor.extract_links(content, node)
-                await self.event_broker.emit(
-                    LinkExtractionCompletedEvent(
-                        correlation_id=str(node.get_id()),
-                        node_id=str(node.get_id()),
-                        extracted_links_count=len(links),
-                    )
+            # Link extraction
+            links = self.link_extractor.extract_links(content, node)
+            await self.event_broker.emit(
+                LinkExtractionCompletedEvent(
+                    correlation_id=str(node.get_id()),
+                    node_id=str(node.get_id()),
+                    extracted_links_count=len(links),
                 )
+            )
 
-                # Item extraction
-                items = self.item_extractor.extract_items(content, node)
-                await self.event_broker.emit(
-                    ItemExtractionCompletedEvent(
-                        correlation_id=str(node.get_id()),
-                        node_id=str(node.get_id()),
-                        extracted_items_count=len(items),
-                    )
+            # Item extraction
+            items = self.item_extractor.extract_items(content, node)
+            await self.event_broker.emit(
+                ItemExtractionCompletedEvent(
+                    correlation_id=str(node.get_id()),
+                    node_id=str(node.get_id()),
+                    extracted_items_count=len(items),
                 )
+            )
 
-                # Final output
-                await self.event_broker.emit(
-                    ContentExtractedEvent(
-                        correlation_id=str(node.get_id()),
-                        node=node,
-                        links=links,
-                        items=items,
-                    )
+            # Final output
+            await self.event_broker.emit(
+                ContentExtractedEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    links=links,
+                    items=items,
                 )
+            )
 
-            except Exception as e:
-                await self.event_broker.emit(
-                    ProcessingExtractionFailedEvent(
-                        correlation_id=str(node.get_id()),
-                        node=node,
-                        stage="EXTRACTION",
-                        error_type=type(e).__name__,
-                        error_message=str(e),
-                    )
+        except Exception as e:
+            await self.event_broker.emit(
+                ProcessingExtractionFailedEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    stage="EXTRACTION",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
                 )
-
-            finally:
-                self.queue.task_done()
+            )

@@ -17,10 +17,12 @@ from events import (
     ScoringStartedEvent,
 )
 
+from .base_pipeline import BasePipeline
+
 logger = logging.getLogger(__name__)
 
 
-class ScoringPipeline:
+class ScoringPipeline(BasePipeline):
     """Runs the two-stage NLP -> LLM relevance cascade for a node's links.
 
     Every link gets a cheap NLP similarity score first (report section
@@ -42,6 +44,7 @@ class ScoringPipeline:
         max_queue_size=0,
         max_concurrency=1,
     ):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.scoring_service = scoring_service
         self.nlp_service = nlp_service
@@ -50,24 +53,12 @@ class ScoringPipeline:
         self.high_score_llm_fraction = high_score_llm_fraction
         self.low_score_sample_fraction = low_score_sample_fraction
         self.high_score_random_fraction = high_score_random_fraction
-        self.queue = asyncio.PriorityQueue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
 
         self.handlers = {
             NodeAddedEvent: self._on_node_added,
             ScoreRescheduledEvent: self._on_node_added,
         }
-
-    # =========================================================
-    # START
-    # =========================================================
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
 
     # =========================================================
     # ENTRY POINT
@@ -90,122 +81,112 @@ class ScoringPipeline:
         await self.queue.put(event.node)
 
     # =========================================================
-    # WORKER (FULL DECISION TRACE)
+    # PROCESS ONE QUEUED NODE (FULL DECISION TRACE)
     # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while True:
-            if not self.event_broker.running:
-                logger.debug("Scoring worker %s exiting: broker stopped", worker_id)
-                break
+    async def _process(self, node, worker_id: int) -> None:
+        try:
+            await node.ready
 
-            node = await self.queue.get()
+            # Input snapshot
+            await self.event_broker.emit(
+                ScoringInputSnapshotEvent(
+                    correlation_id=str(node.get_id()),
+                    node_id=str(node.get_id()),
+                    ready_state=True,
+                )
+            )
 
-            try:
-                await node.ready
+            links = node.get_links()
 
-                # Input snapshot
+            if not links:
                 await self.event_broker.emit(
-                    ScoringInputSnapshotEvent(
+                    NoLinksToScoreEvent(
                         correlation_id=str(node.get_id()),
+                        node=node,
+                    )
+                )
+            else:
+                await self.event_broker.emit(
+                    ScoringStartedEvent(
+                        correlation_id=str(node.get_id()),
+                        worker_id=worker_id,
                         node_id=str(node.get_id()),
-                        ready_state=True,
                     )
                 )
 
-                links = node.get_links()
+                # NLP scoring always runs first, on every link.
+                await self.nlp_service.score_links(
+                    links=links,
+                    parent=node,
+                )
 
-                if not links:
+                sampled, llm_skip, drop = self.bucket_links(links)
+                logger.debug(
+                    "Node %s: %d sampled, %d high-confidence, %d dropped",
+                    node.get_id(), len(sampled), len(llm_skip), len(drop),
+                )
+
+                await self.event_broker.emit(
+                    HighScoreLinksEvent(
+                        correlation_id=str(node.get_id()),
+                        node=node,
+                        links=llm_skip,
+                    )
+                )
+                await self.event_broker.emit(
+                    LowScoreLinksEvent(
+                        correlation_id=str(node.get_id()),
+                        node=node,
+                        links=drop,
+                    )
+                )
+
+                # Core scoring call (LLM, sampled links only).
+                if not sampled:
+                    scored_links = []
+                else:
+                    scored_links = await self.scoring_service.score_links(node, sampled)
+
+                if not scored_links:
                     await self.event_broker.emit(
-                        NoLinksToScoreEvent(
+                        EmptyScoreResultsEvent(
                             correlation_id=str(node.get_id()),
                             node=node,
                         )
                     )
                 else:
-                    await self.event_broker.emit(
-                        ScoringStartedEvent(
-                            correlation_id=str(node.get_id()),
-                            worker_id=worker_id,
-                            node_id=str(node.get_id()),
-                        )
-                    )
+                    # Forward any LLM-generated expansions into the
+                    # semantic space's update pipeline (see
+                    # NLPService.update_space / nlp/space_updater.py).
+                    await self.nlp_service.update_space(scored_links)
 
-                    # NLP scoring always runs first, on every link.
-                    await self.nlp_service.score_links(
-                        links=links,
-                        parent=node,
-                    )
-
-                    sampled, llm_skip, drop = self.bucket_links(links)
-                    logger.debug(
-                        "Node %s: %d sampled, %d high-confidence, %d dropped",
-                        node.get_id(), len(sampled), len(llm_skip), len(drop),
-                    )
-
-                    await self.event_broker.emit(
-                        HighScoreLinksEvent(
-                            correlation_id=str(node.get_id()),
-                            node=node,
-                            links=llm_skip,
-                        )
-                    )
-                    await self.event_broker.emit(
-                        LowScoreLinksEvent(
-                            correlation_id=str(node.get_id()),
-                            node=node,
-                            links=drop,
-                        )
-                    )
-
-                    # Core scoring call (LLM, sampled links only).
-                    if not sampled:
-                        scored_links = []
-                    else:
-                        scored_links = await self.scoring_service.score_links(node, sampled)
-
-                    if not scored_links:
-                        await self.event_broker.emit(
-                            EmptyScoreResultsEvent(
-                                correlation_id=str(node.get_id()),
-                                node=node,
-                            )
-                        )
-                    else:
-                        # Forward any LLM-generated expansions into the
-                        # semantic space's update pipeline (see
-                        # NLPService.update_space / nlp/space_updater.py).
-                        await self.nlp_service.update_space(scored_links)
-
-                    await self.event_broker.emit(
-                        ScoringCompletedEvent(
-                            correlation_id=str(node.get_id()),
-                            node=node,
-                            scored_links=scored_links,
-                            output_count=len(scored_links),
-                        )
-                    )
-
-                    await self.event_broker.emit(
-                        LinksScoredEvent(
-                            correlation_id=str(node.get_id()),
-                            node=node,
-                            scored_links=scored_links,
-                        )
-                    )
-
-            except Exception as e:
                 await self.event_broker.emit(
-                    ScoringFailedEvent(
+                    ScoringCompletedEvent(
                         correlation_id=str(node.get_id()),
                         node=node,
-                        stage="SCORING_SERVICE",
-                        error_type=type(e).__name__,
-                        error_message=str(e),
+                        scored_links=scored_links,
+                        output_count=len(scored_links),
                     )
                 )
 
-            finally:
-                self.queue.task_done()
+                await self.event_broker.emit(
+                    LinksScoredEvent(
+                        correlation_id=str(node.get_id()),
+                        node=node,
+                        scored_links=scored_links,
+                    )
+                )
+
+        except Exception as e:
+            await self.event_broker.emit(
+                ScoringFailedEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    stage="SCORING_SERVICE",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                )
+            )
 
     def bucket_links(self, links: list) -> tuple[list, list, list]:
         """Split scored links into low/mid/high NLP-confidence buckets,
