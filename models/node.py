@@ -76,6 +76,13 @@ class Node:
     # COMPARISON (PRIORITY QUEUE)
     # =========================================================
     def __lt__(self, other: "Node") -> bool:
+        if not isinstance(other, Node):
+            # Lets this participate correctly in heapq/PriorityQueue
+            # comparisons against non-Node sentinels (e.g. BasePipeline's
+            # shutdown sentinel) instead of crashing with an AttributeError
+            # on `other.priority` -- Python falls back to the other side's
+            # reflected comparison instead.
+            return NotImplemented
         return self.priority < other.priority
 
     # =========================================================
