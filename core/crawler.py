@@ -277,7 +277,7 @@ class Crawler:
             ],
         )
 
-        self.event_broker.subscribe(canon_pipeline, [PageFetchedEvent, StopCrawlEvent])
+        self.event_broker.subscribe(canon_pipeline, [PageFetchedEvent])
 
         self.event_broker.subscribe(
             debug_pipeline,
