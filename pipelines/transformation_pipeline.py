@@ -7,8 +7,10 @@ from events import (
     TransformationStartedEvent,
 )
 
+from .base_pipeline import BasePipeline
 
-class TransformationPipeline:
+
+class TransformationPipeline(BasePipeline):
     """Applies each field's configured transform chain to extracted items.
 
     Transform steps are declared per field in the blueprint's extraction
@@ -23,11 +25,10 @@ class TransformationPipeline:
         max_queue_size: int = 0,
         max_concurrency: int = 3,
     ):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.extraction_blueprint = extraction_blueprint
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         # Transform registry
         self.transforms = {
@@ -41,65 +42,42 @@ class TransformationPipeline:
         }
 
     # =========================================================
-    # ENTRY (BROKER COMPATIBLE)
+    # PROCESS ONE QUEUED EVENT
     # =========================================================
-    async def put(self, event) -> None:
-        await self.queue.put(event)
+    async def _process(self, event, worker_id: int) -> None:
+        node = event.node
 
-    # =========================================================
-    # START
-    # =========================================================
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-
-        await asyncio.gather(*self.workers)
-
-    # =========================================================
-    # WORKER
-    # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            event = await self.queue.get()
-
-            node = event.node
-
-            try:
-                await self.event_broker.emit(
-                    TransformationStartedEvent(
-                        correlation_id=str(node.get_id()),
-                        worker_id=worker_id,
-                        node_id=str(node.get_id()),
-                        items_count=len(event.items),
-                    )
+        try:
+            await self.event_broker.emit(
+                TransformationStartedEvent(
+                    correlation_id=str(node.get_id()),
+                    worker_id=worker_id,
+                    node_id=str(node.get_id()),
+                    items_count=len(event.items),
                 )
+            )
 
-                transformed_items = self._transform_items(event.items, node)
+            transformed_items = self._transform_items(event.items, node)
 
-                await self.event_broker.emit(
-                    TransformationCompletedEvent(
-                        correlation_id=str(node.get_id()),
-                        node=node,
-                        links=event.links,
-                        transformed_items=transformed_items,
-                        output_count=len(transformed_items),
-                    )
+            await self.event_broker.emit(
+                TransformationCompletedEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    links=event.links,
+                    transformed_items=transformed_items,
+                    output_count=len(transformed_items),
                 )
+            )
 
-            except Exception as e:
-                await self.event_broker.emit(
-                    TransformationFailedEvent(
-                        correlation_id=str(node.get_id()),
-                        node=node,
-                        error_type=type(e).__name__,
-                        error_message=str(e),
-                    )
+        except Exception as e:
+            await self.event_broker.emit(
+                TransformationFailedEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    error_type=type(e).__name__,
+                    error_message=str(e),
                 )
-
-            finally:
-                self.queue.task_done()
+            )
 
     # =========================================================
     # CORE TRANSFORM ENGINE
