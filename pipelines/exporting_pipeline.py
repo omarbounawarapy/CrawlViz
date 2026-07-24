@@ -9,6 +9,8 @@ from config import ITEMS_DB_PATH
 from events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
 from models import Node
 
+from .base_pipeline import SHUTDOWN
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,7 +73,19 @@ class ExportingPipeline:
         await self.queue.put(event)
 
     async def _on_stop_crawl(self, event: StopCrawlEvent) -> None:
-        self.running = False  # signal shutdown
+        await self.stop()
+
+    async def stop(self) -> None:
+        """Signal shutdown and wake the worker immediately.
+
+        Setting `self.running = False` alone isn't enough: the `while`
+        loop only re-checks it *after* `queue.get()` returns, so a
+        worker blocked on an empty queue (the normal state once the
+        crawl has stopped and no more TransformationCompletedEvents are
+        coming) would otherwise never wake up to notice.
+        """
+        self.running = False
+        await self.queue.put(SHUTDOWN)
 
     # =========================================================
     # START
@@ -88,6 +102,9 @@ class ExportingPipeline:
             event = await self.queue.get()
 
             try:
+                if event is SHUTDOWN:
+                    break
+
                 node = event.node
                 extraction_blueprint = self.extraction_blueprint
                 table = self._get_table_name(node)
