@@ -390,7 +390,18 @@ class Crawler:
             ui_gateway.start(),
             space_updater.start(),
         ]
-        await asyncio.gather(*tasks)
+        try:
+            await asyncio.gather(*tasks)
+        finally:
+            # Two separate aiohttp.ClientSessions get opened for this
+            # crawl -- requests_pipeline.network_client (page fetches)
+            # and traced_network (LLM calls) -- and neither was ever
+            # explicitly closed, which leaks connectors and logs
+            # "Unclosed client session" warnings on any server that runs
+            # more than one crawl per process lifetime. `finally` so this
+            # still runs if a pipeline task raises.
+            await requests_pipeline.network_client.close()
+            await traced_network.close()
 
 
 if __name__ == "__main__":
