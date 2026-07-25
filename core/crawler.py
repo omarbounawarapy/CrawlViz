@@ -155,16 +155,54 @@ class Crawler:
             self.template_file,
         ).bootstrap()
 
+        self._load_blueprint_config(blueprint)
+
+        tracer, traced_network, traced_llm = self._setup_traceability()
+
+        nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
+            traced_llm, tracer
+        )
+
+        pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service)
+        self._wire_subscriptions(pipelines, space_updater)
+        ui_gateway = self._build_ui_layer(pipelines)
+
+        tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
+        try:
+            await asyncio.gather(*tasks)
+        finally:
+            # Two separate aiohttp.ClientSessions get opened for this
+            # crawl -- requests_pipeline.network_client (page fetches)
+            # and traced_network (LLM calls) -- and neither was ever
+            # explicitly closed, which leaks connectors and logs
+            # "Unclosed client session" warnings on any server that runs
+            # more than one crawl per process lifetime. `finally` so this
+            # still runs if a pipeline task raises.
+            await pipelines["requests"].network_client.close()
+            await traced_network.close()
+
+    # =========================================================
+    # COMPOSITION STEPS
+    # =========================================================
+    # Split out of what used to be one ~250-line start() method so each
+    # piece of the wiring can be read (and, eventually, tested) on its
+    # own. Behavior is unchanged -- this is a pure decomposition.
+
+    def _load_blueprint_config(self, blueprint: dict) -> None:
+        """Unpack the blueprint into the attributes the rest of this
+        class (and StoppingPipeline, which reads several of these
+        directly off `self`) expects.
+        """
         self.blueprint = blueprint
         self.blueprint_id = blueprint.get("blueprint_id")
         self.extraction_blueprint = blueprint.get("extraction")
 
-        stop_conditions = blueprint.get("stop_conditions")
-        self.max_nodes = stop_conditions["max_nodes"]
-        self.max_depth = stop_conditions["max_depth"]
-        self.max_duration = stop_conditions["max_duration"]
-        self.no_progress_timeout = stop_conditions["no_progress_timeout"]
-        self.target_url = stop_conditions["stop_url"]
+        self.stop_conditions = blueprint.get("stop_conditions")
+        self.max_nodes = self.stop_conditions["max_nodes"]
+        self.max_depth = self.stop_conditions["max_depth"]
+        self.max_duration = self.stop_conditions["max_duration"]
+        self.no_progress_timeout = self.stop_conditions["no_progress_timeout"]
+        self.target_url = self.stop_conditions["stop_url"]
 
         self.scoring_config = blueprint.get("scoring")
         self.scoring_strategy = self.scoring_config.get("strategy")
@@ -172,26 +210,38 @@ class Crawler:
         self.scoring_type = self.scoring_params.get("scoring_type")
         self.model_information = self.scoring_params.get("model_information")
 
-        # ── Traceability ─────────────────────────────────────────────
-        # TraceEmitter reads TRACE_MODE / TRACE_SAMPLE_RATE from env
-        # (defaults: mode="full", sample_rate=0.1).
+        self.target_topic = blueprint.get("target_topic")
+        self.expansion_config = blueprint.get("expansion")
+
+    def _setup_traceability(self) -> tuple[TraceEmitter, TracedNetworkClient, TracedLlmHandler]:
+        """TraceEmitter reads TRACE_MODE / TRACE_SAMPLE_RATE from env
+        (defaults: mode="full", sample_rate=0.1). Everything downstream
+        (NetworkClient, LlmHandler) gets wrapped in traced variants so
+        every request/response also emits a fine-grained trace event
+        (see traceability/emitter.py).
+        """
         tracer = TraceEmitter.from_env(self.event_broker)
         traced_network = TracedNetworkClient(NetworkClient(), tracer)
         traced_llm = TracedLlmHandler(
             LlmHandler(self.key_manager, client=traced_network), tracer
         )
+        return tracer, traced_network, traced_llm
 
-        # ── NLP subsystem ────────────────────────────────────────────
-        self.target_topic = blueprint.get("target_topic")
-        expansion_config = blueprint.get("expansion")
-
+    async def _build_nlp_subsystem(
+        self, traced_llm: TracedLlmHandler, tracer: TraceEmitter
+    ) -> tuple[NLPService, SpaceUpdater, ScoringService]:
+        """Builds the semantic space (NLPService/BufferManager/
+        SpaceUpdater) and the LLM scoring service. `_load_blueprint_config`
+        must have run first (reads self.target_topic, self.blueprint_id,
+        self.expansion_config, self.scoring_*).
+        """
         logger.info("Starting NLP service for crawl %s", self.crawl_id)
         buffer_manager = BufferManager(max_size=BUFFER_MAX_SIZE)
         nlp_service = NLPService(
             blueprint_id=self.blueprint_id,
             target_topic=self.target_topic,
             llm_handler=traced_llm,
-            expansion_config=expansion_config,
+            expansion_config=self.expansion_config,
             embedding_backend=EMBEDDING_BACKEND,
             model_name=EMBEDDING_MODEL,
             store_base_dir=SPACE_STORE_DIR,
@@ -215,10 +265,23 @@ class Crawler:
             self.model_information,
         )
 
-        # ── Pipelines ────────────────────────────────────────────────
-        processing_pipeline = ProcessingPipeline(self.event_broker, self.extraction_blueprint)
-        requests_pipeline = RequestsPipeline(self.event_broker)
-        scoring_pipeline = ScoringPipeline(
+        return nlp_service, space_updater, scoring_service
+
+    def _build_pipelines(
+        self, blueprint: dict, nlp_service: NLPService, scoring_service: ScoringService
+    ) -> dict:
+        """Construct every pipeline.
+
+        Returns a name -> instance dict rather than ~14 separate local
+        variables, since both `_wire_subscriptions` and `_collect_tasks`
+        need to look most of them up individually, and a dict makes that
+        an explicit, greppable key rather than relying on closure scope.
+        """
+        p: dict = {}
+
+        p["processing"] = ProcessingPipeline(self.event_broker, self.extraction_blueprint)
+        p["requests"] = RequestsPipeline(self.event_broker)
+        p["scoring"] = ScoringPipeline(
             scoring_service,
             nlp_service,
             self.event_broker,
@@ -228,43 +291,54 @@ class Crawler:
             low_score_sample_fraction=LOW_SCORE_SAMPLE_FRACTION,
             high_score_random_fraction=HIGH_SCORE_RANDOM_FRACTION,
         )
-        storage_pipeline = StoragePipeline(self.storage, self.event_broker)
-        filtering_pipeline = FilteringPipeline(self.event_broker, self.storage)
-        priority_pipeline = PriorityPipeline(
+        p["storage"] = StoragePipeline(self.storage, self.event_broker)
+        p["filtering"] = FilteringPipeline(self.event_broker, self.storage)
+        p["priority"] = PriorityPipeline(
             self.storage,
             self.event_broker,
-            strategy_name=stop_conditions.get("priority_strategy", DEFAULT_PRIORITY_STRATEGY),
+            strategy_name=self.stop_conditions.get(
+                "priority_strategy", DEFAULT_PRIORITY_STRATEGY
+            ),
         )
-        logging_pipeline = LoggingPipeline(self.event_broker, self.crawl_id)
-        stopping_pipeline = StoppingPipeline(self)
-        debug_pipeline = DebuggingPipeline(self.event_broker, self.crawl_id, enabled=DEBUG)
-        transformation_pipeline = TransformationPipeline(self.event_broker, self.extraction_blueprint)
-        exporting_pipeline = ExportingPipeline(
+        p["logging"] = LoggingPipeline(self.event_broker, self.crawl_id)
+        p["stopping"] = StoppingPipeline(self)
+        p["debug"] = DebuggingPipeline(self.event_broker, self.crawl_id, enabled=DEBUG)
+        p["transformation"] = TransformationPipeline(self.event_broker, self.extraction_blueprint)
+        p["exporting"] = ExportingPipeline(
             self.crawl_id,
             self.blueprint_id,
             blueprint,
             self.event_broker,
             batch_size=EXPORT_BATCH_SIZE,
         )
-        canon_pipeline = CanonicalizationPipeline(
+        p["canon"] = CanonicalizationPipeline(
             self.crawl_id, self.event_broker, export_path=EXPORT_PATH
         )
-        retry_processor = RetryProcessor(
-            self.storage, self.event_broker, requests_pipeline=requests_pipeline
+        p["retry"] = RetryProcessor(
+            self.storage, self.event_broker, requests_pipeline=p["requests"]
         )
 
-        # ── Subscriptions ────────────────────────────────────────────
-        self.event_broker.subscribe(
-            retry_processor, [EmptyScoreResultsEvent, RequestFailedEvent]
-        )
+        return p
+
+    def _wire_subscriptions(self, p: dict, space_updater: SpaceUpdater) -> None:
+        """All EventBroker.subscribe() calls in one place -- this is the
+        "who reacts to what" map for the whole crawl. Adding a new
+        pipeline means adding both a `_build_pipelines` entry and a
+        subscription here; nothing currently enforces both halves get
+        done (see the engineering audit's note on this being the root
+        cause of two bugs already found and fixed this session).
+        """
+        b = self.event_broker
+
+        b.subscribe(p["retry"], [EmptyScoreResultsEvent, RequestFailedEvent])
 
         # SpaceUpdater's flush loop otherwise runs forever -- this is
         # what lets it notice the crawl ended and actually stop (see
         # nlp/space_updater.py's docstring).
-        self.event_broker.subscribe(space_updater, [StopCrawlEvent])
+        b.subscribe(space_updater, [StopCrawlEvent])
 
-        self.event_broker.subscribe(
-            logging_pipeline,
+        b.subscribe(
+            p["logging"],
             [
                 NodeAddedEvent,
                 PageFetchedEvent,
@@ -278,10 +352,10 @@ class Crawler:
             ],
         )
 
-        self.event_broker.subscribe(canon_pipeline, [PageFetchedEvent])
+        b.subscribe(p["canon"], [PageFetchedEvent])
 
-        self.event_broker.subscribe(
-            debug_pipeline,
+        b.subscribe(
+            p["debug"],
             [
                 RequestStartedEvent,
                 RequestResponseReceivedEvent,
@@ -333,27 +407,23 @@ class Crawler:
             ],
         )
 
-        self.event_broker.subscribe(processing_pipeline, [PageFetchedEvent])
-        self.event_broker.subscribe(requests_pipeline, [NodeAddedEvent])
-        self.event_broker.subscribe(
-            scoring_pipeline, [NodeAddedEvent, ScoreRescheduledEvent]
-        )
-        self.event_broker.subscribe(filtering_pipeline, [ContentExtractedEvent])
-        self.event_broker.subscribe(priority_pipeline, [LinksScoredEvent])
-        self.event_broker.subscribe(transformation_pipeline, [ContentFilteredEvent])
-        self.event_broker.subscribe(
-            storage_pipeline,
+        b.subscribe(p["processing"], [PageFetchedEvent])
+        b.subscribe(p["requests"], [NodeAddedEvent])
+        b.subscribe(p["scoring"], [NodeAddedEvent, ScoreRescheduledEvent])
+        b.subscribe(p["filtering"], [ContentExtractedEvent])
+        b.subscribe(p["priority"], [LinksScoredEvent])
+        b.subscribe(p["transformation"], [ContentFilteredEvent])
+        b.subscribe(
+            p["storage"],
             [PriorityCalculatedEvent, TransformationCompletedEvent, PageFetchedEvent],
         )
-        self.event_broker.subscribe(
-            exporting_pipeline, [TransformationCompletedEvent, StopCrawlEvent]
-        )
-        self.event_broker.subscribe(
-            stopping_pipeline,
+        b.subscribe(p["exporting"], [TransformationCompletedEvent, StopCrawlEvent])
+        b.subscribe(
+            p["stopping"],
             [NodeAddedEvent, StorageNodeUpdatedEvent, StopCrawlEvent],
         )
 
-        # ── UI layer ─────────────────────────────────────────────────
+    def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:
         snapshot = CrawlStateSnapshot()
         ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=8765)
         ui_translator = UIEventTranslator(snapshot, ui_gateway)
@@ -371,37 +441,29 @@ class Crawler:
                 StopCrawlEvent,
             ],
         )
+        return ui_gateway
 
-        tasks = [
+    def _collect_tasks(
+        self, p: dict, space_updater: SpaceUpdater, ui_gateway: UIWebSocketGateway
+    ) -> list:
+        return [
             self.event_broker.start(),
-            logging_pipeline.start(),
-            requests_pipeline.start(),
-            processing_pipeline.start(),
-            filtering_pipeline.start(),
-            scoring_pipeline.start(),
-            priority_pipeline.start(),
-            storage_pipeline.start(),
-            debug_pipeline.start(),
-            stopping_pipeline.start(),
-            transformation_pipeline.start(),
-            exporting_pipeline.start(),
-            canon_pipeline.start(),
-            retry_processor.start(),
+            p["logging"].start(),
+            p["requests"].start(),
+            p["processing"].start(),
+            p["filtering"].start(),
+            p["scoring"].start(),
+            p["priority"].start(),
+            p["storage"].start(),
+            p["debug"].start(),
+            p["stopping"].start(),
+            p["transformation"].start(),
+            p["exporting"].start(),
+            p["canon"].start(),
+            p["retry"].start(),
             ui_gateway.start(),
             space_updater.start(),
         ]
-        try:
-            await asyncio.gather(*tasks)
-        finally:
-            # Two separate aiohttp.ClientSessions get opened for this
-            # crawl -- requests_pipeline.network_client (page fetches)
-            # and traced_network (LLM calls) -- and neither was ever
-            # explicitly closed, which leaks connectors and logs
-            # "Unclosed client session" warnings on any server that runs
-            # more than one crawl per process lifetime. `finally` so this
-            # still runs if a pipeline task raises.
-            await requests_pipeline.network_client.close()
-            await traced_network.close()
 
 
 if __name__ == "__main__":
