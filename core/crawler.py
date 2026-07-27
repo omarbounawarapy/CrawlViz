@@ -186,6 +186,7 @@ class Crawler:
         expansion_config = blueprint.get("expansion")
 
         logger.info("Starting NLP service for crawl %s", self.crawl_id)
+        buffer_manager = BufferManager(max_size=BUFFER_MAX_SIZE)
         nlp_service = NLPService(
             blueprint_id=self.blueprint_id,
             target_topic=self.target_topic,
@@ -195,10 +196,10 @@ class Crawler:
             model_name=EMBEDDING_MODEL,
             store_base_dir=SPACE_STORE_DIR,
             tracer=tracer,
+            buffer_manager=buffer_manager,
         )
         await nlp_service.start()
 
-        buffer_manager = BufferManager(max_size=BUFFER_MAX_SIZE)
         space_updater = SpaceUpdater(
             nlp_service=nlp_service,
             buffer_manager=buffer_manager,

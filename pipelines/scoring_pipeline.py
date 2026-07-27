@@ -170,6 +170,11 @@ class ScoringPipeline:
                                 node=node,
                             )
                         )
+                    else:
+                        # Forward any LLM-generated expansions into the
+                        # semantic space's update pipeline (see
+                        # NLPService.update_space / nlp/space_updater.py).
+                        await self.nlp_service.update_space(scored_links)
 
                     await self.event_broker.emit(
                         ScoringCompletedEvent(
