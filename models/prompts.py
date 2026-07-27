@@ -19,8 +19,18 @@ No explanation outside JSON.
 """.strip()
 
 # =========================================================
-# SCORING STRATEGIES (SOFT BIAS ONLY)
+# LLM SCORING STRATEGIES (SOFT BIAS ONLY)
 # =========================================================
+# NOT to be confused with the *priority* strategies in
+# priority/strategy.py ("aggressive" / "balanced" / "exploration").
+# These STRATEGIES bias the wording of the prompt sent to the scoring
+# LLM (blueprint key: scoring.strategy); priority strategies are pure
+# functions that rank the frontier queue using scores this LLM call
+# already produced (blueprint key: stop_conditions.priority_strategy).
+# The two are independent knobs and may be set to unrelated values
+# (e.g. scoring.strategy="EXPLORATION" with priority_strategy="aggressive"
+# is a perfectly normal combination).
+#
 # Kept in sync by hand with ALLOWED_STRATEGIES in
 # routes/blueprint_translator.py -- see that module's docstring.
 

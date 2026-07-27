@@ -15,6 +15,16 @@ Inputs available on every node:
     node.get_depth()         int          depth in the crawl tree
 
 All weights are explicit. No branching. No LLM calls. No embeddings.
+
+NOT to be confused with the LLM *scoring* strategies in
+models/prompts.py (TOPICAL / PATHFINDING / EXPLORATION / GOAL_ORIENTED /
+DENSITY_FOCUSED / UNCERTAINTY_BIASED, blueprint key: scoring.strategy),
+which bias how the scoring LLM's prompt is worded. This module's three
+strategies (blueprint key: stop_conditions.priority_strategy) instead
+rank the frontier queue using scores the LLM call already produced --
+they never talk to an LLM themselves. Note in particular that this
+module's "exploration" and the LLM strategy "EXPLORATION" are different
+concepts that happen to share a name.
 """
 
 from collections.abc import Callable
