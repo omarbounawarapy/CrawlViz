@@ -249,10 +249,14 @@ class Crawler:
         canon_pipeline = CanonicalizationPipeline(
             self.crawl_id, self.event_broker, export_path=EXPORT_PATH
         )
-        retry_processor = RetryProcessor(self.storage, self.event_broker)
+        retry_processor = RetryProcessor(
+            self.storage, self.event_broker, requests_pipeline=requests_pipeline
+        )
 
         # ── Subscriptions ────────────────────────────────────────────
-        self.event_broker.subscribe(retry_processor, [EmptyScoreResults])
+        self.event_broker.subscribe(
+            retry_processor, [EmptyScoreResultsEvent, RequestFailedEvent]
+        )
 
         self.event_broker.subscribe(
             logging_pipeline,
