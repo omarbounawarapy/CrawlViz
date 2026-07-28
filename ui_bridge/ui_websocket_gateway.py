@@ -101,7 +101,7 @@ class UIWebSocketGateway:
             log.info("Client disconnected — active=%d", len(self._clients))
 
     # ------------------------------------------------------------------
-    # Broadcast  (called by UIEventTranslator only)
+    # Broadcast  (called by TelemetryBridge only)
     # ------------------------------------------------------------------
 
     async def broadcast(self, message: dict) -> None:
