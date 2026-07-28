@@ -15,6 +15,7 @@ from config import CORS_ORIGINS
 from routes.templates import router as templates_router
 from routes.run import router as run_router
 from routes.validation import router as validation_router
+from routes.config import router as config_router
 
 app = FastAPI(title="CrawlViz Control API")
 
@@ -28,3 +29,4 @@ app.add_middleware(
 app.include_router(templates_router)
 app.include_router(run_router)
 app.include_router(validation_router)
+app.include_router(config_router)
