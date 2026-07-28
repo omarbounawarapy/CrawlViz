@@ -39,14 +39,17 @@ from events import (
     ExportBatchStartedEvent,
     ExportRowFailedEvent,
     ExtractionStartedEvent,
+    FilteringEnqueuedEvent,
     FilteringInputSnapshotEvent,
     FilteringPipelineErrorEvent,
+    FilteringWorkerCycleStartedEvent,
     HighScoreLinksEvent,
     ItemExtractionCompletedEvent,
     ItemFilteringCompletedEvent,
     LinkExtractionCompletedEvent,
     LinkFilteringCompletedEvent,
     LinksScoredEvent,
+    LowScoreLinksEvent,
     NodeAddedEvent,
     NodeContentSetEvent,
     NoLinksToScoreEvent,
@@ -55,16 +58,19 @@ from events import (
     PriorityCalculationFailedEvent,
     PriorityCalculationStartedEvent,
     ProcessingExtractionFailedEvent,
+    RequestEnqueuedEvent,
     RequestFailedEvent,
     RequestResponseReceivedEvent,
     RequestStartedEvent,
     RetryOperationFailedEvent,
     ScoreRescheduledEvent,
     ScoringCompletedEvent,
+    ScoringEnqueuedEvent,
     ScoringFailedEvent,
     ScoringStartedEvent,
     StopCrawlEvent,
     StorageNodeUpdatedEvent,
+    StorageOperationFailedEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
     TransformationStartedEvent,
@@ -88,7 +94,7 @@ from pipelines import (
     TransformationPipeline,
 )
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, UIEventTranslator, UIWebSocketGateway
+from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
@@ -442,14 +448,33 @@ class Crawler:
         )
 
     def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:
+        """Wire TelemetryBridge -- see docs/V2_ARCHITECTURE.md §B.2.1.
+
+        V1's UIEventTranslator subscribed to 7 event types. This subscribes
+        to everything TelemetryBridge knows how to translate: the original
+        7 (unchanged behavior) plus every pipeline stage's start/complete/
+        fail events, the scoring cascade's two candidate-decision events,
+        and every previously-orphaned failure event. This is the single
+        change that unlocks Pipeline Monitor, candidate/frontier visibility,
+        the Node Inspector's scoring breakdown, and crawl-wide error
+        visibility -- none of it required new backend instrumentation, only
+        a wider subscription list and a bigger translator.
+        """
         snapshot = CrawlStateSnapshot()
         ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=8765)
-        ui_translator = UIEventTranslator(snapshot, ui_gateway)
-        ui_translator.register_handlers()
+        telemetry = TelemetryBridge(
+            snapshot,
+            ui_gateway,
+            priority_strategy_name=self.stop_conditions.get(
+                "priority_strategy", DEFAULT_PRIORITY_STRATEGY
+            ),
+        )
+        telemetry.register_handlers()
 
         self.event_broker.subscribe(
-            ui_translator,
+            telemetry,
             [
+                # V1 node lifecycle (unchanged)
                 NodeAddedEvent,
                 PageFetchedEvent,
                 ContentFilteredEvent,
@@ -457,6 +482,41 @@ class Crawler:
                 PriorityCalculatedEvent,
                 StorageNodeUpdatedEvent,
                 StopCrawlEvent,
+                # V2: request stage
+                RequestEnqueuedEvent,
+                RequestStartedEvent,
+                RequestResponseReceivedEvent,
+                RequestFailedEvent,
+                # V2: extraction stage
+                ExtractionStartedEvent,
+                LinkExtractionCompletedEvent,
+                ProcessingExtractionFailedEvent,
+                # V2: filtering stage
+                FilteringEnqueuedEvent,
+                FilteringWorkerCycleStartedEvent,
+                FilteringPipelineErrorEvent,
+                # V2: scoring stage + cascade candidate visibility
+                ScoringEnqueuedEvent,
+                ScoringStartedEvent,
+                ScoringCompletedEvent,
+                ScoringFailedEvent,
+                HighScoreLinksEvent,
+                LowScoreLinksEvent,
+                # V2: priority stage
+                PriorityCalculationStartedEvent,
+                PriorityCalculationFailedEvent,
+                # V2: transformation stage
+                TransformationStartedEvent,
+                TransformationCompletedEvent,
+                TransformationFailedEvent,
+                # V2: export stage
+                ExportBatchStartedEvent,
+                ExportBatchCompletedEvent,
+                ExportBatchFailedEvent,
+                ExportRowFailedEvent,
+                # V2: crawl-wide errors
+                StorageOperationFailedEvent,
+                RetryOperationFailedEvent,
             ],
         )
         return ui_gateway
