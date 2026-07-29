@@ -15,20 +15,21 @@ from events import (
 )
 from models import Node
 
+from .base_pipeline import BasePipeline
 
-class StoragePipeline:
+
+class StoragePipeline(BasePipeline):
     """Persists the crawl graph: creates child nodes from calculated
     priorities, and writes transformed items/links/content back onto
     their node once each stage completes.
     """
 
     def __init__(self, storage, event_broker, max_queue_size: int = 0, max_concurrency: int = 1):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.storage = storage
 
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         self.handlers = {
             PageFetchedEvent: self._on_page_fetched,
@@ -37,49 +38,23 @@ class StoragePipeline:
         }
 
     # =========================================================
-    # START
+    # PROCESS ONE QUEUED EVENT
     # =========================================================
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
+    async def _process(self, event, worker_id: int) -> None:
+        try:
+            handler = self.handlers.get(type(event))
+            if handler:
+                await handler(event)
 
-    # =========================================================
-    # ENTRY POINT
-    # =========================================================
-    async def put(self, event) -> None:
-        # Enqueue rather than dispatching inline, so `worker()` actually
-        # serializes handler calls through `max_concurrency` -- storage
-        # mutations like `Storage.next_id()` / `add_node()` rely on that
-        # serialization to stay consistent (see models/storage.py).
-        await self.queue.put(event)
-
-    # =========================================================
-    # WORKER LOOP
-    # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            event = await self.queue.get()
-
-            try:
-                handler = self.handlers.get(type(event))
-                if handler:
-                    await handler(event)
-
-            except Exception as e:
-                await self.event_broker.emit(
-                    StorageOperationFailedEvent(
-                        correlation_id=getattr(event, "correlation_id", None),
-                        stage="WORKER",
-                        error_type=type(e).__name__,
-                        error_message=str(e),
-                    )
+        except Exception as e:
+            await self.event_broker.emit(
+                StorageOperationFailedEvent(
+                    correlation_id=getattr(event, "correlation_id", None),
+                    stage="WORKER",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
                 )
-
-            finally:
-                self.queue.task_done()
+            )
 
     # =========================================================
     # PRIORITY -> NODE CREATION
