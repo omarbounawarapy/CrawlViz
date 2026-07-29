@@ -2,6 +2,8 @@ import asyncio
 import logging
 from typing import TYPE_CHECKING
 
+from events import StopCrawlEvent
+
 from .buffer_manager import BufferManager
 
 if TYPE_CHECKING:
@@ -19,11 +21,21 @@ class SpaceUpdater:
 
     NEVER called in the hot scoring path.
 
-    Flushing is purely interval-driven: every `flush_interval` seconds,
-    whatever is in the buffer gets committed. `flush_threshold` is not
-    currently used to trigger an *earlier* flush -- doing that would
-    need the buffer to wake this loop on insert rather than relying on
-    a fixed sleep, which is a bigger change than this pass makes.
+    Flushing is interval-driven: every `flush_interval` seconds, whatever
+    is in the buffer gets committed. `flush_threshold` is not currently
+    used to trigger an *earlier* flush -- doing that would need the
+    buffer to wake this loop on insert rather than relying on a fixed
+    wait, which is a bigger change than this pass makes.
+
+    Shutdown: this loop waits on an ``asyncio.Event`` (with the interval
+    as a timeout) rather than a plain ``asyncio.sleep``, so ``stop()``
+    wakes it immediately instead of waiting out the rest of the current
+    interval. Subscribing this object to ``StopCrawlEvent`` on the
+    ``EventBroker`` (it implements ``put()`` for exactly this) is what
+    actually triggers that -- previously nothing ever called ``stop()``,
+    so this task ran forever and ``Crawler.start()``'s
+    ``asyncio.gather(...)`` never returned even after a crawl reached its
+    own stop conditions.
 
     Space remains stable between flushes -- this is intentional.
     """
@@ -41,26 +53,64 @@ class SpaceUpdater:
         self.flush_threshold = flush_threshold
         self._running = False
         self._flush_count = 0
+        self._stop_event = asyncio.Event()
+
+        # Lets this be subscribed directly to the EventBroker like a
+        # pipeline, so it reacts to StopCrawlEvent the same way anything
+        # else does, rather than needing bespoke wiring in core.Crawler.
+        self.handlers = {
+            StopCrawlEvent: self._on_stop_crawl,
+        }
 
     # =========================================================
     # LIFECYCLE
     # =========================================================
 
     async def start(self) -> None:
-        """Main loop -- runs until stopped."""
+        """Main loop -- runs until stop() is called (directly, or via a
+        subscribed StopCrawlEvent).
+        """
         self._running = True
         logger.info(
             "SpaceUpdater started (interval=%ss, threshold=%d)",
             self.flush_interval, self.flush_threshold,
         )
 
-        while self._running:
-            await asyncio.sleep(self.flush_interval)
+        while not self._stop_event.is_set():
+            try:
+                await asyncio.wait_for(
+                    self._stop_event.wait(), timeout=self.flush_interval
+                )
+            except asyncio.TimeoutError:
+                pass  # normal case: interval elapsed, no stop requested
+
+            if self._stop_event.is_set():
+                break
+
             await self._maybe_flush()
 
-    def stop(self) -> None:
+        # Don't drop whatever's still buffered when the crawl ends.
+        await self.force_flush()
         self._running = False
         logger.info("SpaceUpdater stopped")
+
+    def stop(self) -> None:
+        """Request an immediate, graceful stop.
+
+        Safe to call multiple times or before start() has run.
+        """
+        self._stop_event.set()
+
+    async def put(self, event) -> None:
+        """EventBroker entry point -- lets this be subscribed directly
+        to StopCrawlEvent instead of needing a bespoke shutdown path.
+        """
+        handler = self.handlers.get(type(event))
+        if handler:
+            await handler(event)
+
+    async def _on_stop_crawl(self, event: StopCrawlEvent) -> None:
+        self.stop()
 
     # =========================================================
     # FLUSH LOGIC
