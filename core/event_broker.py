@@ -84,4 +84,25 @@ class EventBroker:
     async def _shutdown(self) -> None:
         if self.active_tasks:
             await asyncio.gather(*self.active_tasks, return_exceptions=True)
+
+        # Every registered pipeline gets told to stop here, not just the
+        # ones individually subscribed to StopCrawlEvent for their own
+        # cleanup logic. Before this, a pipeline sitting on an empty
+        # queue when the crawl ended had no guaranteed way to notice and
+        # exit its worker loop -- which meant Crawler.start()'s
+        # asyncio.gather(*tasks) could hang indefinitely even after the
+        # crawl had genuinely finished.
+        for consumer in self.registry.all_consumers():
+            stop = getattr(consumer, "stop", None)
+            if stop is None:
+                continue
+            try:
+                result = stop()
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception:
+                logger.exception(
+                    "%s failed to stop cleanly", type(consumer).__name__
+                )
+
         logger.info("Broker shutdown complete")
