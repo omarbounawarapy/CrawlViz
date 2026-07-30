@@ -1,73 +1,12 @@
-# =====================
 # Python
-# =====================
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.egg-info/
-dist/
-build/
-
-# virtual environments
-.venv/
-venv/
-ENV/
-
-# =====================
-# Logs
-# =====================
-logs/
-log/
-*.log
-
-debug/
-*.log
-
-# =====================
-# Node (if frontend exists)
-# =====================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-dist/
-.next/
-
-# =====================
-# IDE
-# =====================
-.vscode/
-.idea/
-
-# =====================
-# Environment variables (CRITICAL)
-# =====================
-.env
-.env.local
-.env.*.local
-
-# =====================
-# OS noise
-# =====================
-.DS_Store
-Thumbs.db
-
-# =====================
-# Crawler / scraping data (optional but recommended)
-# =====================
-data/
-output/
-cache/
-export/
-*.sqlite
-*.db
-*.db-shm
-*.db-wal
-*.db-journal
-.space_store/
-
-# =====================
-# Secrets
-# =====================
 keys.json
+*.db
+
+# Node
+node_modules/
+dist/
+
+# OS
+.DS_Store
