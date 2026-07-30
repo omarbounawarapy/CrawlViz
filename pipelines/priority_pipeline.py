@@ -12,8 +12,10 @@ from events import (
 from models import Node
 from priority import StrategyFn, get_strategy
 
+from .base_pipeline import BasePipeline
 
-class PriorityPipeline:
+
+class PriorityPipeline(BasePipeline):
     """Computes a priority float for every scored link.
 
     Architecture rules enforced here:
@@ -34,9 +36,9 @@ class PriorityPipeline:
         max_queue_size: int = 0,
         max_concurrency: int = 10,
     ):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.storage = storage
-        self.max_concurrency = max_concurrency
         self.nlp_bias = nlp_bias
         self.llm_bias = llm_bias
         # Strategy resolution fails fast at init, not at crawl time.
@@ -44,23 +46,11 @@ class PriorityPipeline:
         self.strategy: StrategyFn = get_strategy(strategy_name)
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
-        self.workers: list = []
 
         self.handlers = {
             LinksScoredEvent: self._on_links_scored,
             HighScoreLinksEvent: self._on_links_scored,
         }
-
-    # =========================================================
-    # LIFECYCLE
-    # =========================================================
-
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self._worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
 
     # =========================================================
     # ENTRY POINT (CALLED BY EVENTBROKER)
@@ -85,48 +75,44 @@ class PriorityPipeline:
         await self.queue.put((event.node, links))
 
     # =========================================================
-    # WORKER
+    # PROCESS ONE QUEUED (node, links) PAIR
     # =========================================================
 
-    async def _worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            node, links = await self.queue.get()
+    async def _process(self, item, worker_id: int) -> None:
+        node, links = item
 
-            try:
-                await self.event_broker.emit(
-                    PriorityCalculationStartedEvent(
-                        correlation_id=str(node.get_id()),
-                        worker_id=worker_id,
-                        node_id=str(node.get_id()),
-                        input_links_count=len(links),
-                    )
+        try:
+            await self.event_broker.emit(
+                PriorityCalculationStartedEvent(
+                    correlation_id=str(node.get_id()),
+                    worker_id=worker_id,
+                    node_id=str(node.get_id()),
+                    input_links_count=len(links),
                 )
+            )
 
-                calculated = self._compute_priorities(node, links)
+            calculated = self._compute_priorities(node, links)
 
-                await self.event_broker.emit(
-                    PriorityCalculatedEvent(
-                        correlation_id=str(node.get_id()),
-                        parent=node,
-                        links=calculated,
-                        output_count=len(calculated),
-                    )
+            await self.event_broker.emit(
+                PriorityCalculatedEvent(
+                    correlation_id=str(node.get_id()),
+                    parent=node,
+                    links=calculated,
+                    output_count=len(calculated),
                 )
+            )
 
-            except Exception as e:
-                await self.event_broker.emit(
-                    PriorityCalculationFailedEvent(
-                        correlation_id=str(node.get_id()),
-                        node=node,
-                        stage="PRIORITY_COMPUTATION",
-                        error_type=type(e).__name__,
-                        error_message=str(e),
-                        input_links_count=len(links),
-                    )
+        except Exception as e:
+            await self.event_broker.emit(
+                PriorityCalculationFailedEvent(
+                    correlation_id=str(node.get_id()),
+                    node=node,
+                    stage="PRIORITY_COMPUTATION",
+                    error_type=type(e).__name__,
+                    error_message=str(e),
+                    input_links_count=len(links),
                 )
-
-            finally:
-                self.queue.task_done()
+            )
 
     # =========================================================
     # PRIORITY COMPUTATION -- PURE, NO SIDE EFFECTS
