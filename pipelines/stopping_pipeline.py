@@ -3,8 +3,10 @@ import time
 
 from events import NodeAddedEvent, StopCrawlEvent, StorageNodeUpdatedEvent
 
+from .base_pipeline import BasePipeline
 
-class StoppingPipeline:
+
+class StoppingPipeline(BasePipeline):
     """Watches crawl progress against the blueprint's stop conditions and
     emits StopCrawlEvent the moment any one of them is met.
 
@@ -13,11 +15,10 @@ class StoppingPipeline:
     """
 
     def __init__(self, crawler, max_queue_size: int = 0, max_concurrency: int = 1):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = crawler.event_broker
 
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         # Conditions
         self.max_nodes = crawler.max_nodes
@@ -41,33 +42,12 @@ class StoppingPipeline:
             StorageNodeUpdatedEvent: self._on_node_updated,
         }
 
-    async def put(self, event) -> None:
-        await self.queue.put(event)
+    async def _process(self, event, worker_id: int) -> None:
+        handler = self.handlers.get(type(event))
+        if handler:
+            await handler(event)
 
-    async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-
-        await asyncio.gather(*self.workers)
-
-    async def worker(self, worker_id: int) -> None:
-        while True:
-            event = await self.queue.get()
-
-            try:
-                if self.stopped:
-                    break
-
-                handler = self.handlers.get(type(event))
-                if handler:
-                    await handler(event)
-
-                await self._check_time_conditions()
-
-            finally:
-                self.queue.task_done()
+        await self._check_time_conditions()
 
     async def _on_node_added(self, event: NodeAddedEvent) -> None:
         node = event.node
