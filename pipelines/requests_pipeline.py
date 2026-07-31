@@ -12,11 +12,21 @@ from events import (
 )
 from infrastructure import NetworkClient
 
+from .base_pipeline import SHUTDOWN
+
 
 class RequestsPipeline:
     """Fetches page content for every node, one HTTP request at a time
     per worker, with global rate limiting and 429 backoff shared across
     all workers.
+
+    Deliberately not a BasePipeline subclass: unlike the event-dispatch
+    pipelines, this one queues domain objects (Node), not events, and
+    its worker loop is a rate-limited fetch loop with its own backoff
+    state, not a generic handler dispatch. Forcing it onto the same
+    shape would obscure more than it'd simplify. It still exposes a
+    BasePipeline-compatible `stop()` (same SHUTDOWN sentinel) so
+    EventBroker's shutdown broadcast reaches it the same way.
     """
 
     def __init__(self, event_broker, max_concurrency: int = 4, max_queue_size: int = 0):
@@ -57,6 +67,18 @@ class RequestsPipeline:
         await asyncio.gather(*self.workers)
 
     # =========================================================
+    # STOP
+    # =========================================================
+    async def stop(self) -> None:
+        """Wake every worker so start() returns, even if the queue would
+        otherwise sit empty forever (see BasePipeline for why this
+        matters -- this pipeline predates it and isn't a subclass, but
+        needs the same guarantee).
+        """
+        for _ in range(self.max_concurrency):
+            await self.queue.put(SHUTDOWN)
+
+    # =========================================================
     # ENTRY POINT
     # =========================================================
     async def put(self, event: NodeAddedEvent) -> None:
@@ -81,11 +103,12 @@ class RequestsPipeline:
     # =========================================================
     async def worker(self, worker_id: int) -> None:
         while True:
-            if not self.event_broker.running:
-                break
             node = await self.queue.get()
 
             try:
+                if node is SHUTDOWN:
+                    break
+
                 await self.event_broker.emit(
                     RequestStartedEvent(
                         correlation_id=str(node.get_id()),
