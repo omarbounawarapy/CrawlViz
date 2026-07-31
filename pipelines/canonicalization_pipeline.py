@@ -7,10 +7,12 @@ from datetime import datetime
 from events import PageFetchedEvent, StopCrawlEvent
 from infrastructure.async_file_handler import AsyncFileHandler
 
+from .base_pipeline import BasePipeline
+
 logger = logging.getLogger(__name__)
 
 
-class CanonicalizationPipeline:
+class CanonicalizationPipeline(BasePipeline):
     """Writes every fetched page's raw content to a session-scoped
     documents.jsonl file, independent of the extraction/transform/export
     path -- a durable, schema-agnostic record of everything the crawler
@@ -18,15 +20,12 @@ class CanonicalizationPipeline:
     """
 
     def __init__(self, crawl_id, event_broker, export_path):
+        super().__init__(max_concurrency=1)
         self.event_broker = event_broker
         self.export_path = export_path
         self.crawl_id = crawl_id
 
-        self.queue = asyncio.Queue()
-
-        # Runtime control
-        self.running = False
-        self._task = None
+        self.queue: asyncio.Queue = asyncio.Queue()
 
         # File setup
         self.dir_path = os.path.join(export_path, crawl_id)
@@ -38,49 +37,23 @@ class CanonicalizationPipeline:
         # Event routing
         self.handlers = {
             PageFetchedEvent: self._on_page_fetched,
-            StopCrawlEvent: self._on_stop_crawl,
         }
-
-    # =========================================================
-    # ENTRY
-    # =========================================================
-    async def put(self, event) -> None:
-        await self.queue.put(event)
 
     # =========================================================
     # START PIPELINE
     # =========================================================
     async def start(self) -> None:
-        self.running = True
-
         await self.writer.create_file()
-
-        self._task = asyncio.create_task(self._run())
-
-        await self._task
-
-    # =========================================================
-    # MAIN LOOP (SINGLE CONSUMER)
-    # =========================================================
-    async def _run(self) -> None:
-        while True:
-            event = await self.queue.get()
-
-            try:
-                if event is None:
-                    break
-
-                handler = self.handlers.get(type(event))
-                if handler:
-                    await handler(event)
-
-            except Exception:
-                logger.exception("Failed to process event in canonicalization pipeline")
-
-            finally:
-                self.queue.task_done()
-
+        await super().start()
         await self.writer.close_file()
+
+    # =========================================================
+    # PROCESS ONE QUEUED EVENT
+    # =========================================================
+    async def _process(self, event, worker_id: int) -> None:
+        handler = self.handlers.get(type(event))
+        if handler:
+            await handler(event)
 
     # =========================================================
     # EVENT HANDLERS
@@ -109,9 +82,3 @@ class CanonicalizationPipeline:
 
         # JSONL write (ensure string)
         await self.writer.write_line(json.dumps(doc, ensure_ascii=False))
-
-    async def _on_stop_crawl(self, event: StopCrawlEvent) -> None:
-        self.running = False
-
-        # Graceful shutdown signal (poison pill).
-        await self.queue.put(None)
