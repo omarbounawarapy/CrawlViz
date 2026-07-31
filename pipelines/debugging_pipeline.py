@@ -82,8 +82,10 @@ from traceability.nlp_trace_events import (
     NLP_VectorComposed,
 )
 
+from .base_pipeline import BasePipeline
 
-class DebuggingPipeline:
+
+class DebuggingPipeline(BasePipeline):
     """Renders every business and trace event into a dense one-line
     ``[TAG] STATUS field=value ...`` log entry, written to a per-crawl
     debug file. This is the granular, high-volume counterpart to
@@ -103,6 +105,7 @@ class DebuggingPipeline:
         max_queue_size: int = 0,
         max_concurrency: int = 2,
     ):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.enabled = enabled
 
@@ -112,9 +115,7 @@ class DebuggingPipeline:
         path = os.path.join(debug_dir, crawl_id)
         self.log_writer = LogWriter(path)
 
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         self.handlers = {
             # Requests
@@ -207,34 +208,23 @@ class DebuggingPipeline:
             return
 
         await self.log_writer.create_log_file()
-
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-
-        await asyncio.gather(*self.workers)
+        await super().start()
+        await self.log_writer.close_file()
 
     # =========================================================
-    # WORKER
+    # PROCESS ONE QUEUED EVENT
     # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while self.event_broker.running:
-            event = await self.queue.get()
+    async def _process(self, event, worker_id: int) -> None:
+        try:
+            handler = self.handlers.get(type(event))
+            if handler:
+                log = handler(event, worker_id)
+                await self.log_writer.write_log(log)
 
-            try:
-                handler = self.handlers.get(type(event))
-                if handler:
-                    log = handler(event, worker_id)
-                    await self.log_writer.write_log(log)
-
-            except Exception as e:
-                await self.log_writer.write_log(
-                    f"[DEBUG_ERROR] event={type(event).__name__} error={str(e)}"
-                )
-
-            finally:
-                self.queue.task_done()
+        except Exception as e:
+            await self.log_writer.write_log(
+                f"[DEBUG_ERROR] event={type(event).__name__} error={str(e)}"
+            )
 
     # =========================================================
     # HELPERS
