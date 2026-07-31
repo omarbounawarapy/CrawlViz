@@ -31,3 +31,9 @@ export const fetchValidationSample = (table, crawlId, limit = 20, offset = 0) =>
   if (crawlId) params.set("crawl_id", crawlId);
   return req("GET", `/validation/${encodeURIComponent(table)}/sample?${params}`);
 };
+
+// ── Configuration (V2) ──────────────────────────────────────────────────────
+// Read-only this pass -- see config/runtime_config.py and
+// docs/V2_ARCHITECTURE.md roadmap #18 for the write-back path this sets up.
+export const fetchConfigSchema = () => req("GET", "/config/schema");
+export const fetchConfig       = () => req("GET", "/config");
