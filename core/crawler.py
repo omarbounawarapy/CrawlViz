@@ -274,6 +274,7 @@ class Crawler:
                 TransformationCompletedEvent,
                 ExportBatchCompletedEvent,
                 ScoreRescheduledEvent,
+                StopCrawlEvent,
             ],
         )
 

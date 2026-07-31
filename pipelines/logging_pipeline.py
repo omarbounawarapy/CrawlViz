@@ -16,8 +16,10 @@ from events import (
 )
 from infrastructure import LogWriter
 
+from .base_pipeline import BasePipeline
 
-class LoggingPipeline:
+
+class LoggingPipeline(BasePipeline):
     """Renders each node-lifecycle event into one human-readable line,
     written to both the console and a per-crawl log file (see
     infrastructure.LogWriter). This is the crawl's narrative log --
@@ -25,6 +27,7 @@ class LoggingPipeline:
     """
 
     def __init__(self, event_broker, crawl_id, max_queue_size: int = 0, max_concurrency: int = 5):
+        super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
 
         log_dir = os.path.join("logs", crawl_id[:crawl_id.find("-")])
@@ -34,9 +37,7 @@ class LoggingPipeline:
 
         self.log_writer = LogWriter(path)
 
-        self.queue = asyncio.Queue(maxsize=max_queue_size)
-        self.max_concurrency = max_concurrency
-        self.workers = []
+        self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         # Maps each event type to the formatter method that renders its log line.
         self.state_map = {
@@ -44,7 +45,7 @@ class LoggingPipeline:
             PageFetchedEvent: self._fetched,
             ContentFilteredEvent: self._filtered,
             TransformationCompletedEvent: self._transformed,
-            StopCrawlEvent: self._on_stop_crawl,
+            StopCrawlEvent: self._stopped,
             LinksScoredEvent: self._scored,
             PriorityCalculatedEvent: self._expanded,
             ExportBatchCompletedEvent: self._exported,
@@ -52,63 +53,28 @@ class LoggingPipeline:
         }
 
     # =========================================================
-    # ENTRY
-    # =========================================================
-    async def put(self, event) -> None:
-        await self.queue.put(event)
-
-    # =========================================================
     # START
     # =========================================================
     async def start(self) -> None:
         await self.log_writer.create_log_file()
-
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-
-    # =========================================================
-    # STOP
-    # =========================================================
-    async def _on_stop_crawl(self) -> None:
-        # 1. Wait until all queued events have been processed.
-        await self.queue.join()
-
-        # 2. Send each worker a shutdown signal (poison pill).
-        for _ in range(self.max_concurrency):
-            await self.queue.put(None)
-
-        # 3. Wait for every worker to exit.
-        await asyncio.gather(*self.workers)
-
+        await super().start()
         await self.log_writer.close_file()
 
     # =========================================================
-    # WORKER
+    # PROCESS ONE QUEUED EVENT
     # =========================================================
-    async def worker(self, worker_id: int) -> None:
-        while True:
-            event = await self.queue.get()
+    async def _process(self, event, worker_id: int) -> None:
+        try:
+            handler = self.state_map.get(type(event))
 
-            if event is None:
-                self.queue.task_done()
-                break
+            if handler:
+                log_line = handler(event, worker_id)
+                await self.log_writer.write_log(log_line)
 
-            try:
-                handler = self.state_map.get(type(event))
-
-                if handler:
-                    log_line = handler(event, worker_id)
-                    await self.log_writer.write_log(log_line)
-
-            except Exception as e:
-                await self.log_writer.write_log(
-                    f"[LOGGING_ERROR] event={type(event).__name__} error={str(e)}"
-                )
-
-            finally:
-                self.queue.task_done()
+        except Exception as e:
+            await self.log_writer.write_log(
+                f"[LOGGING_ERROR] event={type(event).__name__} error={str(e)}"
+            )
 
     # =========================================================
     # STATE FORMATTERS (CORE)
@@ -181,4 +147,19 @@ class LoggingPipeline:
             f"{self._prefix(w)} [SCORE_RESCHEDULE] "
             f"[NODE] id={e.node.get_id()} "
             f"new_priority={e.node.get_priority()}"
+        )
+
+    def _stopped(self, e, w):
+        # Previously named `_on_stop_crawl` and (incorrectly) doubled as
+        # this pipeline's own shutdown routine, called with a signature
+        # (`self, event, worker_id`) it didn't accept -- so every
+        # StopCrawlEvent silently raised a TypeError caught by the
+        # generic `except Exception` in the old worker loop, and the
+        # crawl's narrative log never actually recorded that the crawl
+        # stopped. Shutdown itself is now BasePipeline's job; this is
+        # just the formatter that was missing.
+        return (
+            f"{self._prefix(w)} [CRAWL] STOPPED "
+            f"reason={e.reason} nodes={e.node_count} "
+            f"depth={e.max_depth} duration={round(e.duration, 2)}s"
         )
