@@ -20,48 +20,20 @@ import json
 import os
 from typing import Any
 
+import pydantic
+
 from config import DEFAULT_PRIORITY_STRATEGY
 from priority.strategy import STRATEGY_REGISTRY
 
-# =========================================================
-# STRICT ENUMERATIONS
-# =========================================================
-
-ALLOWED_STRATEGIES: frozenset[str] = frozenset(
-    {
-        "TOPICAL",
-        "PATHFINDING",
-        "EXPLORATION",
-        "GOAL_ORIENTED",
-        "DENSITY_FOCUSED",
-        "UNCERTAINTY_BIASED",
-    }
+from .blueprint_schema import (
+    ALLOWED_EXPORT_TYPES,
+    ALLOWED_FIELD_TYPES,
+    ALLOWED_PRIORITY_STRATEGIES,
+    ALLOWED_STRATEGIES,
+    ALLOWED_TRANSFORMS,
+    Blueprint,
 )
-
-# Priority strategy (blueprint key: stop_conditions.priority_strategy) --
-# sourced directly from the registry rather than duplicated here by hand,
-# so it can't silently drift out of sync the way ALLOWED_STRATEGIES above
-# still has to be (see priority/strategy.py).
-ALLOWED_PRIORITY_STRATEGIES: frozenset[str] = frozenset(STRATEGY_REGISTRY)
-
-ALLOWED_EXPORT_TYPES: frozenset[str] = frozenset({"text", "real", "int", "json"})
-
-# Transforms that require no config parameters.
-_NO_CONFIG_TRANSFORMS: frozenset[str] = frozenset(
-    {"strip", "lowercase", "deduplicate", "join"}
-)
-# Transforms that require config parameters.
-_PARAMETERISED_TRANSFORMS: dict[str, list[str]] = {
-    "truncate": ["max_len"],   # max_len: int, default 300
-    "regex": ["pattern"],      # pattern: str
-    "regex_extract": ["pattern"],
-}
-
-ALLOWED_TRANSFORMS: frozenset[str] = frozenset(
-    _NO_CONFIG_TRANSFORMS | set(_PARAMETERISED_TRANSFORMS)
-)
-
-ALLOWED_FIELD_TYPES: frozenset[str] = frozenset({"scalar", "list"})
+from .blueprint_schema import _PARAMETERISED_TRANSFORMS  # noqa: F401 (used below)
 
 # =========================================================
 # PROFILE REGISTRY
@@ -457,6 +429,20 @@ class BlueprintTranslator:
                     raise BlueprintValidationError(
                         f"domains[{domain_name!r}] is missing required key {dk!r}."
                     )
+
+        # Schema pass: validates the *assembled* blueprint against
+        # blueprint_schema.Blueprint -- on top of, not instead of, the
+        # checks above. This is what actually catches the next instance
+        # of the "producer/consumer shape drifted apart" bug class (see
+        # blueprint_schema.py's docstring for the three times that's
+        # already happened), even for a field nobody remembered to add
+        # a hand-written check for above.
+        try:
+            Blueprint.model_validate(blueprint)
+        except pydantic.ValidationError as e:
+            raise BlueprintValidationError(
+                f"Assembled blueprint failed schema validation: {e}"
+            ) from e
 
 
 # =========================================================
