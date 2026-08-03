@@ -40,6 +40,7 @@ from events import (
     ExportRowFailedEvent,
     ExtractionStartedEvent,
     FilteringInputSnapshotEvent,
+    HighScoreLinksEvent,
     ItemExtractionCompletedEvent,
     ItemFilteringCompletedEvent,
     LinkExtractionCompletedEvent,
@@ -411,7 +412,15 @@ class Crawler:
         b.subscribe(p["requests"], [NodeAddedEvent])
         b.subscribe(p["scoring"], [NodeAddedEvent, ScoreRescheduledEvent])
         b.subscribe(p["filtering"], [ContentExtractedEvent])
-        b.subscribe(p["priority"], [LinksScoredEvent])
+        # NOTE (V2 audit finding, see docs/V2_ARCHITECTURE.md §A.1.1): PriorityPipeline's
+        # own handler table has always mapped HighScoreLinksEvent -> _on_links_scored,
+        # but it was never actually subscribed to receive that event type. That bucket
+        # is exactly the links the cascade is confident about and deliberately skips an
+        # LLM call for -- the entire cost-saving half of the cascade -- and without this
+        # subscription they were scored, correctly bucketed, and then silently dropped:
+        # never prioritized, never stored, never expanded into the frontier. Restoring
+        # this line is a correctness fix, not a feature addition.
+        b.subscribe(p["priority"], [LinksScoredEvent, HighScoreLinksEvent])
         b.subscribe(p["transformation"], [ContentFilteredEvent])
         b.subscribe(
             p["storage"],
