@@ -40,6 +40,7 @@ from events import (
     ExportRowFailedEvent,
     ExtractionStartedEvent,
     FilteringInputSnapshotEvent,
+    FilteringPipelineErrorEvent,
     HighScoreLinksEvent,
     ItemExtractionCompletedEvent,
     ItemFilteringCompletedEvent,
@@ -53,6 +54,7 @@ from events import (
     PriorityCalculatedEvent,
     PriorityCalculationFailedEvent,
     PriorityCalculationStartedEvent,
+    ProcessingExtractionFailedEvent,
     RequestFailedEvent,
     RequestResponseReceivedEvent,
     RequestStartedEvent,
@@ -364,6 +366,13 @@ class Crawler:
                 ExtractionStartedEvent,
                 LinkExtractionCompletedEvent,
                 ItemExtractionCompletedEvent,
+                # ProcessingExtractionFailedEvent / FilteringPipelineErrorEvent:
+                # DebuggingPipeline.handlers already had _extraction_failed /
+                # _filter_failed implemented for these -- they just weren't
+                # subscribed, so extraction/filtering exceptions produced no
+                # log line and no UI signal at all (V2 audit §A.1.2).
+                ProcessingExtractionFailedEvent,
+                FilteringPipelineErrorEvent,
                 FilteringInputSnapshotEvent,
                 LinkFilteringCompletedEvent,
                 ItemFilteringCompletedEvent,
