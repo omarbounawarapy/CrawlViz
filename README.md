@@ -1,147 +1,69 @@
 # CrawlViz
 
-CrawlViz is a topic-focused ("semantically guided") web crawler with a
-live graph visualizer. Rather than exploring a site exhaustively, it
-scores each discovered link against a target topic (via a cheap local
-NLP pass, then selectively an LLM call) and prioritizes the crawl
-frontier accordingly.
+![CrawlViz — relevance-guided web traversal](assets/portfolio/visuals/img1.png)
+*The reference case study: a crawl seeded on "Type 2 Diabetes" against `wikimd.org`, explored to 539 nodes. `Glycemic_index` acts as a bridge node connecting the `Glucose` and `Diabetes` clusters — the structural signature the scoring cascade is meant to produce (see [`docs/07-research-and-evaluation.md`](docs/07-research-and-evaluation.md)).*
 
-It provides:
-- A FastAPI backend to manage crawl templates, start/stop crawling, and expose validation data
-- A crawler engine with template-driven domain bootstrapping, extraction, filtering, scoring, and export pipelines
-- A WebSocket-driven UI integration layer for live crawl state updates
-- A React frontend in `crawler-ui/` for visualization and control
+CrawlViz is a topic-focused web crawler. Instead of exploring a site exhaustively, it decides — link by link, in real time — which parts of the web are worth visiting to satisfy a stated topic, and which aren't.
 
-## Repository structure
+The core problem it solves: a structural crawl (breadth-first from a seed page) has no notion of *meaning*. Starting from "Black Hole" on Wikipedia, a pure BFS drifts into science-fiction and video-game pages within a few hops, because those pages are densely linked to the seed even though they're off-topic. CrawlViz replaces "explore what's linked" with "explore what's relevant," using a cascade of a cheap local embedding model and a selectively-invoked LLM to score every candidate link before it's ever fetched.
 
-- `main.py` — FastAPI application entrypoint
-- `routes/` — REST API endpoints for templates, crawl control, and validation
-- `core/` — crawler bootstrap and main crawler runtime logic
-- `models/` — domain, node, storage, extraction, and scoring models
-- `pipelines/` — event-driven processing, request handling, filtering, scoring, storage, export, and stop logic
-- `nlp/` — embedding, vector store, feature extraction, and expansion support
-- `infrastructure/` — network, LLM handling, key management, and async file support
-- `ui_bridge/` — WebSocket gateway and snapshot translator for frontend UI
-- `traceability/` — trace event instrumentation for LLM, network, and NLP activity
-- `config/` — typed runtime configuration constants
-- `docs/` — the WebSocket message contract, for reference when touching either side of it
-- `crawler-ui/` — React/Vite frontend application
+That scoring decision is one part of a larger system: an asyncio event bus coordinates roughly a dozen independent pipelines (fetching, extraction, deduplication, scoring, priority, transformation, export, retry, logging), a React frontend renders the crawl graph live over WebSocket and can scrub backward through its own event history, and a two-tier tracing system exists specifically so a crawl's behavior can be reconstructed after the fact, not just watched live.
 
-## Quick start
+This repository's documentation is organized so you can go as deep as you need to and stop there — a recruiter can read this page, an engineer can read the architecture and deep dives, and a reviewer who wants to check a specific claim against the code can follow the file:line references throughout.
 
-Requires Python 3.12+, [uv](https://docs.astral.sh/uv/), and Node 18+.
+## Start here, by what you need
 
-```bash
-git clone <this repo>
-cd crawlviz
-make install
-```
+| You want to... | Go to |
+|---|---|
+| Understand what CrawlViz does and why, in five minutes | You're reading it |
+| See the system architecture and how components fit together | [`docs/01-architecture.md`](docs/01-architecture.md) |
+| Trace exactly what happens to one discovered link, step by step | [`docs/02-execution-walkthrough.md`](docs/02-execution-walkthrough.md) |
+| Understand the event-driven pipeline and its concurrency model | [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md) |
+| Understand how semantic scoring and the NLP/LLM cascade work | [`docs/04-deep-dive-semantic-scoring.md`](docs/04-deep-dive-semantic-scoring.md) |
+| Understand resilience, observability, and replay | [`docs/05-deep-dive-resilience-observability.md`](docs/05-deep-dive-resilience-observability.md) |
+| Read the algorithms formally (scoring, priority, backoff) | [`docs/06-algorithms.md`](docs/06-algorithms.md) |
+| See the research protocol and results from the project report | [`docs/07-research-and-evaluation.md`](docs/07-research-and-evaluation.md) |
+| Install, run, test, and configure the system | [`docs/08-developer-guide.md`](docs/08-developer-guide.md) |
+| See the architectural trade-offs and why they were made | [`docs/09-design-decisions.md`](docs/09-design-decisions.md) |
+| See the full navigation map and how these documents relate | [`docs/00-index.md`](docs/00-index.md) |
 
-### API keys
+## What's technically distinctive here
 
-The crawler calls an LLM (via [OpenRouter](https://openrouter.ai)) for
-relevance scoring and topic expansion. Copy the example key file and
-fill in your own key(s) -- `keys.json` is gitignored and never
-committed:
+A one-line summary undersells each of these — the deep dives explain the mechanism, not just the label — but as an orientation:
 
-```bash
-cp keys.example.json keys.json
-```
+- **A two-stage scoring cascade**, not a single LLM call per link. Every candidate link is first scored by a local sentence-embedding similarity pass (milliseconds, no network call); only a budgeted, strategy-dependent sample of the mid-confidence links is then sent to an LLM. This is what keeps LLM cost and latency from becoming the crawl's bottleneck. See [`docs/04-deep-dive-semantic-scoring.md`](docs/04-deep-dive-semantic-scoring.md).
+- **An in-process pub/sub event bus** (57 distinct typed events across the backend) decouples fetching, extraction, filtering, scoring, priority calculation, transformation, and export into independently-scheduled pipelines that never call each other directly. See [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md).
+- **A `Future`-based readiness gate on every node** (`Node.ready`) that solves a genuine race condition: it lets the scoring pipeline pick up a node the instant it's created while still guaranteeing it won't try to score a node whose content hasn't finished being fetched and processed. See [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md#the-node-ready-synchronization-gate).
+- **A checkpoint-assisted event-sourced frontend.** The React state is built entirely by replaying a WebSocket event log through a pure reducer; the UI can scrub to any past point in the crawl by seeking to the nearest periodic checkpoint and replaying only the remainder, rather than replaying the whole log on every scrub. See [`docs/05-deep-dive-resilience-observability.md`](docs/05-deep-dive-resilience-observability.md).
+- **A declarative blueprint model.** A crawl's seeds, domains, scoring strategy, extraction fields, and stop conditions are all data (a JSON document validated against a Pydantic schema), not code — the crawl engine itself is written once and reused across arbitrarily many topic configurations.
 
-### Pre-cache the embedding model (first run only)
+## What CrawlViz is not (yet)
 
-The NLP layer loads `sentence-transformers/all-MiniLM-L6-v2` with
-`local_files_only=True`, so it needs to already be cached before the
-first crawl:
+Being direct about this up front, because the rest of the documentation is more useful if you already know the boundary:
 
-```bash
-uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
-```
+- It is **not distributed**. It's a single-process asyncio application with in-memory state; "concurrency" here means cooperative multitasking within one process, not multiple machines or processes.
+- Configuration is **read-only from the UI** in the current build — you can inspect the runtime configuration schema and current values, but there's no write-back/edit path yet (a JSON-schema-driven read view shipped; the editing form did not).
+- The backend test suite (123 tests, all passing as of this review) covers pipelines, the blueprint schema/translator, and event wiring; it does not include end-to-end or live-LLM integration tests.
+- Persistence is local SQLite, not a horizontally-scalable store — appropriate for the single-machine research/portfolio scope this project targets, not for production multi-tenant crawling.
 
-### Run it
 
-```bash
-make dev
-```
+## Reference case study
 
-This starts the FastAPI backend on `:8000` and the Vite dev server on
-`:5173` together (Ctrl+C stops both). The WebSocket gateway
-(`:8765`) is started separately, per crawl, by the crawler itself --
-see "How the system works" below. Open `http://localhost:5173`.
+The project report documents a full run against `wikimd.org` (a medical encyclopedia), seeded from "Type 2 Diabetes," with a 1200-second budget and a 600-node cap. It explored 539 nodes out of 50,828 identified links (~1%) and produced a graph that clustered cleanly into complications, treatments, and epidemiology sub-topics, connected by bridge nodes like "Glycemic Index" and "HbA1c." That configuration is checked into this repository as `templates/wikiMD.json` and matches the report's parameters. Full protocol and results: [`docs/07-research-and-evaluation.md`](docs/07-research-and-evaluation.md).
 
-Or run each half separately:
+## Technology stack
 
-```bash
-make dev-backend   # uvicorn main:app --reload --port 8000
-make dev-frontend  # cd crawler-ui && npm run dev
-```
-
-## How the system works
-
-- `main.py` mounts three router groups:
-  - `routes/templates.py` for CRUD operations over JSON crawl templates
-  - `routes/run.py` for starting, stopping, and checking crawl status
-  - `routes/validation.py` for inspecting extraction tables from `items.db`
-- Templates (blueprints) are stored as JSON in `templates/` -- see
-  `templates/isi.json` or `templates/wikiMD.json` for worked examples,
-  the latter matching the topic and parameters used to validate this
-  project.
-- A crawl is started by posting a template name to `/run`. `core.Crawler`
-  reads the blueprint, builds ~16 concurrent pipeline objects, and
-  wires them together through a single in-process pub/sub event bus
-  (`core.EventBroker`) -- pipelines never call each other directly.
-- The cascade per discovered link: cheap NLP similarity scoring first,
-  then a budgeted subset gets an LLM relevance call, then a weighted
-  priority function ranks the frontier.
-- Live state updates are pushed to the browser over WebSocket via
-  `ui_bridge.UIWebSocketGateway`, started fresh on `:8765` for each
-  crawl (started inside `core.Crawler.start()`, not by `main.py`).
-
-## Backend API
-
-### Templates
-- `GET /templates` — list available JSON templates
-- `GET /templates/{name}` — retrieve a named template
-- `POST /templates?name={name}` — create a new template
-- `PUT /templates/{name}` — update an existing template
-- `DELETE /templates/{name}` — delete a template
-
-### Crawl control
-- `POST /run` — start a crawl using a template name
-- `POST /stop` — stop the current crawl (hard-cancels the crawl task)
-- `GET /status` — return crawl running state
-
-### Validation
-- `GET /validation/tables` — list crawler output tables in `items.db`
-- `GET /validation/{table}/crawls` — list crawl groups for a table
-- `GET /validation/{table}/sample` — return sample rows from a table
-
-## Configuration
-
-Everything below has a working default; set these only to change it.
-
-| Variable | Where | Default |
+| Layer | Technology | Role |
 |---|---|---|
-| `CRAWLVIZ_CORS_ORIGINS` | backend env | `http://localhost:5173` |
-| `VITE_API_BASE_URL` | `crawler-ui/.env.local` | `http://localhost:8000` |
-| `VITE_WS_URL` | `crawler-ui/.env.local` | `ws://localhost:8765` |
-| `TRACE_MODE` / `TRACE_SAMPLE_RATE` | backend env | `full` / `0.1` -- see `traceability/emitter.py` |
+| Crawl engine | Python 3.12 / `asyncio` | Cooperative concurrency for an I/O-bound workload |
+| HTTP | `aiohttp` | Non-blocking page fetches |
+| HTML parsing | `lxml` | XPath/CSS-driven link and field extraction |
+| Semantic scoring | `sentence-transformers` (local) | Cheap, offline embedding similarity |
+| Relevance / expansion | LLM via OpenRouter (`aiohttp`-based client) | Selective, budgeted relevance judgments and topic expansion |
+| Control plane | FastAPI | REST API for templates, run control, config, validation |
+| Data plane | `websockets` | Live crawl-state push to the browser |
+| Persistence | SQLite (WAL mode) | Extracted-item export |
+| Frontend | React + Vite | Live graph visualization, replay, inspection |
 
-Scoring thresholds, embedding model, and other tuning constants live
-in `config/config.py`.
+Full list with versions: `pyproject.toml` / `crawler-ui/package.json`.
 
-## Notes
-
-- The crawler uses `sentence_transformers` for embeddings by default
-  (see `nlp/embedding_engine.py`); the LLM provider is OpenRouter
-  (`infrastructure/open_router_translator.py`), configured per-blueprint.
-- `items.db` (SQLite, WAL mode) holds extracted items; it's created on
-  first export and gitignored.
-- No automated test suite exists yet -- see suggestions in the PR/issue
-  tracker for what to prioritize.
-
-## Development
-
-```bash
-make lint   # ruff (backend) + eslint (frontend)
-```
