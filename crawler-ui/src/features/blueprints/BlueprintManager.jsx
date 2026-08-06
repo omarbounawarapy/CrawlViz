@@ -4,6 +4,17 @@
  * Sidebar lists saved blueprints; the main panel offers a structured
  * form editor and a raw JSON editor for the same document (UC-T01,
  * report section 0.11.2), kept in sync when switching tabs.
+ *
+ * V2 note: moved into features/blueprints/ and wired into the new app
+ * shell, but its internals are deliberately left as-is this pass -- see
+ * docs/V2_ARCHITECTURE.md roadmap #14. One thing worth flagging exactly
+ * here for whoever picks that up: the STRATEGIES list below is a third,
+ * hand-maintained copy of the same enum that already lives validated in
+ * routes/blueprint_schema.py's ALLOWED_STRATEGIES (and, unused, in
+ * routes/blueprint_ui_schema.json) -- see docs/V2_ARCHITECTURE.md §A.1.5.
+ * features/config/ConfigPage.jsx shows the pattern this should eventually
+ * move to: render from a schema fetched from the backend instead of a
+ * literal copied here.
  */
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,7 +24,7 @@ import {
   createTemplate,
   updateTemplate,
   deleteTemplate,
-} from "../api/client";
+} from "../../api/client";
 
 // ─── STRICT CONSTANTS ─────────────────────────────────────────────────────────
 

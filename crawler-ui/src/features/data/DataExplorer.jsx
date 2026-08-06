@@ -1,9 +1,13 @@
+// V2 note: moved into features/data/ (renamed from ValidationView to
+// DataExplorer for the activity-bar label) and wired into the new app
+// shell; internals unchanged this pass -- see docs/V2_ARCHITECTURE.md
+// roadmap #14.
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   fetchValidationTables,
   fetchValidationCrawls,
   fetchValidationSample,
-} from "../api/client";
+} from "../../api/client";
 
 // ── design tokens ─────────────────────────────────────────────────────────────
 const TRUNCATE_LEN = 140;
