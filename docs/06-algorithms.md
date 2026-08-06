@@ -15,10 +15,10 @@ representing multiple facets of the target topic, including seed pages, the conf
 The relevance of candidate $c$ is defined as
 
 ```math
-\operatorname{relevance}(c)
+\mathrm{relevance}(c)
 =
 \max_i
-\operatorname{cos\_sim}\left(E(c), b_i\right)
+\mathrm{cos\_sim}\left(E(c), b_i\right)
 ```
 
 where $E(c)$ is the sentence embedding of the link's composite representation, consisting of its anchor text, URL, and local context.
@@ -40,28 +40,28 @@ The basis can then continue to grow during the crawl as the LLM produces further
 `NLPService._composite_score()` combines several named scalar signals into a single value:
 
 ```math
-\operatorname{nlp\_score}(c)
+\mathrm{nlp\_score}(c)
 =
-w_1\operatorname{sim}(c)
+w_1\mathrm{sim}(c)
 +
-w_2\operatorname{coverage}(c)
+w_2\mathrm{coverage}(c)
 +
-w_3\operatorname{novelty}(c)
+w_3\mathrm{novelty}(c)
 +
-w_4\operatorname{coherence}(c)
+w_4\mathrm{coherence}(c)
 +
-w_5\operatorname{lexical}(c)
+w_5\mathrm{lexical}(c)
 ```
 
 This score is used **only to route candidates into the low, mid, or high cascade bucket**. It is not the value used directly for frontier priority.
 
 Here:
 
-* $\operatorname{sim}(c)$ is the target-semantic similarity.
-* $\operatorname{coverage}(c)$ estimates how well the candidate fills an under-explored region of the semantic space.
-* $\operatorname{novelty}(c)$ measures how far the candidate lies from regions already represented by visited content.
-* $\operatorname{coherence}(c)$ measures semantic consistency with the surrounding content.
-* $\operatorname{lexical}(c)$ captures lexical relevance.
+* $\mathrm{sim}(c)$ is the target-semantic similarity.
+* $\mathrm{coverage}(c)$ estimates how well the candidate fills an under-explored region of the semantic space.
+* $\mathrm{novelty}(c)$ measures how far the candidate lies from regions already represented by visited content.
+* $\mathrm{coherence}(c)$ measures semantic consistency with the surrounding content.
+* $\mathrm{lexical}(c)$ captures lexical relevance.
 
 Similarity carries the dominant weight.
 
@@ -77,12 +77,12 @@ Similarity carries the dominant weight.
 Given configurable thresholds $L$ and $H$, the bucket assigned to candidate $c$ is
 
 ```math
-\operatorname{bucket}(c)
+\mathrm{bucket}(c)
 =
 \begin{cases}
-\mathrm{low}, & \operatorname{nlp\_score}(c) < L \\[4pt]
-\mathrm{mid}, & L \leq \operatorname{nlp\_score}(c) \leq H \\[4pt]
-\mathrm{high}, & \operatorname{nlp\_score}(c) > H
+\mathrm{low}, & \mathrm{nlp\_score}(c) < L \\[4pt]
+\mathrm{mid}, & L \leq \mathrm{nlp\_score}(c) \leq H \\[4pt]
+\mathrm{high}, & \mathrm{nlp\_score}(c) > H
 \end{cases}
 ```
 
@@ -120,7 +120,7 @@ The remaining high-score candidates are tagged `trusted_no_llm` and bypass LLM e
 
 The frontier priority is a **separate computation** from the composite NLP score described above.
 
-Rather than consuming the single bucketing scalar $\operatorname{nlp_score}(c)$, the priority calculation operates on the raw NLP feature vector and, when available, the LLM score.
+Rather than consuming the single bucketing scalar $\mathrm{nlp_score}(c)$, the priority calculation operates on the raw NLP feature vector and, when available, the LLM score.
 
 `priority/strategy.py` defines three named strategies.
 
@@ -128,45 +128,45 @@ Rather than consuming the single bucketing scalar $\operatorname{nlp_score}(c)$,
 
 ```math
 \begin{aligned}
-\operatorname{priority}_{\text{aggressive}}(n,c)
+\mathrm{priority}_{\text{aggressive}}(n,c)
 ={}&
-\lambda_{\text{llm}}\operatorname{llm}(c)
+\lambda_{\text{llm}}\mathrm{llm}(c)
 \\
 &+
 \lambda_{\text{nlp}}
 \left(
-0.40\operatorname{sim}(c)
+0.40\mathrm{sim}(c)
 +
-0.15\operatorname{novelty}(c)
+0.15\mathrm{novelty}(c)
 +
-0.10\operatorname{coherence}(c)
+0.10\mathrm{coherence}(c)
 +
-0.05\operatorname{lexical}(c)
+0.05\mathrm{lexical}(c)
 \right)
 \\
 &-
-\gamma\operatorname{depth}(n)
+\gamma\mathrm{depth}(n)
 \end{aligned}
 ```
 
 ### Balanced
 
 ```math
-\operatorname{priority}_{\text{balanced}}(n,c)
+\mathrm{priority}_{\text{balanced}}(n,c)
 =
-0.5\operatorname{llm}(c)
+0.5\mathrm{llm}(c)
 +
-0.5\operatorname{nlp\_blend}(c)
+0.5\mathrm{nlp\_blend}(c)
 ```
 
 ### Exploration
 
 ```math
-\operatorname{priority}_{\text{exploration}}(n,c)
+\mathrm{priority}_{\text{exploration}}(n,c)
 =
-0.85\operatorname{nlp\_blend}_{\text{novelty-weighted}}(c)
+0.85\mathrm{nlp\_blend}_{\text{novelty-weighted}}(c)
 +
-0.15\operatorname{llm}(c)
+0.15\mathrm{llm}(c)
 ```
 
 The parameters $\lambda_{\text{nlp}}$ and $\lambda_{\text{llm}}$ are supplied by the caller rather than hard-coded into the strategy function.
@@ -214,11 +214,11 @@ Consequently, a UI or log value such as `82` should not be interpreted as an $82
 Retry delay is modeled as
 
 ```math
-\operatorname{delay}(k)
+\mathrm{delay}(k)
 =
 \min\left(
-\operatorname{delay}_0 2^k,
-\operatorname{delay}_{\max}
+\mathrm{delay}_0 2^k,
+\mathrm{delay}_{\max}
 \right)
 +
 J,
@@ -229,13 +229,13 @@ J \sim \mathcal{U}(0,0.2)
 where:
 
 * $k$ is the consecutive-failure count for the pipeline;
-* $\operatorname{delay}_0$ is the initial backoff delay;
-* $\operatorname{delay}_{\max}$ is the configured maximum delay;
+* $\mathrm{delay}_0$ is the initial backoff delay;
+* $\mathrm{delay}_{\max}$ is the configured maximum delay;
 * $J$ is an independently sampled jitter term.
 
 The failure count is shared across the pipeline's workers rather than maintained independently for each request.
 
-After a successful operation, the delay decreases gradually rather than immediately resetting to $\operatorname{delay}_0$. This prevents a worker that has just escaped a rate-limit window from instantly returning to its maximum request rate.
+After a successful operation, the delay decreases gradually rather than immediately resetting to $\mathrm{delay}_0$. This prevents a worker that has just escaped a rate-limit window from instantly returning to its maximum request rate.
 
 Jitter is sampled independently for each worker. Its purpose is to prevent workers whose exponential backoff windows happen to align from retrying simultaneously, thereby reducing the risk of a **thundering-herd effect**.
 
@@ -252,7 +252,7 @@ Given an event log
 and a pure reducer
 
 ```math
-f:\text{State}\times\text{Event}\rightarrow\text{State},
+f:\text{State}\times\text{Event}\rightarrow\text{State}
 ```
 
 naive replay to event index $t$ requires applying every preceding event:
