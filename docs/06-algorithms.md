@@ -6,20 +6,20 @@ Formal descriptions of CrawlViz's core scoring, priority, and resilience functio
 
 A candidate link $c$ is not scored against a single topic vector, but against a **basis** of vectors
 
-```math
+$$
 \mathcal{B} = \{b_1, \ldots, b_n\}
-```
+$$
 
 representing multiple facets of the target topic, including seed pages, the configured topic description, and LLM-generated conceptual expansions.
 
 The relevance of candidate $c$ is defined as
 
-```math
+$$
 \mathrm{relevance}(c)
 =
 \max_i
 \mathrm{cos\_sim}\left(E(c), b_i\right)
-```
+$$
 
 where $E(c)$ is the sentence embedding of the link's composite representation, consisting of its anchor text, URL, and local context.
 
@@ -39,7 +39,7 @@ The basis can then continue to grow during the crawl as the LLM produces further
 
 `NLPService._composite_score()` combines several named scalar signals into a single value:
 
-```math
+$$
 \mathrm{nlp\_score}(c)
 =
 w_1\mathrm{sim}(c)
@@ -51,7 +51,7 @@ w_3\mathrm{novelty}(c)
 w_4\mathrm{coherence}(c)
 +
 w_5\mathrm{lexical}(c)
-```
+$$
 
 This score is used **only to route candidates into the low, mid, or high cascade bucket**. It is not the value used directly for frontier priority.
 
@@ -76,7 +76,7 @@ Similarity carries the dominant weight.
 
 Given configurable thresholds $L$ and $H$, the bucket assigned to candidate $c$ is (the report frames the same three-way split in [§2.3.2, "Bucketing of Candidates"](../report/rapport-english.pdf#page=12)):
 
-```math
+$$
 \mathrm{bucket}(c)
 =
 \begin{cases}
@@ -84,7 +84,7 @@ Given configurable thresholds $L$ and $H$, the bucket assigned to candidate $c$ 
 \mathrm{mid}, & L \leq \mathrm{nlp\_score}(c) \leq H \\[4pt]
 \mathrm{high}, & \mathrm{nlp\_score}(c) > H
 \end{cases}
-```
+$$
 
 Sampling is then applied independently within each bucket.
 
@@ -92,13 +92,13 @@ Sampling is then applied independently within each bucket.
 
 A random sample of size
 
-```math
+$$
 \left\lfloor
 \beta_{\text{low}}
 \cdot
 |\mathrm{low}|
 \right\rfloor
-```
+$$
 
 is retained for LLM evaluation. The remaining candidates are discarded without further evaluation.
 
@@ -120,13 +120,13 @@ The remaining high-score candidates are tagged `trusted_no_llm` and bypass LLM e
 
 The frontier priority is a **separate computation** from the composite NLP score described above, matching the general form $P(n) = \lambda_1 S_{\text{NLP}}(n) + \lambda_2 S_{\text{LLM}}(n)$ given in the report's [§2.3 — Two-Stage Scoring Architecture](../report/rapport-english.pdf#page=12).
 
-Rather than consuming the single bucketing scalar $\mathrm{nlp_score}(c)$, the priority calculation operates on the raw NLP feature vector and, when available, the LLM score.
+Rather than consuming the single bucketing scalar $\mathrm{nlp\_score}(c)$, the priority calculation operates on the raw NLP feature vector and, when available, the LLM score.
 
 `priority/strategy.py` defines three named strategies.
 
 ### Aggressive
 
-```math
+$$
 \begin{aligned}
 \mathrm{priority}_{\text{aggressive}}(n,c)
 ={}&
@@ -147,45 +147,45 @@ Rather than consuming the single bucketing scalar $\mathrm{nlp_score}(c)$, the p
 &-
 \gamma\mathrm{depth}(n)
 \end{aligned}
-```
+$$
 
 ### Balanced
 
-```math
+$$
 \mathrm{priority}_{\text{balanced}}(n,c)
 =
 0.5\mathrm{llm}(c)
 +
 0.5\mathrm{nlp\_blend}(c)
-```
+$$
 
 ### Exploration
 
-```math
+$$
 \mathrm{priority}_{\text{exploration}}(n,c)
 =
 0.85\mathrm{nlp\_blend}_{\text{novelty-weighted}}(c)
 +
 0.15\mathrm{llm}(c)
-```
+$$
 
 The parameters $\lambda_{\text{nlp}}$ and $\lambda_{\text{llm}}$ are supplied by the caller rather than hard-coded into the strategy function.
 
 In the live pipeline, `PriorityPipeline` always supplies
 
-```math
+$$
 (\lambda_{\text{nlp}},\lambda_{\text{llm}})
 =
 (60,40)
-```
+$$
 
 for LLM-scored candidates, and
 
-```math
+$$
 (\lambda_{\text{nlp}},\lambda_{\text{llm}})
 =
 (1,0)
-```
+$$
 
 for `trusted_no_llm` candidates, thereby disabling the LLM contribution.
 
@@ -195,17 +195,17 @@ The default keyword arguments defined by the individual strategy functions, such
 
 Because the live pipeline uses
 
-```math
+$$
 (\lambda_{\text{nlp}},\lambda_{\text{llm}})
 =
 (60,40)
-```
+$$
 
-rather than normalized weights summing to $1$, priority values naturally fall on an approximate $0$--$100$ scale.
+rather than normalized weights summing to $1$, priority values naturally fall on an approximate $0$–$100$ scale.
 
 This does not affect correctness. Priority is used only for **relative ordering within the frontier** and is never compared against an absolute threshold.
 
-Consequently, a UI or log value such as `82` should not be interpreted as an $82%$ probability or confidence score. It is simply a ranking key.
+Consequently, a UI or log value such as `82` should not be interpreted as an $82\%$ probability or confidence score. It is simply a ranking key.
 
 ---
 
@@ -213,7 +213,7 @@ Consequently, a UI or log value such as `82` should not be interpreted as an $82
 
 Retry delay is modeled as (the report gives the same $\Delta t_k$ form in [§2.5 — Resilience Strategies](../report/rapport-english.pdf#page=14)):
 
-```math
+$$
 \mathrm{delay}(k)
 =
 \min\left(
@@ -224,7 +224,7 @@ Retry delay is modeled as (the report gives the same $\Delta t_k$ form in [§2.5
 J,
 \qquad
 J \sim \mathcal{U}(0,0.2)
-```
+$$
 
 where:
 
@@ -341,9 +341,9 @@ This design is particularly appropriate for a scrubbable timeline UI, where boun
 
 Per-link NLP scoring requires cached embedding lookups and comparison of the candidate embedding against every basis vector:
 
-```math
+$$
 O\left(|\mathcal{B}|\right)
-```
+$$
 
 per candidate.
 
@@ -355,11 +355,11 @@ The cascade is specifically designed to ensure that the expensive LLM operation 
 
 In the reference run:
 
-```math
+$$
 50{,}828\ \text{links discovered}
 \qquad\text{vs.}\qquad
 539\ \text{nodes explored}
-```
+$$
 
 The ratio between these quantities illustrates why evaluating every discovered link with an LLM would be impractical.
 
