@@ -1,6 +1,6 @@
 # Algorithms
 
-Formal descriptions of CrawlViz's core scoring, priority, and resilience functions. These correspond directly to the report's Chapter 1 formulas and have been cross-checked against the actual implementation.
+Formal descriptions of CrawlViz's core scoring, priority, and resilience functions. These correspond directly to the formulas in report [Chapter 2 — Algorithmic Design Principles and Software Architecture](../report/rapport-english.pdf#page=10) and have been cross-checked against the actual implementation.
 
 ## 1. Target Relevance via Semantic Basis
 
@@ -29,7 +29,7 @@ Using the maximum similarity rather than a mean or centroid similarity is delibe
 
 At $t=0$, the basis $\mathcal{B}$ contains only seed-page embeddings and the raw topic description. This representation is too sparse to provide a strong semantic signal and behaves in practice more like a lexical-overlap detector.
 
-The system mitigates this cold-start problem by having the LLM generate $k$ conceptual expansions of the topic before crawling begins. In the reference run, $k=50$. Each expansion is embedded and added to the basis.
+The system mitigates this cold-start problem by having the LLM generate $k$ conceptual expansions of the topic before crawling begins. In the reference run, $k=50$. Each expansion is embedded and added to the basis. This mirrors the report's framing of cold-start as an "embedding bootstrapping" strategy ([§2.1.3 — Multi-Facet Representation of the Topic](../report/rapport-english.pdf#page=11)).
 
 The basis can then continue to grow during the crawl as the LLM produces further expansions while scoring links via `nlp/space_updater.py`. This implements an **online basis-enrichment** mechanism rather than relying on a fixed target representation.
 
@@ -74,7 +74,7 @@ Similarity carries the dominant weight.
 
 ## 3. Cascade Bucketing
 
-Given configurable thresholds $L$ and $H$, the bucket assigned to candidate $c$ is
+Given configurable thresholds $L$ and $H$, the bucket assigned to candidate $c$ is (the report frames the same three-way split in [§2.3.2, "Bucketing of Candidates"](../report/rapport-english.pdf#page=12)):
 
 ```math
 \mathrm{bucket}(c)
@@ -118,7 +118,7 @@ The remaining high-score candidates are tagged `trusted_no_llm` and bypass LLM e
 
 ## 4. Priority Function
 
-The frontier priority is a **separate computation** from the composite NLP score described above.
+The frontier priority is a **separate computation** from the composite NLP score described above, matching the general form $P(n) = \lambda_1 S_{\text{NLP}}(n) + \lambda_2 S_{\text{LLM}}(n)$ given in the report's [§2.3 — Two-Stage Scoring Architecture](../report/rapport-english.pdf#page=12).
 
 Rather than consuming the single bucketing scalar $\mathrm{nlp_score}(c)$, the priority calculation operates on the raw NLP feature vector and, when available, the LLM score.
 
@@ -211,7 +211,7 @@ Consequently, a UI or log value such as `82` should not be interpreted as an $82
 
 ## 5. Exponential Backoff with Jitter
 
-Retry delay is modeled as
+Retry delay is modeled as (the report gives the same $\Delta t_k$ form in [§2.5 — Resilience Strategies](../report/rapport-english.pdf#page=14)):
 
 ```math
 \mathrm{delay}(k)
@@ -243,7 +243,7 @@ Jitter is sampled independently for each worker. Its purpose is to prevent worke
 
 ## 6. Replay: Checkpoint-Assisted State Reconstruction
 
-Given an event log
+Given an event log (the report's formal projection $S_t = \operatorname{project}(S_{t-1}, e_t)$, [§2.7.1 — The Log as a Causal Record](../report/rapport-english.pdf#page=17), is the naive $O(t)$ case below before checkpointing is introduced):
 
 ```math
 \{e_1,e_2,\ldots,e_n\}

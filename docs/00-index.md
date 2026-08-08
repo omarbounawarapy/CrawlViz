@@ -27,4 +27,25 @@ This is the navigation hub for CrawlViz's documentation. Each page has a canonic
 | 08 | [Developer Guide](08-developer-guide.md) | How do I install, run, configure, and test this? |
 | 09 | [Design Decisions](09-design-decisions.md) | Why this architecture and not another? |
 
+## Project Report
+
+**CrawlViz: A Semantically-Guided Focused Web Crawler** is the academic project report behind this repository. It covers the state of the art in focused crawling, the algorithmic and architectural design of the scoring cascade and event pipeline, the UML modeling of the system, and the implementation and experimental evaluation (the `wikimd.org` / Type 2 Diabetes case study referenced throughout this documentation).
+
+Expected path: [`../report/rapport-english.pdf`](../report/rapport-english.pdf) (English translation; the original is in French).
+
+The documentation above explains **how CrawlViz is implemented**; the report explains **why it was designed that way, how it was evaluated, and what the results mean**. Where a topic is covered in both, the relevant doc page links to the report chapter or section rather than repeating its argument.
+
+| Documentation topic | Report reference |
+|---|---|
+| Focused crawling background, state of the art, requirements | [Chapter 1 — General Project Framework](../report/rapport-english.pdf#page=4) |
+| EventBroker / pub-sub architecture | [§2.6.2 — Pipeline and Pub/Sub Model](../report/rapport-english.pdf#page=14) |
+| Semantic scoring (NLP encoding, semantic basis, cold start) | [§2.1 — Semantic Representation of the Target Topic](../report/rapport-english.pdf#page=10) |
+| Two-stage NLP/LLM scoring cascade | [§2.3 — Two-Stage Scoring Architecture](../report/rapport-english.pdf#page=12) |
+| Resilience (backoff, jitter, rate limiting) | [§2.5 — Resilience Strategies](../report/rapport-english.pdf#page=14) |
+| Node lifecycle & causal traceability / replay | [§2.7 — Causal Traceability and Replayability](../report/rapport-english.pdf#page=17) |
+| Declarative blueprint configuration | [§2.8 — Declarative Blueprint Configuration](../report/rapport-english.pdf#page=19) |
+| System architecture, use cases, class & sequence diagrams | [Chapter 3 — Design](../report/rapport-english.pdf#page=21) |
+| Technology stack & implementation | [§4.1 — Environment and Technology Choices](../report/rapport-english.pdf#page=40) |
+| Experimental protocol & reference-run results | [§4.3 — Practical Evaluation](../report/rapport-english.pdf#page=66) |
+
 
