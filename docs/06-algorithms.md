@@ -243,21 +243,21 @@ Jitter is sampled independently for each worker. Its purpose is to prevent worke
 
 ## 6. Replay: Checkpoint-Assisted State Reconstruction
 
-Given an event log (the report's formal projection $S_t = \operatorname{project}(S_{t-1}, e_t)$, [§2.7.1 — The Log as a Causal Record](../report/rapport-english.pdf#page=17), is the naive $O(t)$ case below before checkpointing is introduced):
+Given an event log (the report's formal projection $S_t = \mathrm{project}(S_{t-1}, e_t)$, [§2.7.1 — The Log as a Causal Record](../report/rapport-english.pdf#page=17)), the naive $O(t)$ case below is what occurs before checkpointing is introduced:
 
-```math
+$$
 \{e_1,e_2,\ldots,e_n\}
-```
+$$
 
 and a pure reducer
 
-```math
-f:\text{State}\times\text{Event}\rightarrow\text{State}
-```
+$$
+f:\mathrm{State}\times\mathrm{Event}\rightarrow\mathrm{State}
+$$
 
 naive replay to event index $t$ requires applying every preceding event:
 
-```math
+$$
 S_t
 =
 f\left(
@@ -269,35 +269,35 @@ e_{t-1}
 \right),
 e_t
 \right)
-```
+$$
 
 with time complexity
 
-```math
+$$
 O(t)
-```
+$$
 
 CrawlViz stores a checkpoint every $c$ events. In the reference implementation,
 
-```math
+$$
 c=200
-```
+$$
 
 Let
 
-```math
+$$
 \hat{t}
 =
 \left\lfloor
 \frac{t}{c}
 \right\rfloor c
-```
+$$
 
 be the nearest checkpoint index at or before $t$.
 
 Replay can then begin from the stored state $S_{\hat{t}}$:
 
-```math
+$$
 S_t
 =
 f\left(
@@ -309,25 +309,25 @@ e_{t-1}
 \right),
 e_t
 \right)
-```
+$$
 
 The amount of work becomes
 
-```math
+$$
 O(t\bmod c)
-```
+$$
 
 with a worst-case replay cost of
 
-```math
+$$
 O(c)
-```
+$$
 
 The trade-off is additional storage of approximately
 
-```math
+$$
 O(n/c)
-```
+$$
 
 checkpoint states.
 
