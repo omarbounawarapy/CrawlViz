@@ -1,15 +1,23 @@
+from .anthropic_translator import AnthropicTranslator
+from .gemini_translator import GeminiTranslator
 from .key_manager import KeyManager
 from .network_client import NetworkClient
+from .nvidia_translator import NvidiaTranslator
 from .open_router_translator import OpenRouterTranslator
+from .openai_translator import OpenAITranslator
 
 
 class LlmHandler:
     """Routes LLM requests through the correct translator and network client.
 
-    Translators are registered by scoring_type string. To add a new LLM
-    provider: implement a translator class with translate_request(context)
-    and translate_response(response), then register it in the
-    `translators` dict.
+    Translators are registered by scoring_type string -- this is the same
+    string a blueprint sets as ``scoring.params.scoring_type`` (for link
+    scoring) or ``expansion.llm_type`` (for topic expansion), and the same
+    string used as the top-level key in ``keys.json`` to look up that
+    provider's API key(s). To add a new LLM provider: implement a
+    translator class with translate_request(context) and
+    translate_response(response), then register it in the `translators`
+    dict below.
 
     Args:
         key_manager: Supplies a rotating API key for the request's provider.
@@ -19,6 +27,10 @@ class LlmHandler:
 
     translators = {
         "openrouter": OpenRouterTranslator,
+        "openai": OpenAITranslator,
+        "anthropic": AnthropicTranslator,
+        "gemini": GeminiTranslator,
+        "nvidia": NvidiaTranslator,
     }
 
     def __init__(self, key_manager: KeyManager, client: NetworkClient | None = None):
