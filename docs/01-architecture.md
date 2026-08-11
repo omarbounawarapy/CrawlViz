@@ -48,7 +48,7 @@ flowchart TB
         Export --> ItemsDB
 
         NLPSvc["NLPService<br/>embeddings + vector space"]
-        LLMSvc["LlmHandler<br/>OpenRouter, key rotation, retries"]
+        LLMSvc["LlmHandler<br/>5 providers, key rotation, retries"]
         Score --> NLPSvc
         Score --> LLMSvc
 
@@ -102,7 +102,7 @@ A node's *links* live only in-memory (they're needed for graph traversal, not fo
 The scoring pipeline never touches an embedding model, a vector index, or an HTTP client directly. It goes through `NLPService` and `LlmHandler`, both of which fully own their internal complexity:
 
 - `NLPService` wraps `EmbeddingEngine` (a `sentence-transformers` model wrapper with an LRU-cached `encode()`), `FeatureExtractor` (turns a `Link` into ~7 named scalar signals), and `VectorSpace` (the semantic basis vectors + `numpy`-backed cosine similarity, with a `DBSCAN`-based coverage/novelty measure; see [`04-deep-dive-semantic-scoring.md`](04-deep-dive-semantic-scoring.md)).
-- `LlmHandler` wraps `KeyManager` (cooldown-based multi-key rotation), a per-provider `Translator` (currently `OpenRouterTranslator`), and `NetworkClient` (the actual `aiohttp` request/retry loop).
+- `LlmHandler` wraps `KeyManager` (cooldown-based multi-key rotation), a per-provider `Translator` (`OpenRouterTranslator`, `OpenAITranslator`, `AnthropicTranslator`, `GeminiTranslator`, or `NvidiaTranslator`, selected by the blueprint's `scoring_type`/`llm_type` string), and `NetworkClient` (the actual `aiohttp` request/retry loop).
 
 Both are constructed once by `BootStrapper` and handed to the pipelines that need them. This is plain dependency injection, not a framework, but it's what makes it possible to unit-test, say, `PriorityPipeline`'s strategy functions (see `tests/test_priority_strategy.py`) without spinning up a real embedding model or a network client.
 

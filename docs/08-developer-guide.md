@@ -18,7 +18,7 @@ make install
 
 ### API keys
 
-Link relevance scoring and topic expansion call an LLM through OpenRouter. Copy the example key file and fill in real keys. `keys.json` is gitignored:
+Link relevance scoring and topic expansion call an LLM. Five providers are supported through the same `LlmHandler` abstraction: OpenRouter, OpenAI, Anthropic, Google Gemini, and NVIDIA (NIM) — pick one per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`. Copy the example key file and fill in real keys for whichever provider(s) you plan to use. `keys.json` is gitignored:
 
 ```bash
 cp keys.example.json keys.json
