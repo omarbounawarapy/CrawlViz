@@ -57,7 +57,7 @@ The project report documents a full run against `wikimd.org` (a medical encyclop
 | HTTP | `aiohttp` | Non-blocking page fetches |
 | HTML parsing | `lxml` | XPath/CSS-driven link and field extraction |
 | Semantic scoring | `sentence-transformers` (local) | Cheap, offline embedding similarity |
-| Relevance / expansion | LLM via OpenRouter (`aiohttp`-based client) | Selective, budgeted relevance judgments and topic expansion |
+| Relevance / expansion | LLM via OpenRouter, OpenAI, Anthropic, Gemini, or NVIDIA (`aiohttp`-based client) | Selective, budgeted relevance judgments and topic expansion |
 | Control plane | FastAPI | REST API for templates, run control, config, validation |
 | Data plane | `websockets` | Live crawl-state push to the browser |
 | Persistence | SQLite (WAL mode) | Extracted-item export |

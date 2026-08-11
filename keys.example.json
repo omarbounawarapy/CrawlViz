@@ -2,5 +2,17 @@
   "openrouter": [
     "sk-or-v1-your-first-key-here",
     "sk-or-v1-optional-second-key-for-rotation"
+  ],
+  "openai": [
+    "sk-your-openai-key-here"
+  ],
+  "anthropic": [
+    "sk-ant-your-anthropic-key-here"
+  ],
+  "gemini": [
+    "your-gemini-api-key-here"
+  ],
+  "nvidia": [
+    "nvapi-your-nvidia-key-here"
   ]
 }
