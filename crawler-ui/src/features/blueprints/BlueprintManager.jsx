@@ -504,7 +504,7 @@ function BlueprintForm({ form, setForm }) {
         </F>
         <div style={row2}>
           <F label="Scoring Backend">
-            <input style={inp()} value={form.scoringType} placeholder="openrouter" onChange={(e) => set({ scoringType: e.target.value })} />
+            <input style={inp()} value={form.scoringType} placeholder="openrouter / openai / anthropic / gemini / nvidia" onChange={(e) => set({ scoringType: e.target.value })} />
           </F>
           <F label="Model Identifier">
             <input style={inp()} value={form.modelInformation} placeholder="openai/gpt-4o:free" onChange={(e) => set({ modelInformation: e.target.value })} />
@@ -527,7 +527,7 @@ function BlueprintForm({ form, setForm }) {
         </div>
         <div style={row2}>
           <F label="LLM Backend">
-            <input style={inp()} value={form.llmType} placeholder="openrouter" onChange={(e) => set({ llmType: e.target.value })} />
+            <input style={inp()} value={form.llmType} placeholder="openrouter / openai / anthropic / gemini / nvidia" onChange={(e) => set({ llmType: e.target.value })} />
           </F>
           <F label="LLM Model">
             <input style={inp()} value={form.llmModel} placeholder="openai/gpt-4o:free" onChange={(e) => set({ llmModel: e.target.value })} />
