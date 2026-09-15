@@ -4,7 +4,7 @@ import logging
 import os
 from datetime import datetime
 
-from events import PageFetchedEvent, StopCrawlEvent
+from events import PageFetchedEvent
 from infrastructure.async_file_handler import AsyncFileHandler
 
 from .base_pipeline import BasePipeline

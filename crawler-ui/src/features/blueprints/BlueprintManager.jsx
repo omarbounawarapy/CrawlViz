@@ -613,7 +613,13 @@ export default function TemplateManager() {
     }
   }, []);
 
-  useEffect(() => { loadList(); }, [loadList]);
+  useEffect(() => {
+    let cancelled = false;
+    fetchTemplates()
+      .then((data) => { if (!cancelled) setTemplates(data.templates); })
+      .catch((e) => { if (!cancelled) setStatus({ ok: false, msg: e.message }); });
+    return () => { cancelled = true; };
+  }, []);
 
   // When tab switches: sync form ↔ json
   const switchTab = (next) => {

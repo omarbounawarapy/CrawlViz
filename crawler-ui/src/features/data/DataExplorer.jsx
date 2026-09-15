@@ -518,13 +518,16 @@ export default function ValidationView() {
       .catch((e) => setError(e.message));
   }, []);
 
-  useEffect(() => {
-    if (!table) { setCrawls([]); setCrawlId(""); setResult(null); return; }
-    setCrawlId(""); setResult(null); setOffset(0);
-    fetchValidationCrawls(table)
+  const handleTableChange = (newTable) => {
+    setTable(newTable);
+    setCrawlId("");
+    setResult(null);
+    setOffset(0);
+    if (!newTable) { setCrawls([]); return; }
+    fetchValidationCrawls(newTable)
       .then((d) => setCrawls(d.crawls || []))
       .catch((e) => setError(e.message));
-  }, [table]);
+  };
 
   const fetchSample = useCallback((currentOffset = 0) => {
     if (!table) return;
@@ -581,7 +584,7 @@ export default function ValidationView() {
 
         <div style={{ width: 1, background: "#0e1828", alignSelf: "stretch" }} />
 
-        <Select label="Dataset"   value={table}   onChange={setTable}
+        <Select label="Dataset"   value={table}   onChange={handleTableChange}
                 options={tableOptions} placeholder="Select a dataset…"
                 disabled={tables.length === 0} />
 

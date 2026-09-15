@@ -1,7 +1,8 @@
 # CrawlViz
 
-![CrawlViz — relevance-guided web traversal](assets/portfolio/visuals/img1.png)
-*The reference case study: a crawl seeded on "Type 2 Diabetes" against `wikimd.org`, explored to 539 nodes. `Glycemic_index` acts as a bridge node connecting the `Glucose` and `Diabetes` clusters, the structural signature the scoring cascade is meant to produce (see [`docs/07-research-and-evaluation.md`](docs/07-research-and-evaluation.md)).*
+[![CI](https://github.com/omarbounawarapy/crawlviz/actions/workflows/ci.yml/badge.svg)](https://github.com/omarbounawarapy/crawlviz/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](pyproject.toml)
 
 CrawlViz is a topic-focused web crawler. Instead of exploring a site exhaustively, it decides, link by link, in real time, which parts of the web are worth visiting to satisfy a stated topic, and which aren't.
 

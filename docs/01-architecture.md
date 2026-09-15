@@ -4,8 +4,7 @@
 
 CrawlViz is a single Python process (FastAPI + `asyncio`) that, per crawl, spins up around a dozen independently scheduled pipeline objects wired together through one in-process publish/subscribe event bus. A separate React application connects over WebSocket to watch the resulting event stream, and can scrub backward through it via a replay-with-checkpoints reducer.
 
-![The EventBroker and its subscriber pipelines](assets/portfolio/visuals/img4.png)
-*Every pipeline, including the UI bridge, is an equal subscriber on the same broker. None of them call each other directly. The only shared contract is the typed event each one publishes or subscribes to.*
+Every pipeline, including the UI bridge, is an equal subscriber on the same broker. None of them call each other directly. The only shared contract is the typed event each one publishes or subscribes to.
 
 ```mermaid
 flowchart TB

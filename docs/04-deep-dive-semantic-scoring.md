@@ -4,8 +4,7 @@
 
 Scoring every discovered link with an LLM call is the obvious approach and the wrong one at scale. One page can contain dozens of links, each LLM call carries real latency and token cost, and doing this for every candidate would make the LLM the crawl's bottleneck rather than a tool it uses selectively. CrawlViz's answer is a two-stage cascade: a cheap, local, always-on filter, followed by a deliberately budgeted, selective LLM pass.
 
-![The NLP-to-LLM scoring cascade](assets/portfolio/visuals/img3.png)
-*Every candidate is scored locally first. Only the ambiguous middle band, plus small exploration/confirmation samples from the low and high bands, ever reaches the LLM. Most candidates never do.*
+Every candidate is scored locally first. Only the ambiguous middle band, plus small exploration/confirmation samples from the low and high bands, ever reaches the LLM. Most candidates never do.
 
 ## Stage 1: representing a link before visiting it
 
@@ -17,8 +16,7 @@ Before any relevance judgment happens, a candidate link has to become something 
 
 This multi-source representation exists specifically because any one signal can be uninformative alone. A generic anchor text like "read more" or an empty local context wouldn't tell you much on its own, but combined with the other two sources, `FeatureExtractor` can still produce a useful comparison. `nlp/feature_extractor.py` builds a composite text string from these three sources and encodes it with `EmbeddingEngine` (`sentence-transformers/all-MiniLM-L6-v2`, loaded once and shared, LRU-cached at the `encode()` level so repeated identical strings within a session don't re-run inference).
 
-![Multi-source link representation](assets/portfolio/visuals/img2.png)
-*Anchor text, URL, and local DOM context are combined into one composite string before a single embedding call, not compared as three separate signals.*
+Anchor text, URL, and local DOM context are combined into one composite string before a single embedding call, not compared as three separate signals.
 
 ## Stage 2: the semantic basis and the cold-start problem
 

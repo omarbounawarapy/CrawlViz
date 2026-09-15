@@ -26,8 +26,7 @@ Both `LoggingPipeline` and `DebuggingPipeline` are ordinary broker subscribers. 
 
 This is what makes the report's "replayability" claim ([§2.7.1 — The Log as a Causal Record](../report/rapport-english.pdf#page=17)) more than an assertion. The formal framing, that graph state at time *t* is a deterministic projection of the ordered event prefix up to *t*, reconstructed from an empty initial state, is exactly what the frontend implements, not just what the backend logs.
 
-![Causal trace output from a real crawl session](assets/portfolio/visuals/img5.png)
-*An actual `DebuggingPipeline` trace: LLM prompt construction, dispatch, network round-trip, and parsed response for one node's topic-expansion call, each line carrying the correlation ID that ties it back to a specific node.*
+An actual `DebuggingPipeline` trace looks like: LLM prompt construction, dispatch, network round-trip, and parsed response for one node's topic-expansion call, each line carrying the correlation ID that ties it back to a specific node.
 
 ## Replay: an event-sourced frontend, with checkpoints
 

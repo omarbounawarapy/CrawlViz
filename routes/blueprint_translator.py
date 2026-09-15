@@ -23,7 +23,6 @@ from typing import Any
 import pydantic
 
 from config import DEFAULT_PRIORITY_STRATEGY
-from priority.strategy import STRATEGY_REGISTRY
 
 from .blueprint_schema import (
     ALLOWED_EXPORT_TYPES,

@@ -34,6 +34,30 @@ This is the mechanism the report's [§2.6.3 — Simultaneous Triggering and Sync
 
 The result: `ScoringPipeline` can claim a node the instant it's created, so there's no scheduling gap, while the actual scoring work for that node cannot start until the data it needs genuinely exists, enforced by the `Future`, not by timing assumptions, retries, or polling. This is precisely how the report's [Table 2.3](../report/rapport-english.pdf#page=17) ("the scoring worker only considers already-ready nodes") is realized in code.
 
+```mermaid
+sequenceDiagram
+    participant Broker as EventBroker
+    participant Req as RequestsPipeline
+    participant Score as ScoringPipeline
+    participant Node as Node.ready (Future)
+    participant Store as StoragePipeline
+
+    Broker->>Req: NodeAddedEvent
+    Broker->>Score: NodeAddedEvent
+    activate Score
+    Score->>Node: await node.ready
+    Note over Score,Node: suspended -- only this node's<br/>coroutine, other workers unaffected
+    Req->>Req: fetch, extract, filter, transform
+    Req->>Broker: TransformationCompletedEvent
+    Broker->>Store: TransformationCompletedEvent
+    Store->>Node: node.update_state() resolves the future
+    Node-->>Score: ready
+    deactivate Score
+    Score->>Score: run NLP/LLM scoring cascade
+```
+
+*The two pipelines race on the same `NodeAddedEvent`, but only `ScoringPipeline`'s coroutine for that specific node blocks on `node.ready`; `RequestsPipeline` and every other in-flight worker keep running.*
+
 **A related, non-obvious detail:** the future resolves after *transformation* completes, not after *filtering* completes, even though filtering is what actually produces the deduplicated link list scoring needs. Item transformation and link scoring are conceptually independent (one shapes extracted content fields, the other ranks candidate URLs) but are coupled here because both `event.links` and the transformed items arrive on the same `TransformationCompletedEvent`. In practice this means a node with a long transform chain on its items delays scoring on its links too, a coupling that isn't visible from the report's lifecycle-state description alone.
 
 ## Two logging tiers on the same event stream
