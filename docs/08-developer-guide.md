@@ -6,7 +6,7 @@ Practical setup and operation. This reflects what's verified to work in this rev
 
 - Python 3.12+
 - [uv](https://docs.astral.sh/uv/) (the project's dependency/run manager, see `Makefile`)
-- Node 18+ (for `crawler-ui/`)
+- Node 22.12+ (for `crawler-ui/`; running the frontend test suite specifically needs Node 22.22.2+/24.15.0+, per `jsdom`'s `engines` field)
 
 ## Install
 
