@@ -6,6 +6,7 @@ from events import (
     RequestFailedEvent,
     RetryOperationFailedEvent,
     ScoreRescheduledEvent,
+    ScoringFailedEvent,
 )
 
 from .base_pipeline import BasePipeline
@@ -36,12 +37,18 @@ class RetryProcessor(BasePipeline):
         max_queue_size: int = 0,
         max_concurrency: int = 1,
         max_request_retries: int = 3,
+        max_scoring_retries: int = 3,
+        retry_base_delay: float = 2.0,
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.storage = storage
         self.requests_pipeline = requests_pipeline
         self.max_request_retries = max_request_retries
+        self.max_scoring_retries = max_scoring_retries
+        self.retry_base_delay = retry_base_delay
+        self._scoring_retry_counts: dict[int, int] = {}
+        self._pending: set[asyncio.Task] = set()
         # Per-node retry attempt counter, keyed by node id.
         self._retry_counts: dict[int, int] = {}
 
@@ -50,6 +57,7 @@ class RetryProcessor(BasePipeline):
         self.handlers = {
             RequestFailedEvent: self._on_request_failed,
             EmptyScoreResultsEvent: self._on_empty_score_results,
+            ScoringFailedEvent: self._on_scoring_failed,
         }
 
     async def _process(self, event, worker_id: int) -> None:
@@ -78,6 +86,35 @@ class RetryProcessor(BasePipeline):
                 node=node,
             )
         )
+
+    async def _on_scoring_failed(self, event: ScoringFailedEvent) -> None:
+        """Reschedule a node whose scoring raised (e.g. an LLM call failed),
+        up to `max_scoring_retries`, instead of dropping it from the crawl."""
+        node = event.node
+        node_id = node.get_id()
+        attempts = self._scoring_retry_counts.get(node_id, 0) + 1
+        self._scoring_retry_counts[node_id] = attempts
+
+        if attempts > self.max_scoring_retries:
+            logger.warning(
+                "Node %s exceeded max scoring retries (%d) after %s: %s -- giving up",
+                node_id, self.max_scoring_retries, event.error_type, event.error_message,
+            )
+            return
+
+        async def _reschedule() -> None:
+            await asyncio.sleep(self.retry_base_delay * 2 ** (attempts - 1))
+            await self.event_broker.emit(
+                ScoreRescheduledEvent(correlation_id=str(node_id), node=node)
+            )
+
+        self._spawn(_reschedule())
+
+    def _spawn(self, coro) -> None:
+        """Run a delayed requeue in the background so the retry worker isn't blocked."""
+        task = asyncio.create_task(coro)
+        self._pending.add(task)
+        task.add_done_callback(self._pending.discard)
 
     async def _on_request_failed(self, event: RequestFailedEvent) -> None:
         """Requeue a node whose page fetch failed, up to `max_request_retries`.
@@ -113,4 +150,9 @@ class RetryProcessor(BasePipeline):
             node_id, attempts, self.max_request_retries,
             event.error_type, event.error_message,
         )
-        await self.requests_pipeline.queue.put(node)
+
+        async def _requeue() -> None:
+            await asyncio.sleep(self.retry_base_delay * 2 ** (attempts - 1))
+            await self.requests_pipeline.queue.put(node)
+
+        self._spawn(_requeue())

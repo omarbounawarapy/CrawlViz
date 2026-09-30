@@ -1,5 +1,8 @@
+import aiohttp
+
 from .anthropic_translator import AnthropicTranslator
 from .gemini_translator import GeminiTranslator
+from .groq_translator import GroqTranslator
 from .key_manager import KeyManager
 from .network_client import NetworkClient
 from .nvidia_translator import NvidiaTranslator
@@ -31,6 +34,7 @@ class LlmHandler:
         "anthropic": AnthropicTranslator,
         "gemini": GeminiTranslator,
         "nvidia": NvidiaTranslator,
+        "groq": GroqTranslator,
     }
 
     def __init__(self, key_manager: KeyManager, client: NetworkClient | None = None):
@@ -44,8 +48,6 @@ class LlmHandler:
             ValueError: If `context`'s scoring type has no registered translator.
         """
         llm_type = context.get_scoring_type()
-        key = await self.key_manager.next_key(llm_type)
-        context.set_key(key)
 
         translator_cls = self.translators.get(llm_type)
         if translator_cls is None:
@@ -54,7 +56,19 @@ class LlmHandler:
                 f"Registered: {list(self.translators.keys())}"
             )
 
-        params = translator_cls.translate_request(context)
-        response = await self.client.emit_request(params)
-        normalized = translator_cls.translate_response(response)
-        return normalized
+        while True:
+            key = await self.key_manager.next_key(llm_type)
+            context.set_key(key)
+            params = translator_cls.translate_request(context)
+            try:
+                response = await self.client.emit_request(params)
+                break
+            except aiohttp.ClientResponseError as e:
+                # A rejected key (401/403) will never start working: drop it
+                # from rotation and retry with the next one, if any is left.
+                if e.status in (401, 403) and await self.key_manager.mark_invalid(
+                    llm_type, key
+                ):
+                    continue
+                raise
+        return translator_cls.translate_response(response)

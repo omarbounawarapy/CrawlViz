@@ -339,7 +339,10 @@ class Crawler:
         """
         b = self.event_broker
 
-        b.subscribe(p["retry"], [EmptyScoreResultsEvent, RequestFailedEvent])
+        b.subscribe(
+            p["retry"],
+            [EmptyScoreResultsEvent, RequestFailedEvent, ScoringFailedEvent],
+        )
 
         # SpaceUpdater's flush loop otherwise runs forever -- this is
         # what lets it notice the crawl ended and actually stop (see

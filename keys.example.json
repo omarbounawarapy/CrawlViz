@@ -14,5 +14,8 @@
   ],
   "nvidia": [
     "nvapi-your-nvidia-key-here"
+  ],
+  "groq": [
+    "gsk_your-groq-key-here"
   ]
 }

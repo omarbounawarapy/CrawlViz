@@ -1,6 +1,7 @@
 from .anthropic_translator import AnthropicTranslator
 from .async_file_handler import AsyncFileHandler
 from .gemini_translator import GeminiTranslator
+from .groq_translator import GroqTranslator
 from .key_manager import KeyManager
 from .llm_handler import LlmHandler
 from .log_writer import LogWriter
@@ -13,6 +14,7 @@ __all__ = [
     "AnthropicTranslator",
     "AsyncFileHandler",
     "GeminiTranslator",
+    "GroqTranslator",
     "KeyManager",
     "LlmHandler",
     "LogWriter",

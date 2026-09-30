@@ -50,6 +50,24 @@ class KeyManager:
 
             return keys[start_idx]
 
+    async def mark_invalid(self, provider_name: str, key: str | None) -> bool:
+        """Drop a rejected (401/403) key from `provider_name`'s rotation.
+
+        Returns True if another key remains to retry with. The last
+        remaining key is never dropped, so a provider always keeps one.
+        """
+        async with self.lock:
+            keys = self.registry.get(provider_name, [])
+            if key not in keys or len(keys) <= 1:
+                return False
+            keys.remove(key)
+            self.indexes[provider_name] %= len(keys)
+            logger.warning(
+                "Dropped rejected API key for '%s'; %d key(s) left",
+                provider_name, len(keys),
+            )
+            return True
+
     def load_keys(self) -> dict:
         """Read and validate ``keys.json``.
 

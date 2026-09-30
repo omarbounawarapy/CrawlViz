@@ -8,11 +8,14 @@ network calls. The end-to-end tests at the bottom fake only NetworkClient
 and KeyManager, to prove each new provider is actually reachable through
 LlmHandler.send(), not just implemented as an unused class.
 """
+import aiohttp
+import pytest
 from models import ExpansionContext, ScoringContext
 
 from infrastructure import (
     AnthropicTranslator,
     GeminiTranslator,
+    GroqTranslator,
     KeyManager,
     LlmHandler,
     NvidiaTranslator,
@@ -47,13 +50,14 @@ def make_key_manager(monkeypatch, keys: dict) -> KeyManager:
 # =====================================================================
 
 class TestProviderSelection:
-    def test_all_five_providers_registered(self):
+    def test_all_six_providers_registered(self):
         assert LlmHandler.translators == {
             "openrouter": OpenRouterTranslator,
             "openai": OpenAITranslator,
             "anthropic": AnthropicTranslator,
             "gemini": GeminiTranslator,
             "nvidia": NvidiaTranslator,
+            "groq": GroqTranslator,
         }
 
     async def test_unknown_provider_raises_before_any_request_is_sent(self, monkeypatch):
@@ -344,3 +348,81 @@ class TestEndToEndThroughLlmHandler:
         await handler.send(ctx)
 
         assert fake_client.last_params["headers"]["Authorization"] == "Bearer None"
+
+
+# =====================================================================
+# Groq
+# =====================================================================
+
+class TestGroqTranslator:
+    def test_translate_request_shape(self):
+        ctx = ScoringContext("groq", "llama-3.3-70b-versatile", "score these links")
+        ctx.set_key("gsk-test-key")
+
+        params = GroqTranslator.translate_request(ctx)
+
+        assert params["method"] == "POST"
+        assert params["url"] == "https://api.groq.com/openai/v1/chat/completions"
+        assert params["headers"]["Authorization"] == "Bearer gsk-test-key"
+        assert params["data"]["model"] == "llama-3.3-70b-versatile"
+        assert params["data"]["messages"] == [
+            {"role": "user", "content": "score these links"}
+        ]
+
+    def test_translate_response_strips_markdown_fences(self):
+        response = {
+            "choices": [{"message": {"content": '```json\n{"descriptions": ["c"]}\n```'}}]
+        }
+        assert GroqTranslator.translate_response(response) == {"descriptions": ["c"]}
+
+    def test_translate_response_malformed_yields_empty_dict(self):
+        assert GroqTranslator.translate_response({"unexpected": "shape"}) == {}
+
+    async def test_groq_reachable_via_scoring_context(self, monkeypatch):
+        key_manager = make_key_manager(monkeypatch, {"groq": ["gsk-test"]})
+        fake_client = FakeNetworkClient({
+            "choices": [{"message": {"content": '{"results": {}}'}}]
+        })
+        handler = LlmHandler(key_manager, client=fake_client)
+
+        ctx = ScoringContext("groq", "llama-3.3-70b-versatile", "score these links")
+        assert await handler.send(ctx) == {"results": {}}
+        assert fake_client.last_params["headers"]["Authorization"] == "Bearer gsk-test"
+
+
+# =====================================================================
+# Rejected-key handling
+# =====================================================================
+
+class RejectingClient:
+    """Returns 401 for any key in `bad`, a canned response otherwise."""
+
+    def __init__(self, bad, canned):
+        self.bad, self.canned, self.calls = bad, canned, 0
+
+    async def emit_request(self, params):
+        self.calls += 1
+        if params["headers"]["Authorization"].removeprefix("Bearer ") in self.bad:
+            raise aiohttp.ClientResponseError(None, (), status=401, message="Unauthorized")
+        return self.canned
+
+
+class TestRejectedKeys:
+    async def test_401_key_is_dropped_and_request_retried_with_next_key(self, monkeypatch):
+        km = make_key_manager(monkeypatch, {"openrouter": ["good", "bad"]})
+        client = RejectingClient({"bad"}, {"choices": [{"message": {"content": '{"a": 1}'}}]})
+        handler = LlmHandler(km, client=client)
+
+        for _ in range(3):
+            assert await handler.send(ScoringContext("openrouter", "m", "p")) == {"a": 1}
+
+        assert km.registry["openrouter"] == ["good"]
+        assert client.calls == 4  # one wasted call on "bad", then only "good"
+
+    async def test_last_key_is_never_dropped(self, monkeypatch):
+        km = make_key_manager(monkeypatch, {"openrouter": ["bad"]})
+        handler = LlmHandler(km, client=RejectingClient({"bad"}, {}))
+
+        with pytest.raises(aiohttp.ClientResponseError):
+            await handler.send(ScoringContext("openrouter", "m", "p"))
+        assert km.registry["openrouter"] == ["bad"]

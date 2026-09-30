@@ -5,7 +5,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ## [Unreleased]
 
 ### Added
-- Multi-provider LLM support: OpenRouter, OpenAI, Anthropic, Gemini, and NVIDIA (NIM), selectable per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`, behind a shared `LlmHandler` abstraction.
+- Multi-provider LLM support: OpenRouter, OpenAI, Anthropic, Gemini, NVIDIA (NIM), and Groq, selectable per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`, behind a shared `LlmHandler` abstraction.
 - Full documentation set under `docs/` (architecture, execution walkthrough, event-pipeline/semantic-scoring/resilience deep dives, algorithms, research & evaluation, developer guide, design decisions).
 - Frontend V2: IDE-style shell with activity bar and docked inspector, Node Inspector with scoring breakdown, Pipeline Monitor with per-stage throughput/errors, traversal-funnel overview, filterable timeline replay, and a schema-driven configuration viewer.
 - Checkpoint-based event replay in the frontend reducer, so the UI can scrub to any past point in a crawl without replaying the full event log.
