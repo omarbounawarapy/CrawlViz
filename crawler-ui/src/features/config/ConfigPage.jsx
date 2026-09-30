@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
 import { Page, SectionTitle, Row } from "../common/Page";
+import { buttonOutline } from "../common/buttons";
 import { fetchConfigSchema, fetchConfig } from "../../api/client";
 
 const theme = getTheme();
@@ -53,6 +54,40 @@ function RangeTick({ value, min, max }) {
       <line x1="120" y1="3" x2="120" y2="11" stroke={theme.colors.text.muted} strokeWidth="1" />
       <circle cx={(pct / 100) * 120} cy="7" r="4.5" fill={theme.colors.text.primary} />
     </svg>
+  );
+}
+
+
+// The two thresholds drawn on the 0-1 NLP similarity scale, so the numbers
+// read as three zones. Vermilion marks the most promising zone.
+function CascadeScale({ low, high }) {
+  if (typeof low !== "number" || typeof high !== "number") return null;
+  const W = 600, H = 34, x = (v) => Math.max(0, Math.min(1, v)) * W;
+  const zones = [
+    { from: 0, to: low, fill: "#e3e8ee", label: "Mostly skipped" },
+    { from: low, to: high, fill: "#b7c1cd", label: "LLM decides" },
+    { from: high, to: 1, fill: theme.colors.relevance.ramp[1], label: "Trusted on NLP score" },
+  ];
+  return (
+    <figure style={{ margin: "4px 0 10px", maxWidth: 600 }}>
+      <svg viewBox={`0 0 ${W} ${H + 26}`} width="100%" role="img"
+           aria-label={`Similarity scores below ${low} are mostly skipped, between ${low} and ${high} the LLM decides, above ${high} are trusted on the NLP score.`}>
+        {zones.map((z) => (
+          <g key={z.label}>
+            <rect x={x(z.from)} y="0" width={Math.max(0, x(z.to) - x(z.from))} height={H} fill={z.fill} />
+            <text x={(x(z.from) + x(z.to)) / 2} y={H + 18} textAnchor="middle" fontSize="13" fill={theme.colors.text.secondary}>{z.label}</text>
+          </g>
+        ))}
+        {[low, high].map((v) => (
+          <g key={v}>
+            <line x1={x(v)} x2={x(v)} y1="-2" y2={H + 2} stroke={theme.colors.text.primary} strokeWidth="2" />
+          </g>
+        ))}
+      </svg>
+      <figcaption style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2 }}>
+        NLP similarity from 0 to 1. Thresholds at {low} and {high}.
+      </figcaption>
+    </figure>
   );
 }
 
@@ -119,14 +154,20 @@ export default function ConfigPage() {
       aside={index || null}
     >
       {error && (
-        <p role="alert" style={{ fontSize: 14, color: theme.colors.text.primary, maxWidth: "60ch" }}>
-          Could not load the configuration. The control API did not answer ({error}). Start the backend, then reload this page.
-        </p>
+        <div role="alert" style={{ maxWidth: "60ch" }}>
+          <p style={{ fontSize: 14, color: theme.colors.accent.red, marginBottom: 12 }}>
+            Could not load the configuration. The control API did not answer ({error}). Start it with make dev-backend, then try again.
+          </p>
+          <button onClick={() => window.location.reload()} style={buttonOutline(false)}>Try again</button>
+        </div>
       )}
       {!error && !schema && <p style={{ fontSize: 14, color: theme.colors.text.muted }}>Loading configuration…</p>}
       {groups.map(([section, fields]) => (
         <section key={section} aria-labelledby={slug(section)}>
           <SectionTitle id={slug(section)}>{section}</SectionTitle>
+          {section === "Scoring cascade" && (
+            <CascadeScale low={get(values, "scoring_cascade.low_threshold")} high={get(values, "scoring_cascade.high_threshold")} />
+          )}
           {fields.map(field => (
             <FieldDisplay key={field.path} field={field} value={get(values, field.path)} />
           ))}

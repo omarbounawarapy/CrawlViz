@@ -17,8 +17,8 @@ export default function Legend() {
       role="group"
       aria-label="How to read the graph"
       style={{
-        position: "absolute", left: 16, bottom: 16, zIndex: 5,
-        display: "flex", gap: 28, alignItems: "flex-start",
+        position: "absolute", left: 16, right: 16, bottom: 16, zIndex: 5, width: "fit-content", maxWidth: "calc(100% - 32px)",
+        display: "flex", flexWrap: "wrap", gap: "12px 28px", alignItems: "flex-start",
         background: theme.colors.background.panel, border: `1px solid ${theme.colors.background.border}`,
         borderRadius: theme.radii.lg, padding: "10px 14px", fontFamily: theme.typography.fontMono,
       }}

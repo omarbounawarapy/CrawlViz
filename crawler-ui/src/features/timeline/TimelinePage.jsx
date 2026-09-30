@@ -53,8 +53,8 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
         background: theme.colors.background.panel, borderTop: `1px solid ${theme.colors.background.border}`,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 20, height: 56, padding: "0 20px" }}>
-        <div style={{ width: 150, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
+      <div className="tl-bar" style={{ display: "flex", alignItems: "center", gap: 20, height: 56, padding: "0 20px" }}>
+        <div className="tl-mode" style={{ width: 150, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
           {isReplaying ? (
             <button onClick={onExitReplay} style={{
               height: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
@@ -90,7 +90,7 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
           />
         </div>
 
-        <output className="num" style={{ width: 170, textAlign: "right", fontSize: 13, color: theme.colors.text.secondary, flexShrink: 0 }}>
+        <output className="num tl-count" style={{ width: 170, textAlign: "right", fontSize: 13, color: theme.colors.text.secondary, flexShrink: 0 }}>
           {eventLog.length === 0 ? "No events yet" : `Event ${position + 1} of ${eventLog.length}`}
         </output>
 
@@ -107,7 +107,7 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
       </div>
 
       {expanded && (
-        <div style={{ borderTop: `1px solid ${theme.colors.background.border}`, display: "flex", flexDirection: "column", height: 260 }}>
+        <div style={{ borderTop: `1px solid ${theme.colors.background.border}`, display: "flex", flexDirection: "column", height: "min(260px, 32vh)" }}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "8px 20px", borderBottom: `1px solid ${theme.colors.background.border}` }}>
             {FILTERABLE_TYPES.map(t => {
               const badge = TYPE_BADGE[t];

@@ -36,10 +36,10 @@ function GraphControls({ showCandidates, onToggleCandidates, candidateCount, sea
         value={search}
         onChange={e => onSearch(e.target.value)}
         placeholder="Find a URL…"
-        aria-label="Find a node by URL"
+        aria-label="Find a node by URL" className="find-input"
         style={{
           background: "transparent", border: "none", borderBottom: `1px solid ${theme.colors.text.muted}`,
-          padding: "3px 2px", fontSize: 13, color: theme.colors.text.primary, width: 180, outline: "none",
+          padding: "3px 2px", fontSize: 13, color: theme.colors.text.primary, width: 180,
         }}
       />
       {candidateCount > 0 && (
@@ -301,6 +301,15 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
             d.fx = null; d.fy = null;
           })
       )
+      .attr("tabindex", 0)
+      .attr("role", "button")
+      .attr("aria-label", d => `Page ${d.url || d.node_id || d.id}`)
+      .on("keydown", (event, d) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          if (onNodeClick) onNodeClick({ node_id: d.node_id ?? d.id, ...d });
+        }
+      })
       .on("click", (event, d) => {
         event.stopPropagation();
         if (onNodeClick) onNodeClick({ node_id: d.node_id ?? d.id, ...d });

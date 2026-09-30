@@ -1,395 +1,105 @@
 /**
- * Template (blueprint) management screen.
+ * Blueprints: pick a saved blueprint, edit it as a form or as raw JSON, save.
  *
- * Sidebar lists saved blueprints; the main panel offers a structured
- * form editor and a raw JSON editor for the same document (UC-T01,
- * report section 0.11.2), kept in sync when switching tabs.
- *
- * V2 note: moved into features/blueprints/ and wired into the new app
- * shell, but its internals are deliberately left as-is this pass -- see
- * docs/V2_ARCHITECTURE.md roadmap #14. One thing worth flagging exactly
- * here for whoever picks that up: the STRATEGIES list below is a third,
- * hand-maintained copy of the same enum that already lives validated in
- * routes/blueprint_schema.py's ALLOWED_STRATEGIES (and, unused, in
- * routes/blueprint_ui_schema.json) -- see docs/V2_ARCHITECTURE.md §A.1.5.
- * features/config/ConfigPage.jsx shows the pattern this should eventually
- * move to: render from a schema fetched from the backend instead of a
- * literal copied here.
+ * A blueprint says where a crawl starts, what counts as relevant and when it
+ * stops. The data model (constants, validation, form <-> blueprint
+ * conversion) lives in blueprintModel.js; shared controls in common/Form.jsx.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  fetchTemplates,
-  fetchTemplate,
-  createTemplate,
-  updateTemplate,
-  deleteTemplate,
+  fetchTemplates, fetchTemplate, createTemplate, updateTemplate, deleteTemplate,
 } from "../../api/client";
+import { getTheme } from "../../theme";
+import { Page, SectionTitle } from "../common/Page";
+import { Field, TextInput, Select, Grid, Button, Tabs, Chip, Group, Status } from "../common/Form";
+import {
+  STRATEGIES, TRANSFORMS_WITH_CONFIG, ALL_TRANSFORMS, EXPORT_TYPES, FIELD_TYPES, EXPANSION_STYLES,
+  PROFILES, DEFAULT_BLUEPRINT, validateBlueprint, blueprintToForm, formToBlueprint,
+} from "./blueprintModel";
 
-// ─── STRICT CONSTANTS ─────────────────────────────────────────────────────────
+const theme = getTheme();
+const { text, background, accent } = theme.colors;
 
-const STRATEGIES = [
-  "TOPICAL",
-  "PATHFINDING",
-  "EXPLORATION",
-  "GOAL_ORIENTED",
-  "DENSITY_FOCUSED",
-  "UNCERTAINTY_BIASED",
-];
+const BACKENDS = ["openrouter", "openai", "anthropic", "gemini", "nvidia", "groq"];
+const RUN_PRESELECT_KEY = "crawlviz.run.blueprint";
 
-const TRANSFORMS_NO_CONFIG = ["strip", "lowercase", "deduplicate", "join"];
-const TRANSFORMS_WITH_CONFIG = {
-  truncate:      { param: "max_len", inputType: "number", default: 300,  label: "Max Length" },
-  regex:         { param: "pattern", inputType: "text",   default: "",   label: "Pattern"    },
-  regex_extract: { param: "pattern", inputType: "text",   default: "",   label: "Pattern"    },
-};
-const ALL_TRANSFORMS = [...TRANSFORMS_NO_CONFIG, ...Object.keys(TRANSFORMS_WITH_CONFIG)];
-const EXPORT_TYPES   = ["text", "real", "int", "json"];
-const FIELD_TYPES    = ["scalar", "list"];
-const EXPANSION_STYLES = ["rich", "minimal"];
+// Each field's DOM id, so validation errors can focus the field they name.
+const bpId = (...parts) => ["bp", ...parts].join("-");
 
-// Static profile registry — mirrors extraction_profiles.json
-const PROFILES = {
-  wikimd_standard:    { label: "WikiMD Standard",    fields: ["title","paragraphs","headings","lists","infobox_items","categories"] },
-  wikipedia_standard: { label: "Wikipedia Standard", fields: ["title","paragraphs","headings","lists","infobox_items","references","categories"] },
-  pubmed_standard:    { label: "PubMed Standard",    fields: ["title","abstract","authors","keywords","pmid","publication_date"] },
-  generic_article:    { label: "Generic Article",    fields: ["title","headings","paragraphs","meta_description"] },
-};
-
-// Default blueprint that matches the exact schema
-const DEFAULT_BLUEPRINT = {
-  blueprint_id: "",
-  id: "",
-  target_topic: "",
-  seeds: [{ url: "", domain: "" }],
-  domains: { "": { base_url: "", link_selector: "" } },
-  scoring: {
-    strategy: "TOPICAL",
-    params: { scoring_type: "openrouter", model_information: "" },
-  },
-  expansion: { style: "rich", num_descriptions: 50, llm_type: "openrouter", llm_model: "" },
-  extraction: { mode: "document", fields: {} },
-  stop_conditions: {
-    max_nodes: 120000, max_depth: 6000, max_duration: 900000,
-    no_progress_timeout: 1000000, stop_url: "",
-  },
-};
-
-// ─── VALIDATION ────────────────────────────────────────────────────────────────
-
-function validateBlueprint(bp) {
-  const errors = [];
-  if (!bp.blueprint_id?.trim()) errors.push("blueprint_id is required.");
-  if (!bp.id?.trim())           errors.push("id is required.");
-  if (!bp.target_topic?.trim()) errors.push("target_topic is required.");
-
-  (bp.seeds || []).forEach((s, i) => {
-    if (!s.url?.trim())    errors.push(`seeds[${i}].url is required.`);
-    if (!s.domain?.trim()) errors.push(`seeds[${i}].domain is required.`);
-  });
-  if (!(bp.seeds || []).length) errors.push("At least one seed is required.");
-
-  const domKeys = Object.keys(bp.domains || {});
-  if (!domKeys.length) errors.push("At least one domain is required.");
-  domKeys.forEach((k) => {
-    if (!bp.domains[k].base_url?.trim())      errors.push(`domains['${k}'].base_url is required.`);
-    if (!bp.domains[k].link_selector?.trim()) errors.push(`domains['${k}'].link_selector is required.`);
-  });
-
-  if (!STRATEGIES.includes(bp.scoring?.strategy))
-    errors.push(`scoring.strategy must be one of: ${STRATEGIES.join(", ")}.`);
-  if (!bp.scoring?.params?.scoring_type?.trim())    errors.push("scoring.params.scoring_type is required.");
-  if (!bp.scoring?.params?.model_information?.trim()) errors.push("scoring.params.model_information is required.");
-
-  if (!EXPANSION_STYLES.includes(bp.expansion?.style)) errors.push("expansion.style must be 'rich' or 'minimal'.");
-  if (!(bp.expansion?.num_descriptions >= 1))          errors.push("expansion.num_descriptions must be ≥ 1.");
-  if (!bp.expansion?.llm_type?.trim())                 errors.push("expansion.llm_type is required.");
-  if (!bp.expansion?.llm_model?.trim())                errors.push("expansion.llm_model is required.");
-
-  if (bp.extraction?.mode !== "document") errors.push("extraction.mode must be 'document'.");
-  const fields = bp.extraction?.fields || {};
-  if (!Object.keys(fields).length) errors.push("At least one extraction field is required.");
-
-  Object.entries(fields).forEach(([fname, f]) => {
-    if (!f.selector?.trim())             errors.push(`Field '${fname}': selector is required.`);
-    if (!FIELD_TYPES.includes(f.type))   errors.push(`Field '${fname}': type must be scalar|list.`);
-    if (!EXPORT_TYPES.includes(f.export_type)) errors.push(`Field '${fname}': export_type must be one of ${EXPORT_TYPES.join("|")}.`);
-    (f.transform || []).forEach((step, ti) => {
-      if (!ALL_TRANSFORMS.includes(step.type))
-        errors.push(`Field '${fname}' transform[${ti}]: '${step.type}' is not allowed.`);
-      if (step.type in TRANSFORMS_WITH_CONFIG) {
-        const { param } = TRANSFORMS_WITH_CONFIG[step.type];
-        if (step[param] === undefined || step[param] === "")
-          errors.push(`Field '${fname}' transform[${ti}] '${step.type}': '${param}' is required.`);
-      }
-    });
-  });
-
-  const sc = bp.stop_conditions || {};
-  ["max_nodes","max_depth","max_duration","no_progress_timeout"].forEach((k) => {
-    if (sc[k] === undefined || sc[k] === "" || isNaN(Number(sc[k])))
-      errors.push(`stop_conditions.${k} must be a number.`);
-  });
-
-  return errors;
+function BackendList() {
+  return <datalist id="bp-backends">{BACKENDS.map((b) => <option key={b} value={b} />)}</datalist>;
 }
 
-// ─── FORM ↔ BLUEPRINT CONVERSION ─────────────────────────────────────────────
-
-function blueprintToForm(bp) {
-  bp = bp || DEFAULT_BLUEPRINT;
-  const fields = bp.extraction?.fields || {};
-  const firstField = Object.values(fields)[0] || {};
-  const isProfile = !!firstField._profile_resolved;
-
-  return {
-    blueprint_id:   bp.blueprint_id  || "",
-    id:             bp.id            || "",
-    target_topic:   bp.target_topic  || "",
-    seeds: (bp.seeds || [{ url: "", domain: "" }]).map((s) => ({ url: s.url || "", domain: s.domain || "" })),
-    domains: Object.entries(bp.domains || {}).map(([key, v]) => ({
-      key, base_url: v.base_url || "", link_selector: v.link_selector || "",
-    })) || [{ key: "", base_url: "", link_selector: "" }],
-
-    // scoring
-    scoringStrategy:   bp.scoring?.strategy                    || "TOPICAL",
-    scoringType:       bp.scoring?.params?.scoring_type        || "openrouter",
-    modelInformation:  bp.scoring?.params?.model_information   || "",
-
-    // expansion
-    expansionStyle:    bp.expansion?.style          || "rich",
-    numDescriptions:   bp.expansion?.num_descriptions ?? 50,
-    llmType:           bp.expansion?.llm_type        || "openrouter",
-    llmModel:          bp.expansion?.llm_model        || "",
-
-    // extraction
-    extractionMode: isProfile ? "profile" : "manual",
-    profileId: isProfile
-      ? (firstField._profile_id || Object.keys(PROFILES)[0])
-      : Object.keys(PROFILES)[0],
-    profileChecklist: isProfile ? Object.keys(fields) : Object.keys(PROFILES)[0]
-      ? [...PROFILES[Object.keys(PROFILES)[0]].fields]
-      : [],
-    manualFields: isProfile
-      ? [{ name: "", selector: "", fieldType: "scalar", exportType: "text", transforms: [] }]
-      : Object.entries(fields).map(([name, f]) => ({
-          name,
-          selector:   f.selector    || "",
-          fieldType:  f.type        || "scalar",
-          exportType: f.export_type || "text",
-          transforms: (f.transform || []).map((t) => ({
-            type:       t.type,
-            paramValue: t.max_len !== undefined
-              ? String(t.max_len)
-              : (t.pattern !== undefined ? t.pattern : ""),
-          })),
-        })),
-
-    // stop
-    maxNodes:           bp.stop_conditions?.max_nodes            ?? 120000,
-    maxDepth:           bp.stop_conditions?.max_depth            ?? 6000,
-    maxDuration:        bp.stop_conditions?.max_duration         ?? 900000,
-    noProgressTimeout:  bp.stop_conditions?.no_progress_timeout  ?? 1000000,
-    stopUrl:            bp.stop_conditions?.stop_url             || "",
-  };
-}
-
-function formToBlueprint(form) {
-  // Build domains object
-  const domains = {};
-  (form.domains || []).forEach((d) => {
-    if (d.key?.trim()) {
-      domains[d.key.trim()] = { base_url: d.base_url, link_selector: d.link_selector };
-    }
-  });
-
-  // Build extraction fields
-  const fields = {};
-  if (form.extractionMode === "profile") {
-    // Stubs that BlueprintTranslator resolves server-side
-    (form.profileChecklist || []).forEach((fname) => {
-      fields[fname] = { _profile_resolved: true, _profile_id: form.profileId };
-    });
-  } else {
-    (form.manualFields || []).forEach((mf) => {
-      if (!mf.name?.trim()) return;
-      const transform = (mf.transforms || []).map((t) => {
-        const step = { type: t.type };
-        if (t.type in TRANSFORMS_WITH_CONFIG) {
-          const { param, inputType } = TRANSFORMS_WITH_CONFIG[t.type];
-          step[param] = inputType === "number" ? Number(t.paramValue) : t.paramValue;
-        }
-        return step;
-      });
-      fields[mf.name.trim()] = {
-        selector:    mf.selector,
-        type:        mf.fieldType,
-        transform,
-        export_type: mf.exportType,
-      };
-    });
-  }
-
-  // Exact blueprint shape — no extra keys, no renamed keys
-  return {
-    blueprint_id: form.blueprint_id,
-    id:           form.id,
-    target_topic: form.target_topic,
-    seeds:        (form.seeds || []).map((s) => ({ url: s.url, domain: s.domain })),
-    domains,
-    scoring: {
-      strategy: form.scoringStrategy,
-      params: {
-        scoring_type:      form.scoringType,
-        model_information: form.modelInformation,
-      },
-    },
-    expansion: {
-      style:            form.expansionStyle,
-      num_descriptions: Number(form.numDescriptions),
-      llm_type:         form.llmType,
-      llm_model:        form.llmModel,
-    },
-    extraction: { mode: "document", fields },
-    stop_conditions: {
-      max_nodes:            Number(form.maxNodes),
-      max_depth:            Number(form.maxDepth),
-      max_duration:         Number(form.maxDuration),
-      no_progress_timeout:  Number(form.noProgressTimeout),
-      stop_url:             form.stopUrl || "",
-    },
-  };
-}
-
-// ─── DESIGN TOKENS (matches existing palette exactly) ────────────────────────
-const C = {
-  bg0: "#f3f5f7", bg1: "#fbfcfd", bg2: "#e9edf1",
-  border: "#d3d9e0", border2: "#d3d9e0",
-  text: "#0f1b2d", bright: "#0f1b2d", dim: "#566478",
-  accent: "#0f1b2d", danger: "#7a1f5c", ok: "#1f6f5a",
-  mono: "'Public Sans', system-ui, sans-serif",
-};
-const inp = (extra = {}) => ({
-  background: C.bg1, border: `1px solid ${C.border2}`, borderRadius: 3,
-  color: C.bright, fontFamily: C.mono, fontSize: 13, padding: "4px 8px",
-  outline: "none", width: "100%", boxSizing: "border-box", ...extra,
-});
-const sel = () => ({ ...inp(), cursor: "pointer", appearance: "none", WebkitAppearance: "none" });
-const lbl = () => ({
-  display: "block", fontSize: 11, letterSpacing: "0", textTransform: "none",
-  color: C.dim, marginBottom: 3,
-});
-const S = {
-  root: { display: "flex", height: "100%", background: C.bg0, color: C.text, fontFamily: C.mono, fontSize: 13, overflow: "hidden" },
-  sidebar: { width: 220, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 },
-  sidebarHeader: { padding: "12px 14px", borderBottom: `1px solid ${C.border}`, fontSize: 11, letterSpacing: "0", color: C.dim, textTransform: "none", display: "flex", justifyContent: "space-between", alignItems: "center" },
-  list: { flex: 1, overflowY: "auto", padding: "6px 0" },
-  listItem: (active) => ({ padding: "7px 14px", cursor: "pointer", background: active ? C.bg2 : "transparent", borderLeft: `2px solid ${active ? C.accent : "transparent"}`, color: active ? C.bright : C.text, fontSize: 13, transition: "background 0.1s" }),
-  main: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
-  toolbar: { padding: "10px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 },
-  status: (ok) => ({ fontSize: 12, color: ok ? C.ok : C.danger, marginLeft: "auto" }),
-  empty: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#566478", fontSize: 13, letterSpacing: "0" },
-  textarea: { flex: 1, background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, color: "#0f1b2d", fontFamily: C.mono, fontSize: 13, padding: 12, resize: "none", outline: "none", lineHeight: 1.6 },
-  nameInput: { background: C.bg1, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.bright, fontFamily: C.mono, fontSize: 13, padding: "4px 8px", outline: "none", width: 180 },
-  btn: (variant = "default") => ({ background: variant === "primary" ? C.accent : variant === "danger" ? C.danger : C.bg2, color: variant === "primary" || variant === "danger" ? "#fff" : C.text, border: `1px solid ${variant === "primary" ? C.accent : variant === "danger" ? C.danger : C.border2}`, borderRadius: 4, padding: "4px 12px", fontSize: 11, letterSpacing: "0", textTransform: "none", cursor: "pointer", fontFamily: C.mono }),
-};
-const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 };
-const sec  = { borderBottom: `1px solid ${C.border}`, padding: "14px 16px" };
-
-// ─── SMALL UI ATOMS ───────────────────────────────────────────────────────────
-
-function SecHead({ title }) {
-  return <div style={{ fontSize: 11, letterSpacing: "0", color: C.dim, textTransform: "none", marginBottom: 10 }}>{title}</div>;
-}
-function F({ label, children }) {
-  return <div style={{ marginBottom: 8 }}><label style={lbl()}>{label}</label>{children}</div>;
-}
-function Pill({ active, onClick, children }) {
-  return (
-    <span onClick={onClick} style={{ padding: "2px 10px", borderRadius: 10, fontSize: 11, letterSpacing: "0", textTransform: "none", cursor: "pointer", fontFamily: C.mono, border: `1px solid ${active ? C.accent : C.border2}`, background: active ? C.accent + "22" : "transparent", color: active ? C.accent : C.dim, userSelect: "none" }}>
-      {children}
-    </span>
-  );
-}
-
-// ─── TRANSFORM PIPELINE ───────────────────────────────────────────────────────
+// ─── transforms ──────────────────────────────────────────────────────────────
 
 function TransformPipeline({ transforms, onChange }) {
-  const add  = () => onChange([...transforms, { type: "strip", paramValue: "" }]);
-  const rm   = (i) => onChange(transforms.filter((_, idx) => idx !== i));
-  const upd  = (i, patch) => onChange(transforms.map((t, idx) => idx === i ? { ...t, ...patch } : t));
+  const add = () => onChange([...transforms, { type: "strip", paramValue: "" }]);
+  const rm  = (i) => onChange(transforms.filter((_, idx) => idx !== i));
+  const upd = (i, patch) => onChange(transforms.map((t, idx) => (idx === i ? { ...t, ...patch } : t)));
 
   return (
-    <div style={{ marginTop: 4 }}>
+    <div>
       {transforms.map((t, i) => {
         const cfg = TRANSFORMS_WITH_CONFIG[t.type];
         return (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: cfg ? "130px 1fr 22px" : "130px 1fr 22px", gap: 5, alignItems: "center", marginBottom: 4 }}>
-            <select style={sel()} value={t.type} onChange={(e) => {
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "150px 1fr auto", gap: 8, alignItems: "center", marginBottom: 8 }}>
+            <Select aria-label={`Transform ${i + 1}`} value={t.type} onChange={(e) => {
               const nc = TRANSFORMS_WITH_CONFIG[e.target.value];
               upd(i, { type: e.target.value, paramValue: nc ? String(nc.default) : "" });
             }}>
               {ALL_TRANSFORMS.map((tr) => <option key={tr} value={tr}>{tr}</option>)}
-            </select>
+            </Select>
             {cfg
-              ? <input style={inp()} type={cfg.inputType} placeholder={cfg.label} value={t.paramValue} onChange={(e) => upd(i, { paramValue: e.target.value })} />
-              : <span style={{ fontSize: 12, color: C.dim }}>—</span>
-            }
-            <button style={{ ...S.btn("danger"), padding: "2px 5px", fontSize: 12 }} onClick={() => rm(i)}>×</button>
+              ? <TextInput aria-label={cfg.label} type={cfg.inputType} placeholder={cfg.label} value={t.paramValue} onChange={(e) => upd(i, { paramValue: e.target.value })} />
+              : <span style={{ fontSize: 13, color: text.muted }}>No setting</span>}
+            <Button variant="danger" aria-label={`Remove transform ${i + 1}`} onClick={() => rm(i)}>Remove</Button>
           </div>
         );
       })}
-      <button style={S.btn()} onClick={add}>+ transform</button>
+      <Button onClick={add}>Add transform</Button>
     </div>
   );
 }
 
-// ─── MANUAL FIELDS EDITOR ────────────────────────────────────────────────────
+// ─── extraction ──────────────────────────────────────────────────────────────
 
-function ManualFields({ fields, onChange }) {
+function ManualFields({ fields, onChange, errorFor }) {
   const add = () => onChange([...fields, { name: "", selector: "", fieldType: "scalar", exportType: "text", transforms: [] }]);
   const rm  = (i) => onChange(fields.filter((_, idx) => idx !== i));
-  const upd = (i, patch) => onChange(fields.map((f, idx) => idx === i ? { ...f, ...patch } : f));
+  const upd = (i, patch) => onChange(fields.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
 
   return (
     <div>
       {fields.map((f, i) => (
-        <div key={i} style={{ background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, padding: "10px 12px", marginBottom: 8 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: C.accent }}>Field {i + 1}{f.name ? ` — ${f.name}` : ""}</span>
-            <button style={S.btn("danger")} onClick={() => rm(i)}>remove</button>
-          </div>
-          <div style={row2}>
-            <F label="Name">
-              <input style={inp()} value={f.name} placeholder="e.g. title" onChange={(e) => upd(i, { name: e.target.value })} />
-            </F>
-            <F label="XPath Selector">
-              <input style={inp()} value={f.selector} placeholder="//h1[@id='firstHeading']" onChange={(e) => upd(i, { selector: e.target.value })} />
-            </F>
-          </div>
-          <div style={row2}>
-            <F label="Type">
-              <select style={sel()} value={f.fieldType} onChange={(e) => upd(i, { fieldType: e.target.value })}>
+        <Group key={i} title={f.name || `Field ${i + 1}`} onRemove={() => rm(i)}>
+          <Grid>
+            <Field label="Name"><TextInput value={f.name} placeholder="e.g. title" onChange={(e) => upd(i, { name: e.target.value })} /></Field>
+            <Field label="XPath selector" id={bpId("field", i, "selector")} error={errorFor(bpId("field", i, "selector"))}>
+              {(a) => <TextInput {...a} invalid={!!errorFor(a.id)} value={f.selector} placeholder="//h1[@id='firstHeading']" onChange={(e) => upd(i, { selector: e.target.value })} />}
+            </Field>
+          </Grid>
+          <Grid>
+            <Field label="Type">
+              <Select value={f.fieldType} onChange={(e) => upd(i, { fieldType: e.target.value })}>
                 {FIELD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </F>
-            <F label="Export Type">
-              <select style={sel()} value={f.exportType} onChange={(e) => upd(i, { exportType: e.target.value })}>
+              </Select>
+            </Field>
+            <Field label="Stored as">
+              <Select value={f.exportType} onChange={(e) => upd(i, { exportType: e.target.value })}>
                 {EXPORT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </F>
-          </div>
-          <F label="Transforms">
-            <TransformPipeline transforms={f.transforms} onChange={(transforms) => upd(i, { transforms })} />
-          </F>
-        </div>
+              </Select>
+            </Field>
+          </Grid>
+          <Field label="Transforms" hint="Applied in order to each extracted value.">
+            {(a) => <div id={a.id}><TransformPipeline transforms={f.transforms} onChange={(transforms) => upd(i, { transforms })} /></div>}
+          </Field>
+        </Group>
       ))}
-      <button style={S.btn("primary")} onClick={add}>+ add field</button>
+      <Button onClick={add}>Add field</Button>
     </div>
   );
 }
-
-// ─── PROFILE EXTRACTION ───────────────────────────────────────────────────────
 
 function ProfileExtraction({ profileId, checklist, onProfileChange, onChecklistChange }) {
   const fields = PROFILES[profileId]?.fields || [];
@@ -398,397 +108,397 @@ function ProfileExtraction({ profileId, checklist, onProfileChange, onChecklistC
 
   return (
     <div>
-      <F label="Domain Profile">
-        <select style={sel()} value={profileId} onChange={(e) => {
-          onProfileChange(e.target.value);
-          onChecklistChange([...PROFILES[e.target.value].fields]);
-        }}>
-          {Object.entries(PROFILES).map(([id, p]) => <option key={id} value={id}>{p.label}</option>)}
-        </select>
-      </F>
-      <div style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
-        <label style={lbl()}>Fields to include</label>
-        <button style={{ ...S.btn(), fontSize: 11 }} onClick={toggleAll}>
-          {checklist.length === fields.length ? "deselect all" : "select all"}
-        </button>
+      <Field label="Site profile" hint="Selectors and transforms are filled in for you.">
+        {(a) => (
+          <Select {...a} value={profileId} onChange={(e) => {
+            onProfileChange(e.target.value);
+            onChecklistChange([...PROFILES[e.target.value].fields]);
+          }}>
+            {Object.entries(PROFILES).map(([id, p]) => <option key={id} value={id}>{p.label}</option>)}
+          </Select>
+        )}
+      </Field>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: text.primary }} id="bp-profile-fields">Fields to keep</span>
+        <Button variant="quiet" onClick={toggleAll}>{checklist.length === fields.length ? "Clear all" : "Select all"}</Button>
       </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
-        {fields.map((f) => (
-          <Pill key={f} active={checklist.includes(f)} onClick={() => toggle(f)}>{f}</Pill>
-        ))}
+      <div role="group" aria-labelledby="bp-profile-fields" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {fields.map((f) => <Chip key={f} pressed={checklist.includes(f)} onClick={() => toggle(f)}>{f}</Chip>)}
       </div>
-      <div style={{ fontSize: 12, color: C.dim }}>Selectors and transforms are resolved automatically.</div>
     </div>
   );
 }
 
-// ─── BLUEPRINT FORM ───────────────────────────────────────────────────────────
+// ─── the form ────────────────────────────────────────────────────────────────
 
-function BlueprintForm({ form, setForm }) {
+const SECTIONS = [
+  ["basics", "Basics"], ["seeds", "Starting pages"], ["domains", "Domains"], ["scoring", "Scoring"],
+  ["expansion", "Expansion"], ["extraction", "Extraction"], ["stop", "Stop conditions"],
+];
+
+function BlueprintForm({ form, setForm, errorFor }) {
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const err = (id) => errorFor(id);
+  const field = (label, id, node, extra) => (
+    <Field label={label} id={id} error={err(id)} {...extra}>
+      {(a) => node(a, !!err(id))}
+    </Field>
+  );
 
-  // seeds
-  const updSeed = (i, patch) => set({ seeds: form.seeds.map((s, idx) => idx === i ? { ...s, ...patch } : s) });
-  const addSeed = () => set({ seeds: [...form.seeds, { url: "", domain: "" }] });
-  const rmSeed  = (i) => set({ seeds: form.seeds.filter((_, idx) => idx !== i) });
-
-  // domains
-  const updDom = (i, patch) => set({ domains: form.domains.map((d, idx) => idx === i ? { ...d, ...patch } : d) });
-  const addDom = () => set({ domains: [...form.domains, { key: "", base_url: "", link_selector: "" }] });
-  const rmDom  = (i) => set({ domains: form.domains.filter((_, idx) => idx !== i) });
+  const updSeed = (i, patch) => set({ seeds: form.seeds.map((s, idx) => (idx === i ? { ...s, ...patch } : s)) });
+  const updDom  = (i, patch) => set({ domains: form.domains.map((d, idx) => (idx === i ? { ...d, ...patch } : d)) });
 
   return (
-    <div style={{ overflowY: "auto", flex: 1 }}>
+    <div>
+      <BackendList />
 
-      {/* META */}
-      <div style={sec}>
-        <SecHead title="Meta" />
-        <div style={row2}>
-          <F label="Blueprint ID">
-            <input style={inp()} value={form.blueprint_id} placeholder="wikimd_diabetes" onChange={(e) => set({ blueprint_id: e.target.value })} />
-          </F>
-          <F label="Run ID">
-            <input style={inp()} value={form.id} placeholder="beta_1" onChange={(e) => set({ id: e.target.value })} />
-          </F>
+      <section aria-labelledby="sec-basics">
+        <SectionTitle id="sec-basics">Basics</SectionTitle>
+        <Grid>
+          {field("Blueprint ID", bpId("blueprint_id"), (a, bad) => <TextInput {...a} invalid={bad} value={form.blueprint_id} placeholder="my_topic_crawl" onChange={(e) => set({ blueprint_id: e.target.value })} />, { hint: "A short name for this blueprint." })}
+          {field("Run ID", bpId("id"), (a, bad) => <TextInput {...a} invalid={bad} value={form.id} placeholder="run_1" onChange={(e) => set({ id: e.target.value })} />, { hint: "Labels the crawls it produces." })}
+        </Grid>
+        {field("Target topic", bpId("target_topic"), (a, bad) => <TextInput {...a} invalid={bad} value={form.target_topic} placeholder="e.g. Type 2 diabetes" onChange={(e) => set({ target_topic: e.target.value })} />, { hint: "The crawler scores every link against this." })}
+      </section>
+
+      <section aria-labelledby="sec-seeds">
+        <SectionTitle id="sec-seeds">Starting pages</SectionTitle>
+        <div id="bp-seeds" tabIndex={-1}>
+          {form.seeds.map((s, i) => (
+            <Group key={i} title={`Page ${i + 1}`} onRemove={form.seeds.length > 1 ? () => set({ seeds: form.seeds.filter((_, idx) => idx !== i) }) : undefined}>
+              <Grid>
+                {field("URL", bpId("seed", i, "url"), (a, bad) => <TextInput {...a} invalid={bad} value={s.url} placeholder="https://example.org/wiki/Topic" onChange={(e) => updSeed(i, { url: e.target.value })} />)}
+                {field("Domain", bpId("seed", i, "domain"), (a, bad) => <TextInput {...a} invalid={bad} value={s.domain} placeholder="https://example.org" onChange={(e) => updSeed(i, { domain: e.target.value })} />)}
+              </Grid>
+            </Group>
+          ))}
         </div>
-        <F label="Target Topic">
-          <input style={inp()} value={form.target_topic} placeholder="TYPE 2 DIABETES" onChange={(e) => set({ target_topic: e.target.value })} />
-        </F>
-      </div>
+        <Button onClick={() => set({ seeds: [...form.seeds, { url: "", domain: "" }] })}>Add starting page</Button>
+      </section>
 
-      {/* SEEDS */}
-      <div style={sec}>
-        <SecHead title="Seeds" />
-        {form.seeds.map((s, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 22px", gap: 8, alignItems: "end", marginBottom: 8 }}>
-            <F label="URL"><input style={inp()} value={s.url} placeholder="https://wikimd.org/wiki/…" onChange={(e) => updSeed(i, { url: e.target.value })} /></F>
-            <F label="Domain"><input style={inp()} value={s.domain} placeholder="https://www.wikimd.org" onChange={(e) => updSeed(i, { domain: e.target.value })} /></F>
-            <button style={{ ...S.btn("danger"), marginBottom: 8 }} onClick={() => rmSeed(i)}>×</button>
-          </div>
-        ))}
-        <button style={S.btn()} onClick={addSeed}>+ seed</button>
-      </div>
-
-      {/* DOMAINS */}
-      <div style={sec}>
-        <SecHead title="Domains" />
-        {form.domains.map((d, i) => (
-          <div key={i} style={{ background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, padding: "10px 12px", marginBottom: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 12, color: C.accent }}>{d.key || `Domain ${i + 1}`}</span>
-              <button style={S.btn("danger")} onClick={() => rmDom(i)}>remove</button>
-            </div>
-            <div style={row2}>
-              <F label="Domain Key">
-                <input style={inp()} value={d.key} placeholder="wikimd" onChange={(e) => updDom(i, { key: e.target.value })} />
-              </F>
-              <F label="Base URL">
-                <input style={inp()} value={d.base_url} placeholder="https://www.wikimd.org" onChange={(e) => updDom(i, { base_url: e.target.value })} />
-              </F>
-            </div>
-            <F label="Link XPath Selector">
-              <input style={inp()} value={d.link_selector} placeholder=".//a[starts-with(@href, '/wiki/')]" onChange={(e) => updDom(i, { link_selector: e.target.value })} />
-            </F>
-          </div>
-        ))}
-        <button style={S.btn()} onClick={addDom}>+ domain</button>
-      </div>
-
-      {/* SCORING */}
-      <div style={sec}>
-        <SecHead title="Scoring" />
-        <F label="Strategy">
-          <select style={sel()} value={form.scoringStrategy} onChange={(e) => set({ scoringStrategy: e.target.value })}>
-            {STRATEGIES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </F>
-        <div style={row2}>
-          <F label="Scoring Backend">
-            <input style={inp()} value={form.scoringType} placeholder="openrouter / openai / anthropic / gemini / nvidia / groq" onChange={(e) => set({ scoringType: e.target.value })} />
-          </F>
-          <F label="Model Identifier">
-            <input style={inp()} value={form.modelInformation} placeholder="openai/gpt-4o:free" onChange={(e) => set({ modelInformation: e.target.value })} />
-          </F>
+      <section aria-labelledby="sec-domains">
+        <SectionTitle id="sec-domains">Domains</SectionTitle>
+        <div id="bp-domains" tabIndex={-1}>
+          {form.domains.map((d, i) => (
+            <Group key={i} title={d.key || `Domain ${i + 1}`} onRemove={() => set({ domains: form.domains.filter((_, idx) => idx !== i) })}>
+              <Grid>
+                <Field label="Domain key" hint="Matches the key used in starting pages."><TextInput value={d.key} placeholder="example" onChange={(e) => updDom(i, { key: e.target.value })} /></Field>
+                {field("Base URL", bpId("domain", i, "base"), (a, bad) => <TextInput {...a} invalid={bad} value={d.base_url} placeholder="https://example.org" onChange={(e) => updDom(i, { base_url: e.target.value })} />)}
+              </Grid>
+              {field("Link XPath", bpId("domain", i, "selector"), (a, bad) => <TextInput {...a} invalid={bad} value={d.link_selector} placeholder=".//a[starts-with(@href, '/wiki/')]" onChange={(e) => updDom(i, { link_selector: e.target.value })} />, { hint: "Picks the links to follow on each page." })}
+            </Group>
+          ))}
         </div>
-      </div>
+        <Button onClick={() => set({ domains: [...form.domains, { key: "", base_url: "", link_selector: "" }] })}>Add domain</Button>
+      </section>
 
-      {/* EXPANSION */}
-      <div style={sec}>
-        <SecHead title="Expansion" />
-        <div style={row2}>
-          <F label="Style">
-            <select style={sel()} value={form.expansionStyle} onChange={(e) => set({ expansionStyle: e.target.value })}>
-              {EXPANSION_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </F>
-          <F label="Num Descriptions">
-            <input style={inp()} type="number" min={1} value={form.numDescriptions} onChange={(e) => set({ numDescriptions: e.target.value })} />
-          </F>
-        </div>
-        <div style={row2}>
-          <F label="LLM Backend">
-            <input style={inp()} value={form.llmType} placeholder="openrouter / openai / anthropic / gemini / nvidia / groq" onChange={(e) => set({ llmType: e.target.value })} />
-          </F>
-          <F label="LLM Model">
-            <input style={inp()} value={form.llmModel} placeholder="openai/gpt-4o:free" onChange={(e) => set({ llmModel: e.target.value })} />
-          </F>
-        </div>
-      </div>
+      <section aria-labelledby="sec-scoring">
+        <SectionTitle id="sec-scoring">Scoring</SectionTitle>
+        <Field label="Strategy" id={bpId("strategy")} error={err(bpId("strategy"))}>
+          {(a) => <Select {...a} value={form.scoringStrategy} onChange={(e) => set({ scoringStrategy: e.target.value })}>{STRATEGIES.map((s) => <option key={s} value={s}>{s}</option>)}</Select>}
+        </Field>
+        <Grid>
+          {field("Scoring backend", bpId("scoring-type"), (a, bad) => <TextInput {...a} invalid={bad} list="bp-backends" value={form.scoringType} onChange={(e) => set({ scoringType: e.target.value })} />)}
+          {field("Scoring model", bpId("scoring-model"), (a, bad) => <TextInput {...a} invalid={bad} value={form.modelInformation} placeholder="provider/model-name" onChange={(e) => set({ modelInformation: e.target.value })} />)}
+        </Grid>
+      </section>
 
-      {/* EXTRACTION */}
-      <div style={sec}>
-        <SecHead title="Extraction" />
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-          <Pill active={form.extractionMode === "profile"} onClick={() => set({ extractionMode: "profile" })}>Profile Mode</Pill>
-          <Pill active={form.extractionMode === "manual"}  onClick={() => set({ extractionMode: "manual"  })}>Manual Mode</Pill>
+      <section aria-labelledby="sec-expansion">
+        <SectionTitle id="sec-expansion">Expansion</SectionTitle>
+        <Grid>
+          <Field label="Style" id={bpId("expansion-style")} error={err(bpId("expansion-style"))}>
+            {(a) => <Select {...a} value={form.expansionStyle} onChange={(e) => set({ expansionStyle: e.target.value })}>{EXPANSION_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}</Select>}
+          </Field>
+          {field("Number of descriptions", bpId("num-descriptions"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={1} value={form.numDescriptions} onChange={(e) => set({ numDescriptions: e.target.value })} />)}
+        </Grid>
+        <Grid>
+          {field("LLM backend", bpId("llm-type"), (a, bad) => <TextInput {...a} invalid={bad} list="bp-backends" value={form.llmType} onChange={(e) => set({ llmType: e.target.value })} />)}
+          {field("LLM model", bpId("llm-model"), (a, bad) => <TextInput {...a} invalid={bad} value={form.llmModel} placeholder="provider/model-name" onChange={(e) => set({ llmModel: e.target.value })} />)}
+        </Grid>
+      </section>
+
+      <section aria-labelledby="sec-extraction">
+        <SectionTitle id="sec-extraction">Extraction</SectionTitle>
+        <div id="bp-extraction" tabIndex={-1} style={{ marginBottom: 12 }}>
+          <Tabs label="Extraction mode" value={form.extractionMode} onChange={(extractionMode) => set({ extractionMode })} options={[["profile", "Site profile"], ["manual", "Manual fields"]]} />
         </div>
         {form.extractionMode === "profile"
-          ? <ProfileExtraction
-              profileId={form.profileId}
-              checklist={form.profileChecklist}
-              onProfileChange={(profileId) => set({ profileId })}
-              onChecklistChange={(profileChecklist) => set({ profileChecklist })}
-            />
-          : <ManualFields
-              fields={form.manualFields}
-              onChange={(manualFields) => set({ manualFields })}
-            />
-        }
-      </div>
+          ? <ProfileExtraction profileId={form.profileId} checklist={form.profileChecklist}
+              onProfileChange={(profileId) => set({ profileId })} onChecklistChange={(profileChecklist) => set({ profileChecklist })} />
+          : <ManualFields fields={form.manualFields} onChange={(manualFields) => set({ manualFields })} errorFor={err} />}
+      </section>
 
-      {/* STOP CONDITIONS */}
-      <div style={sec}>
-        <SecHead title="Stop Conditions" />
-        <div style={row2}>
-          <F label="Max Nodes">
-            <input style={inp()} type="number" min={1} value={form.maxNodes} onChange={(e) => set({ maxNodes: e.target.value })} />
-          </F>
-          <F label="Max Depth">
-            <input style={inp()} type="number" min={1} value={form.maxDepth} onChange={(e) => set({ maxDepth: e.target.value })} />
-          </F>
-        </div>
-        <div style={row2}>
-          <F label="Max Duration (ms)">
-            <input style={inp()} type="number" min={0} value={form.maxDuration} onChange={(e) => set({ maxDuration: e.target.value })} />
-          </F>
-          <F label="No-Progress Timeout (ms)">
-            <input style={inp()} type="number" min={0} value={form.noProgressTimeout} onChange={(e) => set({ noProgressTimeout: e.target.value })} />
-          </F>
-        </div>
-        <F label="Stop URL (optional)">
-          <input style={inp()} value={form.stopUrl} placeholder="Leave empty to disable" onChange={(e) => set({ stopUrl: e.target.value })} />
-        </F>
-      </div>
-
-      <div style={{ height: 24 }} />
+      <section aria-labelledby="sec-stop">
+        <SectionTitle id="sec-stop">Stop conditions</SectionTitle>
+        <Grid>
+          {field("Max pages", bpId("max_nodes"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={1} value={form.maxNodes} onChange={(e) => set({ maxNodes: e.target.value })} />)}
+          {field("Max depth", bpId("max_depth"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={1} value={form.maxDepth} onChange={(e) => set({ maxDepth: e.target.value })} />, { hint: "Links followed from a starting page." })}
+        </Grid>
+        <Grid>
+          {field("Max duration (ms)", bpId("max_duration"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={0} value={form.maxDuration} onChange={(e) => set({ maxDuration: e.target.value })} />)}
+          {field("No-progress timeout (ms)", bpId("no_progress_timeout"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={0} value={form.noProgressTimeout} onChange={(e) => set({ noProgressTimeout: e.target.value })} />, { hint: "Stops if no new page is found for this long." })}
+        </Grid>
+        <Field label="Stop URL (optional)" hint="Stop as soon as this page is reached. Leave empty to disable.">
+          {(a) => <TextInput {...a} value={form.stopUrl} onChange={(e) => set({ stopUrl: e.target.value })} />}
+        </Field>
+      </section>
     </div>
   );
 }
 
-// ─── TEMPLATE MANAGER (PAGE) ──────────────────────────────────────────────────
+// ─── page ────────────────────────────────────────────────────────────────────
 
-export default function TemplateManager() {
+const pretty = (bp) => JSON.stringify(bp, null, 2);
+const nameOf = (n) => (n.endsWith(".json") ? n : `${n}.json`);
+
+export default function BlueprintManager({ onNavigate }) {
   const [templates, setTemplates] = useState([]);
-  const [selected,  setSelected]  = useState(null);   // filename string
-  const [mode,      setMode]      = useState("idle");  // idle | edit | new
-  const [tab,       setTab]       = useState("form");  // form | json
-  const [newName,   setNewName]   = useState("");
-  const [status,    setStatus]    = useState(null);    // { ok, msg }
-  const [errors,    setErrors]    = useState([]);
-
-  // form state (structured editor)
+  const [listError, setListError] = useState(null);
+  const [selected, setSelected] = useState(null);      // filename
+  const [mode, setMode] = useState("idle");            // idle | edit | new
+  const [tab, setTab] = useState("form");              // form | json
+  const [newName, setNewName] = useState("");
+  const [status, setStatus] = useState(null);          // { ok, msg }
+  const [errors, setErrors] = useState([]);            // [{ id, message }]
   const [form, setForm] = useState(() => blueprintToForm(null));
+  const [editorText, setEditorText] = useState(() => pretty(DEFAULT_BLUEPRINT));
+  const [baseline, setBaseline] = useState(() => pretty(DEFAULT_BLUEPRINT));
+  const [armed, setArmed] = useState(false);           // Delete needs two clicks
+  const [pending, setPending] = useState(null);        // action waiting on "discard changes?"
 
-  // raw json state (textarea)
-  const [editorText, setEditorText] = useState(() => JSON.stringify(DEFAULT_BLUEPRINT, null, 2));
+  const current = useCallback(() => {
+    if (tab === "form") return { ok: true, bp: formToBlueprint(form) };
+    try { return { ok: true, bp: JSON.parse(editorText) }; }
+    catch (e) { return { ok: false, bp: null, msg: e.message }; }
+  }, [tab, form, editorText]);
 
-  // ── helpers ──────────────────────────────────────────────────────────────────
+  const dirty = useMemo(() => {
+    if (mode === "idle") return false;
+    const c = current();
+    return mode === "new" ? true : !c.ok || pretty(c.bp) !== baseline;
+  }, [mode, current, baseline]);
 
   const loadList = useCallback(async () => {
     try {
       const data = await fetchTemplates();
       setTemplates(data.templates);
-    } catch (e) {
-      setStatus({ ok: false, msg: e.message });
-    }
+      setListError(null);
+    } catch (e) { setListError(e.message); }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     fetchTemplates()
-      .then((data) => { if (!cancelled) setTemplates(data.templates); })
-      .catch((e) => { if (!cancelled) setStatus({ ok: false, msg: e.message }); });
+      .then((d) => { if (!cancelled) setTemplates(d.templates); })
+      .catch((e) => { if (!cancelled) setListError(e.message); });
     return () => { cancelled = true; };
   }, []);
 
-  // When tab switches: sync form ↔ json
-  const switchTab = (next) => {
-    if (tab === "form" && next === "json") {
-      // form → json
-      setEditorText(JSON.stringify(formToBlueprint(form), null, 2));
-    } else if (tab === "json" && next === "form") {
-      // json → form (best-effort; validation happens on save)
-      try {
-        const bp = JSON.parse(editorText);
-        setForm(blueprintToForm(bp));
-      } catch { /* leave form as-is if JSON is invalid */ }
-    }
-    setTab(next);
-  };
+  const errorFor = useCallback((id) => errors.find((e) => e.id === id)?.message, [errors]);
 
-  // Get the current blueprint from whichever tab is active
-  const getCurrentBlueprint = () => {
-    if (tab === "form") return { ok: true, bp: formToBlueprint(form) };
-    try   { return { ok: true,  bp: JSON.parse(editorText) }; }
-    catch { return { ok: false, bp: null, msg: "Invalid JSON" }; }
-  };
-
-  const selectTemplate = async (name) => {
+  const openTemplate = async (name) => {
     try {
       const data = await fetchTemplate(name);
-      setSelected(name);
-      setForm(blueprintToForm(data));
-      setEditorText(JSON.stringify(data, null, 2));
-      setMode("edit");
-      setStatus(null);
-      setErrors([]);
-    } catch (e) {
-      setStatus({ ok: false, msg: e.message });
+      const bp = data.content ?? data;
+      setSelected(name); setForm(blueprintToForm(bp)); setEditorText(pretty(bp)); setBaseline(pretty(bp));
+      setMode("edit"); setTab("form"); setStatus(null); setErrors([]); setArmed(false);
+    } catch (e) { setStatus({ ok: false, msg: e.message }); }
+  };
+
+  const startNew = () => {
+    setSelected(null); setNewName(""); setForm(blueprintToForm(null)); setEditorText(pretty(DEFAULT_BLUEPRINT));
+    setBaseline(pretty(DEFAULT_BLUEPRINT)); setMode("new"); setTab("form"); setStatus(null); setErrors([]); setArmed(false);
+  };
+
+  // Leaving with unsaved edits asks first, inline.
+  const guarded = (action) => (dirty ? setPending(() => action) : action());
+
+  const switchTab = (next) => {
+    if (next === tab) return;
+    if (tab === "form") {
+      setEditorText(pretty(formToBlueprint(form)));
+    } else {
+      try { setForm(blueprintToForm(JSON.parse(editorText))); }
+      catch (e) { setStatus({ ok: false, msg: `The JSON is not valid (${e.message}). Fix it before switching to the form.` }); return; }
     }
+    setStatus(null); setTab(next);
   };
 
-  const handleNew = () => {
-    setSelected(null);
-    setNewName("");
-    setForm(blueprintToForm(null));
-    setEditorText(JSON.stringify(DEFAULT_BLUEPRINT, null, 2));
-    setMode("new");
-    setStatus(null);
-    setErrors([]);
-  };
-
-  const handleSave = async () => {
-    const { ok, bp, msg } = getCurrentBlueprint();
-    if (!ok) { setStatus({ ok: false, msg }); return; }
-
+  const save = async () => {
+    const { ok, bp, msg } = current();
+    if (!ok) { setStatus({ ok: false, msg: `The JSON is not valid (${msg}).` }); return; }
     const errs = validateBlueprint(bp);
-    if (errs.length) { setErrors(errs); setStatus({ ok: false, msg: `${errs.length} validation error(s)` }); return; }
+    if (errs.length) { setErrors(errs); setStatus(null); return; }
     setErrors([]);
-
     try {
       if (mode === "new") {
-        const name = newName.trim() || "untitled";
-        await createTemplate(name, bp);         // payload: { content: bp } — matches TemplateBody
+        const name = nameOf(newName.trim() || "untitled");
+        await createTemplate(name, bp);
         await loadList();
-        setSelected(name.endsWith(".json") ? name : name + ".json");
-        setMode("edit");
-        setStatus({ ok: true, msg: "Created" });
+        setSelected(name); setMode("edit"); setBaseline(pretty(bp)); setStatus({ ok: true, msg: "Created" });
       } else {
-        await updateTemplate(selected, bp);     // payload: { content: bp }
-        setStatus({ ok: true, msg: "Saved" });
+        await updateTemplate(selected, bp);
+        setBaseline(pretty(bp)); setStatus({ ok: true, msg: "Saved" });
       }
-    } catch (e) {
-      setStatus({ ok: false, msg: e.message });
-    }
+    } catch (e) { setStatus({ ok: false, msg: e.message }); }
   };
 
-  const handleDelete = async () => {
-    if (!selected) return;
-    if (!window.confirm(`Delete "${selected}"?`)) return;
+  // Cmd/Ctrl+S saves.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s" && mode !== "idle") { e.preventDefault(); save(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
+  const remove = async () => {
+    if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 4000); return; }
+    setArmed(false);
     try {
       await deleteTemplate(selected);
-      setSelected(null);
-      setMode("idle");
-      setForm(blueprintToForm(null));
-      setEditorText(JSON.stringify(DEFAULT_BLUEPRINT, null, 2));
+      setSelected(null); setMode("idle"); setForm(blueprintToForm(null)); setEditorText(pretty(DEFAULT_BLUEPRINT));
       await loadList();
       setStatus({ ok: true, msg: "Deleted" });
-    } catch (e) {
-      setStatus({ ok: false, msg: e.message });
-    }
+    } catch (e) { setStatus({ ok: false, msg: e.message }); }
   };
 
-  // ── render ───────────────────────────────────────────────────────────────────
+  const runThis = () => {
+    try { sessionStorage.setItem(RUN_PRESELECT_KEY, selected); } catch { /* storage unavailable: Run opens on its default */ }
+    onNavigate?.("run");
+  };
+
+  const focusField = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ block: "center" });
+    el.focus();
+  };
+
+  const index = mode !== "idle" && tab === "form" && (
+    <nav aria-label="Blueprint sections" style={{ width: 160, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
+      <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+        {SECTIONS.map(([id, name]) => (
+          <li key={id}>
+            <a href="#/blueprints" style={{ fontSize: 14, color: text.secondary, textDecoration: "none" }}
+               onClick={(e) => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: "smooth" }); }}>{name}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+
   return (
-    <div style={S.root}>
+    <Page
+      title="Blueprints"
+      lead="A blueprint says where a crawl starts, what counts as relevant, and when it stops."
+      width={720}
+      aside={index || null}
+    >
+      {listError && (
+        <div role="alert" style={{ maxWidth: "60ch", marginBottom: 20 }}>
+          <p style={{ fontSize: 14, color: accent.red, marginBottom: 12 }}>
+            Could not load blueprints: {listError}. Start the backend with make dev-backend, then try again.
+          </p>
+          <Button onClick={loadList}>Try again</Button>
+        </div>
+      )}
 
-      {/* ── SIDEBAR ── */}
-      <div style={S.sidebar}>
-        <div style={S.sidebarHeader}>
-          <span>Templates</span>
-          <button style={S.btn()} onClick={handleNew}>+ New</button>
-        </div>
-        <div style={S.list}>
-          {templates.length === 0 && (
-            <div style={{ padding: "12px 14px", color: "#566478", fontSize: 12 }}>No templates yet</div>
-          )}
-          {templates.map((t) => (
-            <div key={t} style={S.listItem(t === selected)} onClick={() => selectTemplate(t)}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span>
-            </div>
-          ))}
-        </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span id="bp-list-label" style={{ fontSize: 13, fontWeight: 600, color: text.primary }}>Saved blueprints</span>
+        <Button onClick={() => guarded(startNew)}>New blueprint</Button>
       </div>
-
-      {/* ── MAIN ── */}
-      <div style={S.main}>
-        {mode === "idle" ? (
-          <div style={S.empty}>Select or create a template</div>
-        ) : (
-          <>
-            {/* toolbar */}
-            <div style={S.toolbar}>
-              {mode === "new" && (
-                <input style={S.nameInput} placeholder="template-name.json" value={newName} onChange={(e) => setNewName(e.target.value)} />
-              )}
-              {mode === "edit" && (
-                <span style={{ color: C.bright, fontSize: 13 }}>{selected}</span>
-              )}
-
-              {/* tab switcher */}
-              <div style={{ display: "flex", gap: 1, background: C.bg1, borderRadius: 4, padding: 2 }}>
-                {["form", "json"].map((t) => (
-                  <button key={t} style={{ ...S.btn(tab === t ? "primary" : "default"), padding: "3px 10px" }} onClick={() => switchTab(t)}>
-                    {t === "form" ? "Form" : "JSON"}
-                  </button>
-                ))}
-              </div>
-
-              <button style={S.btn("primary")} onClick={handleSave}>
-                {mode === "new" ? "Create" : "Save"}
-              </button>
-              {mode === "edit" && (
-                <button style={S.btn("danger")} onClick={handleDelete}>Delete</button>
-              )}
-              {status && <span style={S.status(status.ok)}>{status.msg}</span>}
-            </div>
-
-            {/* validation errors */}
-            {errors.length > 0 && (
-              <div style={{ background: "#f3f5f7", borderBottom: `1px solid ${C.danger}`, padding: "8px 16px", flexShrink: 0, overflowY: "auto", maxHeight: 100 }}>
-                <div style={{ fontSize: 11, color: C.danger, letterSpacing: "0", marginBottom: 4 }}>Validation errors</div>
-                {errors.map((e, i) => <div key={i} style={{ fontSize: 12, color: "#7a1f5c", marginBottom: 2 }}>· {e}</div>)}
-              </div>
-            )}
-
-            {/* editor area */}
-            <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-              {tab === "form" ? (
-                <BlueprintForm form={form} setForm={setForm} />
-              ) : (
-                <div style={{ flex: 1, padding: 16, display: "flex", flexDirection: "column" }}>
-                  <textarea
-                    style={S.textarea}
-                    value={editorText}
-                    onChange={(e) => setEditorText(e.target.value)}
-                    spellCheck={false}
-                  />
-                </div>
-              )}
-            </div>
-          </>
+      <ul aria-labelledby="bp-list-label" style={{ listStyle: "none", marginBottom: 28 }}>
+        {templates.length === 0 && !listError && (
+          <li style={{ padding: "11px 0", fontSize: 14, color: text.muted, borderBottom: `1px solid ${theme.colors.rowBorder}` }}>No blueprints yet. Create one to describe a crawl.</li>
         )}
-      </div>
-    </div>
+        {templates.map((t) => (
+          <li key={t} style={{ borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
+            <button
+              type="button" aria-current={t === selected ? "true" : undefined}
+              onClick={() => t !== selected && guarded(() => openTemplate(t))}
+              style={{
+                display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 40, padding: "0 2px",
+                background: "transparent", border: "none", textAlign: "left", fontSize: 14,
+                fontWeight: t === selected ? 600 : 400, color: text.primary,
+              }}
+            >
+              <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style={{ flexShrink: 0 }}>
+                {t === selected ? <rect x="0.5" y="0.5" width="8" height="8" fill={text.primary} /> : <rect x="0.5" y="0.5" width="8" height="8" fill="none" stroke={theme.colors.background.border} />}
+              </svg>
+              {t}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {pending && (
+        <div role="alertdialog" aria-label="Unsaved changes" style={{ border: `1px solid ${text.primary}`, padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ fontSize: 14, flex: "1 1 240px" }}>You have unsaved changes. Discard them?</span>
+          <Button variant="danger" onClick={() => { const a = pending; setPending(null); a(); }}>Discard changes</Button>
+          <Button onClick={() => setPending(null)}>Keep editing</Button>
+        </div>
+      )}
+
+      {mode === "idle" && !pending && (
+        <p style={{ fontSize: 14, color: text.muted }}>Choose a blueprint to edit it, or create a new one.</p>
+      )}
+
+      {mode !== "idle" && (
+        <>
+          <div style={{
+            position: "sticky", top: 0, zIndex: 3, background: background.primary, padding: "8px 0",
+            borderTop: `1px solid ${background.border}`, borderBottom: `1px solid ${background.border}`,
+            display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap",
+          }}>
+            {mode === "new"
+              ? <TextInput aria-label="Blueprint file name" placeholder="file-name.json" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ width: 200 }} />
+              : <span style={{ fontSize: 14, fontWeight: 600 }}>{selected}</span>}
+            <Tabs label="Editor view" value={tab} onChange={switchTab} options={[["form", "Form"], ["json", "JSON"]]} />
+            <span style={{ flex: 1 }} />
+            {dirty && mode === "edit" && <span style={{ fontSize: 13, color: text.secondary }}>Unsaved changes</span>}
+            {status && <Status ok={status.ok}>{status.msg}</Status>}
+            {mode === "edit" && <Button onClick={runThis} disabled={dirty} title={dirty ? "Save first to run the saved version" : undefined}>Run this blueprint</Button>}
+            {mode === "edit" && <Button variant="danger" armed={armed} onClick={remove}>{armed ? "Confirm delete" : "Delete"}</Button>}
+            <Button variant="primary" onClick={save}>{mode === "new" ? "Create" : "Save"}</Button>
+          </div>
+
+          {errors.length > 0 && (
+            <div role="alert" style={{ padding: "12px 0", borderBottom: `1px solid ${accent.red}` }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: accent.red, marginBottom: 6 }}>
+                {errors.length === 1 ? "1 thing to fix before saving" : `${errors.length} things to fix before saving`}
+              </p>
+              <ul style={{ listStyle: "none" }}>
+                {errors.map((e, i) => (
+                  <li key={i}>
+                    <button type="button" onClick={() => focusField(e.id)}
+                      style={{ background: "none", border: "none", padding: "4px 0", minHeight: 28, fontSize: 14, color: accent.red, textDecoration: "underline", textAlign: "left" }}>
+                      {e.message}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {tab === "form" ? (
+            <BlueprintForm form={form} setForm={setForm} errorFor={errorFor} />
+          ) : (
+            <div style={{ marginTop: 16 }}>
+              <label htmlFor="bp-json" style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Blueprint JSON</label>
+              <textarea
+                id="bp-json" value={editorText} onChange={(e) => setEditorText(e.target.value)} spellCheck={false}
+                style={{
+                  width: "100%", minHeight: 520, padding: 12, resize: "vertical", lineHeight: 1.6, fontSize: 13,
+                  fontFamily: theme.typography.fontMono, background: background.panel, color: text.primary,
+                  border: `1px solid ${background.border}`, borderRadius: theme.radii.sm,
+                }}
+              />
+            </div>
+          )}
+          <div style={{ height: 48 }} />
+        </>
+      )}
+    </Page>
   );
 }

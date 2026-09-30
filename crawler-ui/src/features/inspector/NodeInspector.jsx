@@ -33,6 +33,10 @@ function relativeAge(createdAt) {
   return `${Math.round(seconds / 3600)}h ago`;
 }
 
+const STATE_WORD = {
+  CREATED: "Found", FETCHED: "Fetched", FILTERED: "Filtered", SCORED: "Scored", EXPANDED: "Expanded",
+};
+
 function StateBadge({ state }) {
   // Light chip with ink text, and a swatch of the state's own fill: the text
   // never sits on the dark ramp, so contrast holds for every state.
@@ -47,7 +51,7 @@ function StateBadge({ state }) {
       letterSpacing: theme.typography.letterSpacing.wide,
     }}>
       <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: "50%", background: swatch, border: `1px solid ${theme.colors.state.label[state] || theme.colors.text.muted}` }} />
-      {state}
+      {STATE_WORD[state] ?? state}
     </span>
   );
 }
@@ -72,9 +76,8 @@ function OverviewTab({ node, children, onSelectNode }) {
       </div>
       <Row label="State" value={<StateBadge state={node.state} />} />
       <Row label="Depth" value={node.depth} />
-      <Row label="Priority" value={typeof node.priority === "number" ? node.priority.toFixed(3) : "—"} />
-      <Row label="LLM score" value={node.llm_score || node.llm_score === 0 ? node.llm_score : "—"} />
-      <Row label="Node ID" value={shortId(node.node_id, 12)} />
+      <Row label="Queue priority" value={typeof node.priority === "number" ? node.priority.toFixed(3) : "—"} />
+      <Row label="LLM score (0–100)" value={node.llm_score || node.llm_score === 0 ? node.llm_score : "—"} />
       <Row
         label="Parent"
         value={node.parent_id ? (
@@ -256,15 +259,17 @@ export default function NodeInspector({ node, detail, allNodes, errors, eventLog
   if (!node) return null;
 
   return (
-    <div style={S.inspectorDock}>
+    <div className="inspector-dock" style={S.inspectorDock}>
       <div style={S.inspectorHeader}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: theme.typography.size.xs, fontFamily: theme.typography.fontDisplay, fontWeight: 600, color: theme.colors.text.primary }}>
-            {hostnameOf(node.url)}
+            {pathOf(node.url) || hostnameOf(node.url)}
           </div>
-          <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "260px" }}>
-            {pathOf(node.url)}
-          </div>
+          {hostnameOf(node.url) && hostnameOf(node.url) !== (pathOf(node.url) || hostnameOf(node.url)) && (
+            <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "260px" }}>
+              {hostnameOf(node.url)}
+            </div>
+          )}
         </div>
         <button onClick={onClose} style={S.nodeDetailCloseBtn} aria-label="Close annotation panel">
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>

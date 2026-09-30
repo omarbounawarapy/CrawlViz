@@ -132,7 +132,7 @@ export default function App() {
       activeSection={activeSection}
       onNavigate={navigateSection}
       status={state.status}
-      connectionStatus={demoMode ? "CONNECTED" : state.connectionStatus}
+      connectionStatus={demoMode ? "SAMPLE" : state.connectionStatus}
       stopReason={state.status === "STOPPED" ? state.stop_reason : null}
       summary={onGraph ? summary : null}
       errorCount={state.errors.length}
@@ -164,6 +164,7 @@ export default function App() {
             {measuresOpen && (
               <aside
                 aria-label="Measurements"
+                className="measures-drawer"
                 style={{
                   width: 460, flexShrink: 0, overflowY: "auto",
                   background: theme.colors.background.panel, borderLeft: `1px solid ${theme.colors.background.border}`,
@@ -191,8 +192,13 @@ export default function App() {
       {activeSection === "run" && (
         <RunPage onNavigate={navigateSection} state={state} metrics={metrics} />
       )}
-      {activeSection === "blueprints" && <BlueprintManager />}
-      {activeSection === "data" && <DataExplorer />}
+      {activeSection === "blueprints" && <BlueprintManager onNavigate={navigateSection} />}
+      {activeSection === "data" && (
+        <DataExplorer
+          graphNodes={state.nodes}
+          onOpenNode={(node) => { setSelectedNodeId(node.node_id); navigate("/graph"); }}
+        />
+      )}
       {activeSection === "config" && <ConfigPage />}
     </Shell>
   );

@@ -30,3 +30,40 @@ input[type=checkbox] { accent-color: var(--ink); }
   .breathe { animation: none; }
   * { transition-duration: 0.01ms !important; }
 }
+
+/* Narrow screens: the crawl is a desktop task, but the frame must not clip
+   or hide the controls an operator needs (status, Stop, Measurements). */
+.shell-nav { overflow-x: auto; scrollbar-width: none; }
+g[role=button]:focus-visible { outline: none; }
+g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-width: 3px; }
+@media (max-width: 900px) {
+  .shell-header { flex-wrap: wrap; height: auto !important; gap: 0 12px !important; padding: 0 12px !important; }
+  .shell-nav { order: 3; flex-basis: 100%; border-top: 1px solid var(--rule); }
+  .shell-spacer { flex: 1 1 0; }
+  .shell-status { order: 2; height: 48px; gap: 10px !important; }
+  .shell-status .shell-detail { display: none; }
+  .tl-bar { gap: 12px !important; padding: 0 12px !important; }
+  .tl-mode { width: auto !important; }
+  .tl-count { width: auto !important; white-space: nowrap; }
+  button, select, summary, a[href] { min-height: 44px; }
+  .shell-nav button { min-height: 44px; }
+  input[type=checkbox] { width: 20px; height: 20px; }
+  input[type=range] { height: 28px; }
+  .measures-drawer { position: absolute; top: 0; right: 0; bottom: 0; z-index: 6; width: min(460px, 100%) !important; box-shadow: -8px 0 24px rgba(15,27,45,0.12); }
+}
+@media (max-width: 900px) {
+  .page-inner { padding: 24px 16px 48px !important; gap: 0 !important; }
+  .page-aside { display: none; }
+  .bp-root { flex-direction: column; }
+  .bp-sidebar { width: auto !important; max-height: 168px; border-right: none !important; border-bottom: 1px solid #d3d9e0; }
+}
+@media (max-width: 900px) {
+  .inspector-dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; width: auto !important; max-height: 60%; border-left: none !important; border-top: 1px solid var(--rule); box-shadow: 0 -8px 24px rgba(15,27,45,0.12); }
+}
+
+/* Shared form grid (common/Form.jsx): two-up, one column when narrow. */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 900px) { .form-grid { grid-template-columns: 1fr; } }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+@media (max-width: 900px) { .spec-field { grid-template-columns: 1fr !important; } }
+@media (min-width: 901px) { .form-grid-3 { grid-template-columns: 1fr 1fr 150px; } }

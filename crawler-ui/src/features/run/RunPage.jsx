@@ -70,7 +70,10 @@ export default function RunPage({ onNavigate, state, metrics }) {
     fetchTemplates()
       .then((d) => {
         setTemplates(d.templates);
-        if (d.templates.length > 0) setSelected(d.templates[0]);
+        // Blueprints can hand over "run this one" through sessionStorage.
+        let wanted = null;
+        try { wanted = sessionStorage.getItem("crawlviz.run.blueprint"); sessionStorage.removeItem("crawlviz.run.blueprint"); } catch { /* storage unavailable */ }
+        if (d.templates.length > 0) setSelected(d.templates.includes(wanted) ? wanted : d.templates[0]);
       })
       .catch((e) => setMsg({ ok: false, text: e.message }));
   }, []);
@@ -151,7 +154,7 @@ export default function RunPage({ onNavigate, state, metrics }) {
 
       {msg && (
         <p role="status" style={{ fontSize: 14, marginTop: 12, fontWeight: 500, color: msg.ok ? theme.colors.text.primary : theme.colors.accent.red }}>
-          {msg.ok ? msg.text : `${msg.text} Check that the backend is running, then try again.`}
+          {msg.ok ? msg.text : `${msg.text.replace(/[.!?]?\s*$/, ".")} Check that the backend is running (make dev-backend), then try again.`}
         </p>
       )}
 

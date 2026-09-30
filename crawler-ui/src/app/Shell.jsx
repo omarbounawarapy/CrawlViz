@@ -39,7 +39,7 @@ function StatusMark({ status }) {
   );
 }
 
-const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", CONNECTING: "Waiting for backend" };
+const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", CONNECTING: "Waiting for backend", IDLE: "Idle" };
 
 function Wordmark() {
   return (
@@ -59,7 +59,7 @@ function NavTab({ section, active, onClick, hasAlert }) {
       aria-current={active ? "page" : undefined}
       title={section.question}
       style={{
-        position: "relative", height: 48, padding: "0 14px",
+        position: "relative", height: 48, padding: "0 14px", flexShrink: 0,
         background: "transparent", border: "none",
         borderBottom: `2px solid ${active ? shell.textBright : "transparent"}`,
         color: active ? shell.textBright : shell.textPrimary,
@@ -67,7 +67,7 @@ function NavTab({ section, active, onClick, hasAlert }) {
       }}
     >
       {section.label}
-      {hasAlert && <span aria-label="has errors" style={{
+      {hasAlert && <span role="img" aria-label="has errors" style={{
         position: "absolute", top: 12, right: 4, width: 6, height: 6, background: theme.colors.accent.red,
       }} />}
     </button>
@@ -91,6 +91,7 @@ export default function Shell({
   activeSection, onNavigate, status, connectionStatus, stopReason, summary,
   errorCount = 0, measuresOpen, onToggleMeasures, onShowErrors, onStop, banner, children, inspector,
 }) {
+  const sample = connectionStatus === "SAMPLE";
   const connected = connectionStatus === "CONNECTED";
   // Stopping a crawl is not undoable: the first click arms it, the second confirms.
   const [armed, setArmed] = useState(false);
@@ -105,12 +106,12 @@ export default function Shell({
       display: "flex", flexDirection: "column", width: "100%", height: "100%",
       background: shell.background, fontFamily: type.fontMono, overflow: "hidden",
     }}>
-      <header style={{
+      <header className="shell-header" style={{
         display: "flex", alignItems: "center", gap: 28, height: 48, flexShrink: 0,
         padding: "0 20px", background: shell.surface, borderBottom: `1px solid ${shell.border}`,
       }}>
         <Wordmark />
-        <nav aria-label="Sections" style={{ display: "flex", alignItems: "stretch", height: 48 }}>
+        <nav aria-label="Sections" className="shell-nav" style={{ display: "flex", alignItems: "stretch", height: 48 }}>
           {SECTIONS.map(section => (
             <NavTab
               key={section.id}
@@ -122,20 +123,20 @@ export default function Shell({
           ))}
         </nav>
 
-        <div style={{ flex: 1 }} />
+        <div className="shell-spacer" style={{ flex: 1 }} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0 }}>
+        <div className="shell-status" style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0 }}>
           {summary && (
-            <span className="num" style={{ fontSize: 13, color: shell.textPrimary, whiteSpace: "nowrap" }}>{summary}</span>
+            <span className="num shell-detail" style={{ fontSize: 13, color: shell.textPrimary, whiteSpace: "nowrap" }}>{summary}</span>
           )}
           <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: shell.textBright, fontWeight: 500 }}
                 title={stopReason || undefined}>
             <StatusMark status={status} />
-            {STATUS_WORD[status] ?? status}
+            {sample ? "Sample playback" : (STATUS_WORD[status] ?? String(status).toLowerCase())}
             {stopReason && <span style={{ color: shell.textMuted, fontWeight: 400 }}>· {String(stopReason).toLowerCase().replace(/_/g, " ")}</span>}
           </span>
-          <span style={{ fontSize: 12, color: shell.textMuted }} title="WebSocket connection to the crawler">
-            {connected ? "Connected" : connectionStatus === "CONNECTING" ? "Connecting…" : "Disconnected"}
+          <span className="shell-detail" style={{ fontSize: 12, color: shell.textMuted }} title="WebSocket connection to the crawler">
+            {sample ? "Simulated" : connected ? "Connected" : connectionStatus === "CONNECTING" ? "Connecting…" : "Disconnected"}
           </span>
           {errorCount > 0 && onShowErrors && (
             <button onClick={onShowErrors} style={{ background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600, color: theme.colors.accent.red, textDecoration: "underline" }}>
@@ -174,7 +175,7 @@ export default function Shell({
 
       {banner}
 
-      <main style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
+      <main style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden", position: "relative" }}>
         <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative", background: shell.background }}>
           {children}
         </div>

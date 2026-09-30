@@ -7,8 +7,8 @@ const theme = getTheme();
 export function Page({ title, lead, width = 760, aside, children }) {
   return (
     <div style={{ height: "100%", overflowY: "auto", background: theme.colors.background.primary }}>
-      <div style={{ display: "flex", gap: 56, padding: "40px 40px 64px", maxWidth: width + 300, margin: "0 auto" }}>
-        {aside}
+      <div className="page-inner" style={{ display: "flex", gap: 56, padding: "40px 40px 64px", maxWidth: width + 300, margin: "0 auto" }}>
+        {aside && <div className="page-aside">{aside}</div>}
         <div style={{ flex: 1, minWidth: 0, maxWidth: width }}>
           <h1 style={{
             fontFamily: theme.typography.fontDisplay, fontWeight: 600, fontSize: 32, lineHeight: 1.15,
