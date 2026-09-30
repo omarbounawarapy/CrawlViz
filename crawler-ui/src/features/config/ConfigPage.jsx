@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
-import { createComponentStyles } from "../../theme/components";
+import { Page, SectionTitle, Row } from "../common/Page";
 import { fetchConfigSchema, fetchConfig } from "../../api/client";
 
 const theme = getTheme();
-const S = createComponentStyles(theme);
 
 function resolve(schema, node) {
   if (node?.$ref) {
@@ -34,36 +33,52 @@ function get(values, path) {
   return path.split(".").reduce((v, k) => (v == null ? v : v[k]), values);
 }
 
+const ACRONYMS = { llm: "LLM", nlp: "NLP", ui: "UI", url: "URL", api: "API", ws: "WS" };
+function humanize(title = "") {
+  const words = title.trim().split(/\s+/).map((w, i) => {
+    const lower = w.toLowerCase();
+    return ACRONYMS[lower] ?? (i === 0 ? w[0]?.toUpperCase() + w.slice(1).toLowerCase() : lower);
+  });
+  return words.join(" ");
+}
+const slug = (t) => `cfg-${t.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+// Position on the allowed range: a hairline with one tick, not a filled bar.
+function RangeTick({ value, min, max }) {
+  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min || 1)) * 100));
+  return (
+    <svg width="120" height="14" role="img" aria-label={`${value} on a scale of ${min} to ${max}`} style={{ display: "block" }}>
+      <line x1="0" y1="7" x2="120" y2="7" stroke={theme.colors.text.muted} strokeWidth="1" />
+      <line x1="0" y1="3" x2="0" y2="11" stroke={theme.colors.text.muted} strokeWidth="1" />
+      <line x1="120" y1="3" x2="120" y2="11" stroke={theme.colors.text.muted} strokeWidth="1" />
+      <circle cx={(pct / 100) * 120} cy="7" r="4.5" fill={theme.colors.text.primary} />
+    </svg>
+  );
+}
+
 function FieldDisplay({ field, value }) {
-  const widget = field.ui_widget;
+  const current = value ?? field.default;
+  const hasRange = field.minimum != null && field.maximum != null && typeof current === "number";
+  const options = field.ui_widget === "select" && field.ui_options ? field.ui_options : null;
 
   return (
-    <div style={{ padding: "10px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
-        <div style={{ fontSize: theme.typography.size.xs, color: theme.colors.text.primary }}>{field.title}</div>
-        <div style={{ fontSize: theme.typography.size.sm, color: theme.colors.accent.blue, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
-          {String(value ?? field.default)}
-        </div>
-      </div>
-      {(widget === "slider" || (field.minimum != null && field.maximum != null)) && (
-        <div style={{ ...S.breakdownBarTrack, marginTop: 6 }}>
-          <div style={S.breakdownBarFill(
-            `${Math.max(0, Math.min(100, ((value ?? field.default) - (field.minimum ?? 0)) / ((field.maximum ?? 1) - (field.minimum ?? 0)) * 100))}%`,
-            theme.colors.accent.blueDim,
-          )} />
-        </div>
-      )}
-      {widget === "select" && field.ui_options && (
-        <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-          {field.ui_options.map(opt => (
-            <span key={opt} style={S.pill(opt === (value ?? field.default) ? "blue" : "muted")}>{opt}</span>
+    <Row label={humanize(field.title)} note={field.description}>
+      {options ? (
+        <span style={{ fontWeight: 400, color: theme.colors.text.muted }}>
+          {options.map((opt, i) => (
+            <span key={opt}>
+              {i > 0 && " · "}
+              <span style={opt === current ? { fontWeight: 700, color: theme.colors.text.primary } : undefined}>{opt}</span>
+            </span>
           ))}
-        </div>
-      )}
-      <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, marginTop: 4 }}>
-        {field.description}
-      </div>
-    </div>
+        </span>
+      ) : hasRange ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+          <RangeTick value={current} min={field.minimum} max={field.maximum} />
+          <span style={{ minWidth: 44 }}>{String(current)}</span>
+        </span>
+      ) : String(current)}
+    </Row>
   );
 }
 
@@ -84,41 +99,39 @@ export default function ConfigPage() {
     return () => { cancelled = true; };
   }, []);
 
-  return (
-    <div style={S.panel}>
-      <div style={S.panelHeader}>
-        <div>
-          <div style={S.panelHeaderTitle}>Configuration</div>
-          <div style={S.panelHeaderSubtitle}>What assumptions is this crawl operating under?</div>
-        </div>
-        <span style={S.pill("gold")}>read-only</span>
-      </div>
+  const groups = schema && values ? Object.entries(groupFields(schema)) : [];
 
-      <div style={S.panelScroll}>
-        {error && (
-          <div style={S.emptyState}>
-            Couldn't reach the control API ({error}). Is the backend running on the configured VITE_API_BASE_URL?
-          </div>
-        )}
-        {!error && !schema && (
-          <div style={S.emptyState}>Loading configuration schema…</div>
-        )}
-        {schema && values && Object.entries(groupFields(schema)).map(([section, fields]) => (
-          <div key={section} style={{ ...S.sectionCard, marginBottom: 16 }}>
-            <div style={S.sectionCardTitle}>{section}</div>
-            {fields.map(field => (
-              <FieldDisplay key={field.path} field={field} value={get(values, field.path)} />
-            ))}
-          </div>
+  const index = groups.length > 0 && (
+    <nav aria-label="Configuration sections" style={{ width: 200, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
+      <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+        {groups.map(([section]) => (
+          <li key={section}><a href={`#/config`} onClick={(e) => { e.preventDefault(); document.getElementById(slug(section))?.scrollIntoView({ behavior: "smooth" }); }}
+            style={{ fontSize: 14, color: theme.colors.text.secondary, textDecoration: "none" }}>{section}</a></li>
         ))}
-        {schema && values && (
-          <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, marginTop: 4 }}>
-            This surface is generated from config/runtime_config.py's Pydantic schema, not hand-copied —
-            editing support (validated, with inline errors) is scoped as follow-up work; see
-            docs/V2_ARCHITECTURE.md roadmap item 18.
-          </div>
-        )}
-      </div>
-    </div>
+      </ul>
+    </nav>
+  );
+
+  return (
+    <Page
+      title="Configuration"
+      lead="The settings the crawler is running under. These are read from the backend and cannot be edited here yet."
+      aside={index || null}
+    >
+      {error && (
+        <p role="alert" style={{ fontSize: 14, color: theme.colors.text.primary, maxWidth: "60ch" }}>
+          Could not load the configuration. The control API did not answer ({error}). Start the backend, then reload this page.
+        </p>
+      )}
+      {!error && !schema && <p style={{ fontSize: 14, color: theme.colors.text.muted }}>Loading configuration…</p>}
+      {groups.map(([section, fields]) => (
+        <section key={section} aria-labelledby={slug(section)}>
+          <SectionTitle id={slug(section)}>{section}</SectionTitle>
+          {fields.map(field => (
+            <FieldDisplay key={field.path} field={field} value={get(values, field.path)} />
+          ))}
+        </section>
+      ))}
+    </Page>
   );
 }

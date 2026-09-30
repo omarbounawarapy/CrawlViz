@@ -12,7 +12,7 @@ import {
 // ── design tokens ─────────────────────────────────────────────────────────────
 const TRUNCATE_LEN = 140;
 const MONO = "'JetBrains Mono', monospace";
-const SANS = "'Syne', sans-serif";
+const SANS = "'Public Sans', system-ui, sans-serif";
 
 // Three-level column classification
 // Level 1 — metadata (muted)
@@ -52,7 +52,7 @@ function isLong(raw) {
 
 const P_STYLE = {
   margin: 0,
-  color: "#c0cce0",
+  color: "#0f1b2d",
   fontFamily: SANS,
   fontSize: 13,
   lineHeight: 1.85,
@@ -67,9 +67,9 @@ function renderParsedArray(arr) {
         margin: 0,
         whiteSpace: "pre-wrap",
         wordBreak: "break-word",
-        color: "#c0cce0",
+        color: "#0f1b2d",
         fontFamily: MONO,
-        fontSize: 11,
+        fontSize: 13,
         lineHeight: 1.7,
       }}>
         {String(arr)}
@@ -80,9 +80,9 @@ function renderParsedArray(arr) {
   if (arr.length === 0) {
     return (
       <span style={{
-        color: "#3a4060",
+        color: "#566478",
         fontFamily: MONO,
-        fontSize: 11,
+        fontSize: 13,
       }}>
         empty
       </span>
@@ -100,8 +100,8 @@ function renderParsedArray(arr) {
             key={i}
             style={{
               padding: "10px 12px",
-              background: "rgba(16,22,48,0.25)",
-              border: "1px solid #111828",
+              background: "rgba(15,27,45,0.04)",
+              border: "1px solid #d3d9e0",
               borderRadius: 6,
             }}
           >
@@ -110,8 +110,8 @@ function renderParsedArray(arr) {
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               fontFamily: MONO,
-              fontSize: 11,
-              color: "#c0cce0",
+              fontSize: 13,
+              color: "#0f1b2d",
               lineHeight: 1.6,
             }}>
               {JSON.stringify(item, null, 2)}
@@ -135,9 +135,9 @@ function renderParsedArray(arr) {
         <li
           key={i}
           style={{
-            color: "#c0cce0",
+            color: "#0f1b2d",
             fontFamily: SANS,
-            fontSize: 12,
+            fontSize: 13,
             lineHeight: 1.6,
             listStyle: "disc",
           }}
@@ -152,9 +152,9 @@ function formatExpandedValue(raw) {
   if (raw == null) {
     return (
       <span style={{
-        color: "#3a4060",
+        color: "#566478",
         fontFamily: MONO,
-        fontSize: 11,
+        fontSize: 13,
       }}>
         null
       </span>
@@ -177,9 +177,9 @@ function formatExpandedValue(raw) {
           margin: 0,
           whiteSpace: "pre-wrap",
           wordBreak: "break-word",
-          color: "#c0cce0",
+          color: "#0f1b2d",
           fontFamily: MONO,
-          fontSize: 11,
+          fontSize: 13,
           lineHeight: 1.7,
         }}>
           {JSON.stringify(parsed, null, 2)}
@@ -190,8 +190,8 @@ function formatExpandedValue(raw) {
     return (
       <span style={{
         fontFamily: MONO,
-        fontSize: 12,
-        color: "#c0cce0",
+        fontSize: 13,
+        color: "#0f1b2d",
       }}>
         {String(parsed)}
       </span>
@@ -208,7 +208,7 @@ function formatExpandedValue(raw) {
           key={i}
           style={{
             margin: 0,
-            color: "#c0cce0",
+            color: "#0f1b2d",
             fontFamily: SANS,
             fontSize: 13,
             lineHeight: 1.75,
@@ -228,8 +228,8 @@ function Select({ label, value, onChange, options, placeholder, disabled }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <label style={{
-        fontSize: 9, color: "#3a4060", letterSpacing: "0.1em",
-        textTransform: "uppercase", fontFamily: MONO,
+        fontSize: 13, fontWeight: 600, color: "#0f1b2d", letterSpacing: "0",
+        textTransform: "none", fontFamily: SANS,
       }}>
         {label}
       </label>
@@ -238,9 +238,9 @@ function Select({ label, value, onChange, options, placeholder, disabled }) {
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         style={{
-          background: "#080c18", border: "1px solid #1a2040", borderRadius: 4,
-          color: value ? "#c0cce0" : "#3a4060", fontFamily: MONO, fontSize: 11,
-          padding: "6px 10px", cursor: disabled ? "not-allowed" : "pointer",
+          background: "#fbfcfd", border: "1px solid #566478", borderRadius: 3,
+          color: value ? "#0f1b2d" : "#566478", fontFamily: SANS, fontSize: 14,
+          padding: "7px 10px", cursor: disabled ? "not-allowed" : "pointer",
           outline: "none", minWidth: 220, opacity: disabled ? 0.5 : 1,
         }}
       >
@@ -257,26 +257,26 @@ function LimitControl({ value, onChange }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <label style={{
-        fontSize: 9, color: "#3a4060", letterSpacing: "0.1em",
-        textTransform: "uppercase", fontFamily: MONO,
+        fontSize: 13, fontWeight: 600, color: "#0f1b2d", letterSpacing: "0",
+        textTransform: "none", fontFamily: SANS,
       }}>
-        Sample size: {value}
+        Records to show: {value}
       </label>
       <input
         type="range" min={10} max={50} step={10} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ accentColor: "#5a7aff", width: 120 }}
+        style={{ accentColor: "#0f1b2d", width: 120 }}
       />
     </div>
   );
 }
 
-function StatusBadge({ children, color = "#3a4060" }) {
+function StatusBadge({ children, color = "#566478" }) {
   return (
     <span style={{
-      fontSize: 9, letterSpacing: "0.1em", color,
+      fontSize: 11, letterSpacing: "0", color,
       border: `1px solid ${color}`, borderRadius: 3,
-      padding: "2px 6px", textTransform: "uppercase", fontFamily: MONO,
+      padding: "2px 6px", textTransform: "none", fontFamily: MONO,
     }}>
       {children}
     </span>
@@ -309,26 +309,26 @@ function DetailModal({ value, field, crawlId, table, onClose }) {
   return (
     <div style={{
       position: "fixed", inset: 0,
-      background: "rgba(4, 8, 18, 0.90)",
+      background: "rgba(243,245,247,0.94)",
       display: "flex", alignItems: "center", justifyContent: "center",
       zIndex: 1000, backdropFilter: "blur(8px)",
     }}>
       <div ref={ref} style={{
-        background: "#07101f",
-        border: "1px solid #182038",
+        background: "#fbfcfd",
+        border: "1px solid #d3d9e0",
         borderRadius: 10,
         width: "min(780px, 92vw)",
         maxHeight: "84vh",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        boxShadow: "0 32px 80px rgba(0,0,0,0.65)",
+        boxShadow: "0 32px 80px rgba(15,27,45,0.30)",
       }}>
 
         {/* header */}
         <div style={{
           padding: "16px 22px 14px",
-          borderBottom: "1px solid #101828",
+          borderBottom: "1px solid #d3d9e0",
           display: "flex",
           alignItems: "flex-start",
           justifyContent: "space-between",
@@ -338,15 +338,15 @@ function DetailModal({ value, field, crawlId, table, onClose }) {
             {/* Primary: field name */}
             <span style={{
               fontFamily: SANS, fontWeight: 700, fontSize: 16,
-              color: "#e0eaff", letterSpacing: "0.01em",
+              color: "#0f1b2d", letterSpacing: "0",
             }}>
               {field}
             </span>
             {/* Secondary: crawl + table context */}
             {(shortCrawl || table) && (
               <span style={{
-                fontFamily: MONO, fontSize: 9, color: "#253050",
-                letterSpacing: "0.09em", textTransform: "uppercase",
+                fontFamily: MONO, fontSize: 11, color: "#566478",
+                letterSpacing: "0", textTransform: "none",
               }}>
                 {[
                   shortCrawl && `crawl: ${shortCrawl}`,
@@ -357,7 +357,7 @@ function DetailModal({ value, field, crawlId, table, onClose }) {
           </div>
           <button onClick={onClose} style={{
             background: "transparent", border: "none",
-            color: "#2a3860", cursor: "pointer",
+            color: "#566478", cursor: "pointer",
             fontSize: 20, lineHeight: 1, padding: "0 4px", marginTop: 2,
           }}>×</button>
         </div>
@@ -381,7 +381,7 @@ function DataTable({ rows, columns, table, crawlId }) {
     return (
       <div style={{
         padding: 40, textAlign: "center",
-        color: "#1e2840", fontSize: 11, fontFamily: MONO,
+        color: "#566478", fontSize: 13, fontFamily: MONO,
       }}>
         No records matched the current query.
       </div>
@@ -395,21 +395,21 @@ function DataTable({ rows, columns, table, crawlId }) {
   // Per-column typography config by level
   function cellCfg(col) {
     const lv = colLevel(col);
-    if (lv === 1) return { color: "#263050", fontFamily: MONO, fontSize: 10, maxWidth: 160 };
-    if (lv === 3) return { color: "#9ab0d0", fontFamily: SANS, fontSize: 11, maxWidth: 340 };
-    return              { color: "#5a7090", fontFamily: MONO, fontSize: 10, maxWidth: 240 };
+    if (lv === 1) return { color: "#566478", fontFamily: MONO, fontSize: 12, maxWidth: 160 };
+    if (lv === 3) return { color: "#0f1b2d", fontFamily: SANS, fontSize: 13, maxWidth: 340 };
+    return              { color: "#566478", fontFamily: MONO, fontSize: 12, maxWidth: 240 };
   }
 
   function thCfg(col) {
     const lv  = colLevel(col);
     const base = {
-      fontSize: 9, letterSpacing: "0.1em", textTransform: "uppercase",
+      fontSize: 11, letterSpacing: "0", textTransform: "none",
       fontFamily: MONO, padding: "8px 14px", textAlign: "left",
-      borderBottom: "1px solid #0e1828", whiteSpace: "nowrap",
+      borderBottom: "1px solid #d3d9e0", whiteSpace: "nowrap",
     };
-    if (lv === 1) return { ...base, color: "#1c2440" };
-    if (lv === 3) return { ...base, color: "#3d5aad" };
-    return              { ...base, color: "#253050" };
+    if (lv === 1) return { ...base, color: "#566478" };
+    if (lv === 3) return { ...base, color: "#566478" };
+    return              { ...base, color: "#566478" };
   }
 
   return (
@@ -431,7 +431,7 @@ function DataTable({ rows, columns, table, crawlId }) {
       <div style={{ overflow: "auto", flex: 1 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ background: "#060a14", position: "sticky", top: 0, zIndex: 10 }}>
+            <tr style={{ background: "#f3f5f7", position: "sticky", top: 0, zIndex: 10 }}>
               {orderedColumns.map((col) => (
                 <th key={col} style={thCfg(col)}>{col}</th>
               ))}
@@ -442,8 +442,8 @@ function DataTable({ rows, columns, table, crawlId }) {
               <tr
                 key={ri}
                 style={{
-                  background: ri % 2 === 0 ? "transparent" : "rgba(16,22,48,0.3)",
-                  borderBottom: "1px solid #080c1a",
+                  background: ri % 2 === 0 ? "transparent" : "rgba(15,27,45,0.04)",
+                  borderBottom: "1px solid #d3d9e0",
                 }}
               >
                 {orderedColumns.map((col) => {
@@ -462,7 +462,7 @@ function DataTable({ rows, columns, table, crawlId }) {
                         maxWidth: cfg.maxWidth,
                         cursor: long ? "pointer" : "default",
                         transition: "background 0.1s",
-                        background: long && hover ? "rgba(90,122,255,0.05)" : undefined,
+                        background: long && hover ? "rgba(15,27,45,0.04)" : undefined,
                       }}
                       onClick={long ? () => setModal({ field: col, value: raw }) : undefined}
                       onMouseEnter={long ? () => setHovered(hKey) : undefined}
@@ -476,8 +476,8 @@ function DataTable({ rows, columns, table, crawlId }) {
                         whiteSpace: "normal",
                         maxWidth: cfg.maxWidth,
                         color: raw == null
-                          ? "#131b30"
-                          : hover && long ? "#b8cce8" : cfg.color,
+                          ? "#d3d9e0"
+                          : hover && long ? "#0f1b2d" : cfg.color,
                         fontFamily: cfg.fontFamily,
                         fontSize: cfg.fontSize,
                         lineHeight: 1.55,
@@ -557,116 +557,60 @@ export default function ValidationView() {
   return (
     <div style={{
       height: "100%", display: "flex", flexDirection: "column",
-      background: "#060a14", color: "#c0cce0",
+      background: "#f3f5f7", color: "#0f1b2d",
       fontFamily: MONO, overflow: "hidden",
     }}>
 
-      {/* ── toolbar ── */}
-      <div style={{
-        padding: "14px 20px", borderBottom: "1px solid #0e1828",
-        display: "flex", alignItems: "flex-end", gap: 20,
-        flexWrap: "wrap", background: "#060a14",
-      }}>
-        <div style={{ marginRight: 8 }}>
-          <div style={{
-            fontSize: 9, color: "#1e2840", letterSpacing: "0.12em",
-            textTransform: "uppercase", marginBottom: 3, fontFamily: MONO,
-          }}>
-            Validation Layer
-          </div>
-          <div style={{
-            fontSize: 13, fontFamily: SANS, fontWeight: 700,
-            color: "#dce8ff", letterSpacing: "0.02em",
-          }}>
-            Extracted Data<span style={{ color: "#5a7aff" }}> Inspector</span>
-          </div>
-        </div>
-
-        <div style={{ width: 1, background: "#0e1828", alignSelf: "stretch" }} />
-
-        <Select label="Dataset"   value={table}   onChange={handleTableChange}
-                options={tableOptions} placeholder="Select a dataset…"
-                disabled={tables.length === 0} />
-
-        <Select label="Execution" value={crawlId} onChange={setCrawlId}
-                options={crawlOptions} placeholder="All executions"
-                disabled={!table || crawls.length === 0} />
-
-        <LimitControl value={limit} onChange={(v) => { setLimit(v); setOffset(0); }} />
-
-        <button
-          onClick={handleFetch}
-          disabled={!table || loading}
-          style={{
-            background: table && !loading ? "#5a7aff" : "#0e1828",
-            border: "none", borderRadius: 4,
-            color: table && !loading ? "#fff" : "#2a3060",
-            fontFamily: MONO, fontSize: 10, letterSpacing: "0.08em",
-            padding: "7px 20px",
-            cursor: table && !loading ? "pointer" : "not-allowed",
-            textTransform: "uppercase", alignSelf: "flex-end",
-            transition: "background 0.15s",
-          }}
-        >
-          {loading ? "Loading…" : "Inspect"}
-        </button>
-      </div>
-
-      {/* ── status bar ── */}
-      {(result || error) && (
-        <div style={{
-          padding: "6px 20px", borderBottom: "1px solid #080c18",
-          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+      {/* ── header + query controls ── */}
+      <div style={{ padding: "32px 40px 20px", borderBottom: "1px solid #d3d9e0" }}>
+        <h1 style={{
+          fontFamily: "'Source Serif 4', Georgia, serif", fontWeight: 600, fontSize: 32, lineHeight: 1.15,
+          color: "#0f1b2d", marginBottom: 8,
         }}>
-          {error && <StatusBadge color="#c04040">Error — {error}</StatusBadge>}
-          {result && !error && (
-            <>
-              <StatusBadge color="#30b880">{result.count} records</StatusBadge>
-              <StatusBadge color="#4060c0">{result.columns.length} fields</StatusBadge>
-              {table   && <StatusBadge color="#1e2a50">{table}</StatusBadge>}
-              {crawlId && (
-                <StatusBadge color="#1e2a50">
-                  {crawlId.slice(0, 14)}{crawlId.length > 14 ? "…" : ""}
-                </StatusBadge>
-              )}
-              {offset > 0 && <StatusBadge color="#806020">offset {offset}</StatusBadge>}
-            </>
-          )}
+          Extracted data
+        </h1>
+        <p style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.55, color: "#33435a", maxWidth: "62ch", marginBottom: 20 }}>
+          Check what the crawler actually stored. Pick a dataset and, if you want, one run of it.
+        </p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
+          <Select label="Dataset"   value={table}   onChange={handleTableChange}
+                  options={tableOptions} placeholder="Choose a dataset"
+                  disabled={tables.length === 0} />
+          <Select label="Run" value={crawlId} onChange={setCrawlId}
+                  options={crawlOptions} placeholder="All runs"
+                  disabled={!table || crawls.length === 0} />
+          <LimitControl value={limit} onChange={(v) => { setLimit(v); setOffset(0); }} />
+          <button
+            onClick={handleFetch}
+            disabled={!table || loading}
+            style={{
+              height: 38, padding: "0 20px", borderRadius: 3, fontFamily: SANS, fontSize: 14, fontWeight: 600,
+              background: table && !loading ? "#0f1b2d" : "#d3d9e0", border: "none",
+              color: table && !loading ? "#fbfcfd" : "#566478",
+              cursor: table && !loading ? "pointer" : "not-allowed",
+            }}
+          >
+            {loading ? "Loading…" : "Show records"}
+          </button>
         </div>
-      )}
+        {(result || error) && (
+          <p role="status" style={{ fontFamily: SANS, fontSize: 14, marginTop: 16, color: error ? "#7a1f5c" : "#33435a" }}>
+            {error
+              ? `Could not load records: ${error}. Check that the backend is running, then try again.`
+              : `${result.count} records, ${result.columns.length} fields${table ? ` from ${table}` : ""}${offset > 0 ? `, starting at record ${offset + 1}` : ""}.`}
+          </p>
+        )}
+      </div>
 
       {/* ── empty state ── */}
       {!result && !error && !loading && (
-        <div style={{
-          flex: 1, display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          gap: 16, color: "#1a2240",
-        }}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <rect x="6" y="10" width="36" height="30" rx="3"
-                  stroke="#141e38" strokeWidth="1.5" />
-            <path d="M6 20h36" stroke="#141e38" strokeWidth="1" />
-            <path d="M18 20v20M30 20v20"
-                  stroke="#141e38" strokeWidth="0.8" strokeDasharray="2 3" />
-            <circle cx="24" cy="10" r="3.5" fill="#141e38" />
-          </svg>
-          <div style={{
-            textAlign: "center", display: "flex",
-            flexDirection: "column", gap: 5,
-          }}>
-            <span style={{
-              fontSize: 13, color: "#253060", fontFamily: SANS,
-              fontWeight: 600, letterSpacing: "0.02em",
-            }}>
-              No dataset loaded
-            </span>
-            <span style={{
-              fontSize: 10, color: "#141e38", fontFamily: MONO,
-              letterSpacing: "0.07em",
-            }}>
-              Select a dataset to inspect extracted records
-            </span>
-          </div>
+        <div style={{ flex: 1, padding: "40px" }}>
+          <p style={{ fontFamily: "'Source Serif 4', Georgia, serif", fontSize: 20, color: "#0f1b2d", marginBottom: 6 }}>
+            No dataset chosen.
+          </p>
+          <p style={{ fontFamily: SANS, fontSize: 14, color: "#566478", maxWidth: "52ch" }}>
+            Records appear here once you choose a dataset above.
+          </p>
         </div>
       )}
 
@@ -683,20 +627,20 @@ export default function ValidationView() {
       {/* ── pagination ── */}
       {result && !error && (
         <div style={{
-          padding: "10px 20px", borderTop: "1px solid #0e1828",
+          padding: "10px 20px", borderTop: "1px solid #d3d9e0",
           display: "flex", gap: 10, alignItems: "center",
-          background: "#060a14",
+          background: "#f3f5f7",
         }}>
           <button onClick={handlePrev} disabled={offset === 0 || loading}
                   style={pagerBtnStyle(offset > 0 && !loading)}>
-            ← Previous
+            Previous
           </button>
-          <span style={{ fontSize: 10, color: "#1e2840", fontFamily: MONO }}>
+          <span style={{ fontSize: 12, color: "#566478", fontFamily: MONO }}>
             records {offset + 1}–{offset + result.count}
           </span>
           <button onClick={handleNext} disabled={result.count < limit || loading}
                   style={pagerBtnStyle(result.count >= limit && !loading)}>
-            Next →
+            Next
           </button>
         </div>
       )}
@@ -707,13 +651,13 @@ export default function ValidationView() {
 function pagerBtnStyle(active) {
   return {
     background: "transparent",
-    border: `1px solid ${active ? "#1a2040" : "#0c1020"}`,
+    border: `1px solid ${active ? "#d3d9e0" : "#d3d9e0"}`,
     borderRadius: 4,
-    color: active ? "#6070a0" : "#181e30",
+    color: active ? "#566478" : "#566478",
     fontFamily: MONO,
-    fontSize: 10,
+    fontSize: 12,
     padding: "4px 14px",
     cursor: active ? "pointer" : "not-allowed",
-    letterSpacing: "0.06em",
+    letterSpacing: "0",
   };
 }

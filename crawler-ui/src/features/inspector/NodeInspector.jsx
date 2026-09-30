@@ -34,8 +34,11 @@ function relativeAge(createdAt) {
 }
 
 function StateBadge({ state }) {
-  const color = theme.colors.state.label[state] || theme.colors.text.muted;
-  const fill = theme.colors.state[state] || theme.colors.background.border;
+  // Light chip with ink text, and a swatch of the state's own fill: the text
+  // never sits on the dark ramp, so contrast holds for every state.
+  const color = theme.colors.text.primary;
+  const fill = theme.colors.background.border;
+  const swatch = theme.colors.state[state] || "transparent";
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -43,6 +46,7 @@ function StateBadge({ state }) {
       padding: "2px 7px", borderRadius: theme.radii.sm, background: fill,
       letterSpacing: theme.typography.letterSpacing.wide,
     }}>
+      <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: "50%", background: swatch, border: `1px solid ${theme.colors.state.label[state] || theme.colors.text.muted}` }} />
       {state}
     </span>
   );
@@ -136,7 +140,7 @@ function ScoringTab({ detail }) {
           <div key={key} style={S.breakdownRow}>
             <div style={S.breakdownLabel} title={key}>{key.replace(/_/g, " ")}</div>
             <div style={S.breakdownBarTrack}>
-              <div style={S.breakdownBarFill(`${pct}%`, positive ? theme.colors.accent.blue : theme.colors.accent.red)} />
+              <div style={S.breakdownBarFill(`${pct}%`, positive ? theme.colors.text.primary : `repeating-linear-gradient(45deg, ${theme.colors.text.secondary} 0 2px, transparent 2px 5px)`)} />
             </div>
             <div style={S.breakdownValue}>{value.toFixed(2)}</div>
           </div>
@@ -167,7 +171,7 @@ function ActivityTab({ history, errors }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
             {errors.map((e, i) => (
               <div key={i} style={{
-                background: "rgba(255,80,80,0.08)", border: `1px solid rgba(255,80,80,0.25)`,
+                background: "rgba(122,31,92,0.06)", border: `1px solid rgba(122,31,92,0.30)`,
                 borderRadius: theme.radii.md, padding: 8,
               }}>
                 <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>
@@ -213,6 +217,18 @@ function ActivityTab({ history, errors }) {
  * selecting a node in one view keeps it visible while browsing another --
  * see docs/V2_ARCHITECTURE.md §B.3.3.
  */
+// One plain sentence answering "why did the crawler go here?" from whatever
+// the cascade recorded for this node.
+function whySentence(node, detail) {
+  if (!node.parent_id) return "Seed page: the crawl starts here, without scoring.";
+  if (!detail) return "No scoring was recorded for this page.";
+  const nlp = typeof detail.nlp_score === "number" ? `NLP similarity ${detail.nlp_score.toFixed(2)}` : null;
+  if (detail.llm_score == null) {
+    return `Followed on NLP alone${nlp ? ` (${nlp})` : ""}; the LLM was not asked.`;
+  }
+  return `The LLM rated this link ${detail.llm_score}/100${nlp ? `, after ${nlp}` : ""}.`;
+}
+
 export default function NodeInspector({ node, detail, allNodes, errors, eventLog, onSelectNode, onClose }) {
   const [tab, setTab] = useState("Overview");
 
@@ -250,8 +266,17 @@ export default function NodeInspector({ node, detail, allNodes, errors, eventLog
             {pathOf(node.url)}
           </div>
         </div>
-        <button onClick={onClose} style={S.nodeDetailCloseBtn}>✕</button>
+        <button onClick={onClose} style={S.nodeDetailCloseBtn} aria-label="Close annotation panel">
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+        </button>
       </div>
+
+      <p style={{
+        margin: 0, padding: "12px 16px", fontFamily: theme.typography.fontDisplay, fontSize: 15, lineHeight: 1.45,
+        color: theme.colors.text.primary, borderBottom: `1px solid ${theme.colors.background.border}`,
+      }}>
+        {whySentence(node, detail)}
+      </p>
 
       <div style={S.tabRow}>
         {TABS.map(t => (

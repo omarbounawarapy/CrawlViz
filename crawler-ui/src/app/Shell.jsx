@@ -1,223 +1,185 @@
+import { useState } from "react";
 import { getTheme } from "../theme";
-import {
-  OverviewIcon, GraphIcon, PipelineIcon, TimelineIcon,
-  RunIcon, BlueprintIcon, DataIcon, ConfigIcon,
-} from "./Icons";
 
 const theme = getTheme();
-const shell = theme.shell;
+const { shell, typography: type } = theme;
 
-// Single registry for the whole app's information architecture -- every
-// section is one click away from every other, none of them unmount the
-// WebSocket connection or drop the selected node the way V1's full-page
-// route exile did (see docs/V2_ARCHITECTURE.md §A.2.1 / §B.3.1).
+// Flat, labelled navigation. The graph is the home view; the old Overview,
+// Pipeline and Timeline sections now live inside it as the Measurements
+// drawer and the timeline bar (see App.jsx).
 const SECTIONS = [
-  { id: "overview", label: "Overview",   icon: OverviewIcon,   question: "What is this crawl doing right now?" },
-  { id: "graph",     label: "Graph",     icon: GraphIcon,      question: "Why did the crawler traverse here?" },
-  { id: "pipeline",  label: "Pipeline",  icon: PipelineIcon,   question: "Where is the bottleneck?" },
-  { id: "timeline",  label: "Timeline",  icon: TimelineIcon,   question: "What sequence of decisions produced this outcome?" },
-  { id: "run",       label: "Run",       icon: RunIcon,        question: "What am I about to run, and what did the last run do?" },
-  { id: "blueprints",label: "Blueprints",icon: BlueprintIcon,  question: "What is this crawl configured to do?" },
-  { id: "data",      label: "Data",      icon: DataIcon,       question: "What did we actually extract?" },
-  { id: "config",    label: "Config",    icon: ConfigIcon,     question: "What assumptions is this crawl operating under?" },
+  { id: "graph",      label: "Graph",      question: "Why did the crawler traverse here?" },
+  { id: "run",        label: "Run",        question: "What am I about to run, and what did the last run do?" },
+  { id: "blueprints", label: "Blueprints", question: "What is this crawl configured to do?" },
+  { id: "data",       label: "Data",       question: "What did we actually extract?" },
+  { id: "config",     label: "Config",     question: "What assumptions is this crawl operating under?" },
 ];
 
-const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;700;800&display=swap');
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #root { height: 100%; width: 100%; background: ${shell.background}; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: ${shell.scrollTrack}; }
-  ::-webkit-scrollbar-thumb { background: ${theme.colors.scrubber}; border-radius: 2px; }
-  input[type=range] { height: 4px; }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
-    50% { opacity: 0.6; box-shadow: 0 0 2px currentColor; }
-  }
-`;
-
-function Logo() {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="10" r="4" fill={theme.colors.accent.blue} opacity="0.9" />
-        <path
-          d="M12 14v6M8 16l-4 3M16 16l4 3M6 8L2 5M18 8l4-5M8 8L4 6M16 8l4-2"
-          stroke={theme.colors.accent.blue} strokeWidth="1.5" strokeLinecap="round" opacity="0.7"
-        />
+function StatusMark({ status }) {
+  // State is carried by shape and word, not colour alone.
+  const size = 10;
+  if (status === "RUNNING") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true" className="breathe">
+        <circle cx="5" cy="5" r="4" fill={theme.colors.text.primary} />
       </svg>
-      <span style={{ fontSize: 13, fontFamily: theme.typography.fontDisplay, fontWeight: 700, color: shell.textBright, letterSpacing: "0.04em" }}>
-        CRAWL<span style={{ color: theme.colors.accent.blue }}>VIZ</span>
-      </span>
-    </div>
+    );
+  }
+  if (status === "STOPPED") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true">
+        <rect x="1" y="1" width="8" height="8" fill={theme.colors.text.secondary} />
+      </svg>
+    );
+  }
+  return (
+    <svg width={size} height={size} viewBox="0 0 10 10" aria-hidden="true">
+      <circle cx="5" cy="5" r="3.5" fill="none" stroke={theme.colors.text.muted} strokeWidth="1.5" />
+    </svg>
   );
 }
 
-function ActivityBarBtn({ section, active, onClick, hasAlert }) {
-  const Icon = section.icon;
+const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", CONNECTING: "Waiting for backend" };
+
+function Wordmark() {
+  return (
+    <span style={{
+      fontFamily: type.fontDisplay, fontSize: 20, fontWeight: 600,
+      color: shell.textBright, letterSpacing: "-0.01em",
+    }}>
+      CrawlViz
+    </span>
+  );
+}
+
+function NavTab({ section, active, onClick, hasAlert }) {
   return (
     <button
       onClick={onClick}
-      title={`${section.label} — ${section.question}`}
+      aria-current={active ? "page" : undefined}
+      title={section.question}
       style={{
-        width: 38, height: 38, margin: "2px 7px",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        borderRadius: theme.radii.md,
-        background: active ? "rgba(90,122,255,0.14)" : "transparent",
-        border: active ? `1px solid ${theme.colors.accent.blueDim}` : "1px solid transparent",
-        color: active ? theme.colors.accent.blue : shell.textMuted,
-        cursor: "pointer",
-        position: "relative",
+        position: "relative", height: 48, padding: "0 14px",
+        background: "transparent", border: "none",
+        borderBottom: `2px solid ${active ? shell.textBright : "transparent"}`,
+        color: active ? shell.textBright : shell.textPrimary,
+        fontSize: 14, fontWeight: active ? 600 : 500,
       }}
     >
-      <Icon />
-      {hasAlert && (
-        <span style={{
-          position: "absolute", top: 4, right: 4, width: 6, height: 6,
-          borderRadius: "50%", background: theme.colors.accent.red,
-        }} />
-      )}
+      {section.label}
+      {hasAlert && <span aria-label="has errors" style={{
+        position: "absolute", top: 12, right: 4, width: 6, height: 6, background: theme.colors.accent.red,
+      }} />}
     </button>
   );
 }
 
-function ConnectionIndicator({ connectionStatus }) {
-  const connected = connectionStatus === "CONNECTED";
-  const label = connected ? "Live" : connectionStatus === "CONNECTING" ? "Connecting…" : "Disconnected";
-  const color = connected ? theme.colors.accent.green : theme.colors.accent.red;
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }} title={`WebSocket: ${label}`}>
-      <span style={{
-        width: 6, height: 6, borderRadius: "50%",
-        background: color,
-        animation: connected ? "none" : "pulse 1.4s ease-in-out infinite",
-      }} />
-      <span style={{ fontSize: 9, color: shell.textMuted, letterSpacing: "0.06em" }}>{label.toUpperCase()}</span>
-    </div>
-  );
-}
-
-function CrawlStatusBadge({ status }) {
-  const map = {
-    RUNNING:    { bg: "rgba(64,255,128,0.12)", border: "rgba(64,255,128,0.35)", dot: theme.colors.accent.green },
-    STOPPED:    { bg: "rgba(255,80,80,0.12)",  border: "rgba(255,80,80,0.35)",  dot: theme.colors.accent.red },
-    CONNECTING: { bg: "rgba(120,120,160,0.12)",border: "rgba(120,120,160,0.3)", dot: "#8080a0" },
-  };
-  const s = map[status] || map.CONNECTING;
-  return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "3px 10px", borderRadius: 20,
-      background: s.bg, border: `1px solid ${s.border}`,
-    }}>
-      <span style={{
-        width: 6, height: 6, borderRadius: "50%", background: s.dot,
-        animation: status === "RUNNING" ? "pulse 1.4s ease-in-out infinite" : "none",
-      }} />
-      <span style={{ fontSize: 9, letterSpacing: "0.08em", color: s.dot }}>{status}</span>
-    </div>
-  );
-}
-
 /**
- * Shell — the persistent IDE-style layout every section renders inside.
+ * Shell -- the persistent frame: one top rule, the content, and an optional
+ * docked annotation panel.
  *
  * Props:
- *   activeSection, onNavigate(sectionId): activity-bar routing
- *   status, connectionStatus, stopReason: for the top-bar status cluster
- *   errorCount: unread-ish count that lights a red dot on the section
- *     that surfaces errors most directly (kept simple: Pipeline)
- *   subtitle: optional short right-aligned context string (e.g. blueprint name)
+ *   activeSection, onNavigate(sectionId)
+ *   status, connectionStatus, stopReason, summary (short right-aligned fact line)
+ *   errorCount: lights a mark on the Run tab
+ *   measuresOpen, onToggleMeasures: the Measurements drawer toggle
+ *   banner: optional full-width strip under the top rule (sample-mode notice)
  *   children: the active section's content
- *   inspector: optional docked right-hand panel (Node Inspector)
+ *   inspector: optional docked right-hand annotation panel
  */
 export default function Shell({
-  activeSection, onNavigate, status, connectionStatus, stopReason,
-  errorCount = 0, subtitle, children, inspector,
+  activeSection, onNavigate, status, connectionStatus, stopReason, summary,
+  errorCount = 0, measuresOpen, onToggleMeasures, onShowErrors, onStop, banner, children, inspector,
 }) {
-  const active = SECTIONS.find(s => s.id === activeSection) || SECTIONS[0];
+  const connected = connectionStatus === "CONNECTED";
+  // Stopping a crawl is not undoable: the first click arms it, the second confirms.
+  const [armed, setArmed] = useState(false);
+  const handleStop = () => {
+    if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 4000); return; }
+    setArmed(false);
+    onStop();
+  };
 
   return (
-    <>
-      <style>{GLOBAL_CSS}</style>
-      <div style={{
-        display: "flex", width: "100vw", height: "100vh",
-        background: shell.background, fontFamily: theme.typography.fontMono, overflow: "hidden",
+    <div style={{
+      display: "flex", flexDirection: "column", width: "100%", height: "100%",
+      background: shell.background, fontFamily: type.fontMono, overflow: "hidden",
+    }}>
+      <header style={{
+        display: "flex", alignItems: "center", gap: 28, height: 48, flexShrink: 0,
+        padding: "0 20px", background: shell.surface, borderBottom: `1px solid ${shell.border}`,
       }}>
-        {/* Activity bar */}
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center",
-          width: 52, flexShrink: 0, background: shell.surface,
-          borderRight: `1px solid ${shell.border}`, paddingTop: 12, paddingBottom: 12,
-          justifyContent: "space-between",
-        }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, width: "100%" }}>
-            <div style={{ marginBottom: 10 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="10" r="4" fill={theme.colors.accent.blue} opacity="0.9" />
-                <path d="M12 14v6M8 16l-4 3M16 16l4 3M6 8L2 5M18 8l4-5M8 8L4 6M16 8l4-2"
-                  stroke={theme.colors.accent.blue} strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-              </svg>
-            </div>
-            {SECTIONS.map(section => (
-              <ActivityBarBtn
-                key={section.id}
-                section={section}
-                active={section.id === activeSection}
-                onClick={() => onNavigate(section.id)}
-                hasAlert={section.id === "pipeline" && errorCount > 0}
-              />
-            ))}
-          </div>
+        <Wordmark />
+        <nav aria-label="Sections" style={{ display: "flex", alignItems: "stretch", height: 48 }}>
+          {SECTIONS.map(section => (
+            <NavTab
+              key={section.id}
+              section={section}
+              active={section.id === activeSection}
+              onClick={() => onNavigate(section.id)}
+              hasAlert={section.id === "run" && errorCount > 0}
+            />
+          ))}
+        </nav>
+
+        <div style={{ flex: 1 }} />
+
+        <div style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0 }}>
+          {summary && (
+            <span className="num" style={{ fontSize: 13, color: shell.textPrimary, whiteSpace: "nowrap" }}>{summary}</span>
+          )}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: shell.textBright, fontWeight: 500 }}
+                title={stopReason || undefined}>
+            <StatusMark status={status} />
+            {STATUS_WORD[status] ?? status}
+            {stopReason && <span style={{ color: shell.textMuted, fontWeight: 400 }}>· {String(stopReason).toLowerCase().replace(/_/g, " ")}</span>}
+          </span>
+          <span style={{ fontSize: 12, color: shell.textMuted }} title="WebSocket connection to the crawler">
+            {connected ? "Connected" : connectionStatus === "CONNECTING" ? "Connecting…" : "Disconnected"}
+          </span>
+          {errorCount > 0 && onShowErrors && (
+            <button onClick={onShowErrors} style={{ background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600, color: theme.colors.accent.red, textDecoration: "underline" }}>
+              {errorCount} {errorCount === 1 ? "error" : "errors"}
+            </button>
+          )}
+          {status === "RUNNING" && onStop && (
+            <button
+              onClick={handleStop}
+              style={{
+                height: 30, padding: "0 12px", borderRadius: theme.radii.md, fontSize: 13, fontWeight: 600,
+                background: armed ? theme.colors.accent.red : "transparent",
+                color: armed ? "#fff" : theme.colors.text.secondary,
+                border: `1px solid ${armed ? theme.colors.accent.red : theme.colors.text.muted}`,
+              }}
+            >
+              {armed ? "Confirm stop" : "Stop crawl"}
+            </button>
+          )}
+          {onToggleMeasures && (
+            <button
+              onClick={onToggleMeasures}
+              aria-pressed={measuresOpen}
+              style={{
+                height: 30, padding: "0 12px", borderRadius: theme.radii.md, fontSize: 13, fontWeight: 500,
+                background: measuresOpen ? shell.textBright : "transparent",
+                color: measuresOpen ? shell.surface : shell.textBright,
+                border: `1px solid ${shell.textBright}`,
+              }}
+            >
+              Measurements
+            </button>
+          )}
         </div>
+      </header>
 
-        {/* Content column */}
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0, height: "100%" }}>
-          {/* Top bar */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            height: 42, flexShrink: 0, padding: "0 16px",
-            borderBottom: `1px solid ${shell.border}`, background: shell.surface,
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-              <Logo />
-              <div style={{ width: 1, height: 18, background: shell.border }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{
-                  fontFamily: theme.typography.fontDisplay, fontSize: 12, fontWeight: 600,
-                  color: shell.textBright, whiteSpace: "nowrap",
-                }}>
-                  {active.label}
-                </div>
-                {subtitle && (
-                  <div style={{
-                    fontSize: 9, color: shell.textMuted, whiteSpace: "nowrap",
-                    overflow: "hidden", textOverflow: "ellipsis", maxWidth: "48ch",
-                  }}>
-                    {subtitle}
-                  </div>
-                )}
-              </div>
-            </div>
+      {banner}
 
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              {stopReason && (
-                <span style={{ fontSize: 9, color: shell.textMuted }}>{stopReason}</span>
-              )}
-              <CrawlStatusBadge status={status} />
-              <ConnectionIndicator connectionStatus={connectionStatus} />
-            </div>
-          </div>
-
-          {/* Main area */}
-          <div style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
-            <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative", background: shell.surface }}>
-              {children}
-            </div>
-            {inspector}
-          </div>
+      <main style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden" }}>
+        <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative", background: shell.background }}>
+          {children}
         </div>
-      </div>
-    </>
+        {inspector}
+      </main>
+    </div>
   );
 }

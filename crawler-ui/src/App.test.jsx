@@ -15,46 +15,46 @@ class FakeWebSocket {
 beforeEach(() => {
   window.location.hash = "";
   vi.stubGlobal("WebSocket", FakeWebSocket);
-  // jsdom's fetch (or its absence) would otherwise reject with a generic
-  // network error message that's fine for our purposes -- components are
-  // expected to catch it, not crash. No stub needed beyond letting it reject.
 });
 
-describe("App — smoke render across every section", () => {
-  it("renders the default Overview section without throwing", () => {
+describe("App — smoke render", () => {
+  it("lands on the graph with an empty state and the timeline dock", () => {
     render(<App />);
-    expect(screen.getAllByText("Overview").length).toBeGreaterThan(0);
-    expect(screen.getByText(/What is this crawl doing right now/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /No crawl on the plate yet/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Load a synthetic sample" })).toBeTruthy();
+    expect(screen.getByLabelText("Replay position")).toBeTruthy();
     cleanup();
   });
 
-  const sections = [
-    { label: "Graph",      question: /Why did the crawler traverse here/ },
-    { label: "Pipeline",   question: /Where is the bottleneck/ },
-    { label: "Timeline",   question: /What sequence of decisions produced this outcome/ },
-    { label: "Run",        question: /What am I about to run/ },
-    { label: "Blueprints", question: null },
-    { label: "Data",       question: null },
-    { label: "Config",     question: /What assumptions is this crawl operating under/ },
-  ];
-
-  for (const section of sections) {
-    it(`navigates to ${section.label} without throwing`, () => {
+  const pages = ["Run", "Blueprints", "Data", "Config", "Graph"];
+  for (const label of pages) {
+    it(`navigates to ${label} without throwing`, () => {
       render(<App />);
-      const btn = screen.getByTitle(new RegExp(`^${section.label} —`));
-      fireEvent.click(btn);
-      // Section name appears in the top bar regardless of which page rendered.
-      expect(screen.getAllByText(section.label).length).toBeGreaterThan(0);
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      expect(screen.getByRole("button", { name: label }).getAttribute("aria-current")).toBe("page");
       cleanup();
     });
   }
 
-  it("selecting a node opens the inspector dock and closing it clears the selection", () => {
+  it("Measurements drawer opens the overview and pipeline panels", () => {
     render(<App />);
-    // No nodes exist yet (no live crawl in this smoke test), so just verify
-    // the Graph section itself renders its controls without a selected node.
-    fireEvent.click(screen.getByTitle(/^Graph —/));
-    expect(screen.getByPlaceholderText("Filter by URL…")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Measurements" }));
+    expect(screen.getByLabelText("Measurements")).toBeTruthy();
+    expect(screen.getByText(/What is this crawl doing right now/)).toBeTruthy();
+    cleanup();
+  });
+
+  it("the events list expands from the timeline dock", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Show events" }));
+    expect(screen.getByRole("button", { name: "Hide events" })).toBeTruthy();
+    cleanup();
+  });
+
+  it("legacy #/overview links open the graph with the drawer", () => {
+    window.location.hash = "#/overview";
+    render(<App />);
+    expect(screen.getByLabelText("Measurements")).toBeTruthy();
     cleanup();
   });
 });

@@ -30,7 +30,7 @@ export const createComponentStyles = (theme) => {
       fontSize:      typography.size.xs,
       color:         colors.text.muted,
       fontFamily:    typography.fontMono,
-      letterSpacing: typography.letterSpacing.normal,
+      letterSpacing: "0",
     },
     metricRowValue: (accent) => ({
       fontSize:   typography.size.xl,
@@ -42,7 +42,7 @@ export const createComponentStyles = (theme) => {
     sectionLabel: {
       fontSize:      typography.size.xxs,
       color:         colors.text.muted,
-      letterSpacing: typography.letterSpacing.wider,
+      letterSpacing: "0",
       fontFamily:    typography.fontMono,
     },
 
@@ -73,7 +73,7 @@ export const createComponentStyles = (theme) => {
       const s = colors.status[statusKey(status)];
       return {
         fontSize:      typography.size.xs,
-        letterSpacing: typography.letterSpacing.wider,
+        letterSpacing: "0",
         fontFamily:    typography.fontMono,
         color:         s.dot,
       };
@@ -93,10 +93,11 @@ export const createComponentStyles = (theme) => {
     stateBarFill: (stateColor, width) => ({
       height:       "100%",
       borderRadius: radii.sm,
-      width,
+      width:        "100%",
       background:   stateColor,
-      transition:   "width 0.4s ease",
-      boxShadow:    `${shadows.glow} ${stateColor}`,
+      transform:    `scaleX(${parseFloat(width) / 100})`,
+      transformOrigin: "left",
+      transition:   "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
     }),
 
     // ── NodeDetail ──────────────────────────────────────────────────────────
@@ -121,7 +122,7 @@ export const createComponentStyles = (theme) => {
       fontSize:      typography.size.xs,
       color:         stateColor,
       fontFamily:    typography.fontMono,
-      letterSpacing: typography.letterSpacing.wide,
+      letterSpacing: "0",
     }),
     nodeDetailCloseBtn: {
       background: "none",
@@ -194,7 +195,7 @@ export const createComponentStyles = (theme) => {
     },
     timelineHeaderLabel: {
       fontSize:      typography.size.xs,
-      letterSpacing: typography.letterSpacing.wider,
+      letterSpacing: "0",
       color:         colors.text.secondary,
       fontFamily:    typography.fontMono,
     },
@@ -228,7 +229,7 @@ export const createComponentStyles = (theme) => {
     }),
     timelineTs: {
       fontSize:   typography.size.xxs,
-      fontFamily: typography.fontMono,
+      fontFamily: typography.fontData,
       color:      colors.text.muted,
       minWidth:   "78px",
       flexShrink: 0,
@@ -294,7 +295,7 @@ export const createComponentStyles = (theme) => {
       fontSize:      typography.size.md,
       color:         colors.replay.text,
       fontFamily:    typography.fontMono,
-      letterSpacing: typography.letterSpacing.normal,
+      letterSpacing: "0",
     },
 
     // ── Generic panel / section primitives (V2) ────────────────────────────
@@ -338,11 +339,11 @@ export const createComponentStyles = (theme) => {
     },
     sectionCardTitle: {
       fontSize:      typography.size.xs,
-      letterSpacing: typography.letterSpacing.wider,
+      letterSpacing: "0",
       color:         colors.text.muted,
       fontFamily:    typography.fontMono,
       marginBottom:  spacing.md,
-      textTransform: "uppercase",
+      textTransform: "none",
     },
     statTileGrid: (minWidth = "150px") => ({
       display:             "grid",
@@ -357,9 +358,9 @@ export const createComponentStyles = (theme) => {
     },
     statTileLabel: {
       fontSize:      typography.size.xxs,
-      letterSpacing: typography.letterSpacing.wider,
+      letterSpacing: "0",
       color:         colors.text.muted,
-      textTransform: "uppercase",
+      textTransform: "none",
     },
     statTileValue: (accent) => ({
       fontSize:   typography.size.xxl,
@@ -396,8 +397,8 @@ export const createComponentStyles = (theme) => {
       padding:       `6px ${spacing.sm}`,
       color:         colors.text.muted,
       fontSize:      typography.size.xxs,
-      letterSpacing: typography.letterSpacing.wider,
-      textTransform: "uppercase",
+      letterSpacing: "0",
+      textTransform: "none",
       borderBottom:  `1px solid ${colors.background.border}`,
       whiteSpace:    "nowrap",
     },
@@ -412,12 +413,12 @@ export const createComponentStyles = (theme) => {
     },
     pill: (tone = "muted") => {
       const map = {
-        muted:   { bg: "rgba(138,148,192,0.12)", fg: colors.text.muted },
-        blue:    { bg: "rgba(90,122,255,0.14)",   fg: colors.accent.blue },
-        green:   { bg: "rgba(64,255,128,0.12)",   fg: colors.accent.green },
-        gold:    { bg: "rgba(224,184,64,0.14)",   fg: colors.accent.gold },
-        red:     { bg: "rgba(255,80,80,0.12)",    fg: colors.accent.red },
-        purple:  { bg: "rgba(154,106,255,0.14)",  fg: colors.accent.purple },
+        muted:   { bg: "rgba(15,27,45,0.05)", fg: colors.text.muted },
+        blue:    { bg: "rgba(15,27,45,0.06)",   fg: colors.accent.blue },
+        green:   { bg: "rgba(31,111,90,0.10)",   fg: colors.accent.green },
+        gold:    { bg: "rgba(122,90,0,0.10)",   fg: colors.accent.gold },
+        red:     { bg: "rgba(122,31,92,0.08)",    fg: colors.accent.red },
+        purple:  { bg: "rgba(15,27,45,0.05)",  fg: colors.accent.purple },
       };
       const c = map[tone] || map.muted;
       return {
@@ -427,7 +428,7 @@ export const createComponentStyles = (theme) => {
         borderRadius:  radii.sm,
         fontSize:      typography.size.xxs,
         fontFamily:    typography.fontMono,
-        letterSpacing: typography.letterSpacing.normal,
+        letterSpacing: "0",
         background:    c.bg,
         color:         c.fg,
         whiteSpace:    "nowrap",
@@ -444,7 +445,7 @@ export const createComponentStyles = (theme) => {
       padding:       `8px 12px`,
       fontSize:      typography.size.xs,
       fontFamily:    typography.fontMono,
-      letterSpacing: typography.letterSpacing.normal,
+      letterSpacing: "0",
       color:         active ? colors.text.primary : colors.text.muted,
       background:    "transparent",
       border:        "none",
@@ -474,9 +475,9 @@ export const createComponentStyles = (theme) => {
     },
     stageBoxLabel: {
       fontSize:      typography.size.xxs,
-      letterSpacing: typography.letterSpacing.wide,
+      letterSpacing: "0",
       color:         colors.text.muted,
-      textTransform: "uppercase",
+      textTransform: "none",
     },
     stageBoxArrow: {
       display:    "flex",
@@ -488,7 +489,7 @@ export const createComponentStyles = (theme) => {
 
     // ── Node Inspector (V2, docked) ─────────────────────────────────────────
     inspectorDock: {
-      width:         "340px",
+      width:         "380px",
       flexShrink:    0,
       borderLeft:    `1px solid ${colors.background.border}`,
       background:    colors.background.primary,
@@ -504,6 +505,7 @@ export const createComponentStyles = (theme) => {
       borderBottom:   `1px solid ${colors.background.border}`,
     },
     inspectorUrl: {
+      fontFamily:   typography.fontData,
       fontSize:     typography.size.xs,
       color:        colors.text.primary,
       wordBreak:    "break-all",

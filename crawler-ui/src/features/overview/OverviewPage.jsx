@@ -13,11 +13,11 @@ function FunnelBar({ label, count, max, color }) {
   const pct = max > 0 ? Math.max(2, (count / max) * 100) : 0;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-      <div style={{ width: 76, fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, textTransform: "uppercase", letterSpacing: theme.typography.letterSpacing.wide }}>
+      <div style={{ width: 76, fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, textTransform: "none", letterSpacing: theme.typography.letterSpacing.wide }}>
         {label}
       </div>
       <div style={{ flex: 1, height: 18, background: theme.colors.background.border, borderRadius: theme.radii.sm, overflow: "hidden" }}>
-        <div style={{ width: `${pct}%`, height: "100%", background: color, transition: "width 0.3s ease" }} />
+        <div style={{ width: "100%", height: "100%", background: color, transform: `scaleX(${pct / 100})`, transformOrigin: "left", transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)" }} />
       </div>
       <div style={{ width: 46, textAlign: "right", fontSize: theme.typography.size.sm, color: theme.colors.text.primary, fontVariantNumeric: "tabular-nums" }}>
         {count}
@@ -65,44 +65,28 @@ export default function OverviewPage({ state, metrics }) {
       </div>
 
       <div style={S.panelScroll}>
-        {/* Top stats */}
-        <div style={S.statTileGrid()}>
-          <div style={S.statTile}>
-            <div style={S.statTileLabel}>Nodes discovered</div>
-            <div style={S.statTileValue(theme.colors.accent.blue)}>{state.nodes.size}</div>
-            <div style={S.statTileSub}>{state.edges.size} edges</div>
-          </div>
-          <div style={S.statTile}>
-            <div style={S.statTileLabel}>Throughput</div>
-            <div style={S.statTileValue(theme.colors.accent.green)}>{pagesPerSec.toFixed(2)}</div>
-            <div style={S.statTileSub}>pages / sec</div>
-          </div>
-          <div style={S.statTile}>
-            <div style={S.statTileLabel}>Elapsed</div>
-            <div style={S.statTileValue()}>{formatDuration(elapsed * 1000)}</div>
-            <div style={S.statTileSub}>{state.status}{state.stop_reason ? ` — ${state.stop_reason}` : ""}</div>
-          </div>
-          <div style={S.statTile}>
-            <div style={S.statTileLabel}>Candidates excluded</div>
-            <div style={S.statTileValue(theme.colors.state.label.DROPPED)}>{metrics.candidatesDropped}</div>
-            <div style={S.statTileSub}>of {totalCandidates} evaluated without an LLM call ({(dropRate * 100).toFixed(0)}% dropped)</div>
-          </div>
-          <div style={S.statTile}>
-            <div style={S.statTileLabel}>Errors</div>
-            <div style={S.statTileValue(state.errors.length > 0 ? theme.colors.accent.red : theme.colors.text.primary)}>{state.errors.length}</div>
-            <div style={S.statTileSub}>across all pipeline stages</div>
-          </div>
-          <div style={S.statTile}>
-            <div style={S.statTileLabel}>Slowest stage</div>
-            <div style={S.statTileValue(theme.colors.accent.gold)}>
-              {bottleneckStage ? PIPELINE_STAGE_LABELS[bottleneckStage.stage] : "—"}
+        {/* Measurements: one ruled list, figures right-aligned and tabular */}
+        <dl style={{ margin: 0 }}>
+          {[
+            ["Pages discovered", state.nodes.size, `${state.edges.size} links followed`],
+            ["Throughput", `${pagesPerSec.toFixed(2)} pages/s`, null],
+            ["Elapsed", formatDuration(elapsed * 1000), `${state.status}${state.stop_reason ? ` (${String(state.stop_reason).toLowerCase().replace(/_/g, " ")})` : ""}`],
+            ["Links skipped", metrics.candidatesDropped, `${totalCandidates} evaluated, ${(dropRate * 100).toFixed(0)}% skipped`],
+            ["Errors", state.errors.length, "across all pipeline stages"],
+            ["Slowest stage", bottleneckStage ? PIPELINE_STAGE_LABELS[bottleneckStage.stage] : "Not enough data yet", bottleneckStage ? `average ${formatDuration(bottleneckStage.avg)}` : null],
+          ].map(([label, value, sub]) => (
+            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, padding: "10px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
+              <div>
+                <dt style={{ fontSize: 14, color: theme.colors.text.primary }}>{label}</dt>
+                {sub && <dd style={{ margin: 0, fontSize: 12, color: theme.colors.text.muted }}>{sub}</dd>}
+              </div>
+              <dd className="num" style={{ margin: 0, fontSize: 16, fontWeight: 600, color: theme.colors.text.primary, textAlign: "right" }}>{value}</dd>
             </div>
-            <div style={S.statTileSub}>{bottleneckStage ? `avg ${formatDuration(bottleneckStage.avg)}` : "not enough data yet"}</div>
-          </div>
-        </div>
+          ))}
+        </dl>
 
         {/* Cascade funnel */}
-        <div style={{ ...S.sectionCard, marginTop: 20 }}>
+        <div style={{ marginTop: 24 }}>
           <div style={S.sectionCardTitle}>Traversal funnel — how far nodes got</div>
           {FUNNEL_STAGES.map((stage, i) => (
             <FunnelBar
@@ -119,7 +103,7 @@ export default function OverviewPage({ state, metrics }) {
         </div>
 
         {/* Pipeline snapshot */}
-        <div style={{ ...S.sectionCard, marginTop: 16 }}>
+        <div style={{ marginTop: 24 }}>
           <div style={S.sectionCardTitle}>Pipeline completions</div>
           {PIPELINE_STAGES.map(stage => {
             const stats = state.pipelineStats[stage];

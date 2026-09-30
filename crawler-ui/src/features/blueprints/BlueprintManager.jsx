@@ -263,35 +263,35 @@ function formToBlueprint(form) {
 
 // ─── DESIGN TOKENS (matches existing palette exactly) ────────────────────────
 const C = {
-  bg0: "#060a14", bg1: "#080c18", bg2: "#0d1422",
-  border: "#111828", border2: "#1a2040",
-  text: "#c0cce0", bright: "#e0eaff", dim: "#3a4060",
-  accent: "#5a7aff", danger: "#ff4a6a", ok: "#40d9a0",
-  mono: "'JetBrains Mono', monospace",
+  bg0: "#f3f5f7", bg1: "#fbfcfd", bg2: "#e9edf1",
+  border: "#d3d9e0", border2: "#d3d9e0",
+  text: "#0f1b2d", bright: "#0f1b2d", dim: "#566478",
+  accent: "#0f1b2d", danger: "#7a1f5c", ok: "#1f6f5a",
+  mono: "'Public Sans', system-ui, sans-serif",
 };
 const inp = (extra = {}) => ({
   background: C.bg1, border: `1px solid ${C.border2}`, borderRadius: 3,
-  color: C.bright, fontFamily: C.mono, fontSize: 11, padding: "4px 8px",
+  color: C.bright, fontFamily: C.mono, fontSize: 13, padding: "4px 8px",
   outline: "none", width: "100%", boxSizing: "border-box", ...extra,
 });
 const sel = () => ({ ...inp(), cursor: "pointer", appearance: "none", WebkitAppearance: "none" });
 const lbl = () => ({
-  display: "block", fontSize: 9, letterSpacing: "0.09em", textTransform: "uppercase",
+  display: "block", fontSize: 11, letterSpacing: "0", textTransform: "none",
   color: C.dim, marginBottom: 3,
 });
 const S = {
-  root: { display: "flex", height: "100%", background: C.bg0, color: C.text, fontFamily: C.mono, fontSize: 12, overflow: "hidden" },
+  root: { display: "flex", height: "100%", background: C.bg0, color: C.text, fontFamily: C.mono, fontSize: 13, overflow: "hidden" },
   sidebar: { width: 220, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 },
-  sidebarHeader: { padding: "12px 14px", borderBottom: `1px solid ${C.border}`, fontSize: 9, letterSpacing: "0.1em", color: C.dim, textTransform: "uppercase", display: "flex", justifyContent: "space-between", alignItems: "center" },
+  sidebarHeader: { padding: "12px 14px", borderBottom: `1px solid ${C.border}`, fontSize: 11, letterSpacing: "0", color: C.dim, textTransform: "none", display: "flex", justifyContent: "space-between", alignItems: "center" },
   list: { flex: 1, overflowY: "auto", padding: "6px 0" },
-  listItem: (active) => ({ padding: "7px 14px", cursor: "pointer", background: active ? C.bg2 : "transparent", borderLeft: `2px solid ${active ? C.accent : "transparent"}`, color: active ? C.bright : C.text, fontSize: 11, transition: "background 0.1s" }),
+  listItem: (active) => ({ padding: "7px 14px", cursor: "pointer", background: active ? C.bg2 : "transparent", borderLeft: `2px solid ${active ? C.accent : "transparent"}`, color: active ? C.bright : C.text, fontSize: 13, transition: "background 0.1s" }),
   main: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
   toolbar: { padding: "10px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", gap: 8, alignItems: "center", flexShrink: 0 },
-  status: (ok) => ({ fontSize: 10, color: ok ? C.ok : C.danger, marginLeft: "auto" }),
-  empty: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#2a3050", fontSize: 11, letterSpacing: "0.06em" },
-  textarea: { flex: 1, background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, color: "#a0b4d0", fontFamily: C.mono, fontSize: 11, padding: 12, resize: "none", outline: "none", lineHeight: 1.6 },
-  nameInput: { background: C.bg1, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.bright, fontFamily: C.mono, fontSize: 11, padding: "4px 8px", outline: "none", width: 180 },
-  btn: (variant = "default") => ({ background: variant === "primary" ? C.accent : variant === "danger" ? C.danger : C.bg2, color: variant === "primary" || variant === "danger" ? "#fff" : C.text, border: `1px solid ${variant === "primary" ? C.accent : variant === "danger" ? C.danger : C.border2}`, borderRadius: 4, padding: "4px 12px", fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", fontFamily: C.mono }),
+  status: (ok) => ({ fontSize: 12, color: ok ? C.ok : C.danger, marginLeft: "auto" }),
+  empty: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#566478", fontSize: 13, letterSpacing: "0" },
+  textarea: { flex: 1, background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, color: "#0f1b2d", fontFamily: C.mono, fontSize: 13, padding: 12, resize: "none", outline: "none", lineHeight: 1.6 },
+  nameInput: { background: C.bg1, border: `1px solid ${C.border2}`, borderRadius: 4, color: C.bright, fontFamily: C.mono, fontSize: 13, padding: "4px 8px", outline: "none", width: 180 },
+  btn: (variant = "default") => ({ background: variant === "primary" ? C.accent : variant === "danger" ? C.danger : C.bg2, color: variant === "primary" || variant === "danger" ? "#fff" : C.text, border: `1px solid ${variant === "primary" ? C.accent : variant === "danger" ? C.danger : C.border2}`, borderRadius: 4, padding: "4px 12px", fontSize: 11, letterSpacing: "0", textTransform: "none", cursor: "pointer", fontFamily: C.mono }),
 };
 const row2 = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 };
 const sec  = { borderBottom: `1px solid ${C.border}`, padding: "14px 16px" };
@@ -299,14 +299,14 @@ const sec  = { borderBottom: `1px solid ${C.border}`, padding: "14px 16px" };
 // ─── SMALL UI ATOMS ───────────────────────────────────────────────────────────
 
 function SecHead({ title }) {
-  return <div style={{ fontSize: 9, letterSpacing: "0.12em", color: C.dim, textTransform: "uppercase", marginBottom: 10 }}>{title}</div>;
+  return <div style={{ fontSize: 11, letterSpacing: "0", color: C.dim, textTransform: "none", marginBottom: 10 }}>{title}</div>;
 }
 function F({ label, children }) {
   return <div style={{ marginBottom: 8 }}><label style={lbl()}>{label}</label>{children}</div>;
 }
 function Pill({ active, onClick, children }) {
   return (
-    <span onClick={onClick} style={{ padding: "2px 10px", borderRadius: 10, fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", fontFamily: C.mono, border: `1px solid ${active ? C.accent : C.border2}`, background: active ? C.accent + "22" : "transparent", color: active ? C.accent : C.dim, userSelect: "none" }}>
+    <span onClick={onClick} style={{ padding: "2px 10px", borderRadius: 10, fontSize: 11, letterSpacing: "0", textTransform: "none", cursor: "pointer", fontFamily: C.mono, border: `1px solid ${active ? C.accent : C.border2}`, background: active ? C.accent + "22" : "transparent", color: active ? C.accent : C.dim, userSelect: "none" }}>
       {children}
     </span>
   );
@@ -333,9 +333,9 @@ function TransformPipeline({ transforms, onChange }) {
             </select>
             {cfg
               ? <input style={inp()} type={cfg.inputType} placeholder={cfg.label} value={t.paramValue} onChange={(e) => upd(i, { paramValue: e.target.value })} />
-              : <span style={{ fontSize: 10, color: C.dim }}>—</span>
+              : <span style={{ fontSize: 12, color: C.dim }}>—</span>
             }
-            <button style={{ ...S.btn("danger"), padding: "2px 5px", fontSize: 10 }} onClick={() => rm(i)}>×</button>
+            <button style={{ ...S.btn("danger"), padding: "2px 5px", fontSize: 12 }} onClick={() => rm(i)}>×</button>
           </div>
         );
       })}
@@ -356,7 +356,7 @@ function ManualFields({ fields, onChange }) {
       {fields.map((f, i) => (
         <div key={i} style={{ background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, padding: "10px 12px", marginBottom: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-            <span style={{ fontSize: 10, color: C.accent }}>Field {i + 1}{f.name ? ` — ${f.name}` : ""}</span>
+            <span style={{ fontSize: 12, color: C.accent }}>Field {i + 1}{f.name ? ` — ${f.name}` : ""}</span>
             <button style={S.btn("danger")} onClick={() => rm(i)}>remove</button>
           </div>
           <div style={row2}>
@@ -408,7 +408,7 @@ function ProfileExtraction({ profileId, checklist, onProfileChange, onChecklistC
       </F>
       <div style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
         <label style={lbl()}>Fields to include</label>
-        <button style={{ ...S.btn(), fontSize: 8 }} onClick={toggleAll}>
+        <button style={{ ...S.btn(), fontSize: 11 }} onClick={toggleAll}>
           {checklist.length === fields.length ? "deselect all" : "select all"}
         </button>
       </div>
@@ -417,7 +417,7 @@ function ProfileExtraction({ profileId, checklist, onProfileChange, onChecklistC
           <Pill key={f} active={checklist.includes(f)} onClick={() => toggle(f)}>{f}</Pill>
         ))}
       </div>
-      <div style={{ fontSize: 10, color: C.dim }}>Selectors and transforms are resolved automatically.</div>
+      <div style={{ fontSize: 12, color: C.dim }}>Selectors and transforms are resolved automatically.</div>
     </div>
   );
 }
@@ -475,7 +475,7 @@ function BlueprintForm({ form, setForm }) {
         {form.domains.map((d, i) => (
           <div key={i} style={{ background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 4, padding: "10px 12px", marginBottom: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <span style={{ fontSize: 10, color: C.accent }}>{d.key || `Domain ${i + 1}`}</span>
+              <span style={{ fontSize: 12, color: C.accent }}>{d.key || `Domain ${i + 1}`}</span>
               <button style={S.btn("danger")} onClick={() => rmDom(i)}>remove</button>
             </div>
             <div style={row2}>
@@ -720,7 +720,7 @@ export default function TemplateManager() {
         </div>
         <div style={S.list}>
           {templates.length === 0 && (
-            <div style={{ padding: "12px 14px", color: "#2a3050", fontSize: 10 }}>No templates yet</div>
+            <div style={{ padding: "12px 14px", color: "#566478", fontSize: 12 }}>No templates yet</div>
           )}
           {templates.map((t) => (
             <div key={t} style={S.listItem(t === selected)} onClick={() => selectTemplate(t)}>
@@ -733,7 +733,7 @@ export default function TemplateManager() {
       {/* ── MAIN ── */}
       <div style={S.main}>
         {mode === "idle" ? (
-          <div style={S.empty}>SELECT OR CREATE A TEMPLATE</div>
+          <div style={S.empty}>Select or create a template</div>
         ) : (
           <>
             {/* toolbar */}
@@ -742,7 +742,7 @@ export default function TemplateManager() {
                 <input style={S.nameInput} placeholder="template-name.json" value={newName} onChange={(e) => setNewName(e.target.value)} />
               )}
               {mode === "edit" && (
-                <span style={{ color: C.bright, fontSize: 11 }}>{selected}</span>
+                <span style={{ color: C.bright, fontSize: 13 }}>{selected}</span>
               )}
 
               {/* tab switcher */}
@@ -765,9 +765,9 @@ export default function TemplateManager() {
 
             {/* validation errors */}
             {errors.length > 0 && (
-              <div style={{ background: "#1a0810", borderBottom: `1px solid ${C.danger}`, padding: "8px 16px", flexShrink: 0, overflowY: "auto", maxHeight: 100 }}>
-                <div style={{ fontSize: 9, color: C.danger, letterSpacing: "0.1em", marginBottom: 4 }}>VALIDATION ERRORS</div>
-                {errors.map((e, i) => <div key={i} style={{ fontSize: 10, color: "#ff8099", marginBottom: 2 }}>· {e}</div>)}
+              <div style={{ background: "#f3f5f7", borderBottom: `1px solid ${C.danger}`, padding: "8px 16px", flexShrink: 0, overflowY: "auto", maxHeight: 100 }}>
+                <div style={{ fontSize: 11, color: C.danger, letterSpacing: "0", marginBottom: 4 }}>Validation errors</div>
+                {errors.map((e, i) => <div key={i} style={{ fontSize: 12, color: "#7a1f5c", marginBottom: 2 }}>· {e}</div>)}
               </div>
             )}
 

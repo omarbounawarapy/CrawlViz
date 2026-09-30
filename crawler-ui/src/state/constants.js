@@ -5,18 +5,18 @@
 export { NODE_STATE_ORDER as NODE_STATES } from "./nodeStates";
 
 export const TYPE_BADGE = {
-  SNAPSHOT_FULL:       { bg: "#1a2a4a", fg: "#4da6e0", label: "SNAP"  },
-  NODE_ADDED:          { bg: "#1a3a2a", fg: "#40d9a0", label: "ADD"   },
-  NODE_STATE_CHANGED:  { bg: "#2a2a1a", fg: "#e0b840", label: "STATE" },
-  NODE_EXPANDED:       { bg: "#2a1a3a", fg: "#b860e0", label: "EXPND" },
-  CRAWL_STOPPED:       { bg: "#3a1a1a", fg: "#e04040", label: "STOP"  },
-  __WS_CONNECTED:      { bg: "#1a3a2a", fg: "#40d9a0", label: "WS↑"  },
-  __WS_DISCONNECTED:   { bg: "#3a1a1a", fg: "#e04040", label: "WS↓"  },
+  SNAPSHOT_FULL: { bg: "#e9edf1", fg: "#33435a", label: "SNAP"  },
+  NODE_ADDED: { bg: "#e9edf1", fg: "#33435a", label: "ADD"   },
+  NODE_STATE_CHANGED: { bg: "#e9edf1", fg: "#33435a", label: "STATE" },
+  NODE_EXPANDED: { bg: "#dfe5ec", fg: "#0f1b2d", label: "EXPND" },
+  CRAWL_STOPPED: { bg: "#f1e3ec", fg: "#7a1f5c", label: "STOP"  },
+  __WS_CONNECTED: { bg: "#e9edf1", fg: "#33435a", label: "WS↑"  },
+  __WS_DISCONNECTED: { bg: "#f1e3ec", fg: "#7a1f5c", label: "WS↓"  },
   // V2 additions
-  PIPELINE_EVENT:      { bg: "#1a2438", fg: "#6b8cae", label: "PIPE"  },
-  CANDIDATE_EVALUATED: { bg: "#2e2410", fg: "#e0a840", label: "CAND"  },
-  NODE_SCORED_DETAIL:  { bg: "#1a2a3a", fg: "#4dc0e0", label: "SCORE" },
-  NODE_ERROR:          { bg: "#3a1a1a", fg: "#ff6b6b", label: "ERR"   },
+  PIPELINE_EVENT: { bg: "#e9edf1", fg: "#33435a", label: "PIPE"  },
+  CANDIDATE_EVALUATED: { bg: "#dfe5ec", fg: "#0f1b2d", label: "CAND"  },
+  NODE_SCORED_DETAIL: { bg: "#dfe5ec", fg: "#0f1b2d", label: "SCORE" },
+  NODE_ERROR: { bg: "#f1e3ec", fg: "#7a1f5c", label: "ERR"   },
 };
 
 // V1 used this as a hard allowlist and silently dropped anything not in
