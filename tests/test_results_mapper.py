@@ -1,7 +1,9 @@
 """Unit tests for services/results_mapper.py -- pure logic, no I/O,
 responsible for defensively parsing LLM JSON output onto Link objects.
 """
+from models import Link
 from services.results_mapper import ResultMapper
+from services.scoring_service import ScoringService
 
 
 class FakeLink:
@@ -153,8 +155,6 @@ class TestParseExpansions:
 
 
 # ---- ScoringService: URL prefix trimming + response normalization ----
-from models import Link
-from services.scoring_service import ScoringService
 
 
 def test_common_url_prefix_stops_at_path_boundary():
