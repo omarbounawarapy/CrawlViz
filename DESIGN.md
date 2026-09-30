@@ -228,7 +228,7 @@ Stage-ramp disc, darker stroke (2px when EXPANDED), optional vermilion relevance
 
 ## Known Gaps
 
-- Run, Config and Data are redesigned in the plate grammar on a shared page frame (`src/features/common/Page.jsx`): serif title, one-sentence lead, ruled rows, no cards. The Data table body and the Blueprints editor are still only re-toned through tokens and keep their older card and small-label treatments.
+- Run, Config and Data are redesigned in the plate grammar on a shared page frame (`src/features/common/Page.jsx`): serif title, one-sentence lead, ruled rows, no cards. Data is a specimen list (serif title, URL, excerpt, field census, expandable fields, and the LLM score plus "Open in graph" when the page is in the current graph). Blueprints is a six-step editor (About, Sources, Relevance, Extraction, Limits, Review) on shared form components (`src/features/common/Form.jsx`). Page titles are 22px serif and section titles 17px. Plum on a destructive control appears only when it is armed.
 - The bridge-node ring is deferred: the backend emits no bridge signal. The crawl-topic title in the top rule is deferred: app state carries no blueprint name.
 
 Not canonized (build carries, future surfaces must not inherit): the legacy status pill (`statusBadgeWrap`/`statusDot` in `components.js`: 20px pill, glow `boxShadow` and pulse on the running dot), the `panel` drop shadow token (`0 1px 2px / 0 8px 24px`) used by the legacy floating node panel, and the leftover `pill` green and gold tones, which contradict the no-glow and colour-discipline rules.

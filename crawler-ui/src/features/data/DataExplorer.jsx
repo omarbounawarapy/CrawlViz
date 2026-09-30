@@ -99,7 +99,7 @@ function Specimen({ row, fields, node, onOpenNode }) {
       </div>
 
       {row.url && (
-        <p style={{ marginTop: 4, fontFamily: theme.typography.fontMono, fontSize: 13, wordBreak: "break-all" }}>
+        <p style={{ marginTop: 4, fontFamily: theme.typography.fontMono, fontSize: 12, wordBreak: "break-all" }}>
           <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: text.secondary }}>{row.url}</a>
         </p>
       )}
@@ -123,7 +123,7 @@ function Specimen({ row, fields, node, onOpenNode }) {
 
       {fields.length > 0 && (
         <details style={{ marginBottom: 14 }}>
-          <summary style={{ cursor: "pointer", fontSize: 14, fontWeight: 600, color: text.primary, minHeight: 32, display: "flex", alignItems: "center" }}>
+          <summary className="disclosure" style={{ cursor: "pointer", fontSize: 14, fontWeight: 600, color: text.primary, minHeight: 32, display: "flex", alignItems: "center" }}>
             All {fields.length} fields
           </summary>
           <dl style={{ marginTop: 6 }}>
@@ -199,12 +199,12 @@ export default function DataExplorer({ graphNodes, onOpenNode }) {
             {tables.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
         </Field>
-        <Field label="Run">
+        <Field label="Run" hint={crawlId ? <span style={{ fontFamily: theme.typography.fontMono, fontSize: 12, wordBreak: "break-all" }}>{crawlId}</span> : undefined}>
           <Select value={crawlId} onChange={(e) => onCrawl(e.target.value)} disabled={!table || crawls.length === 0}>
             <option value="">All runs</option>
             {crawls.map((c) => (
               <option key={c.crawl_id} value={c.crawl_id}>
-                {[when(c.last_seen), plural(c.count, "record", "records"), c.crawl_id].join(" · ")}
+                {[when(c.last_seen), plural(c.count, "record", "records")].join(" · ")}
               </option>
             ))}
           </Select>

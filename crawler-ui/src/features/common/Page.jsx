@@ -11,7 +11,7 @@ export function Page({ title, lead, width = 760, aside, children }) {
         {aside && <div className="page-aside">{aside}</div>}
         <div style={{ flex: 1, minWidth: 0, maxWidth: width }}>
           <h1 style={{
-            fontFamily: theme.typography.fontDisplay, fontWeight: 600, fontSize: 32, lineHeight: 1.15,
+            fontFamily: theme.typography.fontDisplay, fontWeight: 600, fontSize: 22, lineHeight: 1.2,
             color: theme.colors.text.primary, textWrap: "balance", marginBottom: lead ? 10 : 28,
           }}>
             {title}
@@ -31,8 +31,8 @@ export function Page({ title, lead, width = 760, aside, children }) {
 export function SectionTitle({ id, children }) {
   return (
     <h2 id={id} style={{
-      fontFamily: theme.typography.fontDisplay, fontWeight: 600, fontSize: 21, lineHeight: 1.25,
-      color: theme.colors.text.primary, margin: "36px 0 6px", scrollMarginTop: 24,
+      fontFamily: theme.typography.fontDisplay, fontWeight: 600, fontSize: 17, lineHeight: 1.3,
+      color: theme.colors.text.primary, margin: "32px 0 8px", scrollMarginTop: 24,
     }}>
       {children}
     </h2>

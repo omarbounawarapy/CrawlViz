@@ -38,7 +38,7 @@ function GraphControls({ showCandidates, onToggleCandidates, candidateCount, sea
         placeholder="Find a URL…"
         aria-label="Find a node by URL" className="find-input"
         style={{
-          background: "transparent", border: "none", borderBottom: `1px solid ${theme.colors.text.muted}`,
+          background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none", borderBottom: `1px solid ${theme.colors.text.muted}`,
           padding: "3px 2px", fontSize: 13, color: theme.colors.text.primary, width: 180,
         }}
       />

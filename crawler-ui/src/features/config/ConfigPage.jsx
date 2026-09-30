@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
 import { Page, SectionTitle, Row } from "../common/Page";
-import { buttonOutline } from "../common/buttons";
+import { Button } from "../common/Form";
 import { fetchConfigSchema, fetchConfig } from "../../api/client";
 
 const theme = getTheme();
@@ -93,11 +93,12 @@ function CascadeScale({ low, high }) {
 
 function FieldDisplay({ field, value }) {
   const current = value ?? field.default;
-  const hasRange = field.minimum != null && field.maximum != null && typeof current === "number";
+  // The two thresholds are drawn once, on the scale above; skip their mini-sliders.
+  const hasRange = field.minimum != null && field.maximum != null && typeof current === "number" && !/^(low|high)_threshold$/.test(field.key);
   const options = field.ui_widget === "select" && field.ui_options ? field.ui_options : null;
 
   return (
-    <Row label={humanize(field.title)} note={field.description}>
+    <Row label={humanize(field.title)} note={field.description?.replace(/\s*--\s*/g, " — ")}>
       {options ? (
         <span style={{ fontWeight: 400, color: theme.colors.text.muted }}>
           {options.map((opt, i) => (
@@ -158,7 +159,7 @@ export default function ConfigPage() {
           <p style={{ fontSize: 14, color: theme.colors.accent.red, marginBottom: 12 }}>
             Could not load the configuration. The control API did not answer ({error}). Start it with make dev-backend, then try again.
           </p>
-          <button onClick={() => window.location.reload()} style={buttonOutline(false)}>Try again</button>
+          <Button onClick={() => window.location.reload()}>Try again</Button>
         </div>
       )}
       {!error && !schema && <p style={{ fontSize: 14, color: theme.colors.text.muted }}>Loading configuration…</p>}

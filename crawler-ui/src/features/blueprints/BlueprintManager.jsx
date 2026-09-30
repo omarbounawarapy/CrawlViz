@@ -11,8 +11,8 @@ import {
   fetchTemplates, fetchTemplate, createTemplate, updateTemplate, deleteTemplate,
 } from "../../api/client";
 import { getTheme } from "../../theme";
-import { Page, SectionTitle } from "../common/Page";
-import { Field, TextInput, Select, Grid, Button, Tabs, Chip, Group, Status } from "../common/Form";
+import { Page, SectionTitle, Row } from "../common/Page";
+import { Field, TextInput, Select, Grid, Button, Tabs, TabPanel, Chip, Group, Status } from "../common/Form";
 import {
   STRATEGIES, TRANSFORMS_WITH_CONFIG, ALL_TRANSFORMS, EXPORT_TYPES, FIELD_TYPES, EXPANSION_STYLES,
   PROFILES, DEFAULT_BLUEPRINT, validateBlueprint, blueprintToForm, formToBlueprint,
@@ -53,7 +53,7 @@ function TransformPipeline({ transforms, onChange }) {
             {cfg
               ? <TextInput aria-label={cfg.label} type={cfg.inputType} placeholder={cfg.label} value={t.paramValue} onChange={(e) => upd(i, { paramValue: e.target.value })} />
               : <span style={{ fontSize: 13, color: text.muted }}>No setting</span>}
-            <Button variant="danger" aria-label={`Remove transform ${i + 1}`} onClick={() => rm(i)}>Remove</Button>
+            <Button variant="quiet" aria-label={`Remove transform ${i + 1}`} onClick={() => rm(i)}>Remove</Button>
           </div>
         );
       })}
@@ -131,12 +131,27 @@ function ProfileExtraction({ profileId, checklist, onProfileChange, onChecklistC
 
 // ─── the form ────────────────────────────────────────────────────────────────
 
-const SECTIONS = [
-  ["basics", "Basics"], ["seeds", "Starting pages"], ["domains", "Domains"], ["scoring", "Scoring"],
-  ["expansion", "Expansion"], ["extraction", "Extraction"], ["stop", "Stop conditions"],
+const STEPS = [
+  ["about", "About"], ["sources", "Sources"], ["relevance", "Relevance"],
+  ["extraction", "Extraction"], ["limits", "Limits"], ["review", "Review"],
 ];
+const STEP_SECTIONS = {
+  about: ["basics"], sources: ["seeds", "domains"], relevance: ["scoring", "expansion"],
+  extraction: ["extraction"], limits: ["stop"], review: [],
+};
+// Which step holds the field an error id names.
+function stepOf(id = "") {
+  if (/^bp-(blueprint_id|id|target_topic)$/.test(id)) return "about";
+  if (/^bp-(seed|domain)/.test(id)) return "sources";
+  if (/^bp-(strategy|scoring|expansion|num-descriptions|llm)/.test(id)) return "relevance";
+  if (/^bp-(field|extraction)/.test(id)) return "extraction";
+  if (/^bp-(max_|no_progress)/.test(id)) return "limits";
+  return null;
+}
 
-function BlueprintForm({ form, setForm, errorFor }) {
+
+function BlueprintForm({ form, setForm, errorFor, step }) {
+  const has = (sec) => STEP_SECTIONS[step].includes(sec);
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   const err = (id) => errorFor(id);
   const field = (label, id, node, extra) => (
@@ -152,6 +167,7 @@ function BlueprintForm({ form, setForm, errorFor }) {
     <div>
       <BackendList />
 
+      {has("basics") && (
       <section aria-labelledby="sec-basics">
         <SectionTitle id="sec-basics">Basics</SectionTitle>
         <Grid>
@@ -160,7 +176,9 @@ function BlueprintForm({ form, setForm, errorFor }) {
         </Grid>
         {field("Target topic", bpId("target_topic"), (a, bad) => <TextInput {...a} invalid={bad} value={form.target_topic} placeholder="e.g. Type 2 diabetes" onChange={(e) => set({ target_topic: e.target.value })} />, { hint: "The crawler scores every link against this." })}
       </section>
+      )}
 
+      {has("seeds") && (
       <section aria-labelledby="sec-seeds">
         <SectionTitle id="sec-seeds">Starting pages</SectionTitle>
         <div id="bp-seeds" tabIndex={-1}>
@@ -175,7 +193,9 @@ function BlueprintForm({ form, setForm, errorFor }) {
         </div>
         <Button onClick={() => set({ seeds: [...form.seeds, { url: "", domain: "" }] })}>Add starting page</Button>
       </section>
+      )}
 
+      {has("domains") && (
       <section aria-labelledby="sec-domains">
         <SectionTitle id="sec-domains">Domains</SectionTitle>
         <div id="bp-domains" tabIndex={-1}>
@@ -191,7 +211,9 @@ function BlueprintForm({ form, setForm, errorFor }) {
         </div>
         <Button onClick={() => set({ domains: [...form.domains, { key: "", base_url: "", link_selector: "" }] })}>Add domain</Button>
       </section>
+      )}
 
+      {has("scoring") && (
       <section aria-labelledby="sec-scoring">
         <SectionTitle id="sec-scoring">Scoring</SectionTitle>
         <Field label="Strategy" id={bpId("strategy")} error={err(bpId("strategy"))}>
@@ -202,7 +224,9 @@ function BlueprintForm({ form, setForm, errorFor }) {
           {field("Scoring model", bpId("scoring-model"), (a, bad) => <TextInput {...a} invalid={bad} value={form.modelInformation} placeholder="provider/model-name" onChange={(e) => set({ modelInformation: e.target.value })} />)}
         </Grid>
       </section>
+      )}
 
+      {has("expansion") && (
       <section aria-labelledby="sec-expansion">
         <SectionTitle id="sec-expansion">Expansion</SectionTitle>
         <Grid>
@@ -216,18 +240,24 @@ function BlueprintForm({ form, setForm, errorFor }) {
           {field("LLM model", bpId("llm-model"), (a, bad) => <TextInput {...a} invalid={bad} value={form.llmModel} placeholder="provider/model-name" onChange={(e) => set({ llmModel: e.target.value })} />)}
         </Grid>
       </section>
+      )}
 
+      {has("extraction") && (
       <section aria-labelledby="sec-extraction">
         <SectionTitle id="sec-extraction">Extraction</SectionTitle>
         <div id="bp-extraction" tabIndex={-1} style={{ marginBottom: 12 }}>
-          <Tabs label="Extraction mode" value={form.extractionMode} onChange={(extractionMode) => set({ extractionMode })} options={[["profile", "Site profile"], ["manual", "Manual fields"]]} />
+          <Tabs id="bp-extract" label="Extraction mode" value={form.extractionMode} onChange={(extractionMode) => set({ extractionMode })} options={[["profile", "Site profile"], ["manual", "Manual fields"]]} />
         </div>
-        {form.extractionMode === "profile"
-          ? <ProfileExtraction profileId={form.profileId} checklist={form.profileChecklist}
-              onProfileChange={(profileId) => set({ profileId })} onChecklistChange={(profileChecklist) => set({ profileChecklist })} />
-          : <ManualFields fields={form.manualFields} onChange={(manualFields) => set({ manualFields })} errorFor={err} />}
+        <TabPanel tabsId="bp-extract" value={form.extractionMode}>
+          {form.extractionMode === "profile"
+            ? <ProfileExtraction profileId={form.profileId} checklist={form.profileChecklist}
+                onProfileChange={(profileId) => set({ profileId })} onChecklistChange={(profileChecklist) => set({ profileChecklist })} />
+            : <ManualFields fields={form.manualFields} onChange={(manualFields) => set({ manualFields })} errorFor={err} />}
+        </TabPanel>
       </section>
+      )}
 
+      {has("stop") && (
       <section aria-labelledby="sec-stop">
         <SectionTitle id="sec-stop">Stop conditions</SectionTitle>
         <Grid>
@@ -242,12 +272,14 @@ function BlueprintForm({ form, setForm, errorFor }) {
           {(a) => <TextInput {...a} value={form.stopUrl} onChange={(e) => set({ stopUrl: e.target.value })} />}
         </Field>
       </section>
+      )}
     </div>
   );
 }
 
 // ─── page ────────────────────────────────────────────────────────────────────
 
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 const pretty = (bp) => JSON.stringify(bp, null, 2);
 const nameOf = (n) => (n.endsWith(".json") ? n : `${n}.json`);
 
@@ -265,6 +297,7 @@ export default function BlueprintManager({ onNavigate }) {
   const [baseline, setBaseline] = useState(() => pretty(DEFAULT_BLUEPRINT));
   const [armed, setArmed] = useState(false);           // Delete needs two clicks
   const [pending, setPending] = useState(null);        // action waiting on "discard changes?"
+  const [step, setStep] = useState("about");
 
   const current = useCallback(() => {
     if (tab === "form") return { ok: true, bp: formToBlueprint(form) };
@@ -301,13 +334,13 @@ export default function BlueprintManager({ onNavigate }) {
       const data = await fetchTemplate(name);
       const bp = data.content ?? data;
       setSelected(name); setForm(blueprintToForm(bp)); setEditorText(pretty(bp)); setBaseline(pretty(bp));
-      setMode("edit"); setTab("form"); setStatus(null); setErrors([]); setArmed(false);
+      setMode("edit"); setTab("form"); setStep("about"); setStatus(null); setErrors([]); setArmed(false);
     } catch (e) { setStatus({ ok: false, msg: e.message }); }
   };
 
   const startNew = () => {
     setSelected(null); setNewName(""); setForm(blueprintToForm(null)); setEditorText(pretty(DEFAULT_BLUEPRINT));
-    setBaseline(pretty(DEFAULT_BLUEPRINT)); setMode("new"); setTab("form"); setStatus(null); setErrors([]); setArmed(false);
+    setBaseline(pretty(DEFAULT_BLUEPRINT)); setMode("new"); setTab("form"); setStep("about"); setStatus(null); setErrors([]); setArmed(false);
   };
 
   // Leaving with unsaved edits asks first, inline.
@@ -328,11 +361,12 @@ export default function BlueprintManager({ onNavigate }) {
     const { ok, bp, msg } = current();
     if (!ok) { setStatus({ ok: false, msg: `The JSON is not valid (${msg}).` }); return; }
     const errs = validateBlueprint(bp);
+    if (mode === "new" && !newName.trim()) errs.unshift({ id: "bp-file-name", message: "Give the blueprint a file name." });
     if (errs.length) { setErrors(errs); setStatus(null); return; }
     setErrors([]);
     try {
       if (mode === "new") {
-        const name = nameOf(newName.trim() || "untitled");
+        const name = nameOf(newName.trim());
         await createTemplate(name, bp);
         await loadList();
         setSelected(name); setMode("edit"); setBaseline(pretty(bp)); setStatus({ ok: true, msg: "Created" });
@@ -369,23 +403,67 @@ export default function BlueprintManager({ onNavigate }) {
   };
 
   const focusField = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ block: "center" });
-    el.focus();
+    const target = stepOf(id);
+    if (tab === "form" && target && target !== step) setStep(target);
+    // The field may only exist once its step has rendered.
+    requestAnimationFrame(() => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.scrollIntoView({ block: "center" });
+      el.focus();
+    });
   };
 
-  const index = mode !== "idle" && tab === "form" && (
-    <nav aria-label="Blueprint sections" style={{ width: 160, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
-      <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-        {SECTIONS.map(([id, name]) => (
+  const stepIndex = STEPS.findIndex(([id]) => id === step);
+  const stepHasError = (id) => errors.some((e) => stepOf(e.id) === id);
+
+  const stepper = (
+    <nav aria-label="Blueprint steps" style={{ margin: "14px 0 4px", overflowX: "auto" }}>
+      <ol style={{ listStyle: "none", display: "flex", gap: 4, minWidth: "min-content" }}>
+        {STEPS.map(([id, name], i) => (
           <li key={id}>
-            <a href="#/blueprints" style={{ fontSize: 14, color: text.secondary, textDecoration: "none" }}
-               onClick={(e) => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: "smooth" }); }}>{name}</a>
+            <button
+              type="button" aria-current={id === step ? "step" : undefined} onClick={() => setStep(id)}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 12px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
+                borderBottom: `2px solid ${id === step ? text.primary : "transparent"}`, whiteSpace: "nowrap",
+                fontSize: 14, fontWeight: id === step ? 600 : 500, color: id === step ? text.primary : text.secondary,
+              }}
+            >
+              <span className="num" style={{ fontSize: 12, color: text.muted }}>{i + 1}</span>
+              {name}
+              {stepHasError(id) && (
+                <svg width="9" height="9" viewBox="0 0 9 9" role="img" aria-label="has errors"><path d="M4.5 0.5 8.5 8.5H0.5Z" fill={accent.red} /></svg>
+              )}
+            </button>
           </li>
         ))}
-      </ul>
+      </ol>
     </nav>
+  );
+
+  const reviewBp = tab === "form" ? formToBlueprint(form) : null;
+  const count = (x) => Object.keys(x || {}).length;
+  const review = reviewBp && (
+    <section aria-labelledby="sec-review">
+      <SectionTitle id="sec-review">What this will run</SectionTitle>
+      <p style={{ fontFamily: theme.typography.fontDisplay, fontSize: 18, lineHeight: 1.4, color: text.primary, marginBottom: 6, maxWidth: "52ch" }}>
+        {reviewBp.target_topic || "No target topic set."}
+      </p>
+      <Row label="Starts from">{plural(reviewBp.seeds.filter((x) => x.url).length, "page", "pages")}</Row>
+      <Row label="Domains">{count(reviewBp.domains)}</Row>
+      <Row label="Scoring strategy">{reviewBp.scoring.strategy}</Row>
+      <Row label="Scored by">{reviewBp.scoring.params.scoring_type || "—"}</Row>
+      <Row label="Extraction fields">{count(reviewBp.extraction.fields)}</Row>
+      <Row label="Stops after">{Number(reviewBp.stop_conditions.max_nodes).toLocaleString()} pages</Row>
+      <Row label="Maximum depth">{Number(reviewBp.stop_conditions.max_depth).toLocaleString()} links from a start page</Row>
+      {mode === "edit" && (
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
+          <Button onClick={runThis} disabled={dirty} title={dirty ? "Save first to run the saved version" : undefined}>Run this blueprint</Button>
+          <Button variant="danger" armed={armed} onClick={remove}>{armed ? "Confirm delete" : "Delete blueprint"}</Button>
+        </div>
+      )}
+    </section>
   );
 
   return (
@@ -393,7 +471,6 @@ export default function BlueprintManager({ onNavigate }) {
       title="Blueprints"
       lead="A blueprint says where a crawl starts, what counts as relevant, and when it stops."
       width={720}
-      aside={index || null}
     >
       {listError && (
         <div role="alert" style={{ maxWidth: "60ch", marginBottom: 20 }}>
@@ -424,7 +501,7 @@ export default function BlueprintManager({ onNavigate }) {
               }}
             >
               <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true" style={{ flexShrink: 0 }}>
-                {t === selected ? <rect x="0.5" y="0.5" width="8" height="8" fill={text.primary} /> : <rect x="0.5" y="0.5" width="8" height="8" fill="none" stroke={theme.colors.background.border} />}
+                {t === selected ? <rect x="0.5" y="0.5" width="8" height="8" fill={text.primary} /> : <rect x="0.5" y="0.5" width="8" height="8" fill="none" stroke={text.muted} />}
               </svg>
               {t}
             </button>
@@ -433,7 +510,7 @@ export default function BlueprintManager({ onNavigate }) {
       </ul>
 
       {pending && (
-        <div role="alertdialog" aria-label="Unsaved changes" style={{ border: `1px solid ${text.primary}`, padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div role="alertdialog" aria-label="Unsaved changes" tabIndex={-1} ref={(el) => el?.focus()} style={{ border: `1px solid ${text.primary}`, padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontSize: 14, flex: "1 1 240px" }}>You have unsaved changes. Discard them?</span>
           <Button variant="danger" onClick={() => { const a = pending; setPending(null); a(); }}>Discard changes</Button>
           <Button onClick={() => setPending(null)}>Keep editing</Button>
@@ -452,14 +529,12 @@ export default function BlueprintManager({ onNavigate }) {
             display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap",
           }}>
             {mode === "new"
-              ? <TextInput aria-label="Blueprint file name" placeholder="file-name.json" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ width: 200 }} />
+              ? <TextInput id="bp-file-name" aria-label="Blueprint file name" invalid={!!errorFor("bp-file-name")} placeholder="file-name.json" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ flex: "1 1 160px", width: "auto", minWidth: 0 }} />
               : <span style={{ fontSize: 14, fontWeight: 600 }}>{selected}</span>}
-            <Tabs label="Editor view" value={tab} onChange={switchTab} options={[["form", "Form"], ["json", "JSON"]]} />
+            <Tabs id="bp-view" label="Editor view" value={tab} onChange={switchTab} options={[["form", "Form"], ["json", "JSON"]]} />
             <span style={{ flex: 1 }} />
             {dirty && mode === "edit" && <span style={{ fontSize: 13, color: text.secondary }}>Unsaved changes</span>}
             {status && <Status ok={status.ok}>{status.msg}</Status>}
-            {mode === "edit" && <Button onClick={runThis} disabled={dirty} title={dirty ? "Save first to run the saved version" : undefined}>Run this blueprint</Button>}
-            {mode === "edit" && <Button variant="danger" armed={armed} onClick={remove}>{armed ? "Confirm delete" : "Delete"}</Button>}
             <Button variant="primary" onClick={save}>{mode === "new" ? "Create" : "Save"}</Button>
           </div>
 
@@ -481,8 +556,16 @@ export default function BlueprintManager({ onNavigate }) {
             </div>
           )}
 
+          <TabPanel tabsId="bp-view" value={tab}>
           {tab === "form" ? (
-            <BlueprintForm form={form} setForm={setForm} errorFor={errorFor} />
+            <>
+              {stepper}
+              {step === "review" ? review : <BlueprintForm form={form} setForm={setForm} errorFor={errorFor} step={step} />}
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 28 }}>
+                <Button onClick={() => setStep(STEPS[stepIndex - 1][0])} disabled={stepIndex === 0}>Back</Button>
+                <Button onClick={() => setStep(STEPS[stepIndex + 1][0])} disabled={stepIndex === STEPS.length - 1}>Next: {STEPS[Math.min(stepIndex + 1, STEPS.length - 1)][1]}</Button>
+              </div>
+            </>
           ) : (
             <div style={{ marginTop: 16 }}>
               <label htmlFor="bp-json" style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Blueprint JSON</label>
@@ -496,6 +579,7 @@ export default function BlueprintManager({ onNavigate }) {
               />
             </div>
           )}
+          </TabPanel>
           <div style={{ height: 48 }} />
         </>
       )}

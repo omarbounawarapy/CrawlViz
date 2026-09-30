@@ -38,6 +38,7 @@ g[role=button]:focus-visible { outline: none; }
 g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-width: 3px; }
 @media (max-width: 900px) {
   .shell-header { flex-wrap: wrap; height: auto !important; gap: 0 12px !important; padding: 0 12px !important; }
+  .shell-header > span:first-child { height: 48px; display: flex; align-items: center; }
   .shell-nav { order: 3; flex-basis: 100%; border-top: 1px solid var(--rule); }
   .shell-spacer { flex: 1 1 0; }
   .shell-status { order: 2; height: 48px; gap: 10px !important; }
@@ -67,3 +68,15 @@ g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-w
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 @media (max-width: 900px) { .spec-field { grid-template-columns: 1fr !important; } }
 @media (min-width: 901px) { .form-grid-3 { grid-template-columns: 1fr 1fr 150px; } }
+
+/* Disclosure marker for <summary class="disclosure"> (drawn, not a glyph). */
+summary.disclosure { list-style: none; }
+summary.disclosure::-webkit-details-marker { display: none; }
+summary.disclosure::before {
+  content: ""; width: 6px; height: 6px; margin-right: 10px; flex-shrink: 0;
+  border-right: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); transform: rotate(-45deg);
+}
+details[open] > summary.disclosure::before { transform: rotate(45deg); }
+@media (max-width: 900px) {
+  input:not([type=checkbox]):not([type=range]), textarea { min-height: 44px; }
+}

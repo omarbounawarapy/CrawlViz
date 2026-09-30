@@ -12,6 +12,7 @@ const control = {
   background: background.panel, color: text.primary,
   border: `1px solid ${background.border}`, borderRadius: theme.radii.sm,
 };
+const invalidBorder = { border: `1px solid ${accent.red}` };
 
 /** A labelled field. Pass `error` to show the plum message under the control. */
 export function Field({ label, hint, error, id, children }) {
@@ -34,11 +35,11 @@ export function Field({ label, hint, error, id, children }) {
 }
 
 export function TextInput({ invalid, style, ...rest }) {
-  return <input {...rest} style={{ ...control, ...(invalid ? { borderColor: accent.red } : null), ...style }} />;
+  return <input {...rest} style={{ ...control, ...(invalid ? invalidBorder : null), ...style }} />;
 }
 
 export function Select({ invalid, style, children, ...rest }) {
-  return <select {...rest} style={{ ...control, cursor: "pointer", ...(invalid ? { borderColor: accent.red } : null), ...style }}>{children}</select>;
+  return <select {...rest} style={{ ...control, cursor: "pointer", ...(invalid ? invalidBorder : null), ...style }}>{children}</select>;
 }
 
 /** Two-up grid that collapses to one column on narrow screens. */
@@ -56,26 +57,39 @@ export function Button({ variant = "outline", armed, style, ...rest }) {
   const v = {
     outline: { background: "transparent", color: text.primary, border: `1px solid ${text.primary}` },
     primary: { background: text.primary, color: background.panel, border: `1px solid ${text.primary}` },
-    danger:  { background: armed ? accent.red : "transparent", color: armed ? "#fff" : accent.red, border: `1px solid ${accent.red}` },
+    // Plum is for the armed, about-to-destroy state only (same as Stop crawl).
+    danger:  { background: armed ? accent.red : "transparent", color: armed ? "#fff" : text.primary, border: `1px solid ${armed ? accent.red : text.primary}` },
     quiet:   { background: "transparent", color: text.secondary, border: "1px solid transparent", textDecoration: "underline", padding: "0 4px" },
   }[variant];
-  const off = rest.disabled ? { color: text.muted, borderColor: background.border, background: "transparent", cursor: "not-allowed", textDecoration: "none" } : null;
+  const off = rest.disabled ? { color: text.muted, border: `1px solid ${background.border}`, background: "transparent", cursor: "not-allowed", textDecoration: "none" } : null;
   return <button type="button" {...rest} style={{ ...BTN, ...v, ...off, ...style }} />;
 }
 
 /** Underline tabs: one idiom for view switches (Form / JSON, Profile / Manual). */
-export function Tabs({ label, value, options, onChange }) {
+export function Tabs({ id, label, value, options, onChange }) {
   return (
-    <div role="tablist" aria-label={label} style={{ display: "flex", gap: 4 }}>
-      {options.map(([id, name]) => (
+    <div
+      role="tablist" aria-label={label} style={{ display: "flex", gap: 4 }}
+      onKeyDown={(e) => {
+        const i = options.findIndex(([optId]) => optId === value);
+        const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const next = options[(i + step + options.length) % options.length][0];
+        onChange(next);
+        document.getElementById(`${id}-tab-${next}`)?.focus();
+      }}
+    >
+      {options.map(([optId, name]) => (
         <button
-          key={id} type="button" role="tab" aria-selected={value === id}
-          onClick={() => onChange(id)}
+          key={optId} type="button" role="tab" aria-selected={value === optId} tabIndex={value === optId ? 0 : -1}
+          id={`${id}-tab-${optId}`} aria-controls={value === optId ? `${id}-panel-${optId}` : undefined}
+          onClick={() => onChange(optId)}
           style={{
-            height: 34, padding: "0 10px", background: "transparent", border: "none",
-            borderBottom: `2px solid ${value === id ? text.primary : "transparent"}`,
-            color: value === id ? text.primary : text.secondary,
-            fontSize: 14, fontWeight: value === id ? 600 : 500,
+            height: 34, padding: "0 10px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
+            borderBottom: `2px solid ${value === optId ? text.primary : "transparent"}`,
+            color: value === optId ? text.primary : text.secondary,
+            fontSize: 14, fontWeight: value === optId ? 600 : 500,
           }}
         >
           {name}
@@ -108,7 +122,7 @@ export function Group({ title, onRemove, removeLabel = "Remove", children }) {
     <div style={{ borderTop: `1px solid ${theme.colors.rowBorder}`, paddingTop: 12, marginTop: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, minHeight: 30 }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>{title}</span>
-        {onRemove && <Button variant="danger" onClick={onRemove}>{removeLabel}</Button>}
+        {onRemove && <Button variant="quiet" onClick={onRemove}>{removeLabel}</Button>}
       </div>
       {children}
     </div>
@@ -124,5 +138,14 @@ export function Status({ ok, children }) {
       </svg>
       {children}
     </span>
+  );
+}
+
+/** The panel a Tabs value controls. `tabsId` must match the Tabs `id`. */
+export function TabPanel({ tabsId, value, children }) {
+  return (
+    <div role="tabpanel" id={`${tabsId}-panel-${value}`} aria-labelledby={`${tabsId}-tab-${value}`}>
+      {children}
+    </div>
   );
 }

@@ -60,7 +60,7 @@ function NavTab({ section, active, onClick, hasAlert }) {
       title={section.question}
       style={{
         position: "relative", height: 48, padding: "0 14px", flexShrink: 0,
-        background: "transparent", border: "none",
+        background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
         borderBottom: `2px solid ${active ? shell.textBright : "transparent"}`,
         color: active ? shell.textBright : shell.textPrimary,
         fontSize: 14, fontWeight: active ? 600 : 500,
@@ -91,6 +91,9 @@ export default function Shell({
   activeSection, onNavigate, status, connectionStatus, stopReason, summary,
   errorCount = 0, measuresOpen, onToggleMeasures, onShowErrors, onStop, banner, children, inspector,
 }) {
+  // Crawl status and the WebSocket only mean something on the live pages; the
+  // others talk to the REST API, which this indicator says nothing about.
+  const live = activeSection === "graph" || activeSection === "run";
   const sample = connectionStatus === "SAMPLE";
   const connected = connectionStatus === "CONNECTED";
   // Stopping a crawl is not undoable: the first click arms it, the second confirms.
@@ -125,7 +128,7 @@ export default function Shell({
 
         <div className="shell-spacer" style={{ flex: 1 }} />
 
-        <div className="shell-status" style={{ display: "flex", alignItems: "center", gap: 18, minWidth: 0 }}>
+        <div className="shell-status" style={{ display: live ? "flex" : "none", alignItems: "center", gap: 18, minWidth: 0 }}>
           {summary && (
             <span className="num shell-detail" style={{ fontSize: 13, color: shell.textPrimary, whiteSpace: "nowrap" }}>{summary}</span>
           )}
