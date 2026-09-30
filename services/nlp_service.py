@@ -1,9 +1,12 @@
 import logging
+import re
 import time
 from typing import TYPE_CHECKING
 
 import numpy as np
+from scipy.spatial.distance import cosine
 
+from config import NLP_COMPOSITE_WEIGHTS
 from infrastructure import LlmHandler
 from models import ExpansionContext
 from nlp import (
@@ -35,6 +38,15 @@ if TYPE_CHECKING:
     from traceability.emitter import TraceEmitter
 
 logger = logging.getLogger(__name__)
+
+
+# Navigation / legal page phrases; a link that embeds close to one of these is
+# almost never topical content (see FeatureExtractor.boilerplate_score).
+BOILERPLATE_PROTOTYPES = [
+    "contact us", "privacy policy", "copyright", "disclaimers", "about us",
+    "terms of use", "log in", "sign up", "main page", "site map", "current events",
+    "recent changes", "random page", "donate", "help", "cookie policy",
+]
 
 
 class NLPService:
@@ -107,6 +119,11 @@ class NLPService:
         # Local fallback buffer, only used when no buffer_manager is wired in.
         self._buffer: list[tuple[str, np.ndarray, dict]] = []
         self._tracer = tracer
+        # Derived once per space version / at start(): see _refresh_space_stats().
+        self._boilerplate_matrix: np.ndarray | None = None
+        self._vocab: set[str] = set()
+        self._density_radius: float = 0.3
+        self._stats_version: int | None = None
 
     async def _emit(self, event) -> None:
         """Forward `event` to the attached tracer, if any; a no-op otherwise."""
@@ -228,6 +245,23 @@ class NLPService:
         self.target_vec = self.engine.encode(self.target_topic)
         logger.info("Loaded existing space: %s", self.space)
 
+    def _refresh_space_stats(self) -> None:
+        """(Re)derive per-space statistics used by the feature extractor:
+        boilerplate prototype matrix, target vocabulary, adaptive density radius.
+        Cheap, and only recomputed when the space version changes."""
+        if self._boilerplate_matrix is None:
+            self._boilerplate_matrix = self.engine.encode(BOILERPLATE_PROTOTYPES)
+        if self.space is None or self._stats_version == self.space.version:
+            return
+        texts = [self.target_topic] + [
+            e.metadata.get("text", "") for e in self.space.entries if e.metadata.get("text")
+        ]
+        self._vocab = {
+            t for text in texts for t in re.findall(r"\w+", text.lower()) if len(t) > 3
+        }
+        self._density_radius = self.extractor.adaptive_radius(self.space.get_matrix())
+        self._stats_version = self.space.version
+
     def save_space(self) -> None:
         if self.space is None:
             return
@@ -258,6 +292,8 @@ class NLPService:
         parent_content = getattr(parent, "content", "") or ""
         parent_vec = self.engine.encode(parent_content) if parent_content else self.target_vec
         space_matrix = self.space.get_matrix()
+        self._refresh_space_stats()
+        parent_relevance = float(max(0.0, 1.0 - cosine(parent_vec, self.target_vec)))
 
         cluster_centroids = await self._get_cluster_centroids()
 
@@ -279,6 +315,7 @@ class NLPService:
                     parent_content,
                     space_matrix,
                     cluster_centroids,
+                    parent_relevance=parent_relevance,
                     trace_id=trace_id,
                     node_id=node_id,
                 )
@@ -316,12 +353,19 @@ class NLPService:
         parent_content: str,
         space_matrix: np.ndarray,
         cluster_centroids: dict[int, np.ndarray],
+        parent_relevance: float = 0.0,
         trace_id: str = "",
         node_id: str = "",
     ) -> dict[str, float]:
-        link_text = f"[URL]{link.url} [ANCHOR]{link.anchor} [CTX]{link.context}"
+        anchor_text = (link.anchor or "").strip()
         context_text = link.context or ""
+        # Measured (tools/nlp_eval.py, AUC vs LLM labels, top_k=2): this
+        # marker-tagged text beats anchor-only (0.607), anchor+context (0.604)
+        # and slug variants (<=0.60), so keep it; the anchor is scored
+        # separately as `anchor_similarity`.
+        link_text = f"[URL]{link.url} [ANCHOR]{link.anchor} [CTX]{link.context}"
 
+        anchor_vec = self.engine.encode(anchor_text) if anchor_text else None
         link_vec = self.engine.encode(link_text)
         context_vec = self.engine.encode(context_text) if context_text else link_vec
         link._embedding = link_vec
@@ -335,6 +379,11 @@ class NLPService:
             space_matrix=space_matrix,
             vector_space=self.get_space(),
             cluster_centroids=cluster_centroids,
+            anchor_vec=anchor_vec,
+            parent_relevance=parent_relevance,
+            boilerplate_matrix=self._boilerplate_matrix,
+            vocab=self._vocab,
+            density_radius=self._density_radius,
         )
         if trace_id:
             await self._emit(NLP_FeaturesExtracted(
@@ -446,16 +495,7 @@ class NLPService:
         if not features:
             return 0.0
 
-        weights = {
-            "target_similarity": 0.85,
-            "coverage_gap": 0.1,
-            "novelty_injection": 0.05,
-            "contextual_consistency": 0.05,
-            "lexical_overlap": 0.05,
-            "semantic_delta": -0.05,
-            "region_density": -0.05,
-            "cluster_distance": 0.00,
-        }
+        weights = NLP_COMPOSITE_WEIGHTS
 
         contributions = {k: features.get(k, 0.0) * w for k, w in weights.items()}
         raw_sum = sum(contributions.values())

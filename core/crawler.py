@@ -26,8 +26,13 @@ from config import (
     HIGH_SCORE_LLM_FRACTION,
     HIGH_SCORE_RANDOM_FRACTION,
     LOW_SCORE_SAMPLE_FRACTION,
+    MAX_LLM_LINKS_PER_NODE,
+    NLP_HIGH_PERCENTILE,
     NLP_HIGH_SCORE_THRESHOLD,
+    NLP_LOW_PERCENTILE,
     NLP_LOW_SCORE_THRESHOLD,
+    NLP_PERCENTILE_BUCKETING,
+    PERCENTILE_MIN_LINKS,
     SPACE_STORE_DIR,
 )
 from events import (
@@ -299,6 +304,11 @@ class Crawler:
             high_score_llm_fraction=HIGH_SCORE_LLM_FRACTION,
             low_score_sample_fraction=LOW_SCORE_SAMPLE_FRACTION,
             high_score_random_fraction=HIGH_SCORE_RANDOM_FRACTION,
+            percentile_bucketing=NLP_PERCENTILE_BUCKETING,
+            low_percentile=NLP_LOW_PERCENTILE,
+            high_percentile=NLP_HIGH_PERCENTILE,
+            percentile_min_links=PERCENTILE_MIN_LINKS,
+            max_llm_links=MAX_LLM_LINKS_PER_NODE,
         )
         p["storage"] = StoragePipeline(self.storage, self.event_broker)
         p["filtering"] = FilteringPipeline(self.event_broker, self.storage)

@@ -59,6 +59,29 @@ HIGH_SCORE_RANDOM_FRACTION: float = 0.30
 # Fraction of the "low confidence" bucket kept anyway, for exploration.
 LOW_SCORE_SAMPLE_FRACTION: float = 0.01
 
+# Percentile bucketing: NLP scores from a sentence-embedding model cluster in
+# a narrow band (median ~0.4, max ~0.6), so the fixed thresholds above never
+# separate anything. When True, "low"/"high" are the given percentiles of each
+# node's own link scores instead (the absolute thresholds remain as the
+# fallback for batches smaller than PERCENTILE_MIN_LINKS).
+NLP_PERCENTILE_BUCKETING: bool = True
+NLP_LOW_PERCENTILE: float = 20.0
+NLP_HIGH_PERCENTILE: float = 75.0
+PERCENTILE_MIN_LINKS: int = 10
+# Hard cap on links sent to the LLM per node (keeps one prompt well under
+# provider token limits). Overflow is kept, ranked by NLP score only.
+MAX_LLM_LINKS_PER_NODE: int = 60
+
+# Composite NLP score weights (nlp/feature_extractor signals). Fitted with
+# tools/nlp_eval.py against LLM labels: target similarity carries the score,
+# boilerplate similarity (contact/privacy/... pages) pulls navigation down.
+# The other signals stay in `nlp_vector` for the priority strategies.
+NLP_COMPOSITE_WEIGHTS: dict[str, float] = {
+    "target_similarity": 0.80,
+    "contextual_consistency": 0.05,
+    "boilerplate_score": -0.35,
+}
+
 DEFAULT_PRIORITY_STRATEGY: str = "balanced"
 
 # =========================================================================

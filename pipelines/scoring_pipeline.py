@@ -1,4 +1,6 @@
 import asyncio
+
+import numpy as np
 import logging
 from random import sample
 
@@ -43,8 +45,18 @@ class ScoringPipeline(BasePipeline):
         high_score_random_fraction,
         max_queue_size=0,
         max_concurrency=1,
+        percentile_bucketing=False,
+        low_percentile=20.0,
+        high_percentile=75.0,
+        percentile_min_links=10,
+        max_llm_links=None,
     ):
         super().__init__(max_concurrency=max_concurrency)
+        self.percentile_bucketing = percentile_bucketing
+        self.low_percentile = low_percentile
+        self.high_percentile = high_percentile
+        self.percentile_min_links = percentile_min_links
+        self.max_llm_links = max_llm_links
         self.event_broker = event_broker
         self.scoring_service = scoring_service
         self.nlp_service = nlp_service
@@ -204,11 +216,17 @@ class ScoringPipeline(BasePipeline):
         """
         high, low, mid = [], [], []
 
+        low_threshold, high_threshold = self.low_threshold, self.high_threshold
+        if self.percentile_bucketing and len(links) >= self.percentile_min_links:
+            scores = [link._nlp_score for link in links]
+            low_threshold = float(np.percentile(scores, self.low_percentile))
+            high_threshold = float(np.percentile(scores, self.high_percentile))
+
         for link in links:
             score = link._nlp_score
-            if score < self.low_threshold:
+            if score < low_threshold:
                 low.append(link)
-            elif score > self.high_threshold:
+            elif score > high_threshold:
                 high.append(link)
             else:
                 mid.append(link)
@@ -243,4 +261,12 @@ class ScoringPipeline(BasePipeline):
         skip_llm = remaining_high[high_top_budget:]
 
         sampled = sampled + mid + high_random_part + high_top_part
+
+        # Bound the LLM prompt: keep the best-ranked links, the rest are
+        # trusted on their NLP score alone (like the high-confidence skips).
+        if self.max_llm_links is not None and len(sampled) > self.max_llm_links:
+            sampled.sort(key=lambda link: link._nlp_score, reverse=True)
+            skip_llm = skip_llm + sampled[self.max_llm_links:]
+            sampled = sampled[: self.max_llm_links]
+
         return sampled, skip_llm, dropped

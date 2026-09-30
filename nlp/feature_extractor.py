@@ -36,6 +36,41 @@ class FeatureExtractor:
         union = anchor_tokens | parent_tokens
         return float(len(intersection) / len(union))
 
+    @staticmethod
+    def vocab_coverage(anchor: str, vocab: set[str]) -> float:
+        """Fraction of the anchor's tokens found in the target vocabulary.
+
+        Replaces page-vs-anchor Jaccard (~0 for any real page) with a signal
+        about the anchor itself: does it use words the target topic uses?
+        """
+        tokens = set(re.findall(r"\w+", (anchor or "").lower()))
+        if not tokens or not vocab:
+            return 0.0
+        return float(len(tokens & vocab) / len(tokens))
+
+    @staticmethod
+    def adaptive_radius(space_matrix: np.ndarray, percentile: float = 15.0) -> float:
+        """Density radius taken from the space's own geometry: the given
+        percentile of pairwise cosine distances. A fixed radius (0.3) is
+        never reached by sentence-embedding neighbours, so density was 0.
+        """
+        n = 0 if space_matrix is None else space_matrix.shape[0]
+        if n < 3:
+            return 0.3
+        norm = space_matrix / (np.linalg.norm(space_matrix, axis=1, keepdims=True) + 1e-9)
+        dist = 1.0 - norm @ norm.T
+        return float(np.percentile(dist[np.triu_indices(n, k=1)], percentile))
+
+    @staticmethod
+    def boilerplate_score(vec: np.ndarray, proto_matrix: np.ndarray | None) -> float:
+        """Max cosine similarity to navigation/legal prototype phrases
+        (contact, privacy, copyright, ...). High = probably not content."""
+        if vec is None or proto_matrix is None or proto_matrix.shape[0] == 0:
+            return 0.0
+        norm_p = proto_matrix / (np.linalg.norm(proto_matrix, axis=1, keepdims=True) + 1e-9)
+        sims = norm_p @ (vec / (np.linalg.norm(vec) + 1e-9))
+        return float(max(0.0, sims.max()))
+
     def semantic_delta(
         self,
         link_vec: np.ndarray,
@@ -174,6 +209,11 @@ class FeatureExtractor:
         space_matrix: np.ndarray,
         vector_space: VectorSpace,
         cluster_centroids: dict[int, np.ndarray] | None = None,
+        anchor_vec: np.ndarray | None = None,
+        parent_relevance: float = 0.0,
+        boilerplate_matrix: np.ndarray | None = None,
+        vocab: set[str] | None = None,
+        density_radius: float = 0.3,
     ) -> dict[str, float]:
         """Compute the full feature vector for one link.
 
@@ -181,10 +221,17 @@ class FeatureExtractor:
             A flat dict of every computed signal.
         """
         target_sim = self.target_similarity(link_vec, vector_space)
+        density = self.region_density(link_vec, space_matrix, radius=density_radius)
+        anchor_probe = anchor_vec if anchor_vec is not None else link_vec
 
         return {
             # Link vs Parent
-            "lexical_overlap": self.lexical_overlap(anchor, parent_content),
+            "lexical_overlap": (
+                self.vocab_coverage(anchor, vocab)
+                if vocab
+                else self.lexical_overlap(anchor, parent_content)
+            ),
+            "parent_relevance": parent_relevance,
             "semantic_delta": self.semantic_delta(link_vec, parent_vec),
             "contextual_consistency": self.contextual_consistency(context_vec, parent_vec),
 
@@ -193,7 +240,9 @@ class FeatureExtractor:
             "cluster_distance": self.distance_to_nearest_cluster(link_vec, cluster_centroids or {}),
 
             # Global Space
-            "region_density": self.region_density(link_vec, space_matrix),
+            "region_density": density,
+            "anchor_similarity": self.target_similarity(anchor_probe, vector_space),
+            "boilerplate_score": self.boilerplate_score(anchor_probe, boilerplate_matrix),
             "novelty_injection": self.novelty_injection_score(link_vec, space_matrix),
-            "coverage_gap": self.coverage_gap_score(target_sim, link_vec, space_matrix),
+            "coverage_gap": float(target_sim * (1.0 - density)),
         }
