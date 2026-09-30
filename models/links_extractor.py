@@ -9,7 +9,7 @@ from .link import Link
 
 logger = logging.getLogger(__name__)
 
-MAX_CONTEXT_LEN = 300
+MAX_CONTEXT_LEN = 100
 
 
 class LinkExtractor:

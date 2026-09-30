@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 keys.json
+keys.json.bak-*
 *.db
 
 # Node

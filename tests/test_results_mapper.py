@@ -150,3 +150,29 @@ class TestParseExpansions:
         assert ResultMapper()._parse_expansions("not a list") == []
         assert ResultMapper()._parse_expansions(None) == []
         assert ResultMapper()._parse_expansions({"a": 1}) == []
+
+
+# ---- ScoringService: URL prefix trimming + response normalization ----
+from models import Link
+from services.scoring_service import ScoringService
+
+
+def test_common_url_prefix_stops_at_path_boundary():
+    links = [Link(url=f"https://h.org/wiki/{n}", anchor="", context="") for n in ("Insulin", "Insight")]
+    assert ScoringService.common_url_prefix(links) == "https://h.org/wiki/"
+    assert ScoringService.common_url_prefix(links[:1]) == ""
+
+
+def test_list_response_with_shortened_urls_maps_back_onto_links():
+    prefix = "https://h.org/wiki/"
+    links = [Link(url=prefix + "A", anchor="", context=""), Link(url=prefix + "B", anchor="", context="")]
+    raw = {"results": [{"url": "A", "score": 90, "relevance_type": "direct", "expansions": ["x"]}]}
+    restored = ScoringService._restore_urls(raw, prefix)
+    ResultMapper().map_results(restored, links)
+    assert (links[0].score, links[0].relevance_type) == (90, "direct")
+    assert links[1].relevance_type == "irrelevant"  # LLM skipped it
+
+
+def test_dict_shaped_response_still_supported():
+    raw = {"results": {"https://a.com": {"score": 33}}}
+    assert ScoringService._restore_urls(raw, "") == {"https://a.com": {"score": 33}}

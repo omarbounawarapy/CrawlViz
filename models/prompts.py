@@ -83,10 +83,19 @@ class PromptBuilder:
     def build_system_prompt(self) -> str:
         return SCORING_SYSTEM_PROMPT
 
-    def build_prompt(self, candidates: list[Any]) -> str:
-        """Assemble the full user prompt for one batch of candidate links."""
+    def build_prompt(self, candidates: list[Any], url_prefix: str = "") -> str:
+        """Assemble the full user prompt for one batch of candidate links.
+
+        If `url_prefix` is given, it is stated once in the prompt and
+        stripped from every candidate URL (and the LLM is told to answer
+        with the same shortened URLs). The caller re-attaches the prefix to
+        the response keys -- see `ScoringService.score_links`.
+        """
         strategy_cfg = STRATEGIES[self.strategy]
         candidate_dicts = [c.to_dict() for c in candidates]
+        if url_prefix:
+            for d in candidate_dicts:
+                d["url"] = d["url"].removeprefix(url_prefix)
 
         candidates_json = json.dumps(candidate_dicts, ensure_ascii=False)
 
@@ -101,6 +110,12 @@ target_topic: {self.target_topic}
 strategy: {self.strategy}
 strategy_context: {strategy_cfg["context"]}
 """.strip()
+        if url_prefix:
+            context_block += (
+                f"\nurl_prefix: {url_prefix}"
+                "\n(candidate URLs below omit url_prefix; "
+                "return them exactly as given, without it)"
+            )
 
         candidates_block = f"""
 CANDIDATES:

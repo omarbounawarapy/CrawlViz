@@ -19,6 +19,16 @@ class GroqTranslator:
 
     @staticmethod
     def translate_request(context) -> dict:
+        model = context.get_model_information()
+        data = {
+            "model": model,
+            "messages": [{"role": "user", "content": context.get_prompt()}],
+        }
+        # gpt-oss are reasoning models: at the default effort, hidden reasoning
+        # tokens eat Groq's completion cap and the JSON answer comes back empty
+        # (finish_reason "length"). Low effort leaves room for the answer.
+        if "gpt-oss" in model:
+            data["reasoning_effort"] = "low"
         return {
             "method": "POST",
             "url": "https://api.groq.com/openai/v1/chat/completions",
@@ -27,12 +37,7 @@ class GroqTranslator:
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             },
-            "data": {
-                "model": context.get_model_information(),
-                "messages": [
-                    {"role": "user", "content": context.get_prompt()}
-                ],
-            },
+            "data": data,
         }
 
     @staticmethod

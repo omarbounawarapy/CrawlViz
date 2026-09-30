@@ -17,15 +17,15 @@
   "scoring": {
     "strategy": "TOPICAL",
     "params": {
-      "scoring_type": "openrouter",
-      "model_information": "nvidia/nemotron-3-super-120b-a12b:free"
+      "scoring_type": "groq",
+      "model_information": "openai/gpt-oss-120b"
     }
   },
   "expansion": {
     "style": "rich",
     "num_descriptions": 50,
-    "llm_type": "openrouter",
-    "llm_model": "nvidia/nemotron-3-super-120b-a12b:free"
+    "llm_type": "groq",
+    "llm_model": "openai/gpt-oss-120b"
   },
   "extraction": {
     "mode": "document",
