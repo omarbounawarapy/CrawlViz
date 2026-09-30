@@ -18,14 +18,14 @@
     "strategy": "TOPICAL",
     "params": {
       "scoring_type": "openrouter",
-      "model_information": "openai/gpt-oss-120b:free"
+      "model_information": "nvidia/nemotron-3-super-120b-a12b:free"
     }
   },
   "expansion": {
     "style": "rich",
     "num_descriptions": 50,
     "llm_type": "openrouter",
-    "llm_model": "openai/gpt-oss-120b:free"
+    "llm_model": "nvidia/nemotron-3-super-120b-a12b:free"
   },
   "extraction": {
     "mode": "document",

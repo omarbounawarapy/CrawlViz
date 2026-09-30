@@ -54,7 +54,9 @@ class NetworkClient:
             ValueError: If `params["method"]` has no registered strategy.
         """
         if self.session is None:
-            self.session = aiohttp.ClientSession()
+            self.session = aiohttp.ClientSession(
+                timeout=aiohttp.ClientTimeout(total=30, connect=10)
+            )
 
         method = params.get("method", "GET").upper()
         strategy = self._strategies.get(method)
