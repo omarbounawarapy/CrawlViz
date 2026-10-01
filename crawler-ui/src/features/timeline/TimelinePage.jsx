@@ -1,12 +1,42 @@
-import { useRef, useEffect, useMemo, useState } from "react";
+import { useRef, useEffect, useMemo, useState, useCallback } from "react";
 import { TYPE_BADGE } from "../../state/constants";
 import { formatTs, eventSummary } from "../../utils/formatters";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
+import Scrubber from "./Scrubber";
 
 const theme  = getTheme();
 const styles = createComponentStyles(theme);
 const S = styles;
+
+const SPEEDS = [1, 4, 16];
+const ICONS = {
+  start: <><path d="M3.5 3v8" /><path d="M11 3 6 7l5 4z" /></>,
+  back: <path d="M9.5 3 4.5 7l5 4z" />,
+  play: <path d="M4.5 3 11 7l-6.5 4z" />,
+  pause: <><path d="M4.5 3v8" /><path d="M9.5 3v8" /></>,
+  forward: <path d="M4.5 3 9.5 7l-5 4z" transform="translate(1 0)" />,
+  live: <><path d="M3 3 8 7l-5 4z" /><path d="M11 3v8" /></>,
+};
+
+function TransportButton({ label, icon, onClick, disabled, pressed }) {
+  return (
+    <button
+      type="button" onClick={onClick} disabled={disabled} aria-label={label} title={label} aria-pressed={pressed}
+      style={{
+        width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        borderRadius: theme.radii.md, border: `1px solid ${disabled ? theme.colors.background.border : theme.colors.text.primary}`,
+        background: pressed ? theme.colors.text.primary : "transparent",
+        color: pressed ? theme.colors.background.panel : disabled ? theme.colors.text.muted : theme.colors.text.primary,
+        padding: 0,
+      }}
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" aria-hidden="true">
+        {ICONS[icon]}
+      </svg>
+    </button>
+  );
+}
 
 const FILTERABLE_TYPES = Object.keys(TYPE_BADGE).filter(t => !t.startsWith("__"));
 
@@ -45,6 +75,57 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
   const last = Math.max(eventLog.length - 1, 0);
   const position = replayIndex ?? last;
 
+  // What the record says at each point: how many pages had been found by then.
+  const pagesAt = useMemo(() => {
+    const out = new Array(eventLog.length);
+    let n = 0;
+    for (let i = 0; i < eventLog.length; i++) {
+      const ev = eventLog[i];
+      if (ev.type === "NODE_ADDED") n += 1;
+      else if (ev.type === "SNAPSHOT_FULL") n = ev.nodes?.length ?? n;
+      out[i] = n;
+    }
+    return out;
+  }, [eventLog]);
+
+  const types = useMemo(() => eventLog.map(ev => ev.type), [eventLog]);
+
+  const describe = useCallback((i) => {
+    const ev = eventLog[i];
+    const clock = ev?._receivedAt ? formatTs(ev._receivedAt).slice(0, 8) : "";
+    const pages = pagesAt[i] ?? 0;
+    return {
+      title: `Event ${(i + 1).toLocaleString()} of ${eventLog.length.toLocaleString()}`,
+      detail: `${clock}${clock ? " · " : ""}${pages.toLocaleString()} ${pages === 1 ? "page" : "pages"}`,
+      spoken: `Event ${i + 1} of ${eventLog.length}, ${pages} pages found${clock ? `, at ${clock}` : ""}`,
+    };
+  }, [eventLog, pagesAt]);
+
+  // Playback: steps forward through the record at a readable pace, then hands back to live.
+  const [playing, setPlaying] = useState(false);
+  const [speedIdx, setSpeedIdx] = useState(0);
+  const posRef = useRef(position);
+  const lastRef = useRef(last);
+  useEffect(() => { posRef.current = position; lastRef.current = last; });
+  useEffect(() => {
+    if (!playing) return undefined;
+    const step = Math.max(1, Math.round(SPEEDS[speedIdx] * 12 * 0.08));
+    const id = setInterval(() => {
+      const next = posRef.current + step;
+      if (next >= lastRef.current) { setPlaying(false); onExitReplay(); } else onSeek(next);
+    }, 80);
+    return () => clearInterval(id);
+  }, [playing, speedIdx, onSeek, onExitReplay]);
+
+  const togglePlay = () => {
+    if (playing) { setPlaying(false); return; }
+    if (!isReplaying) onSeek(0);
+    setPlaying(true);
+  };
+  const stepBy = (d) => { setPlaying(false); onSeek(Math.min(Math.max(position + d, 0), last)); };
+  const goLive = () => { setPlaying(false); onExitReplay(); };
+  const none = eventLog.length === 0;
+
   return (
     <section
       aria-label="Timeline"
@@ -54,7 +135,7 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
       }}
     >
       <div className="tl-bar" style={{ display: "flex", alignItems: "center", gap: 20, height: 56, padding: "0 20px" }}>
-        <div className="tl-mode" style={{ width: 150, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="tl-mode" style={{ width: 120, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
           {isReplaying ? (
             <button onClick={onExitReplay} style={{
               height: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
@@ -67,26 +148,29 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
           )}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
-          {/* Landmarks on the record: stops and errors, placed by position in the log */}
-          <div aria-hidden="true" style={{ position: "absolute", left: 8, right: 8, top: -14, height: 10 }}>
-            {eventLog.map((ev, i) => (ev.type === "CRAWL_STOPPED" || ev.type === "NODE_ERROR") ? (
-              <span key={i} style={{
-                position: "absolute", left: `${last > 0 ? (i / last) * 100 : 0}%`, top: 0, width: 2, height: 10,
-                background: ev.type === "NODE_ERROR" ? theme.colors.accent.red : theme.colors.text.primary,
-              }} />
-            ) : null)}
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={last}
-            value={position}
-            disabled={eventLog.length === 0}
-            onChange={e => onSeek(Number(e.target.value))}
-            aria-label="Replay position"
-            aria-valuetext={`Event ${position + 1} of ${eventLog.length}`}
-            style={{ width: "100%", display: "block" }}
+        <div className="tl-transport" style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+          <TransportButton label="Go to the first event" icon="start" disabled={none} onClick={() => { setPlaying(false); onSeek(0); }} />
+          <TransportButton label="Previous event" icon="back" disabled={none || position <= 0} onClick={() => stepBy(-1)} />
+          <TransportButton label={playing ? "Pause replay" : "Play replay"} icon={playing ? "pause" : "play"} disabled={none} pressed={playing} onClick={togglePlay} />
+          <TransportButton label="Next event" icon="forward" disabled={none || position >= last} onClick={() => stepBy(1)} />
+          <TransportButton label="Return to live" icon="live" disabled={none || !isReplaying} onClick={goLive} />
+          <button
+            type="button" onClick={() => setSpeedIdx((speedIdx + 1) % SPEEDS.length)} disabled={none}
+            aria-label={`Playback speed ${SPEEDS[speedIdx]} times, press to change`} title="Playback speed"
+            className="num"
+            style={{
+              height: 30, minWidth: 38, padding: "0 6px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
+              background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.background.border}`,
+            }}
+          >
+            {SPEEDS[speedIdx]}×
+          </button>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Scrubber
+            total={eventLog.length} position={position} types={types} describe={describe}
+            disabled={none} onSeek={onSeek} onLive={goLive} onUserSeek={() => setPlaying(false)}
           />
         </div>
 
