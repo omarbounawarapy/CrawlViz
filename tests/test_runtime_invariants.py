@@ -11,6 +11,7 @@ Every test here currently fails against the code it describes and is marked
 flag turns the fix into a visible XPASS that forces the marker's removal.
 """
 import asyncio
+import json
 import logging
 import random
 import types
@@ -225,7 +226,8 @@ class Crawl:
         b.subscribe(retry, [EmptyScoreResultsEvent, RequestFailedEvent, ScoringFailedEvent])
         b.subscribe(
             self.recorder,
-            [PageFetchedEvent, LinksScoredEvent, NoLinksToScoreEvent, EmptyScoreResultsEvent],
+            [PageFetchedEvent, LinksScoredEvent, NoLinksToScoreEvent, EmptyScoreResultsEvent,
+             PriorityCalculatedEvent],
         )
         self.tasks: list[asyncio.Task] = []
 
@@ -534,7 +536,7 @@ async def test_scoring_runs_under_a_trace_bound_to_the_node():
 # 7. SEEDED RUNS ARE REPRODUCIBLE (P3.2)
 # =========================================================
 
-async def _visit_order(seed: int) -> list[str]:
+async def _run_seeded(seed: int) -> tuple[list[str], str]:
     tree = {"root": [f"a{i}" for i in range(12)]}
     tree.update({f"a{i}": [f"b{i}{j}" for j in range(4)] for i in range(12)})
     site = SyntheticSite(tree)
@@ -545,10 +547,20 @@ async def _visit_order(seed: int) -> list[str]:
         await wait_until(lambda: len(site.fetched) >= 20, timeout=5.0)
     finally:
         await crawl.stop()
-    return site.fetched[:20]
+    decisions = [
+        {"parent": e.parent.get_full_url(), "records": e.records}
+        for e in crawl.recorder.of(PriorityCalculatedEvent)
+    ][:10]
+    return site.fetched[:20], json.dumps(decisions, sort_keys=True)
 
 
 async def test_same_seed_gives_identical_visit_order():
-    first, second = await _visit_order(3), await _visit_order(3)
-    assert len(first) == 20
+    first, second = await _run_seeded(3), await _run_seeded(3)
+    assert len(first[0]) == 20
+    assert first[0] == second[0]
+
+
+async def test_same_seed_gives_byte_identical_decision_records():
+    (_, first), (_, second) = await _run_seeded(3), await _run_seeded(3)
+    assert len(json.loads(first)) == 10
     assert first == second
