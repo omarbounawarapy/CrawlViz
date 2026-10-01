@@ -79,6 +79,7 @@ class NLPService:
         llm_handler: Used to generate the target topic's semantic expansions.
         expansion_config: The blueprint's ``expansion`` sub-dict (llm_type,
             llm_model, style, num_descriptions, ...).
+        engine: A ready embedding engine; overrides ``embedding_backend``.
         embedding_backend: Name registered with `nlp.create_embedding_engine`.
         model_name: Passed through to the embedding backend.
         store_base_dir: Root directory for persisted spaces; a space is keyed
@@ -104,11 +105,12 @@ class NLPService:
         persist_space: bool = False,
         tracer: "TraceEmitter | None" = None,
         buffer_manager: "BufferManager | None" = None,
+        engine: BaseEmbeddingEngine | None = None,
     ):
         self.blueprint_id = blueprint_id
         self.target_topic = target_topic
 
-        self.engine: BaseEmbeddingEngine = create_embedding_engine(
+        self.engine: BaseEmbeddingEngine = engine or create_embedding_engine(
             backend=embedding_backend,
             model_name=model_name,
         )
@@ -269,6 +271,12 @@ class NLPService:
         path = self.store.space_path(self.blueprint_id)
         self.space = VectorSpace(dim=self.engine.dim)
         self.space.load(path)
+        if self.space.dim != self.engine.dim:
+            raise ValueError(
+                f"Stored space has dim {self.space.dim} but the embedding engine "
+                f"produces dim {self.engine.dim}; the space was built with a "
+                f"different model. Rebuild it or key it by model."
+            )
         self.target_vec = self.engine.encode(self.target_topic)
         logger.info("Loaded existing space: %s", self.space)
 

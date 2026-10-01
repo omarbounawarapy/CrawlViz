@@ -1,4 +1,6 @@
+import hashlib
 import logging
+import re
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -73,6 +75,38 @@ class SentenceTransformerEngine(BaseEmbeddingEngine):
 
 
 # =========================================================
+# HASHING BACKEND (TESTS, OFFLINE RUNS)
+# =========================================================
+
+class HashingEmbeddingEngine(BaseEmbeddingEngine):
+    """Deterministic bag-of-words embedding: each token is hashed into a
+    bucket, counts are L2-normalised. Texts that share words are close,
+    texts that share none are orthogonal. Needs no model, network or ML
+    stack, so scoring, bucketing and space updates can be tested without
+    sentence-transformers."""
+
+    def __init__(self, dim: int = 64):
+        self._dim = dim
+
+    def _one(self, text: str) -> np.ndarray:
+        vec = np.zeros(self._dim, dtype=np.float32)
+        for tok in re.findall(r"\w+", text.lower()):
+            h = int.from_bytes(hashlib.blake2b(tok.encode(), digest_size=8).digest(), "big")
+            vec[h % self._dim] += 1.0
+        norm = np.linalg.norm(vec)
+        return vec / norm if norm else vec
+
+    def encode(self, texts: str | list[str]) -> np.ndarray:
+        if isinstance(texts, str):
+            return self._one(texts)
+        return np.stack([self._one(t) for t in texts]) if texts else np.zeros((0, self._dim), np.float32)
+
+    @property
+    def dim(self) -> int:
+        return self._dim
+
+
+# =========================================================
 # FACTORY
 # =========================================================
 
@@ -83,4 +117,6 @@ def create_embedding_engine(
     if backend == "sentence_transformers":
         model = kwargs.get("model_name", "all-MiniLM-L6-v2")
         return SentenceTransformerEngine(model_name=model)
+    if backend == "hashing":
+        return HashingEmbeddingEngine(dim=kwargs.get("dim", 64))
     raise ValueError(f"Unknown embedding backend: {backend!r}")
