@@ -1,3 +1,7 @@
+import json
+import logging
+from datetime import datetime, timezone
+
 from .async_file_handler import AsyncFileHandler
 
 
@@ -13,3 +17,11 @@ class LogWriter(AsyncFileHandler):
     async def write_log(self, log: str) -> None:
         print(log)  # console sink
         await super().write_line(log + "\n")  # file sink
+
+    async def write_record(self, record: dict) -> None:
+        """One JSON object per line, UTC timestamp first, to the file and
+        the ``crawlviz.crawl`` stdlib logger (console)."""
+        stamped = {"ts": datetime.now(timezone.utc).isoformat(timespec="milliseconds"), **record}
+        line = json.dumps(stamped, default=str)
+        logging.getLogger("crawlviz.crawl").info(line)
+        await super().write_line(line)
