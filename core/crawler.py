@@ -92,6 +92,7 @@ from pipelines import (
 )
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
+from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
@@ -522,6 +523,19 @@ class Crawler:
             [NodeAddedEvent, PageFetchedEvent, StorageNodeUpdatedEvent, StopCrawlEvent],
         )
 
+    def _run_manifest(self) -> dict:
+        return {
+            "crawl_id": self.crawl_id,
+            "blueprint": self.blueprint,
+            "runtime_config": self.config.model_dump(mode="json"),
+            "embedding_model": self.config.embeddings.model_name,
+            "llm_model": self.model_information,
+            "git_sha": git_sha(),
+            "seed": self.seed,
+            "fetch_concurrency": self.fetch_concurrency,
+            "scoring_concurrency": self.scoring_concurrency,
+        }
+
     def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:
         """Wire TelemetryBridge -- see docs/V2_ARCHITECTURE.md §B.2.1.
 
@@ -537,9 +551,12 @@ class Crawler:
         """
         snapshot = CrawlStateSnapshot()
         ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=8765)
+        recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
+        recorder.record(snapshot.to_full_snapshot())
+        recorder.write_manifest(self._run_manifest())
         telemetry = TelemetryBridge(
             snapshot,
-            ui_gateway,
+            RecordingGateway(ui_gateway, recorder),
             priority_strategy_name=self.stop_conditions.get(
                 "priority_strategy", self.config.scoring_cascade.default_priority_strategy
             ),
