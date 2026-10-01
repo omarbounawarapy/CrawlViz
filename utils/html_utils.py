@@ -1,7 +1,8 @@
+import re
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
-from lxml import html
+from lxml import etree, html
 
 
 def apply_selector(context: Any, selector: str) -> list:
@@ -36,3 +37,25 @@ def is_absolute_url(url: str) -> bool:
 
 def is_relative_url(url: str) -> bool:
     return not is_absolute_url(url)
+
+
+def document_text(page: str) -> str:
+    """Main text of an HTML page: the paragraph text, scripts and styles dropped.
+
+    This is what scoring treats as a page's content (``parent.content`` holds the
+    raw HTML on a node). ``NLPService.score_links`` applies it, and both the crawl
+    and ``tools/nlp_eval.py`` score through that method, so the parent vector is
+    built from the same text in both. Pages without paragraphs fall back to all
+    visible text.
+    """
+    if not page or not page.strip():
+        return ""
+    try:
+        tree = html.fromstring(page)
+    except (ValueError, etree.ParserError):
+        return ""
+    for junk in tree.xpath("//script|//style|//noscript"):
+        junk.drop_tree()
+    paragraphs = tree.xpath("//p[normalize-space()]")
+    parts = [" ".join(p.itertext()) for p in paragraphs] or [" ".join(tree.itertext())]
+    return re.sub(r"\s+", " ", " ".join(parts)).strip()

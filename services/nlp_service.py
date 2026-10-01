@@ -9,6 +9,7 @@ from scipy.spatial.distance import cosine
 from config import NLP_COMPOSITE_WEIGHTS
 from infrastructure import LlmHandler
 from models import ExpansionContext
+from utils.html_utils import document_text
 from nlp import (
     BaseEmbeddingEngine,
     BufferManager,
@@ -317,7 +318,7 @@ class NLPService:
 
         trace_id, node_id = get_trace()
 
-        parent_content = getattr(parent, "content", "") or ""
+        parent_content = document_text(getattr(parent, "content", "") or "")
         parent_vec = self.engine.encode(parent_content) if parent_content else self.target_vec
         space_matrix = self.space.get_matrix()
         self._refresh_space_stats()

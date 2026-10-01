@@ -15,7 +15,6 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
-from lxml import html as LH
 
 import models.links_extractor as le
 from infrastructure import KeyManager, LlmHandler
@@ -78,17 +77,13 @@ def _fetch(url: str) -> str:
 
 def load_page(url: str):
     """Fetch `url`; return (links, parent) with unique links and a parent stub
-    whose `.content` is the page's paragraph text."""
+    whose `.content` is the page HTML, as on a crawled node."""
     _, domain = _template()
     page = _fetch(url)
     if not page:
         return [], None
-    tree = LH.fromstring(page)
     parent = type("Parent", (), {})()
-    parent.content = " ".join(
-        " ".join(p.itertext())
-        for p in tree.xpath("//div[contains(@class,'mw-parser-output')]//p[normalize-space()]")
-    )
+    parent.content = page
     le.MAX_CONTEXT_LEN = CONTEXT_LEN
     seen, links = set(), []
     for link in le.LinkExtractor.extract_links(page, _Node(domain)):
