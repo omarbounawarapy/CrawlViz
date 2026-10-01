@@ -449,3 +449,46 @@ async def test_link_back_to_the_seed_creates_no_child():
     )
 
     assert len(storage.nodes) == 1
+
+
+# =========================================================
+# 5. BUDGET SEMANTICS (docs/06-algorithms.md §7)
+# =========================================================
+
+CHAIN = {"a": ["b"], "b": ["c"], "c": ["d"], "d": ["e"], "e": []}
+
+
+async def _run_stopping_crawl(max_nodes: int, max_depth: int):
+    crawl = Crawl(SyntheticSite(CHAIN), FixedRelevance(0.5), FixedLlm())
+    storage_pipeline = crawl.pipelines[4]
+    storage_pipeline.max_depth = max_depth
+    crawler = types.SimpleNamespace(
+        event_broker=crawl.broker, max_nodes=max_nodes, max_depth=max_depth,
+        max_duration=60, no_progress_timeout=60, target_url="",
+    )
+    stopping = StoppingPipeline(crawler)
+    crawl.broker.subscribe(stopping, [NodeAddedEvent, PageFetchedEvent, StopCrawlEvent])
+    crawl.pipelines.append(stopping)
+    await crawl.start()
+    await asyncio.sleep(0.05)
+    await crawl.add_seed("a")
+    try:
+        await wait_until(lambda: stopping.stopped, timeout=3.0)
+        await asyncio.sleep(0.2)
+    finally:
+        await crawl.stop()
+    return crawl, stopping
+
+
+async def test_max_nodes_counts_fetched_pages():
+    crawl, stopping = await _run_stopping_crawl(max_nodes=3, max_depth=10)
+
+    assert crawl.site.fetched == ["a", "b", "c"]
+    assert stopping.node_count == 3
+
+
+async def test_max_depth_stops_admission_not_the_crawl():
+    crawl, stopping = await _run_stopping_crawl(max_nodes=100, max_depth=2)
+
+    assert crawl.site.fetched == ["a", "b", "c"]  # depth 0, 1, 2; "d" never admitted
+    assert not stopping.stopped or stopping.node_count == 3

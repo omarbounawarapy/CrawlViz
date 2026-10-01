@@ -333,7 +333,9 @@ class Crawler:
             percentile_min_links=PERCENTILE_MIN_LINKS,
             max_llm_links=MAX_LLM_LINKS_PER_NODE,
         )
-        p["storage"] = StoragePipeline(self.storage, self.event_broker)
+        p["storage"] = StoragePipeline(
+            self.storage, self.event_broker, max_depth=self.max_depth
+        )
         p["filtering"] = FilteringPipeline(self.event_broker, self.storage)
         p["priority"] = PriorityPipeline(
             self.storage,
@@ -480,7 +482,7 @@ class Crawler:
         b.subscribe(p["exporting"], [TransformationCompletedEvent, StopCrawlEvent])
         b.subscribe(
             p["stopping"],
-            [NodeAddedEvent, StorageNodeUpdatedEvent, StopCrawlEvent],
+            [NodeAddedEvent, PageFetchedEvent, StorageNodeUpdatedEvent, StopCrawlEvent],
         )
 
     def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:

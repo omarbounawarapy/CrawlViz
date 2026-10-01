@@ -25,8 +25,13 @@ class StoragePipeline(BasePipeline):
     their node once each stage completes.
     """
 
-    def __init__(self, storage, event_broker, max_queue_size: int = 0, max_concurrency: int = 1):
+    def __init__(
+        self, storage, event_broker, max_queue_size: int = 0, max_concurrency: int = 1,
+        max_depth: int | None = None,
+    ):
         super().__init__(max_concurrency=max_concurrency)
+        # Nodes deeper than this are never admitted (seeds are depth 0).
+        self.max_depth = max_depth
         self.event_broker = event_broker
         self.storage = storage
         # URLs already turned into nodes in this crawl. found_links can't do
@@ -76,6 +81,9 @@ class StoragePipeline(BasePipeline):
             # Nodes that exist before the first admission (the seed) count too.
             self._admitted_urls.update(n.get_full_url() for n in self.storage.nodes)
             self._seeded_admitted = True
+
+        if self.max_depth is not None and parent.get_depth() + 1 > self.max_depth:
+            return
 
         for entry in event.links:
             link = entry["link"]

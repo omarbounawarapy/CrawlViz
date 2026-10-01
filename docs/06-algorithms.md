@@ -364,3 +364,7 @@ In the reference run:
 The ratio between these quantities illustrates why evaluating every discovered link with an LLM would be impractical.
 
 The cascade limits LLM evaluation through thresholding, selective sampling, top-$`K`$ confirmation, and `trusted_no_llm` bypasses. Consequently, LLM cost is intended to remain approximately proportional to the number of nodes actually explored rather than to the number of links discovered.
+## 7. Budget and Depth Semantics
+
+- **`max_nodes`** counts **successfully fetched pages**, not admitted nodes. `StoppingPipeline` increments on `PageFetchedEvent` and emits `StopCrawlEvent("MAX_NODES_REACHED")` when the count reaches `max_nodes`. A run therefore fetches exactly `max_nodes` pages with one request worker; with more workers, up to `max_concurrency - 1` requests already in flight may still complete. Failed fetches do not count.
+- **`max_depth`** is an **admission limit**, not a stop condition. Seeds are depth 0; `StoragePipeline` does not create nodes deeper than `max_depth`. The crawl ends naturally when the frontier drains (or on another stop condition). `MAX_DEPTH_REACHED` is no longer emitted.

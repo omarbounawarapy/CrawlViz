@@ -1,7 +1,7 @@
 import asyncio
 import time
 
-from events import NodeAddedEvent, StopCrawlEvent, StorageNodeUpdatedEvent
+from events import NodeAddedEvent, PageFetchedEvent, StopCrawlEvent, StorageNodeUpdatedEvent
 
 from .base_pipeline import BasePipeline
 
@@ -12,6 +12,10 @@ class StoppingPipeline(BasePipeline):
 
     Reads its thresholds directly off the Crawler instance so they stay
     in sync with whatever the blueprint configured.
+
+    ``max_nodes`` counts successfully fetched pages. ``max_depth`` is not a
+    stop condition: StoragePipeline refuses to admit nodes deeper than it,
+    and the crawl ends naturally once the frontier drains.
     """
 
     def __init__(self, crawler, max_queue_size: int = 0, max_concurrency: int = 1):
@@ -22,7 +26,6 @@ class StoppingPipeline(BasePipeline):
 
         # Conditions
         self.max_nodes = crawler.max_nodes
-        self.max_depth = crawler.max_depth
         self.max_duration = crawler.max_duration
         self.no_progress_timeout = crawler.no_progress_timeout
         self.target_url = crawler.target_url
@@ -39,6 +42,7 @@ class StoppingPipeline(BasePipeline):
 
         self.handlers = {
             NodeAddedEvent: self._on_node_added,
+            PageFetchedEvent: self._on_page_fetched,
             StorageNodeUpdatedEvent: self._on_node_updated,
         }
 
@@ -66,18 +70,18 @@ class StoppingPipeline(BasePipeline):
     async def _on_node_added(self, event: NodeAddedEvent) -> None:
         node = event.node
 
+        self.last_activity_time = time.time()
+
+        if self.target_url and self.target_url in node.get_full_url():
+            await self._stop("TARGET_REACHED", detail=node.get_full_url())
+
+    async def _on_page_fetched(self, event: PageFetchedEvent) -> None:
         self.node_count += 1
-        self.max_seen_depth = max(self.max_seen_depth, node.get_depth())
+        self.max_seen_depth = max(self.max_seen_depth, event.node.get_depth())
         self.last_activity_time = time.time()
 
         if self.node_count >= self.max_nodes:
             await self._stop("MAX_NODES_REACHED")
-
-        if node.get_depth() >= self.max_depth:
-            await self._stop("MAX_DEPTH_REACHED")
-
-        if self.target_url and self.target_url in node.get_full_url():
-            await self._stop("TARGET_REACHED", detail=node.get_full_url())
 
     async def _on_node_updated(self, event: StorageNodeUpdatedEvent) -> None:
         self.last_activity_time = time.time()
