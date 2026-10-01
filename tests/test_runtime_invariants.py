@@ -364,12 +364,6 @@ async def test_empty_llm_sample_raises_no_errors(caplog):
 # 4. A STOPPED CRAWL ACTUALLY ENDS
 # =========================================================
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="A scoring worker awaiting node.ready never reads the SHUTDOWN "
-    "sentinel, and after StopCrawlEvent the events that would resolve it are "
-    "dropped by the broker.",
-)
 async def test_scoring_finishes_after_stop_with_a_node_in_flight():
     broker, storage = EventBroker(), Storage()
     scoring = make_scoring(broker, FixedRelevance(0.5), FixedLlm())

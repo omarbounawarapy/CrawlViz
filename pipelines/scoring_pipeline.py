@@ -84,11 +84,31 @@ class ScoringPipeline(BasePipeline):
         self.low_score_sample_fraction = low_score_sample_fraction
         self.high_score_random_fraction = high_score_random_fraction
         self.queue: asyncio.PriorityQueue = FrontierQueue(maxsize=max_queue_size)
+        self._stopping = asyncio.Event()
 
         self.handlers = {
             NodeAddedEvent: self._on_node_added,
             ScoreRescheduledEvent: self._on_node_added,
         }
+
+    async def stop(self) -> None:
+        # A worker parked on node.ready would never reach the sentinel,
+        # and the events that resolve it are dropped once the crawl stops.
+        self._stopping.set()
+        await super().stop()
+
+    async def _await_ready(self, node) -> bool | None:
+        """node.ready, or None if the crawl stops first."""
+        if node.ready.done():
+            return node.ready.result()
+        stopped = asyncio.ensure_future(self._stopping.wait())
+        try:
+            await asyncio.wait(
+                {node.ready, stopped}, return_when=asyncio.FIRST_COMPLETED
+            )
+        finally:
+            stopped.cancel()  # never cancel node.ready: others wait on it
+        return node.ready.result() if node.ready.done() else None
 
     # =========================================================
     # ENTRY POINT
@@ -116,7 +136,10 @@ class ScoringPipeline(BasePipeline):
     async def _process(self, node, worker_id: int) -> None:
         bind_node(str(node.get_id()))
         try:
-            if not await node.ready:
+            ready = await self._await_ready(node)
+            if ready is None:
+                return
+            if not ready:
                 logger.info("Node %s failed upstream; skipping scoring", node.get_id())
                 return
 
