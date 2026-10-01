@@ -2,6 +2,8 @@ import asyncio
 import random
 import time
 
+import aiohttp
+
 from events import (
     NodeAddedEvent,
     PageFetchedEvent,
@@ -17,6 +19,11 @@ from traceability.trace_context import bind_node
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
+
+
+def is_rate_limited(error: Exception) -> bool:
+    """True when the server answered 429 Too Many Requests."""
+    return isinstance(error, aiohttp.ClientResponseError) and error.status == 429
 
 
 class RequestsPipeline:
@@ -180,7 +187,7 @@ class RequestsPipeline:
 
                 # Backoff strategy: exponential growth on rate-limit
                 # responses, gradual decay otherwise.
-                if "429" in error_str or "Too Many Requests" in error_str:
+                if is_rate_limited(e):
                     if self.backoff_delay == 0:
                         self.backoff_delay = 1.0
                     else:
