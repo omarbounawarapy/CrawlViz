@@ -154,7 +154,7 @@ class TestSeededDeterminism:
         def run(p):
             links = [L(i / 100) for i in range(100)]
             sampled, skip, dropped = p["scoring"].bucket_links(links)
-            return ([l._nlp_score for l in sampled], [p["requests"].rng.random() for _ in range(5)])
+            return ([link._nlp_score for link in sampled], [p["requests"].rng.random() for _ in range(5)])
 
         a, b, c = run(build(7)), run(build(7)), run(build(8))
         assert a == b

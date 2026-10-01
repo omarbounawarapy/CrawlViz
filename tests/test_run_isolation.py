@@ -92,7 +92,8 @@ def test_legacy_table_is_migrated(tmp_path):
     con = sqlite3.connect(db)
     con.execute("CREATE TABLE t (id TEXT PRIMARY KEY, crawl_id TEXT, url TEXT, created_at TEXT, title TEXT)")
     con.execute("INSERT INTO t VALUES ('samehash','old','u','now','legacy')")
-    con.commit(); con.close()
+    con.commit()
+    con.close()
     _export(db, "c2", "new")
     rows = sqlite3.connect(db).execute("SELECT crawl_id, title FROM t ORDER BY 1").fetchall()
     assert rows == [("c2", "new"), ("old", "legacy")]

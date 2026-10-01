@@ -32,11 +32,11 @@ def link_records(links) -> list[dict]:
     """Plain-value snapshot of links at decision time."""
     return [
         {
-            "url": l.url,
-            "score": l.score,
-            "nlp_score": getattr(l, "_nlp_score", 0.0),
+            "url": link.url,
+            "score": link.score,
+            "nlp_score": getattr(link, "_nlp_score", 0.0),
         }
-        for l in links
+        for link in links
     ]
 
 
