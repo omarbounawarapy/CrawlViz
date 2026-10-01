@@ -485,3 +485,20 @@ async def test_max_depth_stops_admission_not_the_crawl():
 
     assert crawl.site.fetched == ["a", "b", "c"]  # depth 0, 1, 2; "d" never admitted
     assert not stopping.stopped or stopping.node_count == 3
+
+
+async def test_decision_events_keep_values_after_rescore():
+    """A decision event records the values at decision time, not the live link's."""
+    broker = EventBroker()
+    link = Link("http://x/a", "a", "ctx")
+    link.score, link._nlp_score = 7, 0.4
+    event = HighScoreLinksEvent(
+        "1", node=None, links=[link],
+        records=[{"url": link.url, "score": 7, "nlp_score": 0.4}],
+    )
+    await broker.emit(event)
+    other = StopCrawlEvent("NO_PROGRESS", 1, 0, 0.0)
+    await broker.emit(other)
+    link.score = 99  # scoring retry mutates the shared object
+    assert event.records[0]["score"] == 7
+    assert 0 < event.seq < other.seq

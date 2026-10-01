@@ -26,6 +26,18 @@ from .frontier_queue import FrontierQueue
 logger = logging.getLogger(__name__)
 
 
+def link_records(links) -> list[dict]:
+    """Plain-value snapshot of links at decision time."""
+    return [
+        {
+            "url": l.url,
+            "score": l.score,
+            "nlp_score": getattr(l, "_nlp_score", 0.0),
+        }
+        for l in links
+    ]
+
+
 class ScoringPipeline(BasePipeline):
     """Runs the two-stage NLP -> LLM relevance cascade for a node's links.
 
@@ -147,6 +159,8 @@ class ScoringPipeline(BasePipeline):
                         correlation_id=str(node.get_id()),
                         node=node,
                         links=llm_skip,
+                        records=link_records(llm_skip),
+                        node_id=str(node.get_id()),
                     )
                 )
                 await self.event_broker.emit(
@@ -154,6 +168,8 @@ class ScoringPipeline(BasePipeline):
                         correlation_id=str(node.get_id()),
                         node=node,
                         links=drop,
+                        records=link_records(drop),
+                        node_id=str(node.get_id()),
                     )
                 )
 

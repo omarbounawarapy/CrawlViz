@@ -15,3 +15,4 @@ class StopCrawlEvent:
     max_depth: int
     duration: float
     detail: str | None = None
+    seq: int = 0  # assigned by EventBroker.emit

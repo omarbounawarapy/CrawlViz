@@ -164,6 +164,11 @@ class RequestsPipeline:
                         correlation_id=str(node.get_id()),
                         node=node,
                         content=response,
+                        node_id=str(node.get_id()),
+                        parent_id=(
+                            str(node.parent.get_id()) if node.parent else None
+                        ),
+                        url=node.link.url if node.link else None,
                     )
                 )
 

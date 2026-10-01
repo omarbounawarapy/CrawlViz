@@ -44,6 +44,11 @@ class PageFetchedEvent:
     correlation_id: str
     node: Any
     content: Any
+    # Values as of the fetch; `node` is live and keeps changing.
+    node_id: str | None = None
+    parent_id: str | None = None
+    url: str | None = None
+    seq: int = 0  # assigned by EventBroker.emit
 
 
 # =========================================================

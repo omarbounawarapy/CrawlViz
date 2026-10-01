@@ -23,6 +23,7 @@ class EventBroker:
         self.registry = EventRegistry()
         self.running = True
         self.active_tasks: set[asyncio.Task] = set()
+        self._seq = 0
 
     async def start(self) -> None:
         """Drain the event bus, fanning each event out to its subscribers.
@@ -68,6 +69,11 @@ class EventBroker:
         """
         if not self.running:
             return  # drop events after stop
+        # Decision events carry a `seq` so a later reader can order them
+        # without trusting the live objects they reference.
+        if hasattr(event, "seq"):
+            self._seq += 1
+            event.seq = self._seq
         await self.event_bus.put(event)
 
     def subscribe(self, pipeline, event_types) -> None:

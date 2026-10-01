@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 # =========================================================
@@ -91,6 +91,10 @@ class HighScoreLinksEvent:
     correlation_id: str
     node: Any
     links: list[Any]
+    # Plain-value copy of `links` as bucketed: url, score, nlp_score.
+    records: list[dict[str, Any]] = field(default_factory=list)
+    node_id: str | None = None
+    seq: int = 0  # assigned by EventBroker.emit
 
 
 @dataclass
@@ -98,3 +102,7 @@ class LowScoreLinksEvent:
     correlation_id: str
     node: Any
     links: list[Any]
+    # Plain-value copy of `links` as bucketed: url, score, nlp_score.
+    records: list[dict[str, Any]] = field(default_factory=list)
+    node_id: str | None = None
+    seq: int = 0  # assigned by EventBroker.emit

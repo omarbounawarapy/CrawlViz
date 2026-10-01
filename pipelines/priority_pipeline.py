@@ -110,6 +110,16 @@ class PriorityPipeline(BasePipeline):
                     parent=node,
                     links=calculated,
                     output_count=len(calculated),
+                    records=[
+                        {
+                            "url": c["link"].url,
+                            "score": c["score"],
+                            "nlp_score": getattr(c["link"], "_nlp_score", 0.0),
+                            "priority": c["priority"],
+                        }
+                        for c in calculated
+                    ],
+                    parent_id=str(node.get_id()),
                 )
             )
 

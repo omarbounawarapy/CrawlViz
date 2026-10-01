@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 # =========================================================
@@ -34,6 +34,10 @@ class PriorityCalculatedEvent:
     parent: Any  # Node
     links: list[dict[str, Any]]  # {link, score, priority}
     output_count: int
+    # Plain-value copy of `links` as decided: url, score, nlp_score, priority.
+    records: list[dict[str, Any]] = field(default_factory=list)
+    parent_id: str | None = None
+    seq: int = 0  # assigned by EventBroker.emit
 
 
 # =========================================================
