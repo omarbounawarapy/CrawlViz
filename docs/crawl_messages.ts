@@ -44,6 +44,57 @@ export interface CrawlMetrics {
   elapsed_seconds:    number;
 }
 
+export type PipelineStage =
+  | "request"
+  | "extraction"
+  | "filtering"
+  | "scoring"
+  | "priority"
+  | "transformation"
+  | "export";
+
+export interface PipelineStat {
+  started:          number;
+  completed:        number;
+  failed:           number;
+  queue_size:       number | null;
+  last_duration_ms: number | null;
+  avg_duration_ms:  number | null;
+}
+
+/**
+ * "dropped"        — low NLP confidence or budget exhausted; never a node.
+ * "trusted_no_llm" — high NLP confidence; skips the LLM but DOES become a
+ *                    node (it arrives later as NODE_ADDED).
+ */
+export type CandidateDecision = "dropped" | "trusted_no_llm";
+
+export interface CandidateRecord {
+  parent_id:     string;
+  url:           string;
+  nlp_score:     number;
+  decision:      CandidateDecision;
+  nlp_breakdown: Record<string, number>;
+  ts:            number;
+}
+
+export interface NodeDetailRecord {
+  node_id:           string;
+  nlp_score:         number | null;
+  nlp_breakdown:     Record<string, number>;
+  llm_score:         number | null;
+  priority:          number | null;
+  priority_strategy: string | null;
+}
+
+export interface ErrorRecord {
+  node_id:       string | null;
+  stage:         string;
+  error_type:    string;
+  error_message: string;
+  ts:            number;
+}
+
 export interface ScoredChild {
   url:      string;
   score:    number;
@@ -64,6 +115,10 @@ export interface SnapshotFullMsg {
   stop_reason: string | null;
   metrics:     CrawlMetrics;
   nodes:       NodeRecord[];
+  pipeline_stats: Record<PipelineStage, PipelineStat>;
+  candidates:     CandidateRecord[];
+  node_details:   Record<string, NodeDetailRecord>;
+  errors:         ErrorRecord[];
 }
 
 /**
@@ -123,6 +178,58 @@ export interface CrawlStoppedMsg {
 }
 
 
+/**
+ * One pipeline stage ticked (enqueued / started / completed / failed).
+ * node_id is null for table-level export ticks.
+ */
+export interface PipelineEventMsg {
+  type:        "PIPELINE_EVENT";
+  ts:          number;
+  stage:       PipelineStage;
+  phase:       string;
+  node_id:     string | null;
+  worker_id:   number | string | null;
+  queue_size:  number | null;
+  duration_ms: number | null;
+  detail:      string | null;
+}
+
+/**
+ * Links the scoring cascade decided on without an LLM call. Both decisions
+ * are sent here; only "trusted_no_llm" candidates go on to become nodes.
+ */
+export interface CandidateEvaluatedMsg {
+  type:       "CANDIDATE_EVALUATED";
+  ts:         number;
+  parent_id:  string;
+  decision:   CandidateDecision;
+  candidates: {
+    url:           string;
+    nlp_score:     number;
+    nlp_breakdown: Record<string, number>;
+  }[];
+}
+
+/**
+ * The cascade's explanation for a node's score. Sent right after the
+ * NODE_ADDED it belongs to.
+ */
+export interface NodeScoredDetailMsg extends NodeDetailRecord {
+  type: "NODE_SCORED_DETAIL";
+  ts:   number;
+}
+
+/** A stage failed. node_id is null for crawl-wide or table-level failures. */
+export interface NodeErrorMsg {
+  type:          "NODE_ERROR";
+  ts:            number;
+  node_id:       string | null;
+  stage:         string;
+  error_type:    string;
+  error_message: string;
+}
+
+
 // ─── Discriminated union ──────────────────────────────────────────────────────
 
 export type CrawlMessage =
@@ -130,7 +237,11 @@ export type CrawlMessage =
   | NodeAddedMsg
   | NodeStateChangedMsg
   | NodeExpandedMsg
-  | CrawlStoppedMsg;
+  | CrawlStoppedMsg
+  | PipelineEventMsg
+  | CandidateEvaluatedMsg
+  | NodeScoredDetailMsg
+  | NodeErrorMsg;
 
 
 // ─── React integration ────────────────────────────────────────────────────────

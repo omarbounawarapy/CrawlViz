@@ -23,9 +23,15 @@ const TREE = [
   ["Dark_matter",           "Quasar",               "CREATED",  null, 0.36],
   ["Wormhole",              "Singularity",          "FILTERED", 46, 0.43],
   ["Science_fiction",       "Wormhole",             "CREATED",  null, 0.22],
+  // Trusted by the cascade without an LLM call: they still become nodes.
+  ["Kip_Thorne",            "Black_hole",           "FETCHED",  null, 0.84],
+  ["Stephen_Hawking",       "Hawking_radiation",    "CREATED",  null, 0.88],
+  ["Rainer_Weiss",          "Gravitational_waves",  "FETCHED",  null, 0.82],
+  ["Pulsar",                "Neutron_star",         "CREATED",  null, 0.79],
 ];
 
-// Links the cascade evaluated but never fetched: [parent, url, decision, NLP]
+// Links the cascade decided on without an LLM call ("dropped" never become
+// nodes; "trusted_no_llm" do, see TREE): [parent, url, decision, NLP]
 const CANDIDATES = [
   ["Black_hole",          "Interstellar_(film)",  "dropped",        0.12],
   ["Black_hole",          "List_of_video_games",  "dropped",        0.06],

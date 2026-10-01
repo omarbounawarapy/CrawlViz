@@ -22,9 +22,9 @@ subscribers.
 - ``pipeline_stats``: running per-stage counters (started/completed/failed,
   last observed queue depth, duration) -- the data source for the Pipeline
   Monitor.
-- ``candidates``: links the scoring cascade evaluated but that did *not*
-  become a full node (dropped for low confidence, or trusted and fast-tracked
-  without an LLM call). This is the "what didn't happen" signal -- see
+- ``candidates``: links the scoring cascade decided on without an LLM call:
+  dropped for low confidence (never a node), or trusted and fast-tracked
+  (these do become nodes, later). This is the "what didn't happen" signal -- see
   docs/V2_ARCHITECTURE.md §A.2.3. Bounded with a deque so a very long crawl
   can't grow this unboundedly.
 - ``node_details``: the cascade's full explanation for a node's score
@@ -128,9 +128,9 @@ class StageStats:
 
 @dataclass
 class CandidateRecord:
-    """A link the cascade evaluated that did not (or has not yet) become a
-    full graph node -- either dropped outright (low NLP confidence, cost
-    budget exhausted) or trusted without an LLM call (high NLP confidence)."""
+    """A link the cascade decided on without an LLM call -- either dropped
+    outright (low NLP confidence, cost budget exhausted; never a node) or
+    trusted (high NLP confidence; becomes a node later via fast-track)."""
     parent_id:     str
     url:           str
     nlp_score:     float
