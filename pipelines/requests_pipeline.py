@@ -204,7 +204,7 @@ class RequestsPipeline:
                 )
 
             except Exception as e:
-                error_str = str(e)
+                error_str = str(e) or type(e).__name__
 
                 # Backoff strategy: exponential growth on rate-limit
                 # responses, gradual decay otherwise.
