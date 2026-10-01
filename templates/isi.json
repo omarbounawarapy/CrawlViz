@@ -11,7 +11,7 @@
   "domains": {
     "wikipedia": {
       "base_url": "https://fr.wikipedia.org",
-      "link_selector": ".//a[starts-with(@href, '/wiki/') and not(contains(@href, ':')) and not(contains(@href, 'Main_Page'))]"
+      "link_selector": ".//a[(starts-with(@href, '/wiki/') or starts-with(@href, 'https://fr.wikipedia.org/wiki/')) and not(contains(substring-after(@href, '/wiki/'), ':')) and not(contains(@href, 'Main_Page'))]"
     }
   },
   "scoring": {
@@ -103,6 +103,6 @@
     "max_depth": 6000,
     "max_duration": 900000,
     "no_progress_timeout": 1000000,
-    "stop_url": "https://fr.wikipedia.org/wiki/Institut_sup%C3%A9rieur_d'informatique_(Tunisie)"
+    "stop_url": "https://fr.wikipedia.org/wiki/Trou_noir"
   }
 }
