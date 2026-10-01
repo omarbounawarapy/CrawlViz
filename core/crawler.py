@@ -153,7 +153,9 @@ class Crawler:
         seed: int | None = None,
         fetch_concurrency: int = 4,
         scoring_concurrency: int = 1,
+        ui_port: int = 8765,
     ):
+        self.ui_port = ui_port
         self.config = config if config is not None else default_runtime_config()
         self.seed = seed
         self.fetch_concurrency = fetch_concurrency
@@ -550,7 +552,7 @@ class Crawler:
         a wider subscription list and a bigger translator.
         """
         snapshot = CrawlStateSnapshot()
-        ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=8765)
+        ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
         recorder.write_manifest(self._run_manifest())

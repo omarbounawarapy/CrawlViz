@@ -23,9 +23,8 @@ import logging
 from typing import Set
 
 try:
-    import websockets
-    import websockets.exceptions
-    from websockets.server import WebSocketServerProtocol
+    from websockets.asyncio.server import ServerConnection, serve
+    from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 except ImportError:
     raise ImportError(
         "The 'websockets' package is required. Install with: pip install websockets"
@@ -51,8 +50,15 @@ class UIWebSocketGateway:
         self._snapshot: CrawlStateSnapshot = snapshot
         self._host:     str                = host
         self._port:     int                = port
-        self._clients:  Set[WebSocketServerProtocol] = set()
+        self._clients:  Set[ServerConnection] = set()
         self._server                       = None
+
+    @property
+    def port(self) -> int:
+        """The bound port (differs from the requested one when it was 0)."""
+        if self._server is not None and self._server.sockets:
+            return self._server.sockets[0].getsockname()[1]
+        return self._port
 
     # ------------------------------------------------------------------
     # Lifecycle
@@ -60,7 +66,7 @@ class UIWebSocketGateway:
 
     async def start(self) -> None:
         """Run the server until the crawl ends (cancelled externally)."""
-        self._server = await websockets.serve(
+        self._server = await serve(
             self._on_client_connected,
             self._host,
             self._port,
@@ -79,7 +85,7 @@ class UIWebSocketGateway:
     # Connection handler
     # ------------------------------------------------------------------
 
-    async def _on_client_connected(self, ws: WebSocketServerProtocol) -> None:
+    async def _on_client_connected(self, ws: ServerConnection) -> None:
         self._clients.add(ws)
         log.info("Client connected  — active=%d", len(self._clients))
 
@@ -92,9 +98,9 @@ class UIWebSocketGateway:
             async for _ in ws:
                 pass
 
-        except websockets.exceptions.ConnectionClosedOK:
+        except ConnectionClosedOK:
             pass
-        except websockets.exceptions.ConnectionClosedError as exc:
+        except ConnectionClosedError as exc:
             log.debug("Client closed with error: %s", exc)
         finally:
             self._clients.discard(ws)
@@ -115,7 +121,7 @@ class UIWebSocketGateway:
             return
 
         payload  = json.dumps(message, default=str)
-        dead: Set[WebSocketServerProtocol] = set()
+        dead: Set[ServerConnection] = set()
 
         for ws in set(self._clients):          # snapshot set; safe against mutation
             try:
