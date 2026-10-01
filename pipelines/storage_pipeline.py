@@ -14,6 +14,7 @@ from events import (
     TransformationCompletedEvent,
 )
 from models import Node
+from utils import build_url
 
 from .base_pipeline import BasePipeline
 
@@ -28,6 +29,9 @@ class StoragePipeline(BasePipeline):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.storage = storage
+        # URLs already turned into nodes in this crawl. found_links can't do
+        # this job: it is filled at filtering time, before admission.
+        self._admitted_urls: set[str] = set()
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
@@ -71,6 +75,11 @@ class StoragePipeline(BasePipeline):
             link = entry["link"]
             llm_score = entry["score"]
             priority = entry["priority"]
+
+            url = build_url(parent.get_domain_base_url(), link.url)
+            if url in self._admitted_urls:
+                continue
+            self._admitted_urls.add(url)
 
             node_id = self.storage.next_id()
 

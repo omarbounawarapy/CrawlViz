@@ -157,19 +157,21 @@ class ScoringPipeline(BasePipeline):
                 )
 
                 # Core scoring call (LLM, sampled links only).
+                # An empty sample is a bucketing outcome, not a failure; only
+                # a call that returned nothing usable is reported as empty.
                 if not sampled:
                     scored_links = []
                 else:
                     scored_links = await self.scoring_service.score_links(node, sampled)
-
-                if not scored_links:
-                    await self.event_broker.emit(
-                        EmptyScoreResultsEvent(
-                            correlation_id=str(node.get_id()),
-                            node=node,
+                    if not scored_links:
+                        await self.event_broker.emit(
+                            EmptyScoreResultsEvent(
+                                correlation_id=str(node.get_id()),
+                                node=node,
+                            )
                         )
-                    )
-                else:
+
+                if scored_links:
                     # Forward any LLM-generated expansions into the
                     # semantic space's update pipeline (see
                     # NLPService.update_space / nlp/space_updater.py).

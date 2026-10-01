@@ -76,21 +76,22 @@ class RetryProcessor(BasePipeline):
             )
 
     async def _on_empty_score_results(self, event: EmptyScoreResultsEvent) -> None:
-        """Demote and reschedule a node whose links came back with no scores."""
-        node = event.node
-        node.decrease_priority(5)
-
-        await self.event_broker.emit(
-            ScoreRescheduledEvent(
-                correlation_id=str(node.get_id()),
-                node=node,
-            )
+        """Demote and reschedule a node whose LLM call returned no usable
+        scores, under the same cap and backoff as a scoring failure."""
+        await self._reschedule_scoring(
+            event.node, "empty LLM result", "EmptyScoreResults", demote=5
         )
 
     async def _on_scoring_failed(self, event: ScoringFailedEvent) -> None:
         """Reschedule a node whose scoring raised (e.g. an LLM call failed),
         up to `max_scoring_retries`, instead of dropping it from the crawl."""
-        node = event.node
+        await self._reschedule_scoring(
+            event.node, event.error_message, event.error_type
+        )
+
+    async def _reschedule_scoring(
+        self, node, reason: str, error_type: str, demote: int = 0
+    ) -> None:
         node_id = node.get_id()
         attempts = self._scoring_retry_counts.get(node_id, 0) + 1
         self._scoring_retry_counts[node_id] = attempts
@@ -98,9 +99,12 @@ class RetryProcessor(BasePipeline):
         if attempts > self.max_scoring_retries:
             logger.warning(
                 "Node %s exceeded max scoring retries (%d) after %s: %s -- giving up",
-                node_id, self.max_scoring_retries, event.error_type, event.error_message,
+                node_id, self.max_scoring_retries, error_type, reason,
             )
             return
+
+        if demote:
+            node.decrease_priority(demote)
 
         async def _reschedule() -> None:
             await asyncio.sleep(self.retry_base_delay * 2 ** (attempts - 1))

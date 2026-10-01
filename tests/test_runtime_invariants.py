@@ -337,11 +337,6 @@ async def _score_one_ready_node(nlp_score: float, run_for: float):
     return nlp.calls, len(recorder.of(ScoreRescheduledEvent)), children
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="EmptyScoreResultsEvent is emitted when the LLM sample is empty by "
-    "design, and RetryProcessor reschedules it with no cap and no delay.",
-)
 async def test_node_with_all_low_links_is_not_rescored_indefinitely():
     nlp_calls, reschedules, _ = await _score_one_ready_node(nlp_score=0.10, run_for=0.5)
 
@@ -349,11 +344,6 @@ async def test_node_with_all_low_links_is_not_rescored_indefinitely():
     assert nlp_calls <= 4
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="Every reschedule re-emits the trusted (HighScoreLinksEvent) links, "
-    "and StoragePipeline creates a new child node for each one again.",
-)
 async def test_rescoring_does_not_create_duplicate_children():
     _, _, children = await _score_one_ready_node(nlp_score=0.90, run_for=0.5)
 
@@ -361,11 +351,6 @@ async def test_rescoring_does_not_create_duplicate_children():
     assert len(children) == len(set(children))
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="An empty scored_links list is falsy, so PriorityPipeline falls back "
-    "to event.links, which LinksScoredEvent doesn't have, and len(None) raises.",
-)
 async def test_empty_llm_sample_raises_no_errors(caplog):
     with caplog.at_level(logging.ERROR, logger="core.event_broker"):
         await _score_one_ready_node(nlp_score=0.10, run_for=0.2)

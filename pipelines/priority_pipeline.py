@@ -71,7 +71,11 @@ class PriorityPipeline(BasePipeline):
     # =========================================================
 
     async def _on_links_scored(self, event: LinksScoredEvent) -> None:
-        links = getattr(event, "scored_links", None) or getattr(event, "links", None)
+        links = getattr(event, "scored_links", None)
+        if links is None:
+            links = getattr(event, "links", None)
+        if not links:
+            return
         await self.event_broker.emit(
             PriorityInputSnapshotEvent(
                 correlation_id=str(event.node.get_id()),
