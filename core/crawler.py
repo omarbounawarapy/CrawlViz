@@ -282,6 +282,7 @@ class Crawler:
             embedding_backend=EMBEDDING_BACKEND,
             model_name=EMBEDDING_MODEL,
             store_base_dir=SPACE_STORE_DIR,
+            persist_space=bool(self.expansion_config.get("persist_space", False)),
             tracer=tracer,
             buffer_manager=buffer_manager,
         )

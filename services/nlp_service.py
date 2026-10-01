@@ -79,7 +79,11 @@ class NLPService:
             llm_model, style, num_descriptions, ...).
         embedding_backend: Name registered with `nlp.create_embedding_engine`.
         model_name: Passed through to the embedding backend.
-        store_base_dir: Root directory for persisted spaces.
+        store_base_dir: Root directory for persisted spaces; a space is keyed
+            by (blueprint_id, model_name).
+        persist_space: When False (default) the stored space is read-only after
+            its first bootstrap, so every run starts from the same state. When
+            True, the run writes its growth back.
         tracer: Optional TraceEmitter; when None, tracing is a no-op.
         buffer_manager: The live crawl's BufferManager (drained by
             SpaceUpdater). When provided, ``update_space()`` forwards
@@ -95,6 +99,7 @@ class NLPService:
         embedding_backend: str = "sentence_transformers",
         model_name: str = "all-MiniLM-L6-v2",
         store_base_dir: str = ".space_store",
+        persist_space: bool = False,
         tracer: "TraceEmitter | None" = None,
         buffer_manager: "BufferManager | None" = None,
     ):
@@ -106,11 +111,14 @@ class NLPService:
             model_name=model_name,
         )
 
-        self.store = SpaceStore(base_dir=store_base_dir)
+        self.store = SpaceStore(base_dir=store_base_dir, model_name=model_name)
         self.extractor = FeatureExtractor()
         self.llm_handler = llm_handler
         self.prompt_builder = ExpansionPromptBuilder()
         self.space: VectorSpace | None = None
+        self.persist_space = persist_space
+        # Version of the stored space this run began from (see start()).
+        self.start_version: int | None = None
         self.target_vec: np.ndarray | None = None
         self.expansion_config = expansion_config
         self.llm_type = expansion_config["llm_type"]
@@ -139,6 +147,11 @@ class NLPService:
             self.load_space()
         else:
             await self.build_space()
+        self.start_version = self.space.version
+        logger.info(
+            "Run starts from space v%s (%d vectors), persist_space=%s",
+            self.start_version, len(self.space), self.persist_space,
+        )
 
     async def build_space(self) -> None:
         """Bootstrap the space from the target topic.
@@ -264,6 +277,8 @@ class NLPService:
 
     def save_space(self) -> None:
         if self.space is None:
+            return
+        if not self.persist_space and self.store.exists(self.blueprint_id):
             return
         path = self.store.space_path(self.blueprint_id)
         self.space.save(path)

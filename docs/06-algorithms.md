@@ -368,3 +368,9 @@ The cascade limits LLM evaluation through thresholding, selective sampling, top-
 
 - **`max_nodes`** counts **successfully fetched pages**, not admitted nodes. `StoppingPipeline` increments on `PageFetchedEvent` and emits `StopCrawlEvent("MAX_NODES_REACHED")` when the count reaches `max_nodes`. A run therefore fetches exactly `max_nodes` pages with one request worker; with more workers, up to `max_concurrency - 1` requests already in flight may still complete. Failed fetches do not count.
 - **`max_depth`** is an **admission limit**, not a stop condition. Seeds are depth 0; `StoragePipeline` does not create nodes deeper than `max_depth`. The crawl ends naturally when the frontier drains (or on another stop condition). `MAX_DEPTH_REACHED` is no longer emitted.
+
+## 8. Run Isolation
+
+- **Vector space.** Stored under `.space_store/<blueprint_id>/<embedding model>/latest.{npz,json}` (vectors in `.npz`, keys, metadata, version and dim in `.json`; no pickle). A space is only valid for the model that produced it, so another model gets its own space. The first run bootstraps and saves it. After that the stored copy is read-only, so every run starts from the same `space.version` (logged at start and kept as `NLPService.start_version`). A blueprint opts in to write-back with `"expansion": {"persist_space": true}`.
+- **Existing stores.** Old `latest.pkl` spaces are not read; the next run rebuilds under the new layout.
+- **`items.db`.** Rows are keyed `(crawl_id, id)`, so a second crawl keeps its own rows. Tables created with the old `id`-only key are rebuilt on first use.

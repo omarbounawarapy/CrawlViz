@@ -1,5 +1,6 @@
 import logging
-import pickle
+import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,14 @@ from scipy.spatial.distance import cosine
 from sklearn.cluster import DBSCAN
 
 logger = logging.getLogger(__name__)
+
+
+def _json_default(o):
+    if isinstance(o, np.generic):
+        return o.item()
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    return str(o)
 
 
 @dataclass
@@ -178,30 +187,59 @@ class VectorSpace:
     # =========================================================
 
     def save(self, path: str) -> None:
-        """Pickle the entire space, including version metadata, to `path`."""
-        payload = {
+        """Write the space to ``<path>.npz`` (vectors) and ``<path>.json`` (keys,
+        metadata, version, dim). Each file is replaced atomically."""
+        base = Path(path)
+        base.parent.mkdir(parents=True, exist_ok=True)
+        matrix = (
+            np.vstack([e.vector for e in self.entries])
+            if self.entries
+            else np.zeros((0, self.dim), dtype=np.float32)
+        )
+        meta = {
             "version": self.version,
             "dim": self.dim,
-            "entries": self.entries,
+            "keys": [e.key for e in self.entries],
+            "metadata": [e.metadata for e in self.entries],
         }
-        Path(path).parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "wb") as f:
-            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+        npz_tmp = base.with_name(base.name + ".npz.tmp")
+        json_tmp = base.with_name(base.name + ".json.tmp")
+        with open(npz_tmp, "wb") as f:
+            np.savez(f, vectors=matrix)
+        with open(json_tmp, "w", encoding="utf-8") as f:
+            json.dump(meta, f, default=_json_default)
+        os.replace(npz_tmp, self._npz(base))
+        os.replace(json_tmp, self._json(base))
         logger.info("Saved %d vectors (v%d) to %s", len(self.entries), self.version, path)
 
     def load(self, path: str) -> None:
-        """Load a previously saved space from `path`, replacing current state."""
-        with open(path, "rb") as f:
-            payload = pickle.load(f)
-        self.version = payload["version"]
-        self.dim = payload["dim"]
-        self.entries = payload["entries"]
+        """Load a space written by `save`, replacing current state."""
+        base = Path(path)
+        with open(self._json(base), encoding="utf-8") as f:
+            meta = json.load(f)
+        with np.load(self._npz(base), allow_pickle=False) as data:
+            matrix = data["vectors"]
+        self.version = meta["version"]
+        self.dim = meta["dim"]
+        self.entries = [
+            VectorEntry(key=k, vector=matrix[i], metadata=m)
+            for i, (k, m) in enumerate(zip(meta["keys"], meta["metadata"]))
+        ]
         self._dirty = True  # force matrix rebuild
         logger.info("Loaded %d vectors (v%d) from %s", len(self.entries), self.version, path)
 
     @staticmethod
     def exists(path: str) -> bool:
-        return Path(path).exists()
+        base = Path(path)
+        return VectorSpace._npz(base).exists() and VectorSpace._json(base).exists()
+
+    @staticmethod
+    def _npz(base: Path) -> Path:
+        return base.with_name(base.name + ".npz")
+
+    @staticmethod
+    def _json(base: Path) -> Path:
+        return base.with_name(base.name + ".json")
 
     # =========================================================
     # INTROSPECTION

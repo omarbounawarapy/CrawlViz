@@ -17,9 +17,10 @@ logger = logging.getLogger(__name__)
 class ExportingPipeline:
     """Writes transformed items to SQLite, one table per (domain, blueprint).
 
-    Rows are idempotent: INSERT OR REPLACE keyed on the item's content
-    hash (report section 0.23.2 / 0.26.6), so re-running the same
-    transform on the same content is a no-op rather than a duplicate.
+    Rows are idempotent within a crawl: INSERT OR REPLACE keyed on
+    (crawl_id, content hash) (report section 0.23.2 / 0.26.6), so re-running
+    the same transform on the same content is a no-op rather than a duplicate,
+    while a later crawl keeps its own rows instead of overwriting this one's.
     """
 
     def __init__(
@@ -204,14 +205,36 @@ class ExportingPipeline:
         if table_name in self._initialized_tables:
             return
         fields = extraction_blueprint.get("fields", {})
-        columns = ["id TEXT PRIMARY KEY", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
+        columns = ["id TEXT", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
         for field_name, spec in fields.items():
             store_type = spec.get("export_type", "text")
             sql_type = self._map_type(store_type)
             columns.append(f"{field_name} {sql_type}")
+        columns.append("PRIMARY KEY (crawl_id, id)")
         sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
         self.cursor.execute(sql)
+        self._migrate_primary_key(table_name)
         self._initialized_tables.add(table_name)
+
+    def _migrate_primary_key(self, table_name: str) -> None:
+        """Tables created before runs were isolated key rows on `id` alone, so a
+        second crawl overwrote the first's rows. Rebuild them on (crawl_id, id)."""
+        info = self.cursor.execute(f"PRAGMA table_info({table_name})").fetchall()
+        pk = {row[1] for row in info if row[5]}
+        if pk == {"crawl_id", "id"}:
+            return
+        cols = ", ".join(row[1] for row in info)
+        defs = ", ".join(f"{row[1]} {row[2]}" for row in info)
+        legacy = f"{table_name}__legacy"
+        self.cursor.execute(f"ALTER TABLE {table_name} RENAME TO {legacy}")
+        self.cursor.execute(
+            f"CREATE TABLE {table_name} ({defs}, PRIMARY KEY (crawl_id, id))"
+        )
+        self.cursor.execute(
+            f"INSERT OR REPLACE INTO {table_name} ({cols}) SELECT {cols} FROM {legacy}"
+        )
+        self.cursor.execute(f"DROP TABLE {legacy}")
+        logger.info("Migrated %s to primary key (crawl_id, id)", table_name)
 
     def _cast(self, value, t: str, field: str):
         if value is None:
