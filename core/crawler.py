@@ -13,26 +13,15 @@ import asyncio
 import logging
 from datetime import datetime
 
+from config.runtime_config import RuntimeConfig, default_runtime_config
 from config import (
     DEBUG,
-    DEFAULT_PRIORITY_STRATEGY,
-    EMBEDDING_BACKEND,
-    EMBEDDING_MODEL,
-    EXPORT_BATCH_SIZE,
     EXPORT_PATH,
-    BUFFER_MAX_SIZE,
-    FLUSH_INTERVAL_SECONDS,
-    FLUSH_THRESHOLD,
-    HIGH_SCORE_LLM_FRACTION,
-    HIGH_SCORE_RANDOM_FRACTION,
     RESPECT_ROBOTS,
     USER_AGENT,
-    LOW_SCORE_SAMPLE_FRACTION,
     MAX_LLM_LINKS_PER_NODE,
     NLP_HIGH_PERCENTILE,
-    NLP_HIGH_SCORE_THRESHOLD,
     NLP_LOW_PERCENTILE,
-    NLP_LOW_SCORE_THRESHOLD,
     NLP_PERCENTILE_BUCKETING,
     PERCENTILE_MIN_LINKS,
     SPACE_STORE_DIR,
@@ -154,7 +143,8 @@ class Crawler:
     then ``await crawler.start()``.
     """
 
-    def __init__(self, template_file: str):
+    def __init__(self, template_file: str, config: RuntimeConfig | None = None):
+        self.config = config if config is not None else default_runtime_config()
         self.storage = Storage()
         self.template_file = template_file
         self.event_broker = EventBroker()
@@ -275,14 +265,14 @@ class Crawler:
         self.expansion_config, self.scoring_*).
         """
         logger.info("Starting NLP service for crawl %s", self.crawl_id)
-        buffer_manager = BufferManager(max_size=BUFFER_MAX_SIZE)
+        buffer_manager = BufferManager(max_size=self.config.embeddings.buffer_max_size)
         nlp_service = NLPService(
             blueprint_id=self.blueprint_id,
             target_topic=self.target_topic,
             llm_handler=traced_llm,
             expansion_config=self.expansion_config,
-            embedding_backend=EMBEDDING_BACKEND,
-            model_name=EMBEDDING_MODEL,
+            embedding_backend=self.config.embeddings.backend,
+            model_name=self.config.embeddings.model_name,
             store_base_dir=SPACE_STORE_DIR,
             persist_space=bool(self.expansion_config.get("persist_space", False)),
             tracer=tracer,
@@ -293,8 +283,8 @@ class Crawler:
         space_updater = SpaceUpdater(
             nlp_service=nlp_service,
             buffer_manager=buffer_manager,
-            flush_interval=FLUSH_INTERVAL_SECONDS,
-            flush_threshold=FLUSH_THRESHOLD,
+            flush_interval=self.config.embeddings.flush_interval_seconds,
+            flush_threshold=self.config.embeddings.flush_threshold,
         )
 
         scoring_service = ScoringService(
@@ -327,11 +317,11 @@ class Crawler:
             scoring_service,
             nlp_service,
             self.event_broker,
-            low_threshold=NLP_LOW_SCORE_THRESHOLD,
-            high_threshold=NLP_HIGH_SCORE_THRESHOLD,
-            high_score_llm_fraction=HIGH_SCORE_LLM_FRACTION,
-            low_score_sample_fraction=LOW_SCORE_SAMPLE_FRACTION,
-            high_score_random_fraction=HIGH_SCORE_RANDOM_FRACTION,
+            low_threshold=self.config.scoring_cascade.low_threshold,
+            high_threshold=self.config.scoring_cascade.high_threshold,
+            high_score_llm_fraction=self.config.scoring_cascade.high_score_llm_fraction,
+            low_score_sample_fraction=self.config.scoring_cascade.low_score_sample_fraction,
+            high_score_random_fraction=self.config.scoring_cascade.high_score_random_fraction,
             percentile_bucketing=NLP_PERCENTILE_BUCKETING,
             low_percentile=NLP_LOW_PERCENTILE,
             high_percentile=NLP_HIGH_PERCENTILE,
@@ -346,7 +336,7 @@ class Crawler:
             self.storage,
             self.event_broker,
             strategy_name=self.stop_conditions.get(
-                "priority_strategy", DEFAULT_PRIORITY_STRATEGY
+                "priority_strategy", self.config.scoring_cascade.default_priority_strategy
             ),
         )
         p["logging"] = LoggingPipeline(self.event_broker, self.crawl_id)
@@ -366,7 +356,7 @@ class Crawler:
             self.blueprint_id,
             blueprint,
             self.event_broker,
-            batch_size=EXPORT_BATCH_SIZE,
+            batch_size=self.config.export.batch_size,
         )
         p["canon"] = CanonicalizationPipeline(
             self.crawl_id, self.event_broker, export_path=EXPORT_PATH
@@ -517,7 +507,7 @@ class Crawler:
             snapshot,
             ui_gateway,
             priority_strategy_name=self.stop_conditions.get(
-                "priority_strategy", DEFAULT_PRIORITY_STRATEGY
+                "priority_strategy", self.config.scoring_cascade.default_priority_strategy
             ),
         )
         telemetry.register_handlers()

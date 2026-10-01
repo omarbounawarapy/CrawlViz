@@ -110,3 +110,17 @@ class TestTelemetryBridgeCoverage:
         ]
         # V1's UIEventTranslator subscribed to 7 event types.
         assert len(subscribed) >= 30
+
+
+class TestRuntimeConfigIsTheSource:
+    def test_overrides_reach_the_pipelines(self):
+        from config.runtime_config import RuntimeConfig
+
+        cfg = RuntimeConfig.model_validate(
+            {"scoring_cascade": {"low_threshold": 0.1, "high_threshold": 0.9},
+             "export": {"batch_size": 7}}
+        )
+        crawler = Crawler("wikiMD.json", config=cfg)
+        crawler._load_blueprint_config(FAKE_BLUEPRINT)
+        p = crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
+        assert (p["scoring"].low_threshold, p["scoring"].high_threshold) == (0.1, 0.9)

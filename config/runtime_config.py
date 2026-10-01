@@ -21,16 +21,12 @@ validation AND ui hints, `.model_json_schema()` generated rather than
 hand-copied) to the runtime tuning surface described in the engineering
 philosophy brief.
 
-Scope of this pass (see docs/V2_ARCHITECTURE.md roadmap #12 vs #18)
-----------------------------------------------------------------------
-This model is a validated MIRROR of config.py's current constants,
-exposed read-only via `GET /config/schema` and `GET /config`. It does
-NOT (yet) become the thing scoring_pipeline.py / priority_pipeline.py
-actually read their thresholds from -- doing that safely means touching
-every call site that currently does `from config import X`, which is a
-larger, separable change from "make the surface introspectable and
-validated" and is called out explicitly in the roadmap as follow-up
-work, not silently skipped.
+Scope
+-----
+`Crawler` takes a RuntimeConfig (defaulting to `default_runtime_config()`)
+and reads these thresholds and batching sizes from it, so a run can carry
+its own overrides. `GET /config` reports the defaults. The percentile
+bucketing constants and the politeness settings stay in config.py.
 """
 
 from __future__ import annotations
