@@ -168,3 +168,30 @@ class TestBalancedWeighting:
         ):
             bumped = balanced(node, FakeLink(nlp_vector={key: 1.0}, score=None), 1.0, 0.0)
             assert bumped > baseline, f"{key} did not contribute to balanced's score"
+
+
+class TestPipelinePriorityScale:
+    """PriorityPipeline ranks LLM-scored and trusted links on one scale."""
+
+    @staticmethod
+    def _pipe():
+        from pipelines import PriorityPipeline
+        return PriorityPipeline(storage=None, event_broker=None)
+
+    @staticmethod
+    def _link(score):
+        return FakeLink(nlp_vector={"target_similarity": 0.6}, score=score)
+
+    def test_zero_llm_score_takes_the_llm_branch(self):
+        pipe = self._pipe()
+        zero, trusted = self._link(0), self._link(None)
+        r0, rt = pipe._compute_priorities(FakeNode(depth=0), [zero, trusted])
+        # zero LLM score is scored (llm term 0, nlp weight 0.6), not treated as trusted (nlp weight 1)
+        assert r0["priority"] < rt["priority"]
+
+    def test_equal_signals_give_comparable_priorities(self):
+        pipe = self._pipe()
+        high_llm, trusted = self._link(60), self._link(None)
+        a, b = pipe._compute_priorities(FakeNode(depth=0), [high_llm, trusted])
+        assert 0.0 <= a["priority"] <= 1.0 and 0.0 <= b["priority"] <= 1.0
+        assert abs(a["priority"] - b["priority"]) < 0.5

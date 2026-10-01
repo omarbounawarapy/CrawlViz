@@ -193,19 +193,19 @@ The default keyword arguments defined by the individual strategy functions, such
 
 ### Priority Scale
 
-Because the live pipeline uses
+The pipeline normalizes the configured biases so they sum to $`1`$:
 
 ```math
 (\lambda_{\text{nlp}},\lambda_{\text{llm}})
 =
-(60,40)
+\left(\frac{60}{100},\frac{40}{100}\right)
 ```
 
-rather than normalized weights summing to $`1`$, priority values naturally fall on an approximate $`0`$–$`100`$ scale.
+An LLM-scored link (including a score of `0`) is ranked with $`(\lambda_{\text{nlp}},\lambda_{\text{llm}})`$. A trusted link, which skipped the LLM (`score is None`), is ranked with $`(1,0)`$. Both branches therefore produce values on the same approximate $`0`$–$`1`$ scale and compete in one frontier.
 
-This does not affect correctness. Priority is used only for **relative ordering within the frontier** and is never compared against an absolute threshold.
+**Policy:** the LLM score *demotes* a link but never *rejects* it. A low score lowers priority; it does not remove the link from the frontier. Pruning is done only by the filtering stage and the stop conditions.
 
-Consequently, a UI or log value such as `82` should not be interpreted as an $`82\%`$ probability or confidence score. It is simply a ranking key.
+Priority is still a ranking key, not a probability: a value of `0.82` is not an $`82\%`$ confidence.
 
 ---
 

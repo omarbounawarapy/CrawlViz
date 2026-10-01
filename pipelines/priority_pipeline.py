@@ -41,6 +41,13 @@ class PriorityPipeline(BasePipeline):
         self.storage = storage
         self.nlp_bias = nlp_bias
         self.llm_bias = llm_bias
+        # Normalized so an LLM-scored link and a trusted (NLP-only) link are
+        # ranked on the same 0-1 scale. See docs/06-algorithms.md "Priority Scale".
+        total = nlp_bias + llm_bias
+        if total <= 0:
+            raise ValueError("nlp_bias + llm_bias must be positive")
+        self._nlp_weight = nlp_bias / total
+        self._llm_weight = llm_bias / total
         # Strategy resolution fails fast at init, not at crawl time.
         self.strategy_name = strategy_name
         self.strategy: StrategyFn = get_strategy(strategy_name)
@@ -126,9 +133,9 @@ class PriorityPipeline(BasePipeline):
         """
         results = []
         for link in links:
-            llm = getattr(link, "score", None)
-            if llm:
-                priority = self.strategy(node, link, self.nlp_bias, self.llm_bias)
+            # An LLM score of 0 is a verdict, not a missing score.
+            if getattr(link, "score", None) is not None:
+                priority = self.strategy(node, link, self._nlp_weight, self._llm_weight)
             else:
                 priority = self.strategy(node, link, 1, 0)
 
