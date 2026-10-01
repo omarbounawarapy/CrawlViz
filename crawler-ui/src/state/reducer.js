@@ -1,4 +1,4 @@
-import { INITIAL_STATE, SNAPSHOT_INTERVAL, MAX_CANDIDATES, MAX_ERRORS } from "./initialState";
+import { INITIAL_STATE, SNAPSHOT_INTERVAL, MAX_CANDIDATES, MAX_ERRORS, MAX_CHECKPOINTS } from "./initialState";
 
 // ─────────────────────────────────────────────────────────────
 // Pure event application (NO metrics, NO derived state)
@@ -62,8 +62,8 @@ export function applyEvent(state, event) {
     case "NODE_ADDED": {
       if (!event.node?.node_id) return state;
 
-      const nodes = new Map(state.nodes);
-      const edges = new Set(state.edges);
+      const nodes = state._owned ? state.nodes : new Map(state.nodes);
+      const edges = state._owned ? state.edges : new Set(state.edges);
 
       const node = { ...event.node };
       const nodeId = node.node_id;
@@ -84,7 +84,7 @@ export function applyEvent(state, event) {
       const existing = state.nodes.get(event.node_id);
       if (!existing) return state;
 
-      const nodes = new Map(state.nodes);
+      const nodes = state._owned ? state.nodes : new Map(state.nodes);
 
       nodes.set(event.node_id, {
         ...existing,
@@ -101,7 +101,7 @@ export function applyEvent(state, event) {
     case "NODE_EXPANDED": {
       if (!event.parent_id) return state;
 
-      const nodes = new Map(state.nodes);
+      const nodes = state._owned ? state.nodes : new Map(state.nodes);
       const parent = nodes.get(event.parent_id);
 
       if (parent) {
@@ -169,9 +169,12 @@ export function applyEvent(state, event) {
         ts: event.ts,
       }));
 
-      let candidates = state.candidates.concat(additions);
+      let candidates;
+      if (state._owned) { candidates = state.candidates; for (const a of additions) candidates.push(a); }
+      else candidates = state.candidates.concat(additions);
       if (candidates.length > MAX_CANDIDATES) {
-        candidates = candidates.slice(candidates.length - MAX_CANDIDATES);
+        if (state._owned) candidates.splice(0, candidates.length - MAX_CANDIDATES);
+        else candidates = candidates.slice(candidates.length - MAX_CANDIDATES);
       }
       return { ...state, candidates };
     }
@@ -179,6 +182,7 @@ export function applyEvent(state, event) {
     case "NODE_SCORED_DETAIL": {
       if (!event.node_id) return state;
       const { type, ts, ...detail } = event; // eslint-disable-line no-unused-vars
+      if (state._owned) { state.nodeDetails[event.node_id] = detail; return { ...state }; }
       return { ...state, nodeDetails: { ...state.nodeDetails, [event.node_id]: detail } };
     }
 
@@ -190,8 +194,12 @@ export function applyEvent(state, event) {
         error_message: event.error_message,
         ts: event.ts,
       };
-      let errors = state.errors.concat([entry]);
-      if (errors.length > MAX_ERRORS) errors = errors.slice(errors.length - MAX_ERRORS);
+      let errors;
+      if (state._owned) { errors = state.errors; errors.push(entry); } else errors = state.errors.concat([entry]);
+      if (errors.length > MAX_ERRORS) {
+        if (state._owned) errors.splice(0, errors.length - MAX_ERRORS);
+        else errors = errors.slice(errors.length - MAX_ERRORS);
+      }
       return { ...state, errors };
     }
 
@@ -221,6 +229,36 @@ export function applyEvent(state, event) {
 // or before the target index and replays only the remainder.
 // ─────────────────────────────────────────────────────────────
 
+// A private, mutable working copy of the parts of state that grow with the crawl. A run of
+// events applied against it costs O(events), not O(events x pages): the usual one-copy-per-event
+// discipline is what makes a large crawl crawl. `_owned` tells applyEvent it may mutate in place.
+function ownedCopy(state) {
+  return {
+    ...state,
+    nodes: new Map(state.nodes),
+    edges: new Set(state.edges),
+    nodeDetails: { ...state.nodeDetails },
+    candidates: state.candidates.slice(),
+    errors: state.errors.slice(),
+    pipelineStats: { ...state.pipelineStats },
+    _owned: true,
+  };
+}
+
+// A frozen copy for storing (checkpoints) or returning: same shape, nothing shared with the working copy.
+function frozenCopy(working) {
+  const { _owned, ...rest } = working;
+  return {
+    ...rest,
+    nodes: new Map(working.nodes),
+    edges: new Set(working.edges),
+    nodeDetails: { ...working.nodeDetails },
+    candidates: working.candidates.slice(),
+    errors: working.errors.slice(),
+    pipelineStats: { ...working.pipelineStats },
+  };
+}
+
 function replayTo(state, index) {
   const clampedIndex = Math.max(-1, Math.min(index, state.eventLog.length - 1));
 
@@ -241,12 +279,13 @@ function replayTo(state, index) {
     }
   }
 
-  let result = base;
+  if (startIndex + 1 > clampedIndex) return base;
+  let result = ownedCopy(base);
   for (let i = startIndex + 1; i <= clampedIndex; i++) {
     result = applyEvent(result, state.eventLog[i]);
   }
-
-  return result;
+  const { _owned, ...done } = result;
+  return done;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -254,6 +293,24 @@ function replayTo(state, index) {
 // ─────────────────────────────────────────────────────────────
 
 export function crawlReducer(state, action) {
+
+  // ── Several live events applied in one render ──────────────
+  if (action.type === "__BATCH") {
+    let working = ownedCopy(state);
+    const entries = [];
+    let checkpoints = state._checkpoints;
+    const base = state.eventLog.length;
+    for (const ev of action.events) {
+      working = applyEvent(working, ev);
+      entries.push({ ...ev, _receivedAt: ev._receivedAt ?? Date.now() });
+      const length = base + entries.length;
+      if (length % SNAPSHOT_INTERVAL === 0) {
+        checkpoints = [...checkpoints, { index: length - 1, state: frozenCopy(working) }];
+        if (checkpoints.length > MAX_CHECKPOINTS) checkpoints = checkpoints.filter((_, i) => i % 2 === 1 || i === checkpoints.length - 1);
+      }
+    }
+    return { ...frozenCopy(working), eventLog: state.eventLog.concat(entries), _checkpoints: checkpoints, _replayIndex: null };
+  }
 
   // ── Replay forward up to index ─────────────────────────────
   if (action.type === "__REPLAY_SEEK") {
@@ -294,6 +351,9 @@ export function crawlReducer(state, action) {
   let _checkpoints = state._checkpoints;
   if (eventLog.length % SNAPSHOT_INTERVAL === 0) {
     _checkpoints = [...state._checkpoints, { index: eventLog.length - 1, state: next }];
+    // Each checkpoint pins a full copy of the node map. On a very long crawl, keep memory bounded
+    // by thinning to every other checkpoint; a seek then replays a few hundred more events at most.
+    if (_checkpoints.length > MAX_CHECKPOINTS) _checkpoints = _checkpoints.filter((_, i) => i % 2 === 1 || i === _checkpoints.length - 1);
   }
 
   return {

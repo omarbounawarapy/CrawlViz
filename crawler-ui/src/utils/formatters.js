@@ -4,17 +4,19 @@ export function formatTs(ts) {
   return d.toISOString().slice(11, 23);
 }
 
+const STATE_WORD = { CREATED: "found", FETCHED: "fetched", FILTERED: "filtered", SCORED: "scored", EXPANDED: "expanded", ERROR: "failed", FAILED: "failed" };
+
 export function eventSummary(ev) {
   switch (ev.type) {
     case "NODE_ADDED":         return ev.node?.url?.split("/").pop() || ev.node?.node_id;
-    case "NODE_STATE_CHANGED": return `${ev.node_id?.slice(0, 6)}… → ${ev.state}`;
-    case "NODE_EXPANDED":      return `${ev.parent_id?.slice(0, 6)}… → ${ev.children_count} children`;
+    case "NODE_STATE_CHANGED": return `${ev.node_id?.slice(0, 6)}… is now ${STATE_WORD[ev.state] ?? String(ev.state).toLowerCase()}`;
+    case "NODE_EXPANDED":      return `${ev.parent_id?.slice(0, 6)}… opened ${ev.children_count} ${ev.children_count === 1 ? "link" : "links"}`;
     case "SNAPSHOT_FULL":      return `${ev.nodes?.length ?? 0} nodes`;
     case "CRAWL_STOPPED":      return ev.reason;
     // V2 additions
     case "PIPELINE_EVENT":      return `${ev.stage} ${ev.phase}${ev.detail ? " — " + ev.detail : ""}`;
-    case "CANDIDATE_EVALUATED": return `${ev.candidates?.length ?? 0} link${ev.candidates?.length === 1 ? "" : "s"} ${ev.decision === "dropped" ? "dropped" : "trusted"}`;
-    case "NODE_SCORED_DETAIL":  return `${ev.node_id?.slice(0, 6)}… priority=${fmtNum(ev.priority)}`;
+    case "CANDIDATE_EVALUATED": return `${ev.candidates?.length ?? 0} link${ev.candidates?.length === 1 ? "" : "s"} ${ev.decision === "dropped" ? "skipped as off-topic" : "followed without the LLM"}`;
+    case "NODE_SCORED_DETAIL":  return `${ev.node_id?.slice(0, 6)}… priority ${fmtNum(ev.priority)}`;
     case "NODE_ERROR":          return `${ev.stage}: ${ev.error_message}`;
     default:                   return "";
   }

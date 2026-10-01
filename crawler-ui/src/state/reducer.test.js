@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { crawlReducer, applyEvent } from "./reducer";
-import { INITIAL_STATE } from "./initialState";
+import { INITIAL_STATE, SNAPSHOT_INTERVAL, MAX_CHECKPOINTS } from "./initialState";
 
 function nodeAdded(id, parentId, ts) {
   return {
@@ -99,5 +99,54 @@ describe("crawlReducer — replay correctness (regression test for §A.1.8 perf 
     const exited = crawlReducer(state, { type: "__REPLAY_EXIT" });
     expect(exited.nodes.size).toBe(state.nodes.size);
     expect(exited._replayIndex).toBeNull();
+  });
+});
+
+// Batched dispatch: the path a large crawl takes.
+const add = (id, parent = null) => ({ type: "NODE_ADDED", node: { node_id: id, parent_id: parent, state: "CREATED" } });
+
+describe("crawlReducer batching", () => {
+  it("applies a batch of live events as if they were dispatched one by one", () => {
+    const events = [add("a"), add("b", "a"), add("c", "a")];
+    const one = events.reduce(crawlReducer, INITIAL_STATE);
+    const batch = crawlReducer(INITIAL_STATE, { type: "__BATCH", events });
+    expect([...batch.nodes.keys()]).toEqual([...one.nodes.keys()]);
+    expect([...batch.edges]).toEqual([...one.edges]);
+    expect(batch.eventLog.length).toBe(3);
+  });
+
+  it("does not mutate the state it was given, and matches one-by-one dispatch on mixed events", () => {
+    const events = [
+      add("a"), add("b", "a"),
+      { type: "NODE_STATE_CHANGED", node_id: "b", state: "SCORED" },
+      { type: "NODE_SCORED_DETAIL", node_id: "b", nlp_score: 0.5, priority: 3 },
+      { type: "CANDIDATE_EVALUATED", parent_id: "a", decision: "dropped", candidates: [{ url: "/x", nlp_score: 0.1 }] },
+      { type: "NODE_ERROR", node_id: "b", stage: "fetch", error_type: "E", error_message: "boom" },
+    ];
+    const start = [add("seed")].reduce(crawlReducer, INITIAL_STATE);
+    const snapshot = { nodes: [...start.nodes.keys()], candidates: start.candidates.length, details: Object.keys(start.nodeDetails).length, errors: start.errors.length };
+    const one = events.reduce(crawlReducer, start);
+    const batch = crawlReducer(start, { type: "__BATCH", events });
+    expect([...start.nodes.keys()]).toEqual(snapshot.nodes);
+    expect(start.candidates.length).toBe(snapshot.candidates);
+    expect(Object.keys(start.nodeDetails).length).toBe(snapshot.details);
+    expect(start.errors.length).toBe(snapshot.errors);
+    expect(batch.nodes.get("b").state).toBe("SCORED");
+    expect(batch.nodeDetails.b).toEqual(one.nodeDetails.b);
+    expect(batch.candidates).toEqual(one.candidates);
+    expect(batch.errors).toEqual(one.errors);
+    expect(batch._owned).toBeUndefined();
+  });
+
+  it("keeps the checkpoint list bounded on a very long crawl, and seeking still lands on the right state", () => {
+    const total = SNAPSHOT_INTERVAL * (MAX_CHECKPOINTS + 40);
+    const events = Array.from({ length: total }, (_, i) => add(`n${i}`, i ? `n${i - 1}` : null));
+    let state = INITIAL_STATE;
+    for (let i = 0; i < events.length; i += 500) state = crawlReducer(state, { type: "__BATCH", events: events.slice(i, i + 500) });
+    expect(state._checkpoints.length).toBeLessThanOrEqual(MAX_CHECKPOINTS);
+    const target = Math.floor(total / 2);
+    const seeked = crawlReducer(state, { type: "__REPLAY_SEEK", index: target });
+    expect(seeked.nodes.size).toBe(target + 1);
+    expect(seeked._replayIndex).toBe(target);
   });
 });

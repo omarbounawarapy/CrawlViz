@@ -6,6 +6,9 @@
 // the low thousands a real crawl produces.
 export const SNAPSHOT_INTERVAL = 200;
 
+// Upper bound on stored checkpoints; past it the reducer thins them (see reducer.js).
+export const MAX_CHECKPOINTS = 120;
+
 // Bounds mirroring the backend's own (see ui_bridge/crawl_state_snapshot.py
 // _MAX_CANDIDATES / _MAX_ERRORS) so a long-running crawl can't grow either
 // list without limit client-side either.

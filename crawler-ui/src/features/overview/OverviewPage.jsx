@@ -8,6 +8,8 @@ const theme = getTheme();
 const S = createComponentStyles(theme);
 
 const FUNNEL_STAGES = ["CREATED", "FETCHED", "FILTERED", "SCORED", "EXPANDED"];
+const FUNNEL_LABEL = { CREATED: "Found", FETCHED: "Fetched", FILTERED: "Filtered", SCORED: "Scored", EXPANDED: "Expanded" };
+const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", IDLE: "Idle", CONNECTING: "Waiting for backend" };
 
 function FunnelBar({ label, count, max, color }) {
   const pct = max > 0 ? Math.max(2, (count / max) * 100) : 0;
@@ -70,7 +72,7 @@ export default function OverviewPage({ state, metrics }) {
           {[
             ["Pages discovered", state.nodes.size, `${state.edges.size} links followed`],
             ["Throughput", `${pagesPerSec.toFixed(2)} pages/s`, null],
-            ["Elapsed", formatDuration(elapsed * 1000), `${state.status}${state.stop_reason ? ` (${String(state.stop_reason).toLowerCase().replace(/_/g, " ")})` : ""}`],
+            ["Elapsed", formatDuration(elapsed * 1000), `${STATUS_WORD[state.status] ?? state.status}${state.stop_reason ? ` (${String(state.stop_reason).toLowerCase().replace(/_/g, " ")})` : ""}`],
             ["Links skipped", metrics.candidatesDropped, `${totalCandidates} evaluated, ${(dropRate * 100).toFixed(0)}% skipped`],
             ["Errors", state.errors.length, "across all pipeline stages"],
             ["Slowest stage", bottleneckStage ? PIPELINE_STAGE_LABELS[bottleneckStage.stage] : "Not enough data yet", bottleneckStage ? `average ${formatDuration(bottleneckStage.avg)}` : null],
@@ -87,18 +89,18 @@ export default function OverviewPage({ state, metrics }) {
 
         {/* Cascade funnel */}
         <div style={{ marginTop: 24 }}>
-          <div style={S.sectionCardTitle}>Traversal funnel — how far nodes got</div>
+          <div style={S.sectionCardTitle}>How far pages got</div>
           {FUNNEL_STAGES.map((stage, i) => (
             <FunnelBar
               key={stage}
-              label={stage}
+              label={FUNNEL_LABEL[stage]}
               count={cumulative[i]}
               max={maxFunnel}
               color={theme.colors.state[stage]}
             />
           ))}
           <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, marginTop: 6 }}>
-            Each bar counts nodes that reached at least that stage (a SCORED node has already passed FETCHED and FILTERED).
+            Each bar counts nodes that reached at least that stage (a scored page has already been fetched and filtered).
           </div>
         </div>
 

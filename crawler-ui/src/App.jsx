@@ -4,6 +4,7 @@ import { INITIAL_STATE } from "./state/initialState";
 import { crawlReducer } from "./state/reducer";
 import { useCrawlStream } from "./hooks/useCrawlStream";
 import { useDemoMode } from "./hooks/useDemoMode";
+import { useBatchedDispatch } from "./hooks/useBatchedDispatch";
 import { useRoute } from "./hooks/useRoute";
 import { stopCrawl } from "./api/client";
 import { getTheme } from "./theme";
@@ -83,8 +84,10 @@ export default function App() {
 
   const replayIndex = state._replayIndex ?? null;
 
-  useCrawlStream(demoMode ? () => {} : dispatch, wsUrl);
-  useDemoMode(dispatch, demoMode);
+  // Live events are applied once per frame; replay controls dispatch directly.
+  const liveDispatch = useBatchedDispatch(dispatch);
+  useCrawlStream(demoMode ? () => {} : liveDispatch, wsUrl);
+  useDemoMode(liveDispatch, demoMode);
 
   const handleSeek = useCallback((index) => dispatch({ type: "__REPLAY_SEEK", index }), []);
   const handleExitReplay = useCallback(() => dispatch({ type: "__REPLAY_EXIT" }), []);
@@ -156,8 +159,17 @@ export default function App() {
                 onBackgroundClick={handleClearSelection}
                 selectedNodeId={selectedNodeId}
               />
-              {state.nodes.size === 0 && (
+              {state.nodes.size === 0 && replayIndex == null && (
                 <EmptyCanvas onRun={() => navigate("/run")} onDemo={() => setDemoMode(true)} />
+              )}
+              {state.nodes.size === 0 && replayIndex != null && (
+                <p style={{
+                  position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+                  pointerEvents: "none", fontFamily: theme.typography.fontDisplay, fontSize: 17,
+                  color: theme.colors.text.secondary, margin: 0,
+                }}>
+                  Nothing found yet at this point. Drag the scrubber forward.
+                </p>
               )}
             </div>
 

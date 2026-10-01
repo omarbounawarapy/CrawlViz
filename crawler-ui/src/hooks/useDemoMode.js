@@ -40,12 +40,51 @@ const CANDIDATES = [
   ["Wormhole",            "Star_Trek",            "dropped",        0.05],
 ];
 
+// Stress-test sample: `?demo=N` grows a larger seeded tree (N pages, capped at 3000) so the
+// layout can be checked at crawl-like sizes. Branching is uneven on purpose: a few hubs,
+// many leaves, scores that fall off with depth.
+export function demoSize() {
+  try {
+    const v = new URLSearchParams(window.location.search).get("demo");
+    const n = Number.parseInt(v ?? "", 10);
+    return Number.isFinite(n) && n > TREE.length ? Math.min(n, 3000) : 0;
+  } catch { return 0; }
+}
+
+function bigTree(n) {
+  let seed = 12489193;
+  const rand = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const rows = [["Black_hole", null, "EXPANDED", 92, 0.81]];
+  const depth = new Map([["Black_hole", 0]]);
+  const weight = [1];
+  for (let i = 1; i < n; i++) {
+    // Preferential attachment, damped by depth: hubs grow, but the tree stays bounded.
+    let total = 0;
+    for (let k = 0; k < rows.length; k++) total += weight[k];
+    let r = rand() * total, parent = 0;
+    for (let k = 0; k < rows.length; k++) { r -= weight[k]; if (r <= 0) { parent = k; break; } }
+    const d = depth.get(rows[parent][0]) + 1;
+    const slug = `Topic_${i}`;
+    const score = Math.max(8, Math.round(92 - d * 11 - rand() * 18));
+    const state = STAGES[Math.min(4, Math.floor(rand() * (6 - d)))] ?? "CREATED";
+    rows.push([slug, rows[parent][0], state, rand() < 0.75 ? score : null, Math.max(0.05, score / 110)]);
+    depth.set(slug, d);
+    weight.push(d >= 6 ? 0.05 : 1 + (weight[parent] > 1 ? 0.6 : 0) + (d < 3 ? 0.8 : 0));
+    weight[parent] += 0.5;
+  }
+  return rows;
+}
+
 const STAGES = ["CREATED", "FETCHED", "FILTERED", "SCORED", "EXPANDED"];
 const url = (slug) => `/wiki/${slug}`;
 
 export function useDemoMode(dispatch, enabled) {
   useEffect(() => {
     if (!enabled) return;
+    const big = demoSize();
+    const TREE_ROWS = big ? bigTree(big) : TREE;
+    // The small sample is paced so growth can be watched, but briskly: about four seconds end to end.
+    const STEP = big ? Math.max(12, Math.round(9000 / big)) : 200;
 
     const timers = [];
     const at = (ms, fn) => timers.push(setTimeout(fn, ms));
@@ -61,21 +100,21 @@ export function useDemoMode(dispatch, enabled) {
       },
     }));
 
-    TREE.forEach(([slug, parent, finalState, llm, nlp], i) => {
-      const t0 = 400 + i * 450;
+    TREE_ROWS.forEach(([slug, parent, finalState, llm, nlp], i) => {
+      const t0 = 400 + i * STEP;
       const id = url(slug);
 
       at(t0, () => emit({
         type: "NODE_ADDED",
         node: {
-          node_id: id, url: id, depth: parent ? 1 + TREE.findIndex(n => n[0] === parent) % 3 : 0,
+          node_id: id, url: id, depth: parent ? 1 + (i % 3) : 0,
           priority: llm != null ? llm * 1.6 : nlp * 60, llm_score: llm,
           parent_id: parent ? url(parent) : null, state: "CREATED", created_at: now(),
         },
       }));
 
       STAGES.slice(1, STAGES.indexOf(finalState) + 1).forEach((state, j) => {
-        at(t0 + (j + 1) * 500, () => emit({
+        at(t0 + (j + 1) * (big ? STEP * 2 : 220), () => emit({
           type: "NODE_STATE_CHANGED", node_id: id, state,
           links_accepted: state === "FILTERED" ? 4 + (i % 7) : undefined,
           links_rejected: state === "FILTERED" ? 1 + (i % 4) : undefined,
@@ -83,7 +122,7 @@ export function useDemoMode(dispatch, enabled) {
       });
 
       if (parent) {
-        at(t0 + 700, () => emit({
+        at(t0 + (big ? STEP * 3 : 300), () => emit({
           type: "NODE_SCORED_DETAIL", node_id: id, nlp_score: nlp, llm_score: llm,
           priority: llm != null ? llm * 1.6 : nlp * 60, priority_strategy: "PATHFINDING",
           nlp_breakdown: {
@@ -94,8 +133,8 @@ export function useDemoMode(dispatch, enabled) {
       }
     });
 
-    CANDIDATES.forEach(([parent, link, decision, nlp], i) => {
-      at(900 + i * 700, () => emit({
+    (big ? [] : CANDIDATES).forEach(([parent, link, decision, nlp], i) => {
+      at(600 + i * 300, () => emit({
         type: "CANDIDATE_EVALUATED", parent_id: url(parent), decision,
         candidates: [{ url: `/wiki/${link}`, nlp_score: nlp }],
       }));

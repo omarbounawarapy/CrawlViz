@@ -34,7 +34,7 @@ input[type=checkbox] { accent-color: var(--ink); }
 /* Narrow screens: the crawl is a desktop task, but the frame must not clip
    or hide the controls an operator needs (status, Stop, Measurements). */
 .shell-nav { overflow-x: auto; scrollbar-width: none; }
-g[role=button]:focus-visible { outline: none; }
+g[role=button]:focus, g[role=button]:focus-visible { outline: none; }
 g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-width: 3px; }
 @media (max-width: 900px) {
   .shell-header { flex-wrap: wrap; height: auto !important; gap: 0 12px !important; padding: 0 12px !important; }
@@ -46,6 +46,7 @@ g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-w
   .tl-bar { gap: 12px !important; padding: 0 12px !important; }
   .tl-mode { width: auto !important; }
   .tl-count { width: auto !important; white-space: nowrap; }
+  .tl-transport > button:not(:nth-child(3)) { display: none; }
   button, select, summary, a[href] { min-height: 44px; }
   .shell-nav button { min-height: 44px; }
   input[type=checkbox] { width: 20px; height: 20px; }
@@ -53,7 +54,7 @@ g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-w
   .measures-drawer { position: absolute; top: 0; right: 0; bottom: 0; z-index: 6; width: min(460px, 100%) !important; box-shadow: -8px 0 24px rgba(15,27,45,0.12); }
 }
 @media (max-width: 900px) {
-  .page-inner { padding: 24px 16px 48px !important; gap: 0 !important; }
+  .page-inner { padding: 24px 16px 48px !important; display: block !important; width: auto !important; }
   .page-aside { display: none; }
   .bp-root { flex-direction: column; }
   .bp-sidebar { width: auto !important; max-height: 168px; border-right: none !important; border-bottom: 1px solid #d3d9e0; }
@@ -80,3 +81,8 @@ details[open] > summary.disclosure::before { transform: rotate(45deg); }
 @media (max-width: 900px) {
   input:not([type=checkbox]):not([type=range]), textarea { min-height: 44px; }
 }
+
+/* Graph rules are screen-pixel rules: the ring that says how relevant a page is, a page's outline and
+   the selection ring keep their weight at every zoom instead of thinning out with the plate. Text is
+   placed and sized in screen space by the annotation pass (GraphView), so it needs no zoom CSS. */
+svg .relevance-ring, svg .body, svg .selection-ring { vector-effect: non-scaling-stroke; }
