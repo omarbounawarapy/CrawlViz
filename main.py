@@ -22,6 +22,8 @@ app = FastAPI(title="CrawlViz Control API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
+    # Vite falls back to 5174, 5175... when 5173 is taken; any local dev port is fine.
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_methods=["*"],
     allow_headers=["*"],
 )
