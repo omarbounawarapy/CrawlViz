@@ -1,6 +1,6 @@
 import re
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote, urldefrag, urljoin, urlparse, urlunparse
 
 from lxml import etree, html
 
@@ -28,6 +28,35 @@ def apply_selector(context: Any, selector: str) -> list:
 
 def build_url(base: str, path: str) -> str:
     return urljoin(base, path)
+
+
+_UNRESERVED = frozenset("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+_PERCENT = re.compile(r"%([0-9A-Fa-f]{2})")
+
+
+def _normalize_percent(text: str) -> str:
+    """Decode escapes of unreserved characters, upper-case the rest, escape raw non-ASCII."""
+
+    def fix(m: re.Match) -> str:
+        char = chr(int(m.group(1), 16))
+        return char if char in _UNRESERVED else "%" + m.group(1).upper()
+
+    return quote(_PERCENT.sub(fix, text), safe="/:@!$&'()*+,;=~%?-._")
+
+
+def normalize_url(url: str) -> str:
+    """Canonical form of a (possibly relative) URL used as node identity.
+
+    Drops the fragment, strips a trailing slash from the path (the root ``/``
+    stays), and normalizes percent-encoding, so ``/wiki/X``, ``/wiki/X/`` and
+    ``/wiki/X#Y`` are one page.
+    """
+    url, _ = urldefrag(url.strip())
+    parts = urlparse(url)
+    path = _normalize_percent(parts.path)
+    if len(path) > 1 and path.endswith("/"):
+        path = path.rstrip("/") or "/"
+    return urlunparse(parts._replace(path=path, query=_normalize_percent(parts.query)))
 
 
 def is_absolute_url(url: str) -> bool:

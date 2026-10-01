@@ -2,6 +2,8 @@ import json
 
 import numpy as np
 
+from utils.html_utils import normalize_url
+
 
 class Link:
     """A single outgoing link extracted from a page, with its anchor text
@@ -13,13 +15,13 @@ class Link:
     response (see services/results_mapper.py).
 
     Args:
-        url: The link's resolved target URL.
+        url: The link's target URL, normalized (no fragment, no trailing slash).
         anchor: The link's visible anchor text.
         context: Nearby page text used as scoring context.
     """
 
     def __init__(self, url: str, anchor: str, context: str):
-        self.url = url
+        self.url = normalize_url(url)
         self.anchor = anchor
         self.context = context
 
