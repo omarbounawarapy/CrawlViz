@@ -20,6 +20,7 @@ from events import (
 )
 
 from .base_pipeline import BasePipeline
+from .frontier_queue import FrontierQueue
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ class ScoringPipeline(BasePipeline):
         self.high_score_llm_fraction = high_score_llm_fraction
         self.low_score_sample_fraction = low_score_sample_fraction
         self.high_score_random_fraction = high_score_random_fraction
-        self.queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
+        self.queue: asyncio.PriorityQueue = FrontierQueue(maxsize=max_queue_size)
 
         self.handlers = {
             NodeAddedEvent: self._on_node_added,

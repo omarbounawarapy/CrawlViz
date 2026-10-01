@@ -13,6 +13,7 @@ from events import (
 from infrastructure import NetworkClient
 
 from .base_pipeline import SHUTDOWN
+from .frontier_queue import FrontierQueue
 
 
 class RequestsPipeline:
@@ -32,7 +33,7 @@ class RequestsPipeline:
     def __init__(self, event_broker, max_concurrency: int = 4, max_queue_size: int = 0):
         self.event_broker = event_broker
 
-        self.queue = asyncio.PriorityQueue(maxsize=max_queue_size)
+        self.queue = FrontierQueue(maxsize=max_queue_size)
         self.network_client = NetworkClient()
 
         self.max_concurrency = max_concurrency

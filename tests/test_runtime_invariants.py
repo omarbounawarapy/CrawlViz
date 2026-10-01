@@ -250,11 +250,6 @@ class Crawl:
 # 1. FRONTIER ORDER
 # =========================================================
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="asyncio.PriorityQueue is a min-heap and Node.__lt__ compares priority "
-    "ascending, so the frontier pops the LOWEST priority first.",
-)
 async def test_higher_priority_node_is_fetched_first():
     site = SyntheticSite({})
     requests = RequestsPipeline(EventBroker(), max_concurrency=1)
