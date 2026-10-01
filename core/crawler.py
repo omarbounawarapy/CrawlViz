@@ -11,6 +11,7 @@ outside (the manual STOP endpoint in ``routes.run``).
 
 import asyncio
 import logging
+import random
 from datetime import datetime
 
 from config.paths import RuntimePaths, default_runtime_paths
@@ -148,8 +149,14 @@ class Crawler:
         config: RuntimeConfig | None = None,
         paths: RuntimePaths | None = None,
         key_manager: KeyManager | None = None,
+        seed: int | None = None,
+        fetch_concurrency: int = 4,
+        scoring_concurrency: int = 1,
     ):
         self.config = config if config is not None else default_runtime_config()
+        self.seed = seed
+        self.fetch_concurrency = fetch_concurrency
+        self.scoring_concurrency = scoring_concurrency
         self.paths = paths if paths is not None else default_runtime_paths()
         self.storage = Storage()
         self.template_file = template_file
@@ -308,6 +315,11 @@ class Crawler:
 
         return nlp_service, space_updater, scoring_service
 
+    def _rng(self, name: str) -> random.Random:
+        """One independent stream per consumer, so adding a draw in one
+        pipeline cannot shift another's sequence. Unseeded when no seed."""
+        return random.Random(f"{self.seed}:{name}" if self.seed is not None else None)
+
     def _build_pipelines(
         self, blueprint: dict, nlp_service: NLPService, scoring_service: ScoringService
     ) -> dict:
@@ -322,7 +334,11 @@ class Crawler:
 
         p["processing"] = ProcessingPipeline(self.event_broker, self.extraction_blueprint)
         p["requests"] = RequestsPipeline(
-            self.event_broker, user_agent=USER_AGENT, respect_robots=RESPECT_ROBOTS
+            self.event_broker,
+            max_concurrency=self.fetch_concurrency,
+            user_agent=USER_AGENT,
+            respect_robots=RESPECT_ROBOTS,
+            rng=self._rng("requests"),
         )
         p["scoring"] = ScoringPipeline(
             scoring_service,
@@ -338,6 +354,8 @@ class Crawler:
             high_percentile=NLP_HIGH_PERCENTILE,
             percentile_min_links=PERCENTILE_MIN_LINKS,
             max_llm_links=MAX_LLM_LINKS_PER_NODE,
+            max_concurrency=self.scoring_concurrency,
+            rng=self._rng("scoring"),
         )
         p["storage"] = StoragePipeline(
             self.storage, self.event_broker, max_depth=self.max_depth

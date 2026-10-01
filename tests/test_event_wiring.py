@@ -137,3 +137,27 @@ class TestFilesystemRootsAreInjectable:
         assert (tmp_path / "logs").is_dir()
         assert (tmp_path / "debug").is_dir()
         assert (tmp_path / "export").is_dir()
+
+
+class TestSeededDeterminism:
+    def test_same_seed_same_bucketing_and_jitter(self, tmp_path):
+        def build(seed):
+            c = Crawler("wikiMD.json", paths=RuntimePaths.under(tmp_path), seed=seed,
+                        fetch_concurrency=1, scoring_concurrency=1)
+            c._load_blueprint_config(FAKE_BLUEPRINT)
+            return c._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
+
+        class L:
+            def __init__(self, s):
+                self._nlp_score = s
+
+        def run(p):
+            links = [L(i / 100) for i in range(100)]
+            sampled, skip, dropped = p["scoring"].bucket_links(links)
+            return ([l._nlp_score for l in sampled], [p["requests"].rng.random() for _ in range(5)])
+
+        a, b, c = run(build(7)), run(build(7)), run(build(8))
+        assert a == b
+        assert a != c
+        p = build(7)
+        assert p["requests"].max_concurrency == 1 and p["scoring"].max_concurrency == 1

@@ -52,8 +52,10 @@ class RequestsPipeline:
         min_delay: float = 1,
         user_agent: str = "CrawlViz/1.0",
         respect_robots: bool = False,
+        rng: random.Random | None = None,
     ):
         self.event_broker = event_broker
+        self.rng = rng if rng is not None else random.Random()
 
         self.queue = FrontierQueue(maxsize=max_queue_size)
         self.network_client: Fetcher = fetcher if fetcher is not None else NetworkClient()
@@ -163,7 +165,7 @@ class RequestsPipeline:
                 elapsed = now - self.last_request_time
                 delay = max(self.min_delay - elapsed, 0)
                 delay += self.backoff_delay
-                delay += random.uniform(0, 0.2)
+                delay += self.rng.uniform(0, 0.2)
 
                 if delay > 0:
                     await asyncio.sleep(delay)

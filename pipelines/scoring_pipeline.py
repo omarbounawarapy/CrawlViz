@@ -2,7 +2,7 @@ import asyncio
 
 import numpy as np
 import logging
-from random import sample
+import random
 
 from events import (
     EmptyScoreResultsEvent,
@@ -66,8 +66,10 @@ class ScoringPipeline(BasePipeline):
         high_percentile=75.0,
         percentile_min_links=10,
         max_llm_links=None,
+        rng: random.Random | None = None,
     ):
         super().__init__(max_concurrency=max_concurrency)
+        self.rng = rng if rng is not None else random.Random()
         self.percentile_bucketing = percentile_bucketing
         self.low_percentile = low_percentile
         self.high_percentile = high_percentile
@@ -265,14 +267,14 @@ class ScoringPipeline(BasePipeline):
         # Low bucket: keep a random sample, drop the rest.
         sampled = []
         dropped = []
-        low_indices = set(sample(range(len(low)), low_budget)) if low_budget else set()
+        low_indices = set(self.rng.sample(range(len(low)), low_budget)) if low_budget else set()
         for i, link in enumerate(low):
             (sampled if i in low_indices else dropped).append(link)
 
         # High bucket: split into a random slice and a top-ranked slice;
         # whatever's left over skips the LLM call entirely.
         high_random_indices = (
-            set(sample(range(len(high)), min(high_random_budget, len(high))))
+            set(self.rng.sample(range(len(high)), min(high_random_budget, len(high))))
             if high_random_budget
             else set()
         )

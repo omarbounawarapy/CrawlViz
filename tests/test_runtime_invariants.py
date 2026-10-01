@@ -12,6 +12,7 @@ flag turns the fix into a visible XPASS that forces the marker's removal.
 """
 import asyncio
 import logging
+import random
 import types
 
 import pytest
@@ -134,7 +135,7 @@ class Recorder:
 # HARNESS
 # =========================================================
 
-def make_scoring(broker, nlp, llm) -> ScoringPipeline:
+def make_scoring(broker, nlp, llm, rng=None) -> ScoringPipeline:
     """ScoringPipeline built with the same arguments core.Crawler passes."""
     return ScoringPipeline(
         llm,
@@ -150,6 +151,7 @@ def make_scoring(broker, nlp, llm) -> ScoringPipeline:
         high_percentile=NLP_HIGH_PERCENTILE,
         percentile_min_links=PERCENTILE_MIN_LINKS,
         max_llm_links=MAX_LLM_LINKS_PER_NODE,
+        rng=rng,
     )
 
 
@@ -184,7 +186,7 @@ class Crawl:
     without the LLM/embedding services, exporter, loggers or UI layer.
     """
 
-    def __init__(self, site: SyntheticSite, nlp, llm):
+    def __init__(self, site: SyntheticSite, nlp, llm, seed=None):
         self.broker = EventBroker()
         self.storage = Storage()
         self.domain = Domain("synthetic", BASE_URL, ".//a")
@@ -193,8 +195,10 @@ class Crawl:
         self.recorder = Recorder()
 
         b, s = self.broker, self.storage
-        self.requests = RequestsPipeline(b, max_concurrency=1, fetcher=site, min_delay=0)
-        self.scoring = make_scoring(b, nlp, llm)
+        self.requests = RequestsPipeline(b, max_concurrency=1, fetcher=site, min_delay=0,
+            rng=random.Random(f"{seed}:requests"),
+        )
+        self.scoring = make_scoring(b, nlp, llm, rng=random.Random(f"{seed}:scoring"))
         self.retry = RetryProcessor(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
         self.pipelines = [
             self.requests,
@@ -530,3 +534,27 @@ async def test_scoring_runs_under_a_trace_bound_to_the_node():
     await stop_all(tasks)
 
     assert seen and seen[0][0] and seen[0][1] == str(node.get_id())
+
+
+# =========================================================
+# 7. SEEDED RUNS ARE REPRODUCIBLE (P3.2)
+# =========================================================
+
+async def _visit_order(seed: int) -> list[str]:
+    tree = {"root": [f"a{i}" for i in range(12)]}
+    tree.update({f"a{i}": [f"b{i}{j}" for j in range(4)] for i in range(12)})
+    site = SyntheticSite(tree)
+    crawl = Crawl(site, FixedRelevance(0.5), FixedLlm(), seed=seed)
+    await crawl.start()
+    await crawl.add_seed("root")
+    try:
+        await wait_until(lambda: len(site.fetched) >= 20, timeout=5.0)
+    finally:
+        await crawl.stop()
+    return site.fetched[:20]
+
+
+async def test_same_seed_gives_identical_visit_order():
+    first, second = await _visit_order(3), await _visit_order(3)
+    assert len(first) == 20
+    assert first == second
