@@ -106,7 +106,7 @@ class FilteringPipeline(BasePipeline):
         rejected_count = 0
 
         for link in links:
-            if self.storage.link_seen(link.url):
+            if self.storage.link_seen(link.url, node.get_domain_base_url()):
                 rejected_count += 1
                 continue
 

@@ -151,7 +151,7 @@ class StoragePipeline(BasePipeline):
             )
 
         # Store links
-        self.storage.add_links(event.links)
+        self.storage.add_links(event.links, node.get_domain_base_url())
 
         await self.event_broker.emit(
             StorageLinkStoredEvent(

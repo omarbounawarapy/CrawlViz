@@ -2,6 +2,7 @@ from typing import Any
 
 from .domain import Domain
 from .node import Node
+from utils.html_utils import build_url, normalize_url
 
 
 class Storage:
@@ -33,7 +34,7 @@ class Storage:
 
     def add_node(self, node: Node) -> None:
         self.nodes.append(node)
-        self.found_links.add(node.get_link())
+        self.found_links.add(node.get_full_url())
         self.link_to_id[node.get_link()] = node.get_id()
 
     def add_item(self, item: Any, item_hash: str, parent: Node) -> None:
@@ -43,16 +44,17 @@ class Storage:
     def node_id_from_link(self, link: str) -> int:
         return self.link_to_id[link]
 
-    def add_links(self, links: list[Any]) -> None:
+    def add_links(self, links: list[Any], base_url: str) -> None:
+        # Keyed by absolute URL, so '/wiki/X' and 'https://host/wiki/X' are one page.
         for link in links:
-            self.found_links.add(link.url)
+            self.found_links.add(build_url(base_url, link.url))
 
     def next_id(self) -> int:
         self.current_id += 1
         return self.current_id - 1
 
-    def link_seen(self, link: str) -> bool:
-        return link in self.found_links
+    def link_seen(self, link: str, base_url: str) -> bool:
+        return normalize_url(build_url(base_url, link)) in self.found_links
 
     def item_seen(self, item_hash: str) -> bool:
         return item_hash in self.items

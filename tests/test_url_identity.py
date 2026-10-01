@@ -18,3 +18,15 @@ def test_root_and_query_survive():
 
 def test_link_stores_normalized_url():
     assert Link("/wiki/X#Y", "", "").url == "/wiki/X"
+
+
+def test_storage_treats_relative_and_absolute_links_as_one_page():
+    from models.storage import Storage
+
+    base = "https://fr.wikipedia.org"
+    storage = Storage()
+    storage.add_links([Link("https://fr.wikipedia.org/wiki/Tunis", "", "")], base)
+
+    assert storage.link_seen("/wiki/Tunis", base)
+    assert storage.link_seen("/wiki/Tunis#Histoire", base)
+    assert not storage.link_seen("/wiki/Sfax", base)
