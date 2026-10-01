@@ -35,7 +35,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, ValidationError
 
 from config import DEFAULT_PRIORITY_STRATEGY
 from priority.strategy import STRATEGY_REGISTRY
@@ -215,3 +215,18 @@ class Blueprint(BaseModel):
     expansion: ExpansionConfig
     extraction: ExtractionConfig
     stop_conditions: StopConditions
+
+
+def validate_blueprint(data: object) -> Blueprint:
+    """Validate a raw blueprint dict, raising BlueprintSchemaError with one
+    readable line per problem (``path: message``)."""
+    if not isinstance(data, dict):
+        raise BlueprintSchemaError("blueprint must be a JSON object")
+    try:
+        return Blueprint.model_validate(data)
+    except ValidationError as exc:
+        problems = "; ".join(
+            f"{'.'.join(str(p) for p in err['loc']) or '(root)'}: {err['msg']}"
+            for err in exc.errors()
+        )
+        raise BlueprintSchemaError(f"Invalid blueprint: {problems}") from exc

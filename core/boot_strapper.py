@@ -12,6 +12,7 @@ import logging
 from config import TEMPLATES_DIR
 from events import NodeAddedEvent
 from models import Domain, Node
+from routes.blueprint_schema import validate_blueprint
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class BootStrapper:
         with open(self.template_file, "r", encoding="utf-8") as file:
             self.template = json.load(file)
 
+        validate_blueprint(self.template)
         return self.template
 
     def inject_domains(self, domains: dict) -> None:

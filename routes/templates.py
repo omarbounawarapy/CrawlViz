@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any
 from config import TEMPLATES_DIR
+from routes.blueprint_schema import BlueprintSchemaError, validate_blueprint
 router = APIRouter(prefix="/templates", tags=["templates"])
 
 os.makedirs(TEMPLATES_DIR, exist_ok=True)
@@ -22,6 +23,14 @@ def _safe_name(name: str) -> str:
 
 class TemplateBody(BaseModel):
     content: Any  # raw JSON object
+
+
+def _validated(content: Any) -> Any:
+    try:
+        validate_blueprint(content)
+    except BlueprintSchemaError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return content
 
 
 @router.get("")
@@ -44,16 +53,18 @@ def create_template(name: str, body: TemplateBody):
     path = _path(_safe_name(name))
     if os.path.exists(path):
         raise HTTPException(status_code=409, detail="Template already exists")
+    content = _validated(body.content)
     with open(path, "w") as f:
-        json.dump(body.content, f, indent=2)
+        json.dump(content, f, indent=2)
     return {"name": os.path.basename(path)}
 
 
 @router.put("/{name}")
 def update_template(name: str, body: TemplateBody):
     path = _path(_safe_name(name))
+    content = _validated(body.content)
     with open(path, "w") as f:
-        json.dump(body.content, f, indent=2)
+        json.dump(content, f, indent=2)
     return {"name": os.path.basename(path)}
 
 

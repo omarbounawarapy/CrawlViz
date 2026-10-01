@@ -9,6 +9,7 @@ pipeline noticing a flag change.
 """
 
 import asyncio
+import json
 import logging
 import os
 
@@ -17,6 +18,7 @@ from pydantic import BaseModel
 
 from config import TEMPLATES_DIR
 from core import Crawler
+from routes.blueprint_schema import BlueprintSchemaError, validate_blueprint
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +51,12 @@ async def run_crawl(body: RunRequest):
     template_path = os.path.join(TEMPLATES_DIR, body.templateName)
     if not os.path.exists(template_path):
         raise HTTPException(status_code=404, detail=f"Template '{body.templateName}' not found")
+
+    try:
+        with open(template_path, encoding="utf-8") as f:
+            validate_blueprint(json.load(f))
+    except (json.JSONDecodeError, BlueprintSchemaError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
     _current_task = asyncio.create_task(_run_crawler(body.templateName))
     return {"started": body.templateName}
