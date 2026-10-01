@@ -84,7 +84,7 @@ class TransformationPipeline(BasePipeline):
     # CORE TRANSFORM ENGINE
     # =========================================================
     def _transform_items(self, items, node) -> list:
-        extraction_blueprint = self.extraction_blueprint
+        field_specs = (self.extraction_blueprint or {}).get("fields", {})
 
         transformed = []
 
@@ -92,7 +92,7 @@ class TransformationPipeline(BasePipeline):
             new_item = {}
 
             for field, value in item.items():
-                spec = extraction_blueprint.get(field, {})
+                spec = field_specs.get(field, {})
                 transforms = spec.get("transform", [])
 
                 new_value = value
