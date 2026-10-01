@@ -53,6 +53,7 @@ from pipelines import (
     RequestsPipeline,
     RetryProcessor,
     ScoringPipeline,
+    StopConditions,
     StoppingPipeline,
     StoragePipeline,
     TransformationPipeline,
@@ -192,9 +193,7 @@ class Crawl:
         self.recorder = Recorder()
 
         b, s = self.broker, self.storage
-        self.requests = RequestsPipeline(b, max_concurrency=1)
-        self.requests.network_client = site
-        self.requests.min_delay = 0
+        self.requests = RequestsPipeline(b, max_concurrency=1, fetcher=site, min_delay=0)
         self.scoring = make_scoring(b, nlp, llm)
         self.retry = RetryProcessor(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
         self.pipelines = [
@@ -252,9 +251,7 @@ class Crawl:
 
 async def test_higher_priority_node_is_fetched_first():
     site = SyntheticSite({})
-    requests = RequestsPipeline(EventBroker(), max_concurrency=1)
-    requests.network_client = site
-    requests.min_delay = 0
+    requests = RequestsPipeline(EventBroker(), max_concurrency=1, fetcher=site, min_delay=0)
     domain = Domain("synthetic", BASE_URL, ".//a")
 
     for node_id, (page, priority) in enumerate([("mid", 20.0), ("best", 40.0), ("worst", 0.5)]):
@@ -414,12 +411,9 @@ async def test_gateway_stops_when_the_crawl_stops():
 
 async def test_time_limit_fires_without_further_events():
     broker = EventBroker()
-    # StoppingPipeline reads its thresholds off the Crawler instance.
-    crawler = types.SimpleNamespace(
-        event_broker=broker, max_nodes=100, max_depth=10, max_duration=0.2,
-        no_progress_timeout=60, target_url="",
+    stopping = StoppingPipeline(
+        broker, StopConditions(max_nodes=100, max_duration=0.2, no_progress_timeout=60)
     )
-    stopping = StoppingPipeline(crawler)
     task = asyncio.create_task(stopping.start())
 
     try:
@@ -462,11 +456,10 @@ async def _run_stopping_crawl(max_nodes: int, max_depth: int):
     crawl = Crawl(SyntheticSite(CHAIN), FixedRelevance(0.5), FixedLlm())
     storage_pipeline = crawl.pipelines[4]
     storage_pipeline.max_depth = max_depth
-    crawler = types.SimpleNamespace(
-        event_broker=crawl.broker, max_nodes=max_nodes, max_depth=max_depth,
-        max_duration=60, no_progress_timeout=60, target_url="",
+    stopping = StoppingPipeline(
+        crawl.broker,
+        StopConditions(max_nodes=max_nodes, max_duration=60, no_progress_timeout=60),
     )
-    stopping = StoppingPipeline(crawler)
     crawl.broker.subscribe(stopping, [NodeAddedEvent, PageFetchedEvent, StopCrawlEvent])
     crawl.pipelines.append(stopping)
     await crawl.start()

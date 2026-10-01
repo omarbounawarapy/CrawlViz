@@ -94,6 +94,7 @@ from pipelines import (
     RequestsPipeline,
     RetryProcessor,
     ScoringPipeline,
+    StopConditions,
     StoppingPipeline,
     StoragePipeline,
     TransformationPipeline,
@@ -227,8 +228,7 @@ class Crawler:
 
     def _load_blueprint_config(self, blueprint: dict) -> None:
         """Unpack the blueprint into the attributes the rest of this
-        class (and StoppingPipeline, which reads several of these
-        directly off `self`) expects.
+        class expects.
         """
         self.blueprint = blueprint
         self.blueprint_id = blueprint.get("blueprint_id")
@@ -346,7 +346,15 @@ class Crawler:
             ),
         )
         p["logging"] = LoggingPipeline(self.event_broker, self.crawl_id)
-        p["stopping"] = StoppingPipeline(self)
+        p["stopping"] = StoppingPipeline(
+            self.event_broker,
+            StopConditions(
+                max_nodes=self.max_nodes,
+                max_duration=self.max_duration,
+                no_progress_timeout=self.no_progress_timeout,
+                target_url=self.target_url,
+            ),
+        )
         p["debug"] = DebuggingPipeline(self.event_broker, self.crawl_id, enabled=DEBUG)
         p["transformation"] = TransformationPipeline(self.event_broker, self.extraction_blueprint)
         p["exporting"] = ExportingPipeline(

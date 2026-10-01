@@ -20,6 +20,7 @@ from events import (
 )
 
 from .base_pipeline import BasePipeline
+from .contracts import Annotator, RelevanceScorer
 from .frontier_queue import FrontierQueue
 
 logger = logging.getLogger(__name__)
@@ -36,8 +37,8 @@ class ScoringPipeline(BasePipeline):
 
     def __init__(
         self,
-        scoring_service,
-        nlp_service,
+        scoring_service: Annotator,
+        nlp_service: RelevanceScorer,
         event_broker,
         low_threshold,
         high_threshold,

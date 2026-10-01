@@ -8,7 +8,7 @@ from .processing_pipeline import ProcessingPipeline
 from .requests_pipeline import RequestsPipeline
 from .retry_processor import RetryProcessor
 from .scoring_pipeline import ScoringPipeline
-from .stopping_pipeline import StoppingPipeline
+from .stopping_pipeline import StopConditions, StoppingPipeline
 from .storage_pipeline import StoragePipeline
 from .transformation_pipeline import TransformationPipeline
 
@@ -23,6 +23,7 @@ __all__ = [
     "RequestsPipeline",
     "RetryProcessor",
     "ScoringPipeline",
+    "StopConditions",
     "StoppingPipeline",
     "StoragePipeline",
     "TransformationPipeline",

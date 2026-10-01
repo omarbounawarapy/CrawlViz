@@ -1,34 +1,49 @@
 import asyncio
 import time
+from dataclasses import dataclass
 
 from events import NodeAddedEvent, PageFetchedEvent, StopCrawlEvent, StorageNodeUpdatedEvent
 
 from .base_pipeline import BasePipeline
 
 
+@dataclass(frozen=True)
+class StopConditions:
+    max_nodes: int
+    max_duration: float
+    no_progress_timeout: float
+    target_url: str = ""
+
+
 class StoppingPipeline(BasePipeline):
     """Watches crawl progress against the blueprint's stop conditions and
     emits StopCrawlEvent the moment any one of them is met.
 
-    Reads its thresholds directly off the Crawler instance so they stay
-    in sync with whatever the blueprint configured.
+    Takes its thresholds as a ``StopConditions``; the Crawler builds one
+    from the blueprint.
 
     ``max_nodes`` counts successfully fetched pages. ``max_depth`` is not a
     stop condition: StoragePipeline refuses to admit nodes deeper than it,
     and the crawl ends naturally once the frontier drains.
     """
 
-    def __init__(self, crawler, max_queue_size: int = 0, max_concurrency: int = 1):
+    def __init__(
+        self,
+        event_broker,
+        conditions: StopConditions,
+        max_queue_size: int = 0,
+        max_concurrency: int = 1,
+    ):
         super().__init__(max_concurrency=max_concurrency)
-        self.event_broker = crawler.event_broker
+        self.event_broker = event_broker
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
         # Conditions
-        self.max_nodes = crawler.max_nodes
-        self.max_duration = crawler.max_duration
-        self.no_progress_timeout = crawler.no_progress_timeout
-        self.target_url = crawler.target_url
+        self.max_nodes = conditions.max_nodes
+        self.max_duration = conditions.max_duration
+        self.no_progress_timeout = conditions.no_progress_timeout
+        self.target_url = conditions.target_url
 
         # State
         self.node_count = 0

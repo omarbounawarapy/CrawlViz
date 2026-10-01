@@ -13,6 +13,7 @@ from events import (
 from infrastructure import NetworkClient
 
 from .base_pipeline import SHUTDOWN
+from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
 
 
@@ -30,11 +31,18 @@ class RequestsPipeline:
     EventBroker's shutdown broadcast reaches it the same way.
     """
 
-    def __init__(self, event_broker, max_concurrency: int = 4, max_queue_size: int = 0):
+    def __init__(
+        self,
+        event_broker,
+        max_concurrency: int = 4,
+        max_queue_size: int = 0,
+        fetcher: Fetcher | None = None,
+        min_delay: float = 1,
+    ):
         self.event_broker = event_broker
 
         self.queue = FrontierQueue(maxsize=max_queue_size)
-        self.network_client = NetworkClient()
+        self.network_client: Fetcher = fetcher if fetcher is not None else NetworkClient()
 
         self.max_concurrency = max_concurrency
         self.workers = []
@@ -52,7 +60,7 @@ class RequestsPipeline:
             NodeAddedEvent: self._on_node_added,
         }
 
-        self.min_delay = 1            # minimum seconds between requests
+        self.min_delay = min_delay    # minimum seconds between requests
         self.last_request_time = 0.0
         self.backoff_delay = 0.0      # dynamic (grows on 429)
         self.max_backoff = 10.0
