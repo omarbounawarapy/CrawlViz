@@ -32,6 +32,7 @@ class StoragePipeline(BasePipeline):
         # URLs already turned into nodes in this crawl. found_links can't do
         # this job: it is filled at filtering time, before admission.
         self._admitted_urls: set[str] = set()
+        self._seeded_admitted = False
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
@@ -70,6 +71,11 @@ class StoragePipeline(BasePipeline):
         dicts, as produced by PriorityPipeline._compute_priorities.
         """
         parent = event.parent
+
+        if not self._seeded_admitted:
+            # Nodes that exist before the first admission (the seed) count too.
+            self._admitted_urls.update(n.get_full_url() for n in self.storage.nodes)
+            self._seeded_admitted = True
 
         for entry in event.links:
             link = entry["link"]

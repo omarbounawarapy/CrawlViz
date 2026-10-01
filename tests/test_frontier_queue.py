@@ -1,4 +1,3 @@
-import pytest
 
 from models.node import Node
 from pipelines.base_pipeline import SHUTDOWN

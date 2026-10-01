@@ -440,3 +440,23 @@ async def test_time_limit_fires_without_further_events():
         await stop_all([task])
 
     assert fired
+
+
+async def test_link_back_to_the_seed_creates_no_child():
+    class _Broker:
+        async def emit(self, event):
+            pass
+
+    storage = Storage()
+    domain = Domain("synthetic", BASE_URL, ".//a")
+    seed = seed_node(storage, domain, "page")
+    pipeline = StoragePipeline(storage, _Broker())
+
+    await pipeline._on_priority_calculated(
+        types.SimpleNamespace(
+            parent=seed,
+            links=[{"link": Link(f"{BASE_URL}/page", "page", ""), "score": 0, "priority": 0.5}],
+        )
+    )
+
+    assert len(storage.nodes) == 1
