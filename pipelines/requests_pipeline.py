@@ -19,6 +19,9 @@ from traceability.trace_context import bind_node
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
+from .robots import RobotsPolicy
+
+ROBOTS_DISALLOWED = "RobotsDisallowed"
 
 
 def is_rate_limited(error: Exception) -> bool:
@@ -47,6 +50,8 @@ class RequestsPipeline:
         max_queue_size: int = 0,
         fetcher: Fetcher | None = None,
         min_delay: float = 1,
+        user_agent: str = "CrawlViz/1.0",
+        respect_robots: bool = False,
     ):
         self.event_broker = event_broker
 
@@ -57,13 +62,16 @@ class RequestsPipeline:
         self.workers = []
 
         self.headers = {
-            "User-Agent": (
-                "CoolBot/1.0 (https://example.com/contact; contact@example.com) "
-                "BasedOnPythonRequests/2.31"
-            ),
+            "User-Agent": user_agent,
             "Accept-Encoding": "gzip, deflate",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         }
+
+        self.robots = (
+            RobotsPolicy(self.network_client, user_agent, self.headers)
+            if respect_robots
+            else None
+        )
 
         self.handlers = {
             NodeAddedEvent: self._on_node_added,
@@ -136,6 +144,17 @@ class RequestsPipeline:
                         url=node.get_full_url(),
                     )
                 )
+
+                if self.robots and not await self.robots.allowed(node.get_full_url()):
+                    await self.event_broker.emit(
+                        RequestFailedEvent(
+                            correlation_id=str(node.get_id()),
+                            node=node,
+                            error_type=ROBOTS_DISALLOWED,
+                            error_message="disallowed by robots.txt",
+                        )
+                    )
+                    continue
 
                 # Rate limiting (global pace): minimum inter-request delay,
                 # plus any active backoff, plus jitter to avoid workers

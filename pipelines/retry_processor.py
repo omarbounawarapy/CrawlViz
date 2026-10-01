@@ -130,6 +130,10 @@ class RetryProcessor(BasePipeline):
         """
         node = event.node
         node_id = node.get_id()
+        if event.error_type == "RobotsDisallowed":
+            node.fail()
+            return
+
         attempts = self._retry_counts.get(node_id, 0) + 1
         self._retry_counts[node_id] = attempts
 

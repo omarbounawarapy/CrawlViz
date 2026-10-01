@@ -44,6 +44,16 @@ FLUSH_THRESHOLD: int = 50
 BUFFER_MAX_SIZE: int = 500
 
 # =========================================================================
+# POLITENESS
+# =========================================================================
+# Identify the crawler honestly: replace the contact before crawling live sites.
+USER_AGENT: str = (
+    "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; "
+    "omar.bounawara.py@gmail.com)"
+)
+RESPECT_ROBOTS: bool = True
+
+# =========================================================================
 # SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")
 # =========================================================================
 # A link's NLP similarity score buckets it into low / mid / high confidence.

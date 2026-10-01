@@ -25,6 +25,8 @@ from config import (
     FLUSH_THRESHOLD,
     HIGH_SCORE_LLM_FRACTION,
     HIGH_SCORE_RANDOM_FRACTION,
+    RESPECT_ROBOTS,
+    USER_AGENT,
     LOW_SCORE_SAMPLE_FRACTION,
     MAX_LLM_LINKS_PER_NODE,
     NLP_HIGH_PERCENTILE,
@@ -318,7 +320,9 @@ class Crawler:
         p: dict = {}
 
         p["processing"] = ProcessingPipeline(self.event_broker, self.extraction_blueprint)
-        p["requests"] = RequestsPipeline(self.event_broker)
+        p["requests"] = RequestsPipeline(
+            self.event_broker, user_agent=USER_AGENT, respect_robots=RESPECT_ROBOTS
+        )
         p["scoring"] = ScoringPipeline(
             scoring_service,
             nlp_service,
