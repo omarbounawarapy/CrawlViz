@@ -33,7 +33,6 @@ export const fetchValidationSample = (table, crawlId, limit = 20, offset = 0) =>
 };
 
 // ── Configuration (V2) ──────────────────────────────────────────────────────
-// Read-only this pass -- see config/runtime_config.py and
-// docs/V2_ARCHITECTURE.md roadmap #18 for the write-back path this sets up.
+// Read-only for now; see config/runtime_config.py.
 export const fetchConfigSchema = () => req("GET", "/config/schema");
 export const fetchConfig       = () => req("GET", "/config");

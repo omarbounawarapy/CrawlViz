@@ -10,8 +10,8 @@ Node lifecycle states
 ---------------------
 CREATED → FETCHED → FILTERED → SCORED → EXPANDED
 
-V2 additions (see docs/V2_ARCHITECTURE.md §B.2.1-2)
-----------------------------------------------------
+V2 additions
+------------
 Everything below "V2 additions" was added to close the "telemetry chasm"
 finding: most of the backend's own instrumentation was already being
 computed and then discarded before it ever reached this snapshot. These
@@ -24,8 +24,8 @@ subscribers.
   Monitor.
 - ``candidates``: links the scoring cascade decided on without an LLM call:
   dropped for low confidence (never a node), or trusted and fast-tracked
-  (these do become nodes, later). This is the "what didn't happen" signal -- see
-  docs/V2_ARCHITECTURE.md §A.2.3. Bounded with a deque so a very long crawl
+  (these do become nodes, later). This is the "what didn't happen" signal.
+  Bounded with a deque so a very long crawl
   can't grow this unboundedly.
 - ``node_details``: the cascade's full explanation for a node's score
   (NLP sub-signals + weights, LLM score, final priority), keyed by node_id --

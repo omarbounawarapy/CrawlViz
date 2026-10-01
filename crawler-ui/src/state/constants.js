@@ -1,5 +1,4 @@
-// Re-exported from nodeStates.js (the single source of truth -- see
-// docs/V2_ARCHITECTURE.md §A.1.4) under its historical array-shaped name,
+// Re-exported from nodeStates.js (the single source of truth) under its historical array-shaped name,
 // so existing consumers (MetricsPanel, Legend, useDemoMode) that iterate
 // it with .forEach/.map keep working unchanged.
 export { NODE_STATE_ORDER as NODE_STATES } from "./nodeStates";
@@ -22,7 +21,7 @@ export const TYPE_BADGE = {
 // V1 used this as a hard allowlist and silently dropped anything not in
 // it -- meaning every new backend message type needed a coordinated edit
 // here *and* in the reducer *and* in TYPE_BADGE before it became visible
-// anywhere (see docs/V2_ARCHITECTURE.md §A.1.7). eventNormalizer.js no
+// anywhere. eventNormalizer.js no
 // longer filters against this; it's kept only as the set TYPE_BADGE falls
 // back from, so a still-unrecognized `type` renders as a labeled generic
 // badge instead of a blank one.

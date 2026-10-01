@@ -20,7 +20,7 @@ Unfocused crawling from a semantically rich seed drifts off-topic quickly becaus
 | LLM-generated expansions | 50 |
 | Rate limit | 1 request/second/worker, 2 workers |
 
-This exact configuration is checked into the repository as `templates/wikiMD.json` and matches the report's parameters field-for-field (topic, seed URL, scoring strategy, expansion count), see [§4.3.1 — Protocol](../report/rapport-english.pdf#page=66). It's a live, runnable blueprint corresponding to the report's case study, not a description of a setup that no longer exists.
+This exact configuration is checked into the repository as `templates/wikiMD.json` and follows the report's parameters for topic, seed URL, scoring strategy and expansion count. Run limits differ from the table above (the checked-in blueprint has `max_nodes` 500, `max_duration` 1,800,000 and Groq as the LLM provider; the report run used 600, 1,200 s and OpenRouter), so treat the table as the report's protocol, not the file's defaults, see [§4.3.1 — Protocol](../report/rapport-english.pdf#page=66). It's a live, runnable blueprint corresponding to the report's case study, not a description of a setup that no longer exists.
 
 ## Sequential vs. concurrent execution
 

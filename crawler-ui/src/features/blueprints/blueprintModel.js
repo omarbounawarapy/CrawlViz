@@ -2,7 +2,7 @@
 // conversion used by BlueprintManager. No UI in here.
 //
 // STRATEGIES is a hand-maintained copy of ALLOWED_STRATEGIES in
-// routes/blueprint_schema.py (docs/V2_ARCHITECTURE.md §A.1.5); the long-term
+// routes/blueprint_schema.py; the long-term
 // move is to render from a backend schema, as features/config does.
 
 // ─── STRICT CONSTANTS ─────────────────────────────────────────────────────────

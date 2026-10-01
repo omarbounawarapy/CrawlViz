@@ -24,7 +24,7 @@ Documented where the repository or report provides direct evidence of the reason
 
 **Decision:** A single `EventBroker` with typed events and a subscription registry. Pipelines never call each other, only `broker.subscribe()` at wiring time and `broker.dispatch()` (implicitly, via emitting events) at runtime.
 
-**Consequences:** Producers don't know or care who's listening, so extensibility is genuinely additive (see `03-deep-dive-event-pipeline.md`). The cost is a whole system that's easy to reason about stage by stage but harder to reason about holistically: "what happens when a node is created" requires tracing every subscriber to `NodeAddedEvent` across the wiring block, not just reading one function. The project's own `docs/V2_ARCHITECTURE.md` audit exists largely because that holistic tracing had drifted from what was actually wired (events emitted with no subscriber, or a needed subscription missing), a direct, acknowledged cost of this architecture's discoverability.
+**Consequences:** Producers don't know or care who's listening, so extensibility is genuinely additive (see `03-deep-dive-event-pipeline.md`). The cost is a whole system that's easy to reason about stage by stage but harder to reason about holistically: "what happens when a node is created" requires tracing every subscriber to `NodeAddedEvent` across the wiring block, not just reading one function. An earlier architecture audit existed largely because that holistic tracing had drifted from what was actually wired (events emitted with no subscriber, or a needed subscription missing), a direct, acknowledged cost of this architecture's discoverability.
 
 ---
 

@@ -8,8 +8,6 @@
 // EXPANDED; see state/nodeStates.js), while the fifth real state,
 // FILTERED, was missing entirely. NodeDetailsPanel.jsx independently
 // invented its own REJECTED/SKIPPED colors reaching for the same thing.
-// See docs/V2_ARCHITECTURE.md §A.1.4 for the full account of this drift.
-//
 // This is now the one place the palette is defined for node-related
 // concepts: the five real lifecycle states, plus DROPPED / TRUSTED for
 // the two cascade candidate decisions (links that were evaluated but
@@ -76,7 +74,7 @@ export const tokenShape = {
     // pipeline stage lifecycle indicators (Pipeline Monitor) -- reuses the
     // same semantic-status idea as `status` below rather than introducing
     // per-stage hues, consistent with "pick one accent, don't multiply
-    // colors" (see docs/V2_ARCHITECTURE.md / redesign audit).
+    // colors".
     pipeline: {
       idle:      null,
       active:    null,

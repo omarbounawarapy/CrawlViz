@@ -503,7 +503,7 @@ class Crawler:
         b.subscribe(p["requests"], [NodeAddedEvent])
         b.subscribe(p["scoring"], [NodeAddedEvent, ScoreRescheduledEvent])
         b.subscribe(p["filtering"], [ContentExtractedEvent])
-        # NOTE (V2 audit finding, see docs/V2_ARCHITECTURE.md §A.1.1): PriorityPipeline's
+        # NOTE (audit finding): PriorityPipeline's
         # own handler table has always mapped HighScoreLinksEvent -> _on_links_scored,
         # but it was never actually subscribed to receive that event type. That bucket
         # is exactly the links the cascade is confident about and deliberately skips an
@@ -537,7 +537,7 @@ class Crawler:
         }
 
     def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:
-        """Wire TelemetryBridge -- see docs/V2_ARCHITECTURE.md §B.2.1.
+        """Wire TelemetryBridge.
 
         V1's UIEventTranslator subscribed to 7 event types. This subscribes
         to everything TelemetryBridge knows how to translate: the original

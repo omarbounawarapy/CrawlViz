@@ -205,8 +205,7 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   const fillFor = (d) => d.isAggregate ? theme.colors.background.primary : (theme.colors.state[d.state] || theme.colors.state.CREATED);
 
   // Neighborhood of the selected node: itself, its ancestor chain to root,
-  // and its direct children -- everything else dims (see
-  // docs/V2_ARCHITECTURE.md §B.3.4 "highlight neighborhood / path to root").
+  // and its direct children -- everything else dims.
   const neighborhood = useMemo(() => {
     if (!selectedNodeId) return null;
     const ids = new Set([selectedNodeId]);

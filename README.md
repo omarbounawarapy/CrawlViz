@@ -42,7 +42,7 @@ The deep dives explain the mechanism behind each of these, not just the label:
 ## What CrawlViz is not (yet)
 
 - It is **not distributed**. It's a single-process asyncio application with in-memory state; "concurrency" here means cooperative multitasking within one process, not multiple machines or processes.
-- The backend test suite (123 tests, all passing as of this review) covers pipelines, the blueprint schema/translator, and event wiring. It does not include end-to-end or live-LLM integration tests.
+- The backend test suite (226 tests, all passing as of this review) covers pipelines, the blueprint schema/translator, and event wiring. It does not include end-to-end or live-LLM integration tests.
 - Persistence is local SQLite, not a horizontally scalable store, appropriate for the single-machine research/portfolio scope this project targets, not for production multi-tenant crawling.
 
 

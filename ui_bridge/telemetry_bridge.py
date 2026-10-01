@@ -19,8 +19,8 @@ Design invariants (unchanged from V1):
   - All handler methods are synchronous; only put() and the broadcast
     call are async, which is the minimum required.
 
-Why this file exists (see docs/V2_ARCHITECTURE.md §A.1.3, §B.2.1)
--------------------------------------------------------------------
+Why this file exists
+--------------------
 An audit of every event this backend emits against every place it's
 subscribed found that roughly a third of it reaches no consumer at all,
 and of what IS consumed, only seven event types out of ~45 ever reached
@@ -525,8 +525,8 @@ class TelemetryBridge:
         """Shared by _on_high_score_links / _on_low_score_links -- these are
         the two cascade buckets that (respectively) skip the LLM because
         the NLP signal is already confident, or get dropped outright. This
-        is the direct fix for the "what didn't happen" blind spot (see
-        docs/V2_ARCHITECTURE.md §A.2.3): without this, links the cascade
+        is the direct fix for the "what didn't happen" blind spot:
+        without this, links the cascade
         rejects or fast-tracks leave no trace anywhere in the UI.
         """
         if not event.links:

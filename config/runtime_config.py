@@ -4,7 +4,7 @@ RuntimeConfig
 A validated, introspectable schema over the constants in config.py's
 "SCORING CASCADE" / "NLP EMBEDDINGS" / "EXPORT" sections -- the tunable
 surface a researcher needs visibility into to answer "what assumptions is
-this crawl operating under?" (see docs/V2_ARCHITECTURE.md §B.2.3).
+this crawl operating under?".
 
 Why this exists
 ----------------
@@ -15,7 +15,7 @@ model's own docstring documents three past incidents of drift between
 independently-maintained copies of the same shape. `routes/blueprint_ui_schema.json`
 took a further step -- a hand-written ui-hints JSON schema for
 form-rendering -- but was never wired to anything on either side (dead
-file; see docs/V2_ARCHITECTURE.md §A.1.5). This module applies the
+file). This module applies the
 working half of that pattern (a Pydantic model, `Field(...)` for both
 validation AND ui hints, `.model_json_schema()` generated rather than
 hand-copied) to the runtime tuning surface described in the engineering

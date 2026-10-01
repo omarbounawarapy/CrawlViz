@@ -21,7 +21,7 @@ export function applyEvent(state, event) {
 
       // V2: hydrate the telemetry slices too, so a client that connects
       // mid-crawl catches up on pipeline/candidate/error state and not
-      // just the node graph (docs/V2_ARCHITECTURE.md §B.2.1).
+      // just the node graph.
       const pipelineStats = {};
       Object.entries(event.pipeline_stats || {}).forEach(([stage, s]) => {
         const completed = s.completed || 0;
@@ -206,8 +206,7 @@ export function applyEvent(state, event) {
     // Socket health is tracked separately from crawl lifecycle (`status`)
     // -- V1 appended these to the event log for the timeline to show but
     // never actually updated any state, so a dropped connection during a
-    // long crawl looked identical to a healthy one (docs/V2_ARCHITECTURE.md
-    // §A.1.9).
+    // long crawl looked identical to a healthy one.
     case "__WS_CONNECTED":
       return { ...state, connectionStatus: "CONNECTED" };
     case "__WS_DISCONNECTED":
@@ -223,8 +222,7 @@ export function applyEvent(state, event) {
 //
 // V1 rebuilt state by replaying the *entire* event log from scratch on
 // every seek, which is fine at a few hundred events and becomes the
-// bottleneck on a real crawl's low thousands (docs/V2_ARCHITECTURE.md
-// §A.1.8). `crawlReducer` below checkpoints a state reference every
+// bottleneck on a real crawl's low thousands. `crawlReducer` below checkpoints a state reference every
 // SNAPSHOT_INTERVAL events; replayTo() restores the nearest checkpoint at
 // or before the target index and replays only the remainder.
 // ─────────────────────────────────────────────────────────────

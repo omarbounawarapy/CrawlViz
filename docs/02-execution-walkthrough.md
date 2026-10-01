@@ -76,7 +76,7 @@ Two things worth being precise about here, because a casual reading of the repor
 
 1. **NLP pass (always, local, no network):** `NLPService.score_link()` builds a feature vector (target similarity, novelty, coverage, lexical overlap, and other signals; [full list in the deep dive](04-deep-dive-semantic-scoring.md)) and reduces it to a single composite `_nlp_score` used only for bucketing.
 2. **Bucketing:** every link in the node is sorted into `low` / `mid` / `high` against two configurable thresholds. `mid` always goes to the LLM. `low` and `high` are each *sampled*: a small random slice from `low` (to avoid the crawl converging on one semantic neighborhood) and a top-K-plus-random slice from `high` (to spend LLM budget confirming the crawler's most confident guesses, not just its uncertain ones). Everything not sampled is either dropped (`low`) or fast-tracked without an LLM call (`high`, tagged `trusted_no_llm`).
-3. **LLM pass (selective, budgeted):** the sampled links are batched into one prompt (`ScoringPromptBuilder`, strategy-selected, e.g. `TOPICAL`), sent through `LlmHandler` → `KeyManager` (picks a non-cooling-down API key) → `NetworkClient` (the actual HTTP call, with its own retry/backoff independent of the crawl-level `RetryProcessor`) → `OpenRouterTranslator` (parses the response) → `ResultMapper` (attaches `score`, `relevance_type`, and `expansions` back onto each `Link`).
+3. **LLM pass (selective, budgeted):** the sampled links are batched into one prompt (`ScoringPromptBuilder`, strategy-selected, e.g. `TOPICAL`), sent through `LlmHandler` → `KeyManager` (picks a non-cooling-down API key) → `NetworkClient` (the actual HTTP call; it does not retry, 401/403 key rotation lives in `LlmHandler` and fetch retries in `RetryProcessor`) → `OpenRouterTranslator` (parses the response) → `ResultMapper` (attaches `score`, `relevance_type`, and `expansions` back onto each `Link`).
 
 `ScoringPipeline` emits `LinksScoredEvent` for LLM-scored links and `HighScoreLinksEvent` for the `trusted_no_llm` fast-tracked ones. These are two separate event types precisely because one carries an LLM score and the other doesn't, and `PriorityPipeline` needs to treat them differently (see next step).
 
@@ -102,7 +102,7 @@ This is where the frontier actually grows: each scored link becomes a brand-new 
 
 ## 5. Stopping
 
-`StoppingPipeline` subscribes to the node-count and depth signals it needs and evaluates the blueprint's stop conditions (`max_nodes`, `max_depth`, `max_time`) after relevant events. When one is met, it emits `StopCrawlEvent`, which every pipeline treats as a drain-and-halt signal: `ExportingPipeline` flushes its buffer, `RequestsPipeline` stops pulling new fetches, and `Crawler` tears down the WebSocket gateway.
+`StoppingPipeline` subscribes to the node-count and depth signals it needs and evaluates the blueprint's stop conditions (`max_nodes`, `max_depth`, `max_time`) after relevant events. When one is met, it emits `StopCrawlEvent`, which every pipeline treats as a drain-and-halt signal: `ExportingPipeline` flushes its buffer, `RequestsPipeline` stops pulling new fetches, and `TelemetryBridge` stops the WebSocket gateway when it sees the stop event.
 
 ## 6. What the browser sees, the whole time
 

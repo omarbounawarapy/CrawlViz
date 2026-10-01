@@ -14,7 +14,7 @@ Before any relevance judgment happens, a candidate link has to become something 
 - the target URL,
 - local textual context (text near the link in the parent DOM node).
 
-This multi-source representation exists specifically because any one signal can be uninformative alone. A generic anchor text like "read more" or an empty local context wouldn't tell you much on its own, but combined with the other two sources, `FeatureExtractor` can still produce a useful comparison. `nlp/feature_extractor.py` builds a composite text string from these three sources and encodes it with `EmbeddingEngine` (`sentence-transformers/all-MiniLM-L6-v2`, loaded once and shared, LRU-cached at the `encode()` level so repeated identical strings within a session don't re-run inference).
+This multi-source representation exists specifically because any one signal can be uninformative alone. A generic anchor text like "read more" or an empty local context wouldn't tell you much on its own, but combined with the other two sources, `FeatureExtractor` can still produce a useful comparison. `nlp/feature_extractor.py` builds a composite text string from these three sources and encodes it with `EmbeddingEngine` (`sentence-transformers/all-MiniLM-L6-v2`, loaded once and shared; `encode()` is not cached, so repeated strings are re-encoded).
 
 Anchor text, URL, and local DOM context are combined into one composite string before a single embedding call, not compared as three separate signals.
 

@@ -1,6 +1,5 @@
 // How often (in event-log entries) the reducer checkpoints full state for
-// replay scrubbing. See state/reducer.js's REPLAY_SEEK handling and
-// docs/V2_ARCHITECTURE.md §A.1.8 / §B.3.2 for why this exists: without it,
+// replay scrubbing. See state/reducer.js's REPLAY_SEEK handling for why this exists: without it,
 // every scrub-slider tick re-runs applyEvent over the entire event log
 // from scratch, which is fine for a few hundred events and not fine for
 // the low thousands a real crawl produces.
@@ -28,7 +27,7 @@ export const INITIAL_STATE = {
   // V2 additions
   connectionStatus: "CONNECTING",  // socket health: CONNECTING | CONNECTED | DISCONNECTED
                                      // -- deliberately separate from `status` (crawl
-                                     // lifecycle) -- see docs/V2_ARCHITECTURE.md §A.1.9
+                                     // lifecycle)
   pipelineStats: {},   // stage -> { started, completed, failed, queue_size, last_duration_ms, avg_duration_ms }
   candidates:    [],   // flat, most-recent-last, bounded to MAX_CANDIDATES
   nodeDetails:   {},   // node_id -> { nlp_score, nlp_breakdown, llm_score, priority, priority_strategy }

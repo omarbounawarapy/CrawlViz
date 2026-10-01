@@ -217,8 +217,7 @@ function ActivityTab({ history, errors }) {
 
 /**
  * Docked Node Inspector. Persists across sections (not just Graph) so
- * selecting a node in one view keeps it visible while browsing another --
- * see docs/V2_ARCHITECTURE.md §B.3.3.
+ * selecting a node in one view keeps it visible while browsing another.
  */
 // One plain sentence answering "why did the crawler go here?" from whatever
 // the cascade recorded for this node.

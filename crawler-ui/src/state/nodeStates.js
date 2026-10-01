@@ -4,7 +4,7 @@
 // correct), state/constants.js (matched backend), NodeDetailsPanel.jsx
 // (invented REJECTED/SKIPPED, colors defined for states the backend never
 // sent), and theme/tokens.js's tokenShape (a third, mostly disjoint set:
-// QUEUED/FETCHING/EXPANDING/STORED/ERROR). See docs/V2_ARCHITECTURE.md §A.1.4.
+// QUEUED/FETCHING/EXPANDING/STORED/ERROR).
 //
 // This file is now the only place the enum is spelled out. Everything else
 // -- the reducer, the graph, the inspector, the theme -- imports from here.
