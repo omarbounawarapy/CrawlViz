@@ -85,6 +85,9 @@ class FilteringPipeline(BasePipeline):
             )
 
         except Exception as e:
+            failed = getattr(event, "node", None)
+            if failed is not None:
+                failed.fail()
             await self.event_broker.emit(
                 FilteringPipelineErrorEvent(
                     correlation_id=getattr(event, "correlation_id", None),

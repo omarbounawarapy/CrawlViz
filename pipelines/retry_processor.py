@@ -134,6 +134,7 @@ class RetryProcessor(BasePipeline):
                 "Node %s exceeded max retries (%d) after %s: %s -- giving up",
                 node_id, self.max_request_retries, event.error_type, event.error_message,
             )
+            node.fail()
             return
 
         if self.requests_pipeline is None:
@@ -142,6 +143,7 @@ class RetryProcessor(BasePipeline):
                 "requests_pipeline wired in -- cannot retry (%s: %s)",
                 node_id, event.error_type, event.error_message,
             )
+            node.fail()
             return
 
         node.decrease_priority(2)

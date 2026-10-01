@@ -275,12 +275,6 @@ async def test_higher_priority_node_is_fetched_first():
 # 2. A DEAD LINK MUST NOT FREEZE SCORING
 # =========================================================
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="node.ready is only resolved after a successful transformation, and "
-    "ScoringPipeline's single worker awaits it: a node whose fetch is given up "
-    "on blocks scoring for every other node, forever.",
-)
 async def test_dead_link_does_not_stop_other_nodes_being_scored():
     site = SyntheticSite({"good": ["x", "y"]}, dead=frozenset({"dead"}))
     crawl = Crawl(site, FixedRelevance(0.5), FixedLlm())

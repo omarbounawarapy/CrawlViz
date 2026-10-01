@@ -102,6 +102,7 @@ class ProcessingPipeline(BasePipeline):
             )
 
         except Exception as e:
+            node.fail()
             await self.event_broker.emit(
                 ProcessingExtractionFailedEvent(
                     correlation_id=str(node.get_id()),

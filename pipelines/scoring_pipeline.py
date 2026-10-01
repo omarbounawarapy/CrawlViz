@@ -98,7 +98,9 @@ class ScoringPipeline(BasePipeline):
     # =========================================================
     async def _process(self, node, worker_id: int) -> None:
         try:
-            await node.ready
+            if not await node.ready:
+                logger.info("Node %s failed upstream; skipping scoring", node.get_id())
+                return
 
             # Input snapshot
             await self.event_broker.emit(

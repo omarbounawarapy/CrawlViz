@@ -185,8 +185,15 @@ class Node:
     # ASYNC READINESS
     # =========================================================
     def update_state(self) -> None:
+        """Mark the node fetched, extracted, filtered and transformed."""
         if not self.ready.done():
             self.ready.set_result(True)
+
+    def fail(self) -> None:
+        """Mark the node as permanently unusable so waiters on `ready` wake up
+        (with False) instead of waiting forever."""
+        if not self.ready.done():
+            self.ready.set_result(False)
 
     # =========================================================
     # DEBUG
