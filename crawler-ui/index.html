@@ -5,12 +5,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CrawlViz</title>
+    <meta name="description" content="A topic-focused web crawler that scores every link before it fetches it, draws the crawl live, and keeps the reason for every decision." />
+    <meta name="theme-color" content="#f3f5f7" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+    <!-- Fonts must not block the first paint: load the stylesheet without blocking, swap faces in as they arrive. -->
+    <link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" /></noscript>
+    <!-- Paper from the first byte, so there is never a white flash while the app loads. -->
+    <style>
+      html, body { margin: 0; height: 100%; background: #f3f5f7; }
+      .boot { height: 100%; display: grid; place-items: center; font: 600 20px/1 'Source Serif 4', Georgia, serif; letter-spacing: -0.01em; color: #33435a; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot" aria-hidden="true">CrawlViz</div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

@@ -1,3 +1,4 @@
+import Spider from "../features/loading/Spider";
 import { useState } from "react";
 import { getTheme } from "../theme";
 
@@ -41,14 +42,17 @@ function StatusMark({ status }) {
 
 const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", CONNECTING: "Waiting for backend", IDLE: "Idle" };
 
+// The wordmark is also the way back to the landing page.
 function Wordmark() {
   return (
-    <span style={{
+    <a href="#/" title="CrawlViz home" style={{
+      display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none",
       fontFamily: type.fontDisplay, fontSize: 20, fontWeight: 600,
       color: shell.textBright, letterSpacing: "-0.01em",
     }}>
+      <Spider size={26} className="wordmark-spider" />
       CrawlViz
-    </span>
+    </a>
   );
 }
 
