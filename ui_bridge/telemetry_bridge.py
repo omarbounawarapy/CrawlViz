@@ -228,6 +228,11 @@ class TelemetryBridge:
         except Exception:
             log.exception("Translation failed for event %s", type(event).__name__)
 
+        if type(event).__name__ == "StopCrawlEvent":
+            # The final CRAWL_STOPPED has been sent; close the server so
+            # gateway.start() returns and Crawler.start() can finish.
+            await self.gateway.stop()
+
     # ==================================================================
     # V1 handlers — node lifecycle (unchanged from UIEventTranslator)
     # ==================================================================

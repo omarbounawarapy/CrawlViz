@@ -42,6 +42,20 @@ class StoppingPipeline(BasePipeline):
             StorageNodeUpdatedEvent: self._on_node_updated,
         }
 
+    async def start(self) -> None:
+        # Time conditions must fire on a quiet crawl too, not only when
+        # an event arrives.
+        timer = asyncio.create_task(self._time_watch())
+        try:
+            await super().start()
+        finally:
+            timer.cancel()
+
+    async def _time_watch(self, interval: float = 0.1) -> None:
+        while not self.stopped:
+            await asyncio.sleep(interval)
+            await self._check_time_conditions()
+
     async def _process(self, event, worker_id: int) -> None:
         handler = self.handlers.get(type(event))
         if handler:

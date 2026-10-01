@@ -183,7 +183,7 @@ class Crawler:
 
         tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
         try:
-            await asyncio.gather(*tasks)
+            await self._run_until_stopped(tasks)
         finally:
             # Two separate aiohttp.ClientSessions get opened for this
             # crawl -- requests_pipeline.network_client (page fetches)
@@ -194,6 +194,29 @@ class Crawler:
             # still runs if a pipeline task raises.
             await pipelines["requests"].network_client.close()
             await traced_network.close()
+
+    async def _run_until_stopped(self, tasks: list, grace: float = 5.0) -> None:
+        """Run every task; once the first one finishes (the broker, on
+        StopCrawlEvent) give the rest `grace` seconds, then cancel any
+        straggler so one hung task cannot keep the crawl "running".
+        A task that raises propagates after the others are cancelled."""
+        running = [asyncio.ensure_future(t) for t in tasks]
+        try:
+            done, pending = await asyncio.wait(
+                running, return_when=asyncio.FIRST_COMPLETED
+            )
+            if pending and not any(d.exception() for d in done if not d.cancelled()):
+                done2, pending = await asyncio.wait(pending, timeout=grace)
+                done |= done2
+            for t in pending:
+                t.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+            for d in done:
+                if not d.cancelled() and d.exception():
+                    raise d.exception()
+        finally:
+            for t in running:
+                t.cancel()
 
     # =========================================================
     # COMPOSITION STEPS

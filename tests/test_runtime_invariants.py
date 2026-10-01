@@ -387,12 +387,6 @@ async def test_scoring_finishes_after_stop_with_a_node_in_flight():
     assert not still_running, f"{len(still_running)} task(s) still running after stop"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="UIWebSocketGateway is not a broker consumer and nothing calls its "
-    "stop(), so gateway.start() never returns after a natural stop. If the fix "
-    "lands in core.Crawler instead of the gateway, move this check there.",
-)
 async def test_gateway_stops_when_the_crawl_stops():
     from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 
@@ -418,11 +412,6 @@ async def test_gateway_stops_when_the_crawl_stops():
     assert gateway_done
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="StoppingPipeline checks max_duration only when an event arrives, so "
-    "a crawl that has gone quiet never hits its time limit.",
-)
 async def test_time_limit_fires_without_further_events():
     broker = EventBroker()
     # StoppingPipeline reads its thresholds off the Crawler instance.
