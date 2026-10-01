@@ -16,6 +16,7 @@ EventBroker registry -- so a future edit that reintroduces this class of gap
 """
 import pytest
 
+from config.paths import RuntimePaths
 from core.crawler import Crawler
 from events import (
     FilteringPipelineErrorEvent,
@@ -54,8 +55,8 @@ class Fake:
 
 
 @pytest.fixture
-def wired_crawler():
-    crawler = Crawler("wikiMD.json")
+def wired_crawler(tmp_path):
+    crawler = Crawler("wikiMD.json", paths=RuntimePaths.under(tmp_path))
     crawler._load_blueprint_config(FAKE_BLUEPRINT)
     pipelines = crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
     crawler._wire_subscriptions(pipelines, Fake())
@@ -113,14 +114,26 @@ class TestTelemetryBridgeCoverage:
 
 
 class TestRuntimeConfigIsTheSource:
-    def test_overrides_reach_the_pipelines(self):
+    def test_overrides_reach_the_pipelines(self, tmp_path):
         from config.runtime_config import RuntimeConfig
 
         cfg = RuntimeConfig.model_validate(
             {"scoring_cascade": {"low_threshold": 0.1, "high_threshold": 0.9},
              "export": {"batch_size": 7}}
         )
-        crawler = Crawler("wikiMD.json", config=cfg)
+        crawler = Crawler("wikiMD.json", config=cfg, paths=RuntimePaths.under(tmp_path))
         crawler._load_blueprint_config(FAKE_BLUEPRINT)
         p = crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
         assert (p["scoring"].low_threshold, p["scoring"].high_threshold) == (0.1, 0.9)
+
+
+class TestFilesystemRootsAreInjectable:
+    def test_construction_needs_no_keys_and_writes_only_under_tmp(self, tmp_path):
+        paths = RuntimePaths.under(tmp_path)
+        assert not paths.keys_file.exists()
+        crawler = Crawler("wikiMD.json", paths=paths)
+        crawler._load_blueprint_config(FAKE_BLUEPRINT)
+        crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
+        assert (tmp_path / "logs").is_dir()
+        assert (tmp_path / "debug").is_dir()
+        assert (tmp_path / "export").is_dir()

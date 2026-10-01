@@ -8,6 +8,7 @@ Node per seed URL, and emits the NodeAddedEvent that starts the crawl.
 
 import json
 import logging
+from pathlib import Path
 
 from config import TEMPLATES_DIR
 from events import NodeAddedEvent
@@ -18,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class BootStrapper:
-    def __init__(self, event_broker, storage, template_file: str):
+    def __init__(self, event_broker, storage, template_file: str, templates_dir=TEMPLATES_DIR):
         self.event_broker = event_broker
         self.storage = storage
-        self.template_file = TEMPLATES_DIR / template_file
+        self.template_file = Path(templates_dir) / template_file
         self.template = None
 
     async def bootstrap(self) -> dict:

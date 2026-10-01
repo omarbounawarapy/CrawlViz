@@ -104,12 +104,13 @@ class DebuggingPipeline(BasePipeline):
         enabled: bool = True,
         max_queue_size: int = 0,
         max_concurrency: int = 2,
+        debug_root="debug",
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
         self.enabled = enabled
 
-        debug_dir = os.path.join("debug", crawl_id[:crawl_id.find("-")])
+        debug_dir = os.path.join(debug_root, crawl_id[:crawl_id.find("-")])
         os.makedirs(debug_dir, exist_ok=True)
 
         path = os.path.join(debug_dir, crawl_id)

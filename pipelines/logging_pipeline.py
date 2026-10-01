@@ -26,11 +26,12 @@ class LoggingPipeline(BasePipeline):
     fine-grained trace events live in pipelines.debugging_pipeline instead.
     """
 
-    def __init__(self, event_broker, crawl_id, max_queue_size: int = 0, max_concurrency: int = 5):
+    def __init__(self, event_broker, crawl_id, max_queue_size: int = 0, max_concurrency: int = 5,
+                 log_root="logs"):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
 
-        log_dir = os.path.join("logs", crawl_id[:crawl_id.find("-")])
+        log_dir = os.path.join(log_root, crawl_id[:crawl_id.find("-")])
         os.makedirs(log_dir, exist_ok=True)
 
         path = os.path.join(log_dir, crawl_id)

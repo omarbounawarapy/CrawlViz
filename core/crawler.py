@@ -13,10 +13,10 @@ import asyncio
 import logging
 from datetime import datetime
 
+from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from config import (
     DEBUG,
-    EXPORT_PATH,
     RESPECT_ROBOTS,
     USER_AGENT,
     MAX_LLM_LINKS_PER_NODE,
@@ -24,7 +24,6 @@ from config import (
     NLP_LOW_PERCENTILE,
     NLP_PERCENTILE_BUCKETING,
     PERCENTILE_MIN_LINKS,
-    SPACE_STORE_DIR,
 )
 from events import (
     ContentExtractedEvent,
@@ -143,12 +142,21 @@ class Crawler:
     then ``await crawler.start()``.
     """
 
-    def __init__(self, template_file: str, config: RuntimeConfig | None = None):
+    def __init__(
+        self,
+        template_file: str,
+        config: RuntimeConfig | None = None,
+        paths: RuntimePaths | None = None,
+        key_manager: KeyManager | None = None,
+    ):
         self.config = config if config is not None else default_runtime_config()
+        self.paths = paths if paths is not None else default_runtime_paths()
         self.storage = Storage()
         self.template_file = template_file
         self.event_broker = EventBroker()
-        self.key_manager = KeyManager()
+        # Built lazily in _setup_traceability so constructing a Crawler
+        # does not need keys.json.
+        self.key_manager = key_manager
         self.crawl_id = (
             template_file[: template_file.find(".")]
             + "-"
@@ -160,6 +168,7 @@ class Crawler:
             self.event_broker,
             self.storage,
             self.template_file,
+            templates_dir=self.paths.templates_dir,
         ).bootstrap()
 
         self._load_blueprint_config(blueprint)
@@ -249,6 +258,8 @@ class Crawler:
         every request/response also emits a fine-grained trace event
         (see traceability/emitter.py).
         """
+        if self.key_manager is None:
+            self.key_manager = KeyManager(keys_file=self.paths.keys_file)
         tracer = TraceEmitter.from_env(self.event_broker)
         traced_network = TracedNetworkClient(NetworkClient(), tracer)
         traced_llm = TracedLlmHandler(
@@ -273,7 +284,7 @@ class Crawler:
             expansion_config=self.expansion_config,
             embedding_backend=self.config.embeddings.backend,
             model_name=self.config.embeddings.model_name,
-            store_base_dir=SPACE_STORE_DIR,
+            store_base_dir=str(self.paths.space_store_dir),
             persist_space=bool(self.expansion_config.get("persist_space", False)),
             tracer=tracer,
             buffer_manager=buffer_manager,
@@ -339,7 +350,9 @@ class Crawler:
                 "priority_strategy", self.config.scoring_cascade.default_priority_strategy
             ),
         )
-        p["logging"] = LoggingPipeline(self.event_broker, self.crawl_id)
+        p["logging"] = LoggingPipeline(
+            self.event_broker, self.crawl_id, log_root=self.paths.log_dir
+        )
         p["stopping"] = StoppingPipeline(
             self.event_broker,
             StopConditions(
@@ -349,17 +362,20 @@ class Crawler:
                 target_url=self.target_url,
             ),
         )
-        p["debug"] = DebuggingPipeline(self.event_broker, self.crawl_id, enabled=DEBUG)
+        p["debug"] = DebuggingPipeline(
+            self.event_broker, self.crawl_id, enabled=DEBUG, debug_root=self.paths.debug_dir
+        )
         p["transformation"] = TransformationPipeline(self.event_broker, self.extraction_blueprint)
         p["exporting"] = ExportingPipeline(
             self.crawl_id,
             self.blueprint_id,
             blueprint,
             self.event_broker,
+            db_path=self.paths.items_db,
             batch_size=self.config.export.batch_size,
         )
         p["canon"] = CanonicalizationPipeline(
-            self.crawl_id, self.event_broker, export_path=EXPORT_PATH
+            self.crawl_id, self.event_broker, export_path=self.paths.export_dir
         )
         p["retry"] = RetryProcessor(
             self.storage, self.event_broker, requests_pipeline=p["requests"]

@@ -16,7 +16,8 @@ class KeyManager:
     secrets and is gitignored -- it is never committed.
     """
 
-    def __init__(self, cooldown: float = 0):
+    def __init__(self, cooldown: float = 0, keys_file=None):
+        self.keys_file = keys_file if keys_file is not None else BASE_DIR / "keys.json"
         self.registry = self.load_keys()
         self.cooldown = cooldown
         self.indexes = {p: 0 for p in self.registry}
@@ -78,7 +79,7 @@ class KeyManager:
             FileNotFoundError: If ``keys.json`` does not exist at the repo root.
             ValueError: If the file's contents don't match the expected shape.
         """
-        file_path = BASE_DIR / "keys.json"
+        file_path = self.keys_file
 
         if not file_path.exists():
             raise FileNotFoundError(
