@@ -12,6 +12,8 @@ from events import (
 )
 from infrastructure import NetworkClient
 
+from traceability.trace_context import bind_node
+
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
@@ -117,6 +119,7 @@ class RequestsPipeline:
             try:
                 if node is SHUTDOWN:
                     break
+                bind_node(str(node.get_id()))
 
                 await self.event_broker.emit(
                     RequestStartedEvent(

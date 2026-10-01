@@ -19,6 +19,8 @@ from events import (
     ScoringStartedEvent,
 )
 
+from traceability.trace_context import bind_node
+
 from .base_pipeline import BasePipeline
 from .contracts import Annotator, RelevanceScorer
 from .frontier_queue import FrontierQueue
@@ -110,6 +112,7 @@ class ScoringPipeline(BasePipeline):
     # PROCESS ONE QUEUED NODE (FULL DECISION TRACE)
     # =========================================================
     async def _process(self, node, worker_id: int) -> None:
+        bind_node(str(node.get_id()))
         try:
             if not await node.ready:
                 logger.info("Node %s failed upstream; skipping scoring", node.get_id())

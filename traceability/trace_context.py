@@ -25,3 +25,14 @@ def get_trace() -> tuple[str, str]:
 def new_trace_id() -> str:
     """Generate a fresh, short trace identifier."""
     return uuid.uuid4().hex[:12]
+
+
+def bind_node(node_id: str) -> str:
+    """Bind a trace to `node_id` for the current task and return its id.
+
+    The trace id is derived from the node id, so every pipeline stage that
+    handles the same node stamps its events with the same trace.
+    """
+    trace_id = uuid.uuid5(uuid.NAMESPACE_URL, f"node:{node_id}").hex[:12]
+    set_trace(trace_id, node_id)
+    return trace_id

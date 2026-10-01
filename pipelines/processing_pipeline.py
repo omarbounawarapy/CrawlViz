@@ -11,6 +11,8 @@ from events import (
 )
 from models import ItemExtractor, LinkExtractor
 
+from traceability.trace_context import bind_node
+
 from .base_pipeline import BasePipeline
 
 
@@ -60,6 +62,7 @@ class ProcessingPipeline(BasePipeline):
     # =========================================================
     async def _process(self, item, worker_id: int) -> None:
         node, content = item
+        bind_node(str(node.get_id()))
 
         try:
             await self.event_broker.emit(

@@ -502,3 +502,31 @@ async def test_decision_events_keep_values_after_rescore():
     link.score = 99  # scoring retry mutates the shared object
     assert event.records[0]["score"] == 7
     assert 0 < event.seq < other.seq
+
+
+async def test_scoring_runs_under_a_trace_bound_to_the_node():
+    """Trace events emitted while scoring a node carry a non-empty trace_id."""
+    from traceability import get_trace
+
+    seen = []
+
+    class TraceProbe(FixedRelevance):
+        async def score_links(self, links, parent):
+            seen.append(get_trace())
+            return await super().score_links(links, parent)
+
+    broker, storage = EventBroker(), Storage()
+    domain = Domain("synthetic", BASE_URL, ".//a")
+    scoring = make_scoring(broker, TraceProbe(0.5), FixedLlm())
+    broker.subscribe(scoring, [NodeAddedEvent])
+    node = seed_node(storage, domain, "page")
+    node.set_links([Link(f"{BASE_URL}/c{i}", f"c{i}", "") for i in range(3)])
+    node.update_state()
+
+    tasks = [asyncio.create_task(broker.start()), asyncio.create_task(scoring.start())]
+    await broker.emit(NodeAddedEvent(correlation_id=str(node.get_id()), node=node))
+    await wait_until(lambda: bool(seen), 2.0)
+    await broker.emit(StopCrawlEvent("NO_PROGRESS", 1, 0, 0.0))
+    await stop_all(tasks)
+
+    assert seen and seen[0][0] and seen[0][1] == str(node.get_id())
