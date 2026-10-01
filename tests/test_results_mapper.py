@@ -176,3 +176,66 @@ def test_list_response_with_shortened_urls_maps_back_onto_links():
 def test_dict_shaped_response_still_supported():
     raw = {"results": {"https://a.com": {"score": 33}}}
     assert ScoringService._restore_urls(raw, "") == {"https://a.com": {"score": 33}}
+
+
+# ---- typed outcomes (P1.7) ----
+
+
+class TestOutcomes:
+    def test_counts_scored_missing_and_malformed(self):
+        links = [FakeLink("https://a.com"), FakeLink("https://b.com"), FakeLink("https://c.com")]
+        mapper = ResultMapper()
+        mapper.map_results({"https://a.com": {"score": 5}, "https://b.com": "junk"}, links)
+        assert mapper.outcomes == {"scored": 1, "malformed_entry": 1, "missing": 1}
+        assert links[1].relevance_type == "ambiguous"
+
+    def test_non_dict_response_is_counted(self):
+        mapper = ResultMapper()
+        mapper.map_results(None, [FakeLink("https://a.com")])
+        mapper.map_results(["x"], [FakeLink("https://a.com")])
+        assert mapper.outcomes["malformed_response"] == 2
+
+    def test_map_partial_survives_non_dict_entry(self):
+        links = [FakeLink("https://a.com")]
+        mapper = ResultMapper()
+        mapper.map_partial({"https://a.com": 7}, links)
+        assert mapper.outcomes["malformed_entry"] == 1
+
+
+class TestExpansionContract:
+    def _service(self, send):
+        import asyncio
+        from unittest.mock import MagicMock
+        from services.nlp_service import NLPService
+
+        svc = NLPService.__new__(NLPService)
+        svc.expansion_outcomes = __import__("services.llm_contracts", fromlist=["Outcomes"]).Outcomes()
+        svc.prompt_builder = MagicMock(build=MagicMock(return_value="p"))
+        svc.blueprint_id = "bp"
+        svc.llm_type, svc.model_information = "t", "m"
+
+        async def emit(_):
+            pass
+
+        svc._emit = emit
+        svc.llm_handler = MagicMock(send=send)
+        return svc, asyncio
+
+    def test_junk_and_exceptions_yield_empty_seeds(self):
+        async def junk(_):
+            return "oops"
+
+        async def boom(_):
+            raise RuntimeError("down")
+
+        for send, key in ((junk, "malformed_response"), (boom, "request_failed")):
+            svc, asyncio = self._service(send)
+            assert asyncio.run(svc.create_expansions("t", {})) == {"descriptions": []}
+            assert svc.expansion_outcomes[key] == 1
+
+    def test_valid_descriptions_are_cleaned(self):
+        async def ok(_):
+            return {"descriptions": [" a ", 3, "", "b"]}
+
+        svc, asyncio = self._service(ok)
+        assert asyncio.run(svc.create_expansions("t", {})) == {"descriptions": ["a", "b"]}

@@ -18,6 +18,7 @@ from nlp import (
     VectorSpace,
     create_embedding_engine,
 )
+from .llm_contracts import Outcomes, parse_expansion_seeds
 from traceability.expansion_trace_events import (
     EXP_CandidatePruned,
     EXP_PromptBuilt,
@@ -121,6 +122,7 @@ class NLPService:
         self.start_version: int | None = None
         self.target_vec: np.ndarray | None = None
         self.expansion_config = expansion_config
+        self.expansion_outcomes = Outcomes()
         self.llm_type = expansion_config["llm_type"]
         self.model_information = expansion_config["llm_model"]
         self.buffer_manager = buffer_manager
@@ -248,8 +250,19 @@ class NLPService:
             prompt,
         )
         logger.debug("Sending expansion request to LLM for '%s'", target)
-        results = await self.llm_handler.send(context)
-        return results
+        try:
+            raw = await self.llm_handler.send(context)
+        except Exception:
+            logger.exception("Expansion request failed for '%s'", target)
+            self.expansion_outcomes["request_failed"] += 1
+            return {"descriptions": []}
+        parsed = parse_expansion_seeds(raw)
+        if parsed is None:
+            logger.warning("Expansion response was not an object: %.200r", raw)
+            self.expansion_outcomes["malformed_response"] += 1
+            return {"descriptions": []}
+        self.expansion_outcomes["ok" if parsed.descriptions else "empty"] += 1
+        return parsed.model_dump()
 
     def load_space(self) -> None:
         path = self.store.space_path(self.blueprint_id)
