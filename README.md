@@ -11,9 +11,9 @@ A topic-focused web crawler that scores every link before it fetches it, draws t
 
 <br>
 
-<img src="docs/assets/graph-real-crawl.jpg" alt="CrawlViz graph of a real crawl seeded from Diabetes on Wikipedia: 512 pages found, relevant links ringed in vermilion with their LLM score" width="900">
+<img src="docs/assets/graph-real-crawl.jpg" alt="CrawlViz graph of a real crawl seeded from Diabetes on Wikipedia, annotated: 1 expanded page, 2 a link judged relevant with its LLM score, 3 links skipped as off-topic, 4 the replay timeline" width="900">
 
-<sub>A real crawl of en.wikipedia.org, seeded from "Diabetes" and stopped at 512 pages. Darker discs got further along, vermilion rings mark links judged relevant (the number is the LLM's 0 to 100 score), and dashed boxes were skipped as off-topic.</sub>
+<sub>A real crawl of en.wikipedia.org, seeded from "Diabetes" and stopped at 512 pages.<br>**1** A darker disc: the page was fetched and its links were expanded. **2** A vermilion ring with a number: the link was judged relevant, and the number is the LLM's 0 to 100 score. **3** A dashed box: a group of links skipped as off-topic. **4** The timeline: every event is kept, so the crawl can be replayed.</sub>
 
 </div>
 
