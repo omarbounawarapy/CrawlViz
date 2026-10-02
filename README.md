@@ -27,6 +27,14 @@ Around that decision sits an asyncio event bus coordinating roughly a dozen inde
 
 ## A tour of the interface
 
+### Watch a whole run
+
+One minute, recorded with Playwright against a real crawl of en.wikipedia.org from "Diabetes": pick a blueprint, start, watch the graph grow (the long middle is sped up 10x), open a scored page, then scrub back through the history.
+
+<p align="center">
+  <a href="docs/assets/crawlviz-run.mp4"><img src="docs/assets/crawlviz-run-poster.jpg" alt="Play the one-minute recording of a CrawlViz run" width="860"></a>
+</p>
+
 ### Click any page, get the reason
 
 Selecting a node opens the reasoning for that one link. The **Scoring** tab breaks the local NLP score into eleven signals (target similarity, contextual consistency, novelty injection, cluster distance and so on) and shows how it combined with the LLM's rating into a final priority. The **Activity** tab lists every pipeline stage that touched the page, with timings.
