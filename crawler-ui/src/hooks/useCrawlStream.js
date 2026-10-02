@@ -23,12 +23,16 @@ export function useCrawlStream(dispatch, wsUrl = "ws://localhost:8765") {
       };
 
       ws.onmessage = ({ data }) => {
+        if (wsRef.current !== ws) return;
         const event = normalizeEvent(data);
         if (event) dispatch(event);
       };
 
       ws.onclose = () => {
-        if (!alive.current) return;
+        // A socket that has been replaced (StrictMode's mount/unmount/mount
+        // closes the first one after the second is already live) must not
+        // dispatch or reconnect, or every event would arrive twice.
+        if (!alive.current || wsRef.current !== ws) return;
         dispatch({ type: "__WS_DISCONNECTED" });
         setTimeout(() => connectRef.current?.(), retryDelay.current);
         retryDelay.current = Math.min(retryDelay.current * 2, 15000);
