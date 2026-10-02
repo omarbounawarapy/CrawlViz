@@ -7,7 +7,7 @@ A topic-focused web crawler that scores every link before it fetches it, draws t
 
 [![CI](https://github.com/omarbounawarapy/crawlviz/actions/workflows/ci.yml/badge.svg)](https://github.com/omarbounawarapy/crawlviz/actions/workflows/ci.yml) [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE) [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](pyproject.toml)
 
-[Tour](#a-tour-of-the-interface) · [Run it yourself](#run-it-yourself) · [Architecture](docs/01-architecture.md) · [All docs](docs/00-index.md) · [Project report](report/rapport-english.pdf)
+[Tour](#a-tour-of-the-interface) · [Run it yourself](#run-it-yourself) · [Docs index](#start-here-by-what-you-need) · [Project report](report/rapport-english.pdf)
 
 <br>
 
@@ -123,10 +123,10 @@ Open <http://localhost:5173>. The landing page has a **Load a sample replay** bu
 
 The deep dives explain the mechanism behind each of these, not just the label:
 
-- **A two-stage scoring cascade**, not a single LLM call per link. Every candidate link is first scored by a local sentence-embedding similarity pass (milliseconds, no network call); only a budgeted, strategy-dependent sample of the mid-confidence links is then sent to an LLM, which keeps LLM cost and latency from becoming the bottleneck. [See it in the tour](#tune-the-cascade) or read [`docs/04-deep-dive-semantic-scoring.md`](docs/04-deep-dive-semantic-scoring.md).
-- **An in-process pub/sub event bus** (57 distinct typed events across the backend) decouples fetching, extraction, filtering, scoring, priority calculation, transformation, and export into independently scheduled pipelines that never call each other directly. See [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md).
-- **A `Future`-based readiness gate on every node** (`Node.ready`) that solves a genuine race condition. It lets the scoring pipeline pick up a node the instant it's created, while still guaranteeing it won't try to score a node whose content hasn't finished being fetched and processed. See [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md#the-nodeready-synchronization-gate).
-- **A checkpoint-assisted event-sourced frontend.** The React state is built entirely by replaying a WebSocket event log through a pure reducer. The UI can scrub to any past point by seeking to the nearest periodic checkpoint and replaying only the remainder. [See it in the tour](#scrub-backward-through-the-crawl) or read [`docs/05-deep-dive-resilience-observability.md`](docs/05-deep-dive-resilience-observability.md).
+- **A two-stage scoring cascade**, not one LLM call per link: a local embedding pass scores everything, and only a budgeted sample of mid-confidence links goes to an LLM. [Tour](#tune-the-cascade) · [`docs/04`](docs/04-deep-dive-semantic-scoring.md)
+- **An in-process pub/sub event bus** (57 typed events) keeps fetching, extraction, scoring, priority and export as independent pipelines. [`docs/03`](docs/03-deep-dive-event-pipeline.md)
+- **A `Future`-based readiness gate on every node** (`Node.ready`) that fixes a genuine race between scoring and fetching. [`docs/03`](docs/03-deep-dive-event-pipeline.md#the-nodeready-synchronization-gate)
+- **A checkpoint-assisted event-sourced frontend**: state is a pure reducer over the event log, so the UI scrubs from the nearest checkpoint. [Tour](#scrub-backward-through-the-crawl) · [`docs/05`](docs/05-deep-dive-resilience-observability.md)
 - **A declarative blueprint model.** A crawl's seeds, domains, scoring strategy, extraction fields, and stop conditions are all data (a JSON document validated against a Pydantic schema), not code. The crawl engine itself is written once and reused across arbitrarily many topic configurations.
 
 ## What CrawlViz is not (yet)
