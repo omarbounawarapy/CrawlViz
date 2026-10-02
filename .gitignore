@@ -15,3 +15,7 @@ dist/
 
 # Local notes
 handoff.md
+
+# Benchmark data: recorded pages and caches (large, regenerable)
+benchmark/data/raw/
+benchmark/data/*.jsonl
