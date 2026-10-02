@@ -1,4 +1,6 @@
 """The frozen-graph benchmark runs policies through the real pipelines."""
+import pytest
+
 from benchmark import POLICIES, run_policy, synthetic_graph
 
 
@@ -67,7 +69,9 @@ async def test_llm_cache_answers_a_repeat_without_calling_the_model(tmp_path):
             return {"labels": {"1": True}}
 
     inner = Inner()
-    ctx = lambda: LlmContext("groq", "m", "prompt")
+    def ctx():
+        return LlmContext("groq", "m", "prompt")
+
     first = CachedLlm(inner, tmp_path / "c.jsonl")
     await first.send(ctx())
     await first.send(ctx())
@@ -88,7 +92,9 @@ async def test_llm_cache_scopes_give_independent_realizations_and_replay_each(tm
             return {"answer": self.calls}  # a different realization every live call
 
     inner, path = Inner(), tmp_path / "c.jsonl"
-    ctx = lambda: LlmContext("groq", "m", "same prompt")
+    def ctx():
+        return LlmContext("groq", "m", "same prompt")
+
     rep0 = await CachedLlm(inner, path, scope="rep0").send(ctx())
     rep1 = await CachedLlm(inner, path, scope="rep1").send(ctx())
     assert rep0 != rep1 and inner.calls == 2  # repeat 1 did not replay repeat 0
@@ -110,7 +116,6 @@ def test_unscoped_cache_key_is_the_original_one(tmp_path):
 
 # --- Threats to the validity of a measurement -------------------------------
 
-import pytest
 
 
 async def test_visit_order_does_not_depend_on_scoring_latency():

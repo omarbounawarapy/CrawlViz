@@ -10,7 +10,6 @@ labels are added in a separate step.
 """
 import argparse
 import asyncio
-import json
 from collections import deque
 from pathlib import Path
 from urllib.parse import unquote, urldefrag
@@ -113,7 +112,7 @@ async def record(seed: str, pages: int, cache: Path, delay: float, workers: int)
     print()
     # Close the graph: a link to a page that was never recorded would 404 in replay.
     for page in recorded.values():
-        page["links"] = [l for l in page["links"] if l["to"] in recorded]
+        page["links"] = [link for link in page["links"] if link["to"] in recorded]
         page["relevant"] = None
     return FrozenGraph(seed=seed, pages=recorded)
 

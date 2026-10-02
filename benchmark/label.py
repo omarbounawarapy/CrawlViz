@@ -13,7 +13,6 @@ evidence the metric measures what it should.
 import argparse
 import asyncio
 import csv
-import json
 import random
 import re
 from pathlib import Path

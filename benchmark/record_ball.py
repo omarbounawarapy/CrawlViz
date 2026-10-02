@@ -76,7 +76,7 @@ async def record(seed: str, cache_path: Path, workers: int) -> FrozenGraph:
 
     def links_of(name):
         page = cache.get(name)
-        return [l["to"] for l in page["links"]] if page else []
+        return [link["to"] for link in page["links"]] if page else []
 
     print("distance 0 and 1")
     await fetch_all([seed], cache, cache_path, workers)
@@ -103,11 +103,11 @@ async def record(seed: str, cache_path: Path, workers: int) -> FrozenGraph:
         if k in pages:
             continue
         links, seen = [], set()
-        for l in page["links"]:
-            t = canon.get(l["to"], key(l["to"]))
+        for link in page["links"]:
+            t = canon.get(link["to"], key(link["to"]))
             if t in members and t != k and t not in seen:
                 seen.add(t)
-                links.append({"to": t, "anchor": l["anchor"]})
+                links.append({"to": t, "anchor": link["anchor"]})
         pages[k] = {"title": page["title"], "text": page["text"], "label": None, "links": links}
     return FrozenGraph(seed=canon[seed], pages=pages)
 

@@ -84,7 +84,7 @@ class GraphFetcher:
             raise RuntimeError("404 Not Found")
         self.fetched.append(name)
         items = "".join(
-            f'<li><a href="/{l["to"]}">{html.escape(l["anchor"])}</a></li>' for l in page["links"]
+            f'<li><a href="/{link["to"]}">{html.escape(link["anchor"])}</a></li>' for link in page["links"]
         )
         if "text" not in page:  # synthetic page: anchors only
             return f"<html><body><h1>{name}</h1><ul>{items}</ul></body></html>"
@@ -119,7 +119,7 @@ def synthetic_graph(
     rng = random.Random(f"graph:{seed}")
     names = [f"p{i}" for i in range(n_pages)]
     relevant = set(rng.sample(names[1:], int(relevant_fraction * n_pages)))
-    rel_list, other_list = sorted(relevant), [n for n in names if n not in relevant]
+    rel_list = sorted(relevant)
     false_pos = (1 - anchor_signal) ** 2
 
     def anchor(target: str) -> str:

@@ -1,7 +1,6 @@
 """Applies GRAPH_RULE.md: link distance to the target and radius-2 ball size per candidate seed.
 Uses only the MediaWiki links API (titles, no page bodies)."""
 import asyncio
-import sys
 
 import aiohttp
 
@@ -27,7 +26,7 @@ async def links_of(session, titles: list[str]) -> dict[str, set[str]]:
                 src = norm.get(redir.get(t, t), redir.get(t, t))
                 src = src if src in out else next((b for b in batch if b.replace("_", " ") == src), None)
                 if src in out:
-                    out[src] |= {l["title"] for l in page.get("links", [])}
+                    out[src] |= {link["title"] for link in page.get("links", [])}
             if "continue" not in data:
                 break
             params.update(data["continue"])

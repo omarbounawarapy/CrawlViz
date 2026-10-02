@@ -16,7 +16,6 @@ import logging
 import random
 import types
 
-import pytest
 
 from config import (
     HIGH_SCORE_LLM_FRACTION,
