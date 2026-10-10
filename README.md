@@ -137,6 +137,10 @@ The deep dives explain the mechanism behind each of these, not just the label:
 - **A checkpoint-assisted event-sourced frontend**: state is a pure reducer over the event log, so the UI scrubs from the nearest checkpoint. [Tour](#scrub-backward-through-the-crawl) · [`docs/05`](docs/05-deep-dive-resilience-observability.md)
 - **A declarative blueprint model.** A crawl's seeds, domains, scoring strategy, extraction fields, and stop conditions are all data (a JSON document validated against a Pydantic schema), not code. The crawl engine itself is written once and reused across arbitrarily many topic configurations.
 
+## Project history
+
+CrawlViz started as a final-year project (2025-2026). The first commit in this repository is the version presented at the defence; every later commit was made after it.
+
 ## What CrawlViz is not (yet)
 
 - It is **not distributed**. It's a single-process asyncio application with in-memory state; "concurrency" here means cooperative multitasking within one process, not multiple machines or processes.

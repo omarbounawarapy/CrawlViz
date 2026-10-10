@@ -1,8 +1,9 @@
 """Composition root for a single crawl session.
 
 ``Crawler.start()`` reads a blueprint (see ``core.boot_strapper``),
-builds the ~16 pipeline objects described in the project report's
-architecture chapters, wires them together through one
+builds the 13 pipelines (plus the space updater and the telemetry
+bridge and gateway) described in the project report's architecture
+chapters, wires them together through one
 :class:`~core.event_broker.EventBroker`, and runs them concurrently
 until a stop condition fires and every pipeline has drained (see
 ``pipelines.stopping_pipeline``), or until the task is cancelled from
