@@ -69,16 +69,15 @@ make dev-frontend  # cd crawler-ui && npm run dev
 
 ## Testing
 
-**Backend:** 123 tests across 7 files (`test_base_pipeline.py`, `test_blueprint_schema.py`, `test_blueprint_translator.py`, `test_event_wiring.py`, `test_item_extractor.py`, `test_priority_strategy.py`, `test_results_mapper.py`), run and verified passing during this review:
+**Backend:** 247 tests across 26 files, all passing at commit `267baf0`. A full run takes about 70 seconds on the development machine:
 
 ```bash
-pip install pytest pytest-asyncio
-pytest tests/
+uv run pytest
 ```
 
-Note: `test_event_wiring.py` constructs an `LlmHandler`, which requires `keys.json` to exist (even with placeholder values. It doesn't make a real network call in these tests, it just needs the file present). Copy `keys.example.json` to `keys.json` before running the full suite.
+Tests write only under pytest's `tmp_path`. A `Crawler` can be constructed without `keys.json` (`test_construction_needs_no_keys_and_writes_only_under_tmp` in `test_event_wiring.py`).
 
-`test_event_wiring.py` is worth reading even if you're not modifying this codebase — it's a regression suite that specifically encodes findings from an earlier architecture audit (e.g. `TestCascadeSubscriptionGap`, asserting `PriorityPipeline` actually receives `HighScoreLinksEvent`). Turning an architecture audit's findings directly into tests is a genuinely useful pattern for preventing the same class of bug from recurring.
+`test_event_wiring.py` is worth reading even if you're not modifying this codebase. It is a regression suite that encodes findings from an earlier architecture audit (e.g. `TestCascadeSubscriptionGap`, asserting `PriorityPipeline` actually receives `HighScoreLinksEvent`). `test_runtime_invariants.py` covers the runtime guarantees fixed during the stabilization phase; see [`10-stabilization.md`](10-stabilization.md).
 
 **Frontend:** `crawler-ui/` has `vitest` and `@testing-library/react` configured, with tests present for the reducer (`state/reducer.test.js`) and the app shell (`App.test.jsx`):
 
