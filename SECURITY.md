@@ -19,7 +19,7 @@ Include:
 
 ## What's out of scope
 
-- Denial-of-service reports against a single-process, single-machine crawler with no built-in rate limiting for its own control API — this is a known, accepted limitation of the current architecture, not something we're tracking as a vulnerability.
+- Denial-of-service reports against the control API. The crawler is a single-process, single-machine app with no built-in rate limiting. This is a known limitation of the current architecture, and it is not tracked as a vulnerability.
 - Issues that only manifest with a maliciously crafted `keys.json` or blueprint file you'd have to place there yourself (i.e. you already have local filesystem access).
 
 ## Response

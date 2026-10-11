@@ -65,10 +65,10 @@ sequenceDiagram
     Export->>Export: buffer transformed_items for SQLite write
 ```
 
-Two things worth being precise about here, because a casual reading of the report's five-state node lifecycle ([§2.7.2 — States in a Node's Lifecycle](../report/rapport-english.pdf#page=19), `CREATED → FETCHED → FILTERED → SCORED → EXPANDED`) would miss them:
+Two details are easy to miss when reading the report's five-state node lifecycle ([§2.7.2: States in a Node's Lifecycle](../report/rapport-english.pdf#page=19), `CREATED → FETCHED → FILTERED → SCORED → EXPANDED`):
 
-- **There's an unlabeled sixth stage.** The `LoggingPipeline` emits a `TRANSFORMED` log line between `FILTERED` and `SCORED` (`pipelines/logging_pipeline.py`), corresponding to `TransformationCompletedEvent`. It isn't one of the report's five named lifecycle states, but it is a distinct, separately logged step in the actual pipeline.
-- **The scoring gate is transformation-complete, not filtering-complete.** `node.ready` is resolved by `StoragePipeline._on_transformation_completed`, which fires only after *both* the filtered links are known *and* the item transformation chain has finished. A node whose extracted items are slow to transform (e.g., a long transform chain) delays scoring for that node's links too, even though link scoring conceptually has nothing to do with item transformation. This is a real coupling in the current implementation, not an inference.
+- **There's an unlabeled sixth stage.** The `LoggingPipeline` emits a `TRANSFORMED` log line between `FILTERED` and `SCORED` (`pipelines/logging_pipeline.py`), corresponding to `TransformationCompletedEvent`. It is not one of the report's five named states, but it is a separate, logged step in the pipeline.
+- **The scoring gate is transformation-complete, not filtering-complete.** `node.ready` is resolved by `StoragePipeline._on_transformation_completed`, which fires only after *both* the filtered links are known *and* the item transformation chain has finished. A node whose extracted items are slow to transform (e.g., a long transform chain) delays scoring for that node's links too, even though link scoring conceptually has nothing to do with item transformation. This coupling exists in the current implementation.
 
 ## 3. Scoring: the cascade
 
@@ -106,4 +106,4 @@ This is where the frontier actually grows: each scored link becomes a brand-new 
 
 ## 6. What the browser sees, the whole time
 
-None of the above waits for a UI client to be connected. `TelemetryBridge` is just one more broker subscriber; if no browser is connected, it still updates `CrawlStateSnapshot` and calls `UIWebSocketGateway.broadcast()`, which is a no-op with zero connected clients. When a client *does* connect (at any point, including mid-crawl), it receives one `SNAPSHOT_FULL` message, the entire current state, node graph and telemetry counters both, and then the same incremental messages every other connected client gets from that point on. See [`05-deep-dive-resilience-observability.md`](05-deep-dive-resilience-observability.md) for how the frontend turns that stream into a scrubbable timeline.
+None of the above waits for a UI client. `TelemetryBridge` is one more broker subscriber. With no browser connected, it still updates `CrawlStateSnapshot`, and `UIWebSocketGateway.broadcast()` does nothing because no clients are connected. When a client *does* connect (at any point, including mid-crawl), it receives one `SNAPSHOT_FULL` message, the entire current state, node graph and telemetry counters both, and then the same incremental messages every other connected client gets from that point on. See [`05-deep-dive-resilience-observability.md`](05-deep-dive-resilience-observability.md) for how the frontend turns that stream into a scrubbable timeline.

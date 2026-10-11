@@ -22,9 +22,9 @@ Anchor text, URL, and local DOM context are combined into one composite string b
 
 A link's relevance is computed as a similarity against a set of *basis vectors* representing the target topic, not against a single "topic vector." `nlp/vector_space.py`'s `VectorSpace` holds this set and answers two questions: how similar is a candidate to the *closest* basis vector (`max` cosine similarity, not average; a link only needs to match one facet of the topic well), and how novel or under-covered is a candidate relative to what's already been visited (via a `DBSCAN` clustering pass over visited-content embeddings, so "novelty" means "far from existing clusters," not just "different from the single most recent item").
 
-At the start of a crawl, this basis is thin. Only the seed pages and a short configured topic description exist. The report calls this the cold-start problem explicitly ([§2.1.3 — Multi-Facet Representation of the Topic](../report/rapport-english.pdf#page=11)): with too few basis vectors, the "semantic" similarity score degenerates into something closer to lexical overlap. CrawlViz's answer, also from the report, is LLM-generated **conceptual expansions**. At bootstrap, the LLM is prompted to generate a configurable number of topic-adjacent descriptions (the report's reference run used 50), which are embedded and added to the basis before crawling starts. This is a real, load-bearing use of the LLM that happens *before* any link scoring, not a fallback path.
+At the start of a crawl, this basis is thin. Only the seed pages and a short configured topic description exist. The report names this the cold-start problem ([§2.1.3: Multi-Facet Representation of the Topic](../report/rapport-english.pdf#page=11)): with too few basis vectors, the "semantic" similarity score degenerates into something closer to lexical overlap. CrawlViz's answer, also from the report, is LLM-generated **conceptual expansions**. At bootstrap, the LLM is prompted to generate a configurable number of topic-adjacent descriptions (the report's reference run used 50), which are embedded and added to the basis before crawling starts. This is a real, load-bearing use of the LLM that happens *before* any link scoring, not a fallback path.
 
-**The basis keeps growing during the crawl, not just at bootstrap.** `nlp/space_updater.py`'s `SpaceUpdater` subscribes to scoring-adjacent events, buffers incoming signal via `BufferManager`, and periodically (by count threshold or time threshold, whichever comes first) commits new vectors to the space through `NLPService`, never bypassing it, so the vector space always has one write path. This is what the report's [§2.4 — Dynamic Enrichment of the Semantic Basis](../report/rapport-english.pdf#page=13) describes: LLM-produced expansions discovered *during* the crawl (from links the LLM did score) get folded back into the basis, so later-discovered regions of the topic benefit from what was learned scoring earlier ones. `space_store.py` persists this basis to disk, which is also what makes cross-session reuse of a learned semantic basis possible.
+**The basis keeps growing during the crawl, not just at bootstrap.** `nlp/space_updater.py`'s `SpaceUpdater` subscribes to scoring-adjacent events, buffers incoming signal via `BufferManager`, and periodically (by count threshold or time threshold, whichever comes first) commits new vectors to the space through `NLPService`, never bypassing it, so the vector space always has one write path. This is what the report's [§2.4: Dynamic Enrichment of the Semantic Basis](../report/rapport-english.pdf#page=13) describes: LLM-produced expansions discovered *during* the crawl (from links the LLM did score) get folded back into the basis, so later-discovered regions of the topic benefit from what was learned scoring earlier ones. `space_store.py` persists this basis to disk, which is also what makes cross-session reuse of a learned semantic basis possible.
 
 ## Stage 3: the composite NLP score and bucketing
 
@@ -35,10 +35,10 @@ At the start of a crawl, this basis is thin. Only the seed pages and a short con
 | Bucket | Condition | What happens to it |
 |---|---|---|
 | `low` | score < `LOW` | Mostly dropped. A small random sample is kept anyway, specifically to avoid the crawl converging on a local optimum by only ever reinforcing what it already believes is relevant. |
-| `mid` | `LOW` ≤ score ≤ `HIGH` | All of it goes to the LLM. This is the ambiguous band where the cheap signal genuinely can't decide. |
+| `mid` | `LOW` ≤ score ≤ `HIGH` | All of it goes to the LLM. This is the ambiguous band, where the cheap signal cannot decide. |
 | `high` | score > `HIGH` | A top-K-plus-random sample is sent to the LLM (to spend a little budget confirming high-confidence guesses and improve precision); the rest is fast-tracked as `trusted_no_llm`, its priority computed from NLP signals alone, per the strategy in use. |
 
-This is the report's cascade architecture ([§2.3.2 — Cascade Architecture](../report/rapport-english.pdf#page=12)) implemented directly: a fast filter that's always on, followed by a costly evaluation applied only where it changes the decision.
+This is the report's cascade architecture ([§2.3.2: Cascade Architecture](../report/rapport-english.pdf#page=12)) implemented directly: a fast filter that's always on, followed by a costly evaluation applied only where it changes the decision.
 
 ## Stage 4: the LLM pass
 
@@ -49,7 +49,7 @@ Sampled links are batched, not sent one per request, into a single prompt built 
 - **LLM scoring strategy** (`TOPICAL`, `PATHFINDING`, `EXPLORATION`, ...): defined in `models/prompts.py`, controls what the LLM is asked to optimize for when judging a link's relevance.
 - **Priority strategy** (`aggressive`, `balanced`, `exploration`): defined in `priority/strategy.py`, controls how a link's NLP signals and LLM score are weighted into the final number that ranks the crawl frontier.
 
-The two use overlapping names (`exploration` appears in both) for genuinely different concepts. `priority/strategy.py`'s own module docstring calls this out explicitly; it's not this documentation inventing a distinction, it's a distinction the codebase's own author already flagged as confusable and worth documenting carefully.
+Both use the name `exploration` for different concepts. `priority/strategy.py`'s module docstring flags the overlap.
 
 ## Stage 5: priority, where NLP and LLM signals actually combine
 
@@ -84,4 +84,4 @@ flowchart LR
 
 ## Is this "AI decides which links to visit"?
 
-The mechanism above is why the shorthand undersells the design. The LLM functions as a selectively invoked ranking signal, consulted for a budgeted, strategy-chosen sample of links. Its output is one weighted input among several into a priority function it doesn't control the weighting of, and the majority of links in a typical node (the clearly low and the clearly high) never reach it at all. The priority function and the frontier queue decide which links to visit; the LLM's role is to supply one high-quality, expensive signal to a subset of those decisions, and to occasionally expand what "on topic" even means via conceptual expansions. That's a meaningfully different, and more defensible cost-wise, architecture than "the LLM picks the links."
+The LLM is a selectively invoked ranking signal. It is consulted for a budgeted, strategy-chosen sample of links. Its output is one weighted input to a priority function, and most links in a node never reach it: the clearly low and the clearly high are decided by the NLP score. The priority function and the frontier queue choose which links to visit. The LLM supplies one expensive signal to a subset of those decisions, and it helps expand what "on topic" means through the conceptual expansions. This costs far fewer LLM calls than asking the LLM to pick every link.

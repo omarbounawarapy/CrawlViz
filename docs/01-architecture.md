@@ -65,7 +65,7 @@ flowchart TB
     RunR -->|starts/stops| Boot
 ```
 
-**Reading this diagram:** the control plane exists independently of any running crawl. You can list templates or check `/status` with nothing running. The data plane is instantiated fresh per crawl by `core.Crawler` (built in `core/crawler.py`, bootstrapped by `core/boot_strapper.py`). Every pipeline talks to the broker and nothing else. There are no direct pipeline-to-pipeline method calls in the crawl's steady-state operation, which is what "event-driven" concretely means here, not a loose synonym for "asynchronous." The report's system-overview diagram walks through the same broker, plane split, and storage/export separation at the design level: [Chapter 3 — Design, "Global View"](../report/rapport-english.pdf#page=29).
+**Reading this diagram:** the control plane exists independently of any running crawl. You can list templates or check `/status` with nothing running. The data plane is created fresh for each crawl by `core.Crawler` (built in `core/crawler.py`, bootstrapped by `core/boot_strapper.py`). Every pipeline talks to the broker and nothing else. During a crawl there are no direct pipeline-to-pipeline method calls. In this codebase, "event-driven" describes the wiring literally. The report's system-overview diagram walks through the same broker, plane split, and storage/export separation at the design level: [Chapter 3: Design, "Global View"](../report/rapport-english.pdf#page=29).
 
 ## Component responsibilities
 
@@ -83,13 +83,13 @@ flowchart TB
 
 ## The control-plane / data-plane split
 
-`main.py`'s three routers (`templates`, `run`, `validation`) are always live, independent of whether a crawl is executing. The codebase frames this explicitly as CQRS-adjacent: commands (`POST /run`, `POST /stop`) go through `routes/run.py` and mutate the running `Crawler` instance; queries about a *finished* crawl's data go through `routes/validation.py` and read `items.db` directly, never touching the live in-memory `Storage`. The live in-memory graph, meanwhile, is exposed only through the WebSocket data plane (`UIWebSocketGateway`), not through REST. A REST client cannot ask "what does the graph look like right now"; only a WebSocket client, subscribed to the live event stream, can. This control-plane/data-plane split is the same one the report frames as CQRS-adjacent: [Chapter 3 — Design, "Global View"](../report/rapport-english.pdf#page=29).
+`main.py`'s three routers (`templates`, `run`, `validation`) are always live, independent of whether a crawl is executing. The split is close to CQRS: commands (`POST /run`, `POST /stop`) go through `routes/run.py` and mutate the running `Crawler` instance; queries about a *finished* crawl's data go through `routes/validation.py` and read `items.db` directly, never touching the live in-memory `Storage`. The live in-memory graph, meanwhile, is exposed only through the WebSocket data plane (`UIWebSocketGateway`), not through REST. A REST client cannot ask "what does the graph look like right now"; only a WebSocket client, subscribed to the live event stream, can. The report describes the same control-plane and data-plane split: [Chapter 3: Design, "Global View"](../report/rapport-english.pdf#page=29).
 
-This separation is why `routes/validation.py` can be a genuinely minimal, read-only, allowlisted SQL layer (`routes/validation_db.py`). Table names are checked against a regex and a blocklist of SQLite internals before ever being interpolated into a query string, every query is `LIMIT`-bounded (max 50 rows), and the connection is opened `mode=ro`. It has no reason to be more than that, because it was never asked to also serve live state.
+This separation lets `routes/validation.py` stay a small, read-only, allowlisted SQL layer (`routes/validation_db.py`). Table names are checked against a regex and a blocklist of SQLite internals before ever being interpolated into a query string, every query is `LIMIT`-bounded (max 50 rows), and the connection is opened `mode=ro`. It has no reason to be more than that, because it was never asked to also serve live state.
 
 ## Storage: two different things named similarly
 
-The report and the codebase both distinguish two persistence concepts that are easy to conflate ([Chapter 3 — Design, "Global View"](../report/rapport-english.pdf#page=29), on the in-memory storage object versus the export database):
+The report and the code both separate two persistence concepts that are easy to confuse ([Chapter 3: Design, "Global View"](../report/rapport-english.pdf#page=29), on the in-memory storage object versus the export database):
 
 1. **The in-memory `Storage` object** (`models/storage.py`): a set of dicts holding `Node`, `Link`, `Domain`, and extracted-item objects, keyed by ID, with content-hash-based dedup sets for both links and items. This is mutated exclusively by `StoragePipeline` and is the graph the UI is watching live. It does not survive process exit.
 2. **`items.db`**: a SQLite database, one table per `(domain, blueprint_id)` pair, written exclusively by `ExportingPipeline` in response to `TransformationCompletedEvent`. This is what `routes/validation.py` reads, and what actually survives a crawl.
@@ -103,11 +103,11 @@ The scoring pipeline never touches an embedding model, a vector index, or an HTT
 - `NLPService` wraps `EmbeddingEngine` (a `sentence-transformers` model wrapper; `encode()` is not cached), `FeatureExtractor` (turns a `Link` into ~7 named scalar signals), and `VectorSpace` (the semantic basis vectors + `numpy`-backed cosine similarity, with a `DBSCAN`-based coverage/novelty measure; see [`04-deep-dive-semantic-scoring.md`](04-deep-dive-semantic-scoring.md)).
 - `LlmHandler` wraps `KeyManager` (cooldown-based multi-key rotation), a per-provider `Translator` (`OpenRouterTranslator`, `OpenAITranslator`, `AnthropicTranslator`, `GeminiTranslator`, or `NvidiaTranslator`, selected by the blueprint's `scoring_type`/`llm_type` string), and `NetworkClient` (the actual `aiohttp` request/retry loop).
 
-Both are constructed once by `BootStrapper` and handed to the pipelines that need them. This is plain dependency injection, not a framework, but it's what makes it possible to unit-test, say, `PriorityPipeline`'s strategy functions (see `tests/test_priority_strategy.py`) without spinning up a real embedding model or a network client.
+Both are constructed once by `BootStrapper` and handed to the pipelines that need them. This is plain dependency injection, not a framework. It makes it possible to unit-test, say, `PriorityPipeline`'s strategy functions (see `tests/test_priority_strategy.py`) without spinning up a real embedding model or a network client.
 
 ## Extensibility
 
-Because every pipeline's only coupling to the rest of the system is "subscribe to these event types, emit those event types," adding a new pipeline is additive: register it with the broker (`b.subscribe(new_pipeline, [SomeEvent])`), and nothing about the existing pipelines needs to change. The `TelemetryBridge` itself is evidence this holds in practice. The V2 rework added it, and the roughly dozen crawl pipelines that existed before it required zero changes to accommodate it; it's simply one more subscriber.
+Because every pipeline's only coupling to the rest of the system is "subscribe to these event types, emit those event types," adding a new pipeline means registering it with the broker (`b.subscribe(new_pipeline, [SomeEvent])`). No existing pipeline changes. `TelemetryBridge` is an example: it was added as one more subscriber, and the crawl pipelines that already existed needed no changes.
 
 ## Where to go next
 

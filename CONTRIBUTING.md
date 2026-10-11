@@ -36,7 +36,7 @@ All four (`ruff`, `pytest`, `eslint`, the frontend test suite) run in CI on ever
 
 - Backend: Python 3.12, type-hinted, formatted per `ruff` (`pyproject.toml`'s `[tool.ruff]`).
 - Frontend: plain JS (no TypeScript), see `crawler-ui/README.md` for the folder layout and the `src/theme/` design-token system new UI code should build on.
-- New backend pipelines follow the `BasePipeline` pattern (`pipelines/base_pipeline.py`) and communicate exclusively through the `EventBroker` — see [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md) before adding a new pipeline or event type.
+- New backend pipelines follow the `BasePipeline` pattern (`pipelines/base_pipeline.py`) and communicate only through the `EventBroker`. Read [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md) before adding a pipeline or event type.
 
 ## Pull requests
 

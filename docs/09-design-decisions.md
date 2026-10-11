@@ -1,12 +1,12 @@
 # Design Decisions
 
-Documented where the repository or report provides direct evidence of the reasoning. Where evidence exists only for the decision, not the rationale, that's stated rather than invented.
+Each rationale is cited where the repository or the report gives direct evidence. Where only the decision is documented, this page states that and does not invent a reason.
 
 ---
 
 ### D1. Two-stage scoring cascade instead of scoring every link with an LLM
 
-**Problem:** Evaluating every discovered link with an LLM doesn't scale. The report names request-count explosion, token cost, and latency as the specific failure modes ([§2.3.1 — The Problem of Evaluation Cost](../report/rapport-english.pdf#page=12)), and frames a naive per-link LLM call as turning the LLM into the crawl's bottleneck.
+**Problem:** Evaluating every discovered link with an LLM doesn't scale. The report names request-count explosion, token cost, and latency as the specific failure modes ([§2.3.1: The Problem of Evaluation Cost](../report/rapport-english.pdf#page=12)), and frames a naive per-link LLM call as turning the LLM into the crawl's bottleneck.
 
 **Options/constraints:** Score everything with the LLM (accurate, doesn't scale); score everything with only local NLP (scales, but a pure embedding-similarity signal alone is a weaker relevance judgment, particularly early in a crawl when the semantic basis is thin); some hybrid of the two.
 
@@ -24,7 +24,7 @@ Documented where the repository or report provides direct evidence of the reason
 
 **Decision:** A single `EventBroker` with typed events and a subscription registry. Pipelines never call each other, only `broker.subscribe()` at wiring time and `broker.dispatch()` (implicitly, via emitting events) at runtime.
 
-**Consequences:** Producers don't know or care who's listening, so extensibility is genuinely additive (see `03-deep-dive-event-pipeline.md`). The cost is a whole system that's easy to reason about stage by stage but harder to reason about holistically: "what happens when a node is created" requires tracing every subscriber to `NodeAddedEvent` across the wiring block, not just reading one function. An earlier architecture audit existed largely because that holistic tracing had drifted from what was actually wired (events emitted with no subscriber, or a needed subscription missing), a direct, acknowledged cost of this architecture's discoverability.
+**Consequences:** Producers do not know who is listening, so a new consumer is added without touching the producers (see `03-deep-dive-event-pipeline.md`). The cost is that the system is easy to reason about one stage at a time but hard to follow end to end. Answering "what happens when a node is created" means tracing every subscriber to `NodeAddedEvent` across the wiring block. Events with no subscriber, or a missing subscription, are easy to introduce this way.
 
 ---
 
@@ -36,7 +36,7 @@ Documented where the repository or report provides direct evidence of the reason
 
 **Decision:** Each `Node` carries its own `asyncio.Future` (`node.ready`), resolved once that specific node's transformation completes. `ScoringPipeline` claims a node immediately on creation but blocks on that node's future before doing any work.
 
-**Consequences:** No polling, no wasted cycles, and the two pipelines stay fully decoupled and independently concurrent. This is a genuinely elegant solution to a real problem, not decoration. The trade-off, noted directly rather than glossed over, is that the future's resolution point is coupled to *transformation* completing, which bundles item-shaping (conceptually unrelated to link scoring) into the gate that unblocks scoring; see `03-deep-dive-event-pipeline.md` for the detail.
+**Consequences:** No polling and no wasted cycles, and the two pipelines stay decoupled and independently concurrent. The trade-off is that the future's resolution point is coupled to *transformation* completing, which bundles item-shaping (conceptually unrelated to link scoring) into the gate that unblocks scoring; see `03-deep-dive-event-pipeline.md` for the detail.
 
 ---
 
@@ -46,9 +46,9 @@ Documented where the repository or report provides direct evidence of the reason
 
 **Options/constraints:** A general-purpose scripting/config API embedded in the engine (flexible, but blurs the line between configuration and code, and makes the engine's behavior harder to reason about in isolation); a declarative, schema-validated configuration document.
 
-**Decision:** A JSON "blueprint" (validated against a Pydantic schema in `routes/blueprint_schema.py`) fully describes seeds, domains, scoring strategy, extraction fields and transforms, and stop conditions. The engine's procedural logic is written once; blueprints only configure it, they don't extend it. This is the declarative-configuration principle the report lays out in [§2.8.1 — Blueprint Principle](../report/rapport-english.pdf#page=19).
+**Decision:** A JSON "blueprint" (validated against a Pydantic schema in `routes/blueprint_schema.py`) fully describes seeds, domains, scoring strategy, extraction fields and transforms, and stop conditions. The engine's procedural logic is written once; blueprints only configure it, they don't extend it. This is the declarative-configuration principle the report lays out in [§2.8.1: Blueprint Principle](../report/rapport-english.pdf#page=19).
 
-**Consequences:** The same engine, unmodified, ran the report's `wikiMD` diabetes case study and can run an entirely different topic/domain by swapping the blueprint. This is directly demonstrated by `templates/wikiMD.json` and `templates/isi.json` coexisting as two working configurations. The cost is that anything not expressible in the blueprint schema (a genuinely novel extraction pattern, a new priority strategy) requires code changes, not configuration. The blueprint model trades flexibility for reuse-without-code-changes within the space it does cover.
+**Consequences:** The same engine ran the report's `wikiMD` diabetes case study, and it runs a different topic and domain by swapping the blueprint. `templates/wikiMD.json` and `templates/isi.json` are two working configurations. The cost is that anything the blueprint schema cannot express (a new extraction pattern, a new priority strategy) needs a code change. The blueprint model trades flexibility for configuration-only reuse within the space it covers.
 
 ---
 
@@ -58,7 +58,7 @@ Documented where the repository or report provides direct evidence of the reason
 
 **Decision:** Two separate stores: in-memory `Storage`, owned exclusively by `StoragePipeline`, holding the live graph; SQLite `items.db`, written exclusively by `ExportingPipeline`, holding only extracted items (not links, not graph structure).
 
-**Consequences:** `routes/validation.py` can read `items.db` as a plain, read-only SQL data source, independent of whether a crawl is even running. This is what makes the validation API's minimal, allowlisted design (`routes/validation_db.py`) sufficient rather than needing to also handle live-state concurrency. The cost is that the live graph itself is not durable: closing the process loses the in-memory node/link structure even though the extracted items survive in SQLite. This is a real, acknowledged limitation (see next document), not a gap this decision was unaware of.
+**Consequences:** `routes/validation.py` reads `items.db` as a read-only SQL source, whether or not a crawl is running. The validation API (`routes/validation_db.py`) therefore needs no live-state concurrency handling. The cost is that the live graph is not durable: closing the process drops the in-memory nodes and links, while extracted items survive in SQLite. See the next document for the details.
 
 ---
 
@@ -68,4 +68,4 @@ Documented where the repository or report provides direct evidence of the reason
 
 **Decision:** Checkpoint a full state snapshot every 200 events. Seeking to any index replays only from the nearest prior checkpoint, not from the start.
 
-**Consequences:** Seek cost is bounded by the checkpoint interval regardless of total log length, at the cost of `O(log length / 200)` extra memory for stored snapshots. This is stated in the code itself as a deliberate correction to the project's earlier (V1) full-replay approach, not a decision made from a blank slate. It's evidence of the project iterating on a real, measured usability problem rather than getting the design right on the first attempt, which is worth noting rather than treating as a flaw.
+**Consequences:** Seek cost is bounded by the checkpoint interval, whatever the total log length. The cost is `O(log length / 200)` extra memory for stored snapshots. The code comments describe this as a correction to the earlier full-replay approach (V1), which replayed the whole log on every seek.

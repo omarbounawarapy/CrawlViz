@@ -23,21 +23,13 @@ cp .env.example .env.local
 
 ## Structure
 
-- `src/App.jsx` — shell, hash router, top-level WebSocket-fed state
-- `src/state/` — `reducer.js` (event -> state, also the replay engine),
-  `eventNormalizer.js`, `metrics.js`, `constants.js`
-- `src/hooks/` — `useCrawlStream` (WebSocket client with backoff
-  reconnect), `useDemoMode` (synthetic event generator; not currently
-  reachable from the UI, useful for local UI work without a backend)
-- `src/components/` — `graph/` (the force-directed view), `timeline/`,
-  `metrics/`, `common/`
-- `src/pages/` — `TemplateManager`, `RunScreen`, `ValidationView`
-- `src/theme/` — design tokens (`tokens.js`, `themes/dark.js`,
-  `themes/light.js` -- dark is active) and a shared component style
-  factory (`components.js`), used by `components/*`. The three
-  `pages/*` and `App.jsx`'s own shell chrome are progressively being
-  migrated onto this; `App.jsx` is done, the pages still use local
-  inline styles.
+- `src/App.jsx`: shell, hash router, top-level WebSocket-fed state
+- `src/state/`: `reducer.js` (event to state, and the replay engine), `eventNormalizer.js`, `metrics.js`, `constants.js`
+- `src/hooks/`: `useCrawlStream` (WebSocket client with backoff reconnect) and `useDemoMode` (synthetic event generator, started by the "Load a sample replay" link on the landing page or the "Load a synthetic sample" button on the empty canvas)
+- `src/app/Shell.jsx`: the page shell and navigation
+- `src/features/`: one folder per screen: `graph/` (radial tree view), `timeline/` (replay scrubber), `inspector/`, `pipeline/`, `overview/`, `run/`, `blueprints/` (`BlueprintManager`), `data/`, `config/`, `landing/`, `loading/`
+- `src/api/client.js`: REST client for the backend
+- `src/theme/`: design tokens (`tokens.js`, `themes/dark.js`, `themes/light.js`; dark is active) and a shared component style factory (`components.js`) used by the feature screens. `App.jsx`'s shell chrome uses the factory. The feature screens still use local inline styles.
 
 ## Commands
 

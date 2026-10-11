@@ -1,10 +1,10 @@
 # Research & Evaluation
 
-This documents the experimental protocol and results from the project report ([Chapter 4 — Implementation, §4.3 Practical Evaluation](../report/rapport-english.pdf#page=66)), clearly separated from architectural claims. This page describes what one measured run showed, not general performance guarantees.
+This documents the experimental protocol and results from the project report ([Chapter 4: Implementation, §4.3 Practical Evaluation](../report/rapport-english.pdf#page=66)), clearly separated from architectural claims. This page describes what one measured run showed, not general performance guarantees.
 
 ## Research motivation
 
-Unfocused crawling from a semantically rich seed drifts off-topic quickly because pure link-structure traversal (BFS/DFS) has no notion of meaning. The report's own example ([§2.1.1 — The Problem of Unfocused Crawling](../report/rapport-english.pdf#page=10)) is a Wikipedia BFS from "Black Hole" reaching science-fiction and video-game pages within a few hops, because those topics are densely cross-linked to the seed despite being off-topic for someone looking for physics content. CrawlViz's research question, as posed in the report, is whether a hybrid local-embedding-plus-selective-LLM scoring cascade can keep exploration on-topic while keeping evaluation cost tractable.
+Unfocused crawling from a semantically rich seed drifts off-topic quickly because pure link-structure traversal (BFS/DFS) has no notion of meaning. The report's own example ([§2.1.1: The Problem of Unfocused Crawling](../report/rapport-english.pdf#page=10)) is a Wikipedia BFS from "Black Hole" reaching science-fiction and video-game pages within a few hops, because those topics are densely cross-linked to the seed despite being off-topic for someone looking for physics content. CrawlViz's research question, as posed in the report, is whether a hybrid local-embedding-plus-selective-LLM scoring cascade can keep exploration on-topic while keeping evaluation cost tractable.
 
 ## Experimental protocol
 
@@ -20,7 +20,7 @@ Unfocused crawling from a semantically rich seed drifts off-topic quickly becaus
 | LLM-generated expansions | 50 |
 | Rate limit | 1 request/second/worker, 2 workers |
 
-This exact configuration is checked into the repository as `templates/wikiMD.json` and follows the report's parameters for topic, seed URL, scoring strategy and expansion count. Run limits differ from the table above (the checked-in blueprint has `max_nodes` 500, `max_duration` 1,800,000 and Groq as the LLM provider; the report run used 600, 1,200 s and OpenRouter), so treat the table as the report's protocol, not the file's defaults, see [§4.3.1 — Protocol](../report/rapport-english.pdf#page=66). It's a live, runnable blueprint corresponding to the report's case study, not a description of a setup that no longer exists.
+This exact configuration is checked into the repository as `templates/wikiMD.json` and follows the report's parameters for topic, seed URL, scoring strategy and expansion count. Run limits differ from the table above (the checked-in blueprint has `max_nodes` 500, `max_duration` 1,800,000 and Groq as the LLM provider; the report run used 600, 1,200 s and OpenRouter), so treat the table as the report's protocol, not the file's defaults, see [§4.3.1: Protocol](../report/rapport-english.pdf#page=66). It's a live, runnable blueprint corresponding to the report's case study, not a description of a setup that no longer exists.
 
 ## Sequential vs. concurrent execution
 
@@ -29,7 +29,7 @@ This exact configuration is checked into the repository as `templates/wikiMD.jso
 | Sequential | 560 | 65,000 | 600+ s |
 | Concurrent | 560 | 65,000 | 15 s |
 
-Same work, ~40x wall-clock difference. This is presented in the report ([§2.6.1 — Justification for Asynchrony](../report/rapport-english.pdf#page=14)) as the empirical justification for the asyncio architecture, not a theoretical claim about I/O-bound workloads in general. It's a measurement on this codebase specifically.
+Same work, ~40x wall-clock difference. This is presented in the report ([§2.6.1: Justification for Asynchrony](../report/rapport-english.pdf#page=14)) as the empirical justification for the asyncio architecture, not a theoretical claim about I/O-bound workloads in general. It's a measurement on this codebase specifically.
 
 ## Reference run results
 
@@ -39,7 +39,7 @@ Same work, ~40x wall-clock difference. This is presented in the report ([§2.6.1
 | Links identified | 50,828 |
 | Total duration | 1200 s (time limit reached) |
 
-**Time decomposition.** The report ([§4.3.2 — Results of the Reference Run](../report/rapport-english.pdf#page=66)) separates total time into rate-limit-imposed waiting versus actual system work:
+**Time decomposition.** The report ([§4.3.2: Results of the Reference Run](../report/rapport-english.pdf#page=66)) separates total time into rate-limit-imposed waiting versus actual system work:
 
 $$T_{\text{politeness}} = \frac{N}{w \cdot r} \qquad T_{\text{effective}} = T_{\text{total}} - T_{\text{politeness}}$$
 
@@ -62,8 +62,8 @@ With $N=539$ nodes, $w=2$ workers, $r=1$ req/s: $T_{\text{politeness}} \approx 2
 - **No precision/recall against ground truth.** "On-topic" is assessed qualitatively (does the resulting cluster structure look sensible) rather than against a labeled relevance set.
 - **Single target domain.** The evaluation is one topic (Type 2 Diabetes) on one site (`wikimd.org`); generalization to other topics, domains, or link densities is untested here.
 
-None of this diminishes what the reference run demonstrates about the architecture working end-to-end at a meaningful scale (539 real nodes, tens of thousands of scored candidates, within a realistic politeness budget). It's a legitimate systems demonstration, and a smaller claim than "the scoring approach outperforms alternatives," which the report doesn't attempt and this documentation shouldn't imply on its behalf.
+The reference run shows that the architecture works end to end at a meaningful scale: 539 real nodes and tens of thousands of scored candidates, within a realistic politeness budget. It is a systems demonstration. It does not show that the scoring approach outperforms alternatives. The report does not test that claim, and this page does not imply it.
 
 ## Limitations acknowledged in the report itself
 
-The report is explicit ([§4.3.1 — Protocol](../report/rapport-english.pdf#page=66)) that a significant share of total wall-clock time (22.5% in the reference run) is spent on politeness-driven waiting rather than active processing, a structural cost of respecting per-site rate limits that scales with node count regardless of how fast the scoring pipeline itself is.
+The report is explicit ([§4.3.1: Protocol](../report/rapport-english.pdf#page=66)) that a significant share of total wall-clock time (22.5% in the reference run) is spent on politeness-driven waiting rather than active processing, a structural cost of respecting per-site rate limits that scales with node count regardless of how fast the scoring pipeline itself is.

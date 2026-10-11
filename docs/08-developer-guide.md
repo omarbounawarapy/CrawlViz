@@ -1,6 +1,6 @@
 # Developer Guide
 
-Practical setup and operation. This reflects what's verified to work in this review (dependencies installed and the test suite run directly), not just what the README asserts.
+Setup and operation, as run on the development machine.
 
 ## Requirements
 
@@ -18,13 +18,13 @@ make install
 
 ### API keys
 
-Link relevance scoring and topic expansion call an LLM. Six providers are supported through the same `LlmHandler` abstraction: OpenRouter, OpenAI, Anthropic, Google Gemini, NVIDIA (NIM), and Groq — pick one per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`. Copy the example key file and fill in real keys for whichever provider(s) you plan to use. `keys.json` is gitignored:
+Link relevance scoring and topic expansion call an LLM. Six providers are supported through the same `LlmHandler` abstraction: OpenRouter, OpenAI, Anthropic, Google Gemini, NVIDIA (NIM), and Groq. Pick one per blueprint with `scoring.params.scoring_type` and `expansion.llm_type`. Copy the example key file and fill in real keys for whichever provider(s) you plan to use. `keys.json` is gitignored:
 
 ```bash
 cp keys.example.json keys.json
 ```
 
-`infrastructure/key_manager.py` supports multiple keys in this file and rotates between them with a cooldown policy, so listing more than one key here is meaningful, not just for redundancy. It's read as a small pool the manager can draw from under load.
+`infrastructure/key_manager.py` supports multiple keys in this file and rotates between them with a cooldown policy. Listing more than one key gives the manager a small pool to draw from under load.
 
 ### Pre-cache the embedding model
 
@@ -54,7 +54,7 @@ make dev-frontend  # cd crawler-ui && npm run dev
 1. Select or create a blueprint via the UI's configuration screen, or drop a JSON file into `templates/` directly (see `templates/wikiMD.json` for a complete worked example matching the project report's case study, or `templates/isi.json` for a second reference).
 2. `POST /run` with the template name (or use the Run screen in the UI).
 3. Watch it live in the UI, or query `GET /status` from the REST API.
-4. `POST /stop` to end early. This hard-cancels the crawl task. Cancellation skips `ExportingPipeline`'s final flush, so rows still in its buffer are lost; the graceful `StopCrawlEvent` path (stop conditions) does flush.
+4. `POST /stop` to end early. This cancels the crawl task. The exporter flushes its buffer when cancelled, so rows already collected are kept. The graceful `StopCrawlEvent` path (stop conditions) takes the same flush.
 
 ## Backend API surface
 
@@ -63,13 +63,13 @@ make dev-frontend  # cd crawler-ui && npm run dev
 | Templates | `GET /templates`, `GET /templates/{name}`, `POST /templates?name=`, `PUT /templates/{name}`, `DELETE /templates/{name}` |
 | Crawl control | `POST /run`, `POST /stop`, `GET /status` |
 | Validation (read-only) | `GET /validation/tables`, `GET /validation/{table}/crawls`, `GET /validation/{table}/sample` |
-| Config (read-only) | schema/introspection endpoints over `RuntimeConfig` — see note below |
+| Config (read-only) | schema/introspection endpoints over `RuntimeConfig`, see note below |
 
 **Config is read-only from the API in the current build.** `config/runtime_config.py`'s own module docstring states this directly: it's a Pydantic mirror of the constants in `config/config.py`, meant for introspection (so the UI can render what the current configuration *is*), not a write path pipelines actually read from. There is no `PUT`/`PATCH` config endpoint. If you need to change scoring thresholds, the embedding model, or other tuning constants, edit `config/config.py` directly and restart. The schema render shows you what those constants currently are, not a way to set them from the browser yet.
 
 ## Testing
 
-**Backend:** 247 tests across 26 files, all passing at commit `267baf0`. A full run takes about 70 seconds on the development machine:
+**Backend:** 248 tests across 26 files, all passing. A full run takes about 70 seconds on the development machine:
 
 ```bash
 uv run pytest
@@ -77,7 +77,7 @@ uv run pytest
 
 Tests write only under pytest's `tmp_path`. A `Crawler` can be constructed without `keys.json` (`test_construction_needs_no_keys_and_writes_only_under_tmp` in `test_event_wiring.py`).
 
-`test_event_wiring.py` is worth reading even if you're not modifying this codebase. It is a regression suite that encodes findings from an earlier architecture audit (e.g. `TestCascadeSubscriptionGap`, asserting `PriorityPipeline` actually receives `HighScoreLinksEvent`). `test_runtime_invariants.py` covers the runtime guarantees fixed during the stabilization phase; see [`10-stabilization.md`](10-stabilization.md).
+`test_event_wiring.py` is worth reading even if you're not modifying this codebase. It is a regression suite that encodes earlier defects (e.g. `TestCascadeSubscriptionGap`, which asserts that `PriorityPipeline` receives `HighScoreLinksEvent`). `test_runtime_invariants.py` covers the runtime guarantees fixed during the stabilization phase; see [`10-stabilization.md`](10-stabilization.md).
 
 **Frontend:** `crawler-ui/` has `vitest` and `@testing-library/react` configured, with tests present for the reducer (`state/reducer.test.js`) and the app shell (`App.test.jsx`):
 
@@ -91,7 +91,8 @@ cd crawler-ui && npm test
 
 | Variable | Where | Default |
 |---|---|---|
-| `CRAWLVIZ_CORS_ORIGINS` | backend env | `http://localhost:5173` |
+| `CRAWLVIZ_CORS_ORIGINS` | backend env | `http://localhost:5173` (exact origins, comma-separated) |
+| `CRAWLVIZ_CORS_ORIGIN_REGEX` | backend env | any `localhost` or `127.0.0.1` port, so Vite's fallback ports work. Set to an empty string for a deployment that should allow only `CRAWLVIZ_CORS_ORIGINS` |
 | `VITE_API_BASE_URL` | `crawler-ui/.env.local` | `http://localhost:8000` |
 | `VITE_WS_URL` | `crawler-ui/.env.local` | `ws://localhost:8765` |
 | `TRACE_MODE` / `TRACE_SAMPLE_RATE` | backend env | `full` / `0.1`, see `traceability/emitter.py` |
