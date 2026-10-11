@@ -99,37 +99,39 @@ class ExportingPipeline:
     # WORKER LOOP
     # =========================================================
     async def worker(self) -> None:
-        while self.running or not self.queue.empty():
-            event = await self.queue.get()
+        # The final flush lives in `finally` so it also runs when the task is
+        # cancelled (POST /stop). Otherwise rows still in the buffer are lost.
+        try:
+            while self.running or not self.queue.empty():
+                event = await self.queue.get()
 
-            try:
-                if event is SHUTDOWN:
-                    break
+                try:
+                    if event is SHUTDOWN:
+                        break
 
-                node = event.node
-                extraction_blueprint = self.extraction_blueprint
-                table = self._get_table_name(node)
+                    node = event.node
+                    extraction_blueprint = self.extraction_blueprint
+                    table = self._get_table_name(node)
 
-                self._ensure_table(table, extraction_blueprint)
+                    self._ensure_table(table, extraction_blueprint)
 
-                for item, item_hash in event.transformed_items:
-                    normalized_item = self._normalize_item(item, extraction_blueprint)
-                    self._buffer.append(
-                        (table, node, normalized_item, extraction_blueprint, item_hash)
-                    )
+                    for item, item_hash in event.transformed_items:
+                        normalized_item = self._normalize_item(item, extraction_blueprint)
+                        self._buffer.append(
+                            (table, node, normalized_item, extraction_blueprint, item_hash)
+                        )
 
-                if len(self._buffer) >= self.batch_size:
-                    self._flush_with_events(table)
-                    self.conn.commit()
+                    if len(self._buffer) >= self.batch_size:
+                        self._flush_with_events(table)
+                        self.conn.commit()
 
-            except Exception:
-                logger.exception("Failed to process export batch")
+                except Exception:
+                    logger.exception("Failed to process export batch")
 
-            finally:
-                self.queue.task_done()
-
-        # Final flush once the loop exits, so nothing buffered is lost.
-        self._finalize()
+                finally:
+                    self.queue.task_done()
+        finally:
+            self._finalize()
 
     def _finalize(self) -> None:
         try:

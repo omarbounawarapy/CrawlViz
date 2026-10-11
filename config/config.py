@@ -28,6 +28,13 @@ DEBUG: bool = True
 CORS_ORIGINS: list[str] = os.environ.get(
     "CRAWLVIZ_CORS_ORIGINS", "http://localhost:5173"
 ).split(",")
+# Regex for additional allowed origins (Vite falls back to 5174, 5175... when
+# 5173 is taken). Any local port by default. Set CRAWLVIZ_CORS_ORIGIN_REGEX to
+# an empty string to allow only CRAWLVIZ_CORS_ORIGINS, e.g. for a deployment.
+CORS_ORIGIN_REGEX: str | None = (
+    os.environ.get("CRAWLVIZ_CORS_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1)(:\d+)?")
+    or None
+)
 
 # =========================================================================
 # NLP EMBEDDINGS

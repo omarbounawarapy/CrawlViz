@@ -11,7 +11,7 @@ installed package.
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import CORS_ORIGINS
+from config import CORS_ORIGIN_REGEX, CORS_ORIGINS
 from routes.templates import router as templates_router
 from routes.run import router as run_router
 from routes.validation import router as validation_router
@@ -22,8 +22,7 @@ app = FastAPI(title="CrawlViz Control API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    # Vite falls back to 5174, 5175... when 5173 is taken; any local dev port is fine.
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1)(:\d+)?",
+    allow_origin_regex=CORS_ORIGIN_REGEX,
     allow_methods=["*"],
     allow_headers=["*"],
 )

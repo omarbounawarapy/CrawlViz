@@ -5,6 +5,7 @@ import sqlite3
 import types
 
 import numpy as np
+import pytest
 
 from core.event_broker import EventBroker
 from nlp import SpaceStore, VectorSpace
@@ -97,3 +98,25 @@ def test_legacy_table_is_migrated(tmp_path):
     _export(db, "c2", "new")
     rows = sqlite3.connect(db).execute("SELECT crawl_id, title FROM t ORDER BY 1").fetchall()
     assert rows == [("c2", "new"), ("old", "legacy")]
+
+
+def test_cancelled_exporter_flushes_its_buffer(tmp_path):
+    """POST /stop cancels the crawl task; rows still buffered must survive it (D12)."""
+    db = str(tmp_path / "items.db")
+    bp = {"extraction": {"fields": {"title": {"export_type": "text"}}}}
+
+    async def run():
+        pipe = ExportingPipeline("c1", "bp", bp, EventBroker(), db_path=db, batch_size=50)
+        pipe._init_db()
+        node = types.SimpleNamespace(get_full_url=lambda: "https://example.com/a")
+        pipe._ensure_table("t", bp["extraction"])
+        pipe._buffer.append(("t", node, {"title": "buffered"}, bp["extraction"], "h1"))
+        task = asyncio.create_task(pipe.worker())
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+    asyncio.run(run())
+    rows = sqlite3.connect(db).execute("SELECT crawl_id, title FROM t").fetchall()
+    assert rows == [("c1", "buffered")]

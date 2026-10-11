@@ -2,6 +2,7 @@ from .paths import RuntimePaths, default_runtime_paths
 from .config import (
     BASE_DIR,
     BUFFER_MAX_SIZE,
+    CORS_ORIGIN_REGEX,
     CORS_ORIGINS,
     DEBUG,
     DEFAULT_PRIORITY_STRATEGY,
@@ -30,6 +31,7 @@ from .config import (
 )
 
 __all__ = [
+    "CORS_ORIGIN_REGEX",
     "RuntimePaths",
     "default_runtime_paths",
     "BASE_DIR",

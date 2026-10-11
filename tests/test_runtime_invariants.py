@@ -395,7 +395,9 @@ async def test_gateway_stops_when_the_crawl_stops():
 
     gateway_task = asyncio.create_task(gateway.start())
     broker_task = asyncio.create_task(broker.start())
-    await asyncio.sleep(0.1)
+    # Wait for the server to bind rather than sleeping a fixed time, which is
+    # too short under a loaded test run.
+    assert await wait_until(lambda: gateway._server is not None, timeout=5.0)
     await broker.emit(StopCrawlEvent("MAX_NODES_REACHED", 1, 0, 0.0))
 
     try:
