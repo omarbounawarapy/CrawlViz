@@ -700,3 +700,20 @@ async def test_percentile_overrides_are_validated_and_exclusive(tmp_path, monkey
         await _arm(tmp_path, "cascade", _RecordingLlm(), low=0.1, low_pct=10)
     result, _ = await _arm(tmp_path, "cascade", _RecordingLlm(), low_pct=10, high_pct=90)
     assert result.health.valid
+
+
+async def test_quiet_queue_chooses_among_all_arrivals_once_the_crawler_is_quiet():
+    import asyncio
+    from types import SimpleNamespace
+
+    from benchmark.runner import _QuietQueue
+
+    queue, quiet = _QuietQueue(), {"now": False}
+    queue.gate = lambda: quiet["now"]
+    waiter = asyncio.create_task(queue.get())
+    await queue.put(SimpleNamespace(priority=0.2, name="first to arrive"))
+    await asyncio.sleep(0.05)
+    assert not waiter.done()  # a blocked worker no longer grabs the first arrival
+    await queue.put(SimpleNamespace(priority=0.9, name="best"))
+    quiet["now"] = True
+    assert (await asyncio.wait_for(waiter, 2)).name == "best"

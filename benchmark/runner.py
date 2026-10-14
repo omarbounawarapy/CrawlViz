@@ -50,6 +50,7 @@ from pipelines import (
 )
 
 from pipelines.base_pipeline import SHUTDOWN
+from pipelines.frontier_queue import FrontierQueue
 
 from .graph import BASE_URL, FrozenGraph
 from .policies import POLICIES
@@ -197,6 +198,26 @@ class _Lockstep:
 
     async def close(self) -> None:
         await self.fetcher.close()
+
+
+class _QuietQueue(FrontierQueue):
+    """Frontier whose ``get`` pops only once the crawler is quiet.
+
+    A worker blocked in ``get`` takes whichever node arrives first, so the
+    page it fetches depended on the order children reached the queue, which
+    varies with event-loop scheduling (a live LLM call and a cached answer
+    interleave differently). Waiting for quiet and then popping lets the
+    queue choose among all of the previous page's children by priority.
+    """
+
+    gate = None  # callable: true when nothing else is in flight
+
+    async def get(self):
+        polls = 0
+        while self.gate is not None and not (self.gate() and not self.empty()):
+            polls += 1
+            await asyncio.sleep(0 if polls < 200 else 0.0005 if polls < 1000 else 0.005)
+        return self.get_nowait()
 
 
 class _NoJitter:
@@ -380,6 +401,8 @@ async def _run(
         broker, max_concurrency=1, fetcher=gated, min_delay=0,
         rng=_NoJitter(),
     )
+    if lockstep:
+        requests.queue = _QuietQueue()
     scoring = _ParkingScoring(
         *scoring_args,
         broker,
@@ -428,6 +451,7 @@ async def _run(
 
         gated.quiet = lambda: others_idle() and (scoring.queue._unfinished_tasks == 0 or scoring.parked)
         scoring.gate = others_idle
+        requests.queue.gate = gated.quiet
     errors = _ErrorLog()
     logging.getLogger().addHandler(errors)
     started = time.monotonic()

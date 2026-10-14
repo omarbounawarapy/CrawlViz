@@ -116,7 +116,12 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                 if runkey not in recorded:
                     raise RuntimeError(f"{runkey}: no recorded run to compare the replay against")
                 if recorded[runkey]["visited"] != result.visited:
-                    raise RuntimeError(f"{runkey}: replay visited a different page sequence than the original run")
+                    was, now = recorded[runkey]["visited"], result.visited
+                    at = next((i for i, (a, b) in enumerate(zip(was, now)) if a != b), min(len(was), len(now)))
+                    raise RuntimeError(
+                        f"{runkey}: replay visited a different page sequence than the original run; "
+                        f"first difference at fetch {at}: original {was[at:at + 2]}, replay {now[at:at + 2]}"
+                    )
                 live_wall = recorded[runkey]["wall_seconds"]
                 note = (
                     f"replay matches the original; wall {result.wall_seconds:.1f}s vs {live_wall:.1f}s live "
