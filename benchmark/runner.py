@@ -292,17 +292,22 @@ def assess(budget, fetched, monitor, retry, errors, frontier_empty: bool = False
 class RunResult:
     policy: str
     visited: list[str]  # page names in fetch order
-    relevant_flags: list[bool]
+    labels: list[int]  # graded label (0/1/2) of each visited page
     health: RunHealth = field(default_factory=RunHealth)
     wall_seconds: float = 0.0
 
     def harvest(self, k: int) -> float:
-        """Share of the first k fetched pages that are relevant."""
-        flags = self.relevant_flags[:k]
-        return sum(flags) / len(flags) if flags else 0.0
+        """Share of the first k fetched pages that are relevant (label >= 1)."""
+        labels = self.labels[:k]
+        return self.found(k) / len(labels) if labels else 0.0
 
     def found(self, k: int) -> int:
-        return sum(self.relevant_flags[:k])
+        """Relevant pages (label >= 1) among the first k fetched."""
+        return sum(1 for v in self.labels[:k] if v >= 1)
+
+    def found_direct(self, k: int) -> int:
+        """Direct targets (label 2) among the first k fetched."""
+        return sum(1 for v in self.labels[:k] if v == 2)
 
 
 async def run_policy(
@@ -425,7 +430,7 @@ async def _run(
     wall = time.monotonic() - started
     visited = fetcher.fetched[:budget]
     return RunResult(
-        label, visited, [graph.pages[p]["relevant"] for p in visited],
+        label, visited, [graph.label(p) for p in visited],
         assess(budget, fetcher.fetched, monitor, retry, errors, frontier_empty()),
         wall_seconds=wall,
     )

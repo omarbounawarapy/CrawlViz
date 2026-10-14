@@ -327,3 +327,45 @@ def test_loading_a_graph_with_duplicate_titles_warns(tmp_path):
     FrozenGraph(seed="A", pages={"A": dict(page), "B": dict(page)}).save(path)
     with pytest.warns(UserWarning, match="shared by several pages"):
         FrozenGraph.load(path)
+
+
+def test_graded_labels_fall_back_to_relevant_and_tolerate_missing_fields():
+    from benchmark import FrozenGraph
+
+    graph = FrozenGraph(
+        seed="A",
+        pages={
+            "A": {"label": 2, "links": []},
+            "B": {"label": 1, "links": []},
+            "C": {"relevant": True, "links": []},
+            "D": {"relevant": False, "links": []},
+            "E": {"relevant": None, "label": None, "links": []},
+        },
+    )
+    assert [graph.label(n) for n in "ABCDE"] == [2, 1, 1, 0, 0]
+    assert graph.relevant() == {"A", "B", "C"}
+
+
+def test_found_counts_neighbourhood_and_direct_targets_separately():
+    from benchmark.runner import RunResult
+
+    result = RunResult("x", list("abcde"), [0, 1, 2, 0, 2])
+    assert (result.found(5), result.found_direct(5)) == (3, 2)
+    assert (result.found(3), result.found_direct(3)) == (2, 1)
+    assert result.harvest(4) == 0.5
+
+
+async def test_oracle_ranks_direct_targets_before_the_neighbourhood():
+    from benchmark import FrozenGraph
+
+    def page(label, *targets):
+        return {"label": label, "title": "t", "text": "t",
+                "links": [{"to": t, "anchor": t} for t in targets]}
+
+    graph = FrozenGraph(
+        seed="S",
+        pages={"S": page(0, "N", "Z", "D"), "N": page(1), "Z": page(0), "D": page(2)},
+    )
+    result = await run_policy(graph, "oracle", 4)
+    assert result.visited[:3] == ["S", "D", "N"]
+    assert result.labels[:3] == [0, 2, 1]

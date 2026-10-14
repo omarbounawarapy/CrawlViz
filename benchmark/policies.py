@@ -50,11 +50,12 @@ class AnchorLexical(_Policy):
 
 
 class Oracle(_Policy):
-    """Knows the label of every target. A ceiling, not a contender."""
+    """Knows the graded label of every target and ranks by it: direct targets
+    before neighbourhood pages before the rest. A ceiling, not a contender."""
 
     def score(self, link, parent):
         name = link.url.rsplit("/", 1)[1]
-        return 1.0 if self.graph.pages.get(name, {}).get("relevant") else 0.0
+        return self.graph.label(name) / 2 if name in self.graph.pages else 0.0
 
 
 POLICIES = {"bfs": Bfs, "random": RandomOrder, "anchor_lexical": AnchorLexical, "oracle": Oracle}

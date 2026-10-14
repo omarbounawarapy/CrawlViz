@@ -2,7 +2,8 @@
 
 Without --graph, R synthetic graphs (seeds 0..R-1) are generated. Prints, per
 policy, relevant pages found within the budget (mean and standard deviation
-over the runs) and the share of the fetched pages that were relevant.
+over the runs) and the share of the fetched pages that were relevant
+(label >= 1), plus the mean number of direct targets (label 2) found.
 """
 import argparse
 import asyncio
@@ -25,7 +26,7 @@ async def main(args) -> None:
     if args.cascade and not args.graph:
         raise SystemExit("--cascade needs a recorded, labelled --graph")
     print(f"{len(graphs)} graph(s), budget {args.budget} pages\n")
-    print(f"{'policy':<16}{'found (mean)':>14}{'sd':>8}{'harvest':>10}   per run")
+    print(f"{'policy':<16}{'found (mean)':>14}{'sd':>8}{'harvest':>10}{'direct':>8}   per run")
     for name in POLICIES:
         runs = []
         for graph in graphs:
@@ -42,8 +43,9 @@ def report(name: str, runs: list, budget: int) -> None:
     found = [r.found(budget) for r in valid]
     sd = statistics.stdev(found) if len(found) > 1 else 0.0
     mean = statistics.mean(found) if found else float("nan")
+    direct = statistics.mean(r.found_direct(budget) for r in valid) if valid else float("nan")
     values = " ".join(str(f) for f in found)
-    print(f"{name:<16}{mean:>14.1f}{sd:>8.1f}{mean / budget:>10.0%}   [{values}]", end="")
+    print(f"{name:<16}{mean:>14.1f}{sd:>8.1f}{mean / budget:>10.0%}{direct:>8.1f}   [{values}]", end="")
     print(f"   {len(valid)}/{len(runs)} valid" if len(valid) != len(runs) else "")
     for i, r in enumerate(runs):
         if r.health.status == "completed_early":

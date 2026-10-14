@@ -4,7 +4,7 @@ A recorded page (benchmark/record.py) also carries ``title`` and ``text``.
 JSON format (``FrozenGraph.load`` / ``save``)::
 
     {"seed": "p0",
-     "pages": {"p0": {"relevant": false,
+     "pages": {"p0": {"relevant": false,   # or "label": 0 | 1 | 2
                       "links": [{"to": "p7", "anchor": "insulin therapy"}]}}}
 
 Page names must be URL path segments. The graph is served as HTML by
@@ -99,8 +99,17 @@ class FrozenGraph:
         if self.seed == drop:
             self.seed = keep
 
+    def label(self, name: str) -> int:
+        """Graded relevance: 0 irrelevant, 1 topical neighbourhood, 2 direct
+        target. Files written before grading carry only ``relevant``."""
+        page = self.pages[name]
+        if page.get("label") is not None:
+            return int(page["label"])
+        return 1 if page.get("relevant") else 0
+
     def relevant(self) -> set[str]:
-        return {p for p, d in self.pages.items() if d["relevant"]}
+        """Pages with label 1 or 2."""
+        return {p for p in self.pages if self.label(p) >= 1}
 
     def reachable(self) -> set[str]:
         seen, stack = {self.seed}, [self.seed]
