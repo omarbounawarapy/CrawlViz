@@ -366,7 +366,7 @@ async def run_policy(
 async def _run(
     graph, label, budget, seed, scoring_args, scoring_kwargs, strategy, extra,
     extraction=EXTRACTION, retry_base_delay=0.01, idle_limit=0.5, lockstep=True,
-    rate_limited=None, budget_gate=None,
+    rate_limited=None, budget_gate=None, percentiles=(NLP_LOW_PERCENTILE, NLP_HIGH_PERCENTILE),
 ) -> RunResult:
     fetcher = graph.fetcher()
     if budget_gate is not None:
@@ -383,8 +383,8 @@ async def _run(
     scoring = _ParkingScoring(
         *scoring_args,
         broker,
-        low_percentile=NLP_LOW_PERCENTILE,
-        high_percentile=NLP_HIGH_PERCENTILE,
+        low_percentile=percentiles[0],
+        high_percentile=percentiles[1],
         percentile_min_links=PERCENTILE_MIN_LINKS,
         rng=random.Random(f"{seed}:scoring"),
         **scoring_kwargs,
@@ -491,6 +491,8 @@ async def run_cascade(
     arm: str = "cascade",
     low: float | None = None,
     high: float | None = None,
+    low_pct: float | None = None,
+    high_pct: float | None = None,
 ) -> RunResult:
     """The real cascade (embedding model, topic expansion, LLM scoring,
     bucketing, priority strategy) on a frozen graph. `llm` is anything with
@@ -509,6 +511,9 @@ async def run_cascade(
       expansion is learned from answers. The topic basis comes from ``llm``
       (the caller replays the cascade's recorded expansion), so it is the
       same as the cascade's.
+
+    ``low_pct`` / ``high_pct`` replace the percentiles (20 / 75) of the
+    default percentile bucketing, which stays on.
 
     ``low`` / ``high`` replace the absolute bucketing thresholds. The
     percentile bucketing the cascade normally uses would make them inert for
@@ -548,8 +553,17 @@ async def run_cascade(
     c = cfg.scoring_cascade
     if arm not in ARMS:
         raise ValueError(f"unknown arm {arm!r}; expected one of {ARMS}")
-    if arm != "cascade" and (low is not None or high is not None):
-        raise ValueError("low/high only apply to the cascade arm")
+    pct_given = low_pct is not None or high_pct is not None
+    if arm != "cascade" and (low is not None or high is not None or pct_given):
+        raise ValueError("low/high and low_pct/high_pct only apply to the cascade arm")
+    if pct_given and (low is not None or high is not None):
+        raise ValueError("absolute thresholds and percentiles are different bucketing modes; give one")
+    percentiles = (
+        NLP_LOW_PERCENTILE if low_pct is None else low_pct,
+        NLP_HIGH_PERCENTILE if high_pct is None else high_pct,
+    )
+    if not 0 <= percentiles[0] < percentiles[1] <= 100:
+        raise ValueError(f"low_pct ({percentiles[0]}) must be below high_pct ({percentiles[1]}), within 0..100")
     kwargs = dict(
         low_threshold=c.low_threshold if low is None else low,
         high_threshold=c.high_threshold if high is None else high,
@@ -579,5 +593,5 @@ async def run_cascade(
         get_strategy(c.default_priority_strategy), [], extraction,
         retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
         rate_limited=lambda: bool(getattr(llm, "waiting", False)),
-        budget_gate=gate,
+        budget_gate=gate, percentiles=percentiles,
     )

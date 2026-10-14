@@ -75,6 +75,8 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
     params = {"scoring_type": args.provider, "model_information": args.model}
     arm = "llm_all" if args.llm_all else "no_llm" if args.no_llm else "cascade"
     name = arm + (f"_low{args.low}" if args.low is not None else "") + (f"_high{args.high}" if args.high is not None else "")
+    name += (f"_lowpct{args.low_pct:g}" if args.low_pct is not None else "") + (
+        f"_highpct{args.high_pct:g}" if args.high_pct is not None else "")
     # no_llm replays the recorded expansion and makes no scoring call, so it
     # never talks to a provider; every other arm does unless replaying.
     offline = args.replay_only or arm == "no_llm"
@@ -98,6 +100,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                     bp["scoring"]["strategy"],
                     (params["scoring_type"], params["model_information"]), store,
                     flush_every=args.flush_every, arm=arm, low=args.low, high=args.high,
+                    low_pct=args.low_pct, high_pct=args.high_pct,
                 )
             result.policy = name
             h = result.health
@@ -152,7 +155,8 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                 rate_limit_waits=live.rate_limit_waits if live else 0,
                 rate_limit_seconds=round(limited, 3),
                 settings={"flush_every": args.flush_every, "provider": args.provider, "model": args.model,
-                          "arm": arm, "low": args.low, "high": args.high},
+                          "arm": arm, "low": args.low, "high": args.high,
+                          "low_pct": args.low_pct, "high_pct": args.high_pct},
             ))
             runs.append(result)
     if live:
@@ -183,8 +187,16 @@ if __name__ == "__main__":
                         help="cascade arm: every discovered link goes to the LLM (same prompt and batch size), no embedding filter")
     parser.add_argument("--no-llm", action="store_true",
                         help="cascade arm: embedding scores only; the topic expansion is replayed from --llm-cache")
-    parser.add_argument("--low", type=float, help="override the low bucketing threshold (0.20); turns percentile bucketing off")
-    parser.add_argument("--high", type=float, help="override the high bucketing threshold (0.75); turns percentile bucketing off")
+    parser.add_argument("--low-pct", type=float, metavar="PCT",
+                        help="percentile bucketing, the DEFAULT mode: a node's links below this percentile of "
+                             "its own scores are low (default 20)")
+    parser.add_argument("--high-pct", type=float, metavar="PCT",
+                        help="percentile bucketing: links above this percentile are high (default 75)")
+    parser.add_argument("--low", type=float,
+                        help="absolute-threshold mode (not the default): scores below this are low (config 0.20); "
+                             "turns percentile bucketing off, so it excludes --low-pct/--high-pct")
+    parser.add_argument("--high", type=float,
+                        help="absolute-threshold mode (not the default): scores above this are high (config 0.75)")
     parser.add_argument("--results-dir", default="benchmark/results",
                         help="one JSON file per policy run (sequence, labels, calls, tokens, timings, validity)")
     parser.add_argument("--save-sequences", metavar="FILE",
@@ -192,8 +204,12 @@ if __name__ == "__main__":
     options = parser.parse_args()
     if options.llm_all and options.no_llm:
         parser.error("--llm-all and --no-llm are different arms; pick one")
-    if (options.llm_all or options.no_llm) and (options.low is not None or options.high is not None):
-        parser.error("--low/--high apply to the plain cascade only")
-    if (options.llm_all or options.no_llm or options.low is not None or options.high is not None) and not options.cascade:
-        parser.error("--llm-all, --no-llm, --low and --high modify the cascade run; add --cascade")
+    absolute = options.low is not None or options.high is not None
+    percentile = options.low_pct is not None or options.high_pct is not None
+    if absolute and percentile:
+        parser.error("--low/--high (absolute thresholds) and --low-pct/--high-pct (percentiles) are different modes")
+    if (options.llm_all or options.no_llm) and (absolute or percentile):
+        parser.error("--low/--high and --low-pct/--high-pct apply to the plain cascade only")
+    if (options.llm_all or options.no_llm or absolute or percentile) and not options.cascade:
+        parser.error("--llm-all, --no-llm and the threshold flags modify the cascade run; add --cascade")
     asyncio.run(main(options))

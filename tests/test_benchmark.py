@@ -690,3 +690,13 @@ def test_analysis_counts_each_title_once(tmp_path):
     first, second = dedupe_records([run, other], tmp_path)
     assert first.sequence == ["A", "B"] and first.labels == [1, 0]
     assert second.labels == [1]
+
+
+async def test_percentile_overrides_are_validated_and_exclusive(tmp_path, monkeypatch):
+    _hashing_config(monkeypatch)
+    with pytest.raises(ValueError, match="below high_pct"):
+        await _arm(tmp_path, "cascade", _RecordingLlm(), low_pct=80, high_pct=20)
+    with pytest.raises(ValueError, match="different bucketing modes"):
+        await _arm(tmp_path, "cascade", _RecordingLlm(), low=0.1, low_pct=10)
+    result, _ = await _arm(tmp_path, "cascade", _RecordingLlm(), low_pct=10, high_pct=90)
+    assert result.health.valid

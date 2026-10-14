@@ -65,6 +65,9 @@ With `--cascade`:
   expansions; the topic expansion is replayed from `--llm-cache` (scope
   `rep<N>`), so the topic basis is the cascade's own. An unrecorded
   expansion raises `ReplayMiss` instead of silently running with no topic.
+- `--low-pct` / `--high-pct` (default 20 / 75): override the percentiles of
+  the default percentile bucketing, which stays on. Cannot be combined with
+  `--low` / `--high`.
 - `--low` / `--high`: override the 0.20 / 0.75 thresholds. The cascade
   normally buckets by per-node percentiles (20th / 75th), under which the
   absolute thresholds only apply to nodes with fewer than 10 links, so giving
