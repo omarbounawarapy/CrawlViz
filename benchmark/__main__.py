@@ -73,7 +73,12 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
     # OpenRouter, and the cascade and the judge should not share a model family.
     expansion = {**bp["expansion"], "llm_type": args.provider, "llm_model": args.model}
     params = {"scoring_type": args.provider, "model_information": args.model}
-    live = None if args.replay_only else PacedLlm(LlmHandler(KeyManager(keys_file=Path("keys.json"))))
+    arm = "llm_all" if args.llm_all else "no_llm" if args.no_llm else "cascade"
+    name = arm + (f"_low{args.low}" if args.low is not None else "") + (f"_high{args.high}" if args.high is not None else "")
+    # no_llm replays the recorded expansion and makes no scoring call, so it
+    # never talks to a provider; every other arm does unless replaying.
+    offline = args.replay_only or arm == "no_llm"
+    live = None if offline else PacedLlm(LlmHandler(KeyManager(keys_file=Path("keys.json"))))
     recorded = json.loads(Path(args.runs_file).read_text()) if Path(args.runs_file).exists() else {}
     runs = []
     for graph in graphs:
@@ -83,7 +88,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
             calls_before, waits_before, limits_before = (
                 (len(live.latencies), live.wait_seconds, live.rate_limit_seconds) if live else (0, 0.0, 0.0)
             )
-            llm = CachedLlm(live, args.llm_cache, scope=f"rep{rep}", replay_only=args.replay_only)
+            llm = CachedLlm(live, args.llm_cache, scope=f"rep{rep}", replay_only=offline)
             # And one space store per repeat: NLPService loads a saved topic
             # space instead of expanding the topic again, which would make
             # repeat 1 inherit repeat 0's expansion.
@@ -92,8 +97,9 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                     graph, args.budget, rep, llm, bp["extraction"], expansion,
                     bp["scoring"]["strategy"],
                     (params["scoring_type"], params["model_information"]), store,
-                    flush_every=args.flush_every,
+                    flush_every=args.flush_every, arm=arm, low=args.low, high=args.high,
                 )
+            result.policy = name
             h = result.health
             if llm.replay_misses:  # the pipeline may have swallowed ReplayMiss
                 raise ReplayMiss(f"rep {rep}: {len(llm.replay_misses)} LLM lookups were not recorded")
@@ -101,6 +107,8 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
             waited = live.wait_seconds - waits_before if live else 0.0
             limited = live.rate_limit_seconds - limits_before if live else 0.0
             runkey = f"{Path(args.graph).name}:budget{args.budget}:flush{args.flush_every}:rep{rep}"
+            if name != "cascade":  # the plain cascade keeps its original key
+                runkey += f":{name}"
             if args.replay_only:
                 if runkey not in recorded:
                     raise RuntimeError(f"{runkey}: no recorded run to compare the replay against")
@@ -143,13 +151,14 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                 llm_seconds=round(sum(latencies), 3), wait_seconds=round(waited, 3),
                 rate_limit_waits=live.rate_limit_waits if live else 0,
                 rate_limit_seconds=round(limited, 3),
-                settings={"flush_every": args.flush_every, "provider": args.provider, "model": args.model},
+                settings={"flush_every": args.flush_every, "provider": args.provider, "model": args.model,
+                          "arm": arm, "low": args.low, "high": args.high},
             ))
             runs.append(result)
     if live:
         await live.client.close()
         Path(args.runs_file).write_text(json.dumps(recorded))
-    report("cascade", runs, args.budget)
+    report(name, runs, args.budget)
 
 
 if __name__ == "__main__":
@@ -170,8 +179,21 @@ if __name__ == "__main__":
                         help="no live LLM calls: any unrecorded lookup fails, and every repeat must reproduce its recorded run")
     parser.add_argument("--flush-every", type=int, default=8,
                         help="commit semantic-space growth after this many scored nodes (production: a 60s timer, about 8 nodes at the scoring pace measured live)")
+    parser.add_argument("--llm-all", action="store_true",
+                        help="cascade arm: every discovered link goes to the LLM (same prompt and batch size), no embedding filter")
+    parser.add_argument("--no-llm", action="store_true",
+                        help="cascade arm: embedding scores only; the topic expansion is replayed from --llm-cache")
+    parser.add_argument("--low", type=float, help="override the low bucketing threshold (0.20); turns percentile bucketing off")
+    parser.add_argument("--high", type=float, help="override the high bucketing threshold (0.75); turns percentile bucketing off")
     parser.add_argument("--results-dir", default="benchmark/results",
                         help="one JSON file per policy run (sequence, labels, calls, tokens, timings, validity)")
     parser.add_argument("--save-sequences", metavar="FILE",
                         help="write the full visit order of every policy and repeat, baselines included")
-    asyncio.run(main(parser.parse_args()))
+    options = parser.parse_args()
+    if options.llm_all and options.no_llm:
+        parser.error("--llm-all and --no-llm are different arms; pick one")
+    if (options.llm_all or options.no_llm) and (options.low is not None or options.high is not None):
+        parser.error("--low/--high apply to the plain cascade only")
+    if (options.llm_all or options.no_llm or options.low is not None or options.high is not None) and not options.cascade:
+        parser.error("--llm-all, --no-llm, --low and --high modify the cascade run; add --cascade")
+    asyncio.run(main(options))
