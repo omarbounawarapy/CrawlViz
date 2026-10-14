@@ -54,6 +54,13 @@ never answered: whether the last page's call started before the stop used to
 depend on timing, which made a replay ask for an answer the live run never
 recorded.
 
+The requests worker pops the frontier only when the crawler is quiet
+(`_QuietQueue`). Popping on the first arrival made the second page depend on
+event-loop timing, so a live run and its replay could fetch different pages.
+Checked across processes with the real embedding model on `isi.json`: a live
+run with LLM jitter and replays under other `PYTHONHASHSEED`s fetch the same
+25 pages with the same 14 calls (fake LLM; no Groq).
+
 ## Arms and thresholds
 With `--cascade`:
 
