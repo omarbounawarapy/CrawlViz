@@ -35,12 +35,15 @@ class CachedLlm:
         self.replay_only = replay_only
         self.path = Path(path)
         self.hits = self.misses = 0
+        self.input_tokens = self.output_tokens = 0  # tokens behind every answer served, replayed ones included
         self.replay_misses: list[str] = []
         self._cache: dict[str, dict] = {}
+        self._usage: dict[str, tuple[int, int]] = {}
         if self.path.exists():
             for line in self.path.read_text().splitlines():
                 entry = json.loads(line)
                 self._cache[entry["key"]] = entry["result"]
+                self._usage[entry["key"]] = tuple(entry.get("usage", (0, 0)))
 
     def key(self, context) -> str:
         raw = f"{context.get_llm_type()}\0{context.get_model_information()}\0{context.get_prompt()}"
@@ -48,10 +51,15 @@ class CachedLlm:
             raw = f"{self.scope}\0{raw}"
         return hashlib.sha256(raw.encode()).hexdigest()
 
+    def _add_usage(self, usage) -> None:
+        self.input_tokens += usage[0]
+        self.output_tokens += usage[1]
+
     async def send(self, context) -> dict:
         key = self.key(context)
         if key in self._cache:
             self.hits += 1
+            self._add_usage(self._usage.get(key, (0, 0)))
             return json.loads(json.dumps(self._cache[key]))
         if self.replay_only:
             # The pipeline may swallow this exception, so it is also recorded
@@ -60,13 +68,16 @@ class CachedLlm:
             raise ReplayMiss(f"scope {self.scope!r}: no recorded answer for {context.get_prompt()[:80]!r}")
         result = await self.inner.send(context)
         self.misses += 1
+        usage = context.get_usage() if hasattr(context, "get_usage") else (0, 0)
+        self._add_usage(usage)
         # An empty answer is a failed call (the translator never raises), so
         # it is not worth remembering.
         if result:
             self._cache[key] = result
+            self._usage[key] = tuple(usage)
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open("a") as f:
-                f.write(json.dumps({"key": key, "result": result}, ensure_ascii=False) + "\n")
+                f.write(json.dumps({"key": key, "result": result, "usage": list(usage)}, ensure_ascii=False) + "\n")
         return result
 
 

@@ -369,3 +369,24 @@ async def test_oracle_ranks_direct_targets_before_the_neighbourhood():
     result = await run_policy(graph, "oracle", 4)
     assert result.visited[:3] == ["S", "D", "N"]
     assert result.labels[:3] == [0, 2, 1]
+
+
+async def test_llm_cache_counts_tokens_for_live_and_replayed_answers(tmp_path):
+    from benchmark.llm_cache import CachedLlm
+    from models.llm_context import LlmContext
+
+    class Inner:
+        async def send(self, context):
+            context.set_usage(100, 20)
+            return {"labels": {"1": True}}
+
+    def ctx():
+        return LlmContext("groq", "m", "prompt")
+
+    live = CachedLlm(Inner(), tmp_path / "c.jsonl")
+    await live.send(ctx())
+    await live.send(ctx())  # served from the cache, still costs what it cost
+    assert (live.input_tokens, live.output_tokens) == (200, 40)
+    replay = CachedLlm(Inner(), tmp_path / "c.jsonl", replay_only=True)
+    await replay.send(ctx())
+    assert (replay.input_tokens, replay.output_tokens) == (100, 20)
