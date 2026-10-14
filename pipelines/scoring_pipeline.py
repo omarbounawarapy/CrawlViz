@@ -66,6 +66,7 @@ class ScoringPipeline(BasePipeline):
         high_percentile=75.0,
         percentile_min_links=10,
         max_llm_links=None,
+        llm_batch_size=None,
         rng: random.Random | None = None,
     ):
         super().__init__(max_concurrency=max_concurrency)
@@ -75,6 +76,9 @@ class ScoringPipeline(BasePipeline):
         self.high_percentile = high_percentile
         self.percentile_min_links = percentile_min_links
         self.max_llm_links = max_llm_links
+        # When set, links bound for the LLM go out in calls of at most this
+        # many, in link order, instead of one call per node.
+        self.llm_batch_size = llm_batch_size
         self.event_broker = event_broker
         self.scoring_service = scoring_service
         self.nlp_service = nlp_service
@@ -207,7 +211,12 @@ class ScoringPipeline(BasePipeline):
                 if not sampled:
                     scored_links = []
                 else:
-                    scored_links = await self.scoring_service.score_links(node, sampled)
+                    size = self.llm_batch_size or len(sampled)
+                    scored_links = []
+                    for start in range(0, len(sampled), size):
+                        scored_links += await self.scoring_service.score_links(
+                            node, sampled[start : start + size]
+                        )
                     if not scored_links:
                         await self.event_broker.emit(
                             EmptyScoreResultsEvent(
