@@ -30,8 +30,9 @@ scoring latencies.
 This is the behavioral benchmark: decision quality on a fixed trajectory.
 Live cascade runs also print performance numbers (wall time, pages per
 second, LLM latency mean, median and p95, time spent waiting on pacing and
-rate limits). Token usage is not available because the translators drop it.
-A replay prints its own wall time next to the live one; the difference is the
+rate limits) and input and output tokens, which the translators now pass
+through and the LLM cache stores with each answer (replayed answers count at
+the tokens they originally cost). A replay prints its own wall time next to the live one; the difference is the
 LLM contribution on an identical page sequence. Overlapped, production-style
 execution is a different experiment and is not built (`lockstep=False` runs it
 but nothing reports on it).
@@ -45,6 +46,48 @@ swallowed a pipeline exception is reported INVALID and left out of the mean
 and standard deviation; handled LLM failures and empty answers stay in and are
 reported. `--replay-only` makes no LLM calls, fails on any unrecorded lookup
 and checks that each repeat visits exactly the pages it visited originally.
+
+Time spent asleep on pacing or a 429 back-off pauses the runner's idle clock
+(and is reported as 429 back-off time), so a long rate-limit wait is not
+mistaken for a stall. Scoring calls made after the budget is fetched are
+never answered: whether the last page's call started before the stop used to
+depend on timing, which made a replay ask for an answer the live run never
+recorded.
+
+## Arms and thresholds
+With `--cascade`:
+
+- `--llm-all`: every discovered link goes to the LLM, same prompt, calls of
+  at most `MAX_LLM_LINKS_PER_NODE` links, no bucketing. NLP scores are still
+  computed (the priority strategy blends them) but decide nothing about who
+  is sent.
+- `--no-llm`: embedding scores only. No scoring call and no learned
+  expansions; the topic expansion is replayed from `--llm-cache` (scope
+  `rep<N>`), so the topic basis is the cascade's own. An unrecorded
+  expansion raises `ReplayMiss` instead of silently running with no topic.
+- `--low` / `--high`: override the 0.20 / 0.75 thresholds. The cascade
+  normally buckets by per-node percentiles (20th / 75th), under which the
+  absolute thresholds only apply to nodes with fewer than 10 links, so giving
+  either flag switches percentile bucketing off for that run.
+
+Arms are recorded under their own policy name: `llm_all`, `no_llm`,
+`cascade_low0.1_high0.5`.
+
+## Output
+Each run writes one JSON file to `--results-dir` (default
+`benchmark/results/`): page sequence, label of each page, validity, LLM calls,
+tokens, timings. `--save-sequences FILE` writes the visit order of every
+policy and repeat. `python -m benchmark.analyze` reads the result files and
+writes `benchmark/analysis/`: `curves.csv` (harvest@k to k = 100, mean and 95%
+CI), `harvest_table.tex`, and `wilcoxon_table.tex` (cascade against each other
+policy on harvest@30, paired on graph and repeat).
+
+## Graph files
+Page names and link targets are re-encoded on load the way the crawler
+encodes URLs (`utils.html_utils.normalize_url`), so raw non-ASCII names in a
+file are fetched correctly. Labels are 0/1/2 (`label`); older files with only
+`relevant` read as 0/1. A warning lists pages that share a title (usually a
+redirect crawled twice); `FrozenGraph.merge(keep, drop)` folds one into the other.
 
 ## Not covered yet
 - The cascade itself. It needs the embedding model and an LLM (or a simulated
