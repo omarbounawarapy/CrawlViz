@@ -17,7 +17,7 @@ import aiohttp
 
 from infrastructure import KeyManager, LlmHandler
 
-from .graph import FrozenGraph
+from .graph import FrozenGraph, page_key
 from .llm_cache import CachedLlm
 from .pilot import judge  # same prompt and validation as the pilot
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
@@ -34,7 +34,7 @@ def rubric_sha() -> str:
 def done() -> dict[str, int]:
     if not LABELS.exists():
         return {}
-    return {d["page"]: d["label"] for d in map(json.loads, LABELS.read_text().splitlines())}
+    return {page_key(d["page"]): d["label"] for d in map(json.loads, LABELS.read_text().splitlines())}
 
 
 async def label(graph: FrozenGraph, keys: Path) -> None:
@@ -67,13 +67,13 @@ def merge(graph: FrozenGraph, path: Path) -> None:
     missing = [n for n in graph.pages if n not in got]
     if missing:
         raise SystemExit(f"{len(missing)} pages unlabelled; run without --merge first")
-    for n, v in got.items():
-        graph.pages[n]["label"] = v
+    for n in graph.pages:
+        graph.pages[n]["label"] = got[n]
+    # Written through the graph, so page names stay in their canonical form.
+    graph.save(path)
     data = json.loads(path.read_text())
     data["rubric_sha256"] = rubric_sha()
     data["rubric"] = RUBRIC.read_text()
-    for n, v in got.items():
-        data["pages"][n]["label"] = v
     path.write_text(json.dumps(data, ensure_ascii=False))
     counts = {k: list(got.values()).count(k) for k in (0, 1, 2)}
     print("merged", counts, "rubric", rubric_sha()[:12])
