@@ -450,3 +450,69 @@ def test_latex_tables_name_every_policy():
     table = harvest_table_tex(groups, ks=(5, 10))
     assert r"anchor\_lexical" in table and r"\toprule" in table and "0.600" in table
     assert r"anchor\_lexical" in wilcoxon_table_tex(wilcoxon(groups, 10), 10)
+
+
+async def test_waiting_on_a_rate_limit_does_not_count_as_a_stall():
+    import asyncio
+
+    from benchmark import runner
+    from benchmark.policies import AnchorLexical
+
+    state = {"waiting": False, "slept": False}
+
+    class RateLimited(AnchorLexical):
+        async def score_links(self, links, parent):
+            if not state["slept"]:  # one back-off longer than the 0.5s idle limit
+                state["slept"] = state["waiting"] = True
+                await asyncio.sleep(0.9)
+                state["waiting"] = False
+            return await super().score_links(links, parent)
+
+    kwargs = dict(low_threshold=-1.0, high_threshold=2.0, high_score_llm_fraction=0.0,
+                  low_score_sample_fraction=0.0, high_score_random_fraction=0.0,
+                  percentile_bucketing=False, max_llm_links=None)
+    graph = synthetic_graph(n_pages=100, seed=1)
+
+    def run(**extra):
+        state.update(waiting=False, slept=False)
+        return runner._run(graph, "x", 15, 0, (runner._NoLlm(), RateLimited(graph, 0)), kwargs,
+                           runner._passthrough, [], **extra)
+
+    stalled = await run()
+    assert len(stalled.visited) < 15  # without the signal the same wait ends the run
+    paused = await run(rate_limited=lambda: state["waiting"])
+    assert paused.health.valid and len(paused.visited) == 15
+    assert paused.rate_limit_seconds >= 0.8
+
+
+async def test_paced_llm_reports_waiting_while_it_backs_off(monkeypatch):
+    import asyncio
+
+    import aiohttp
+
+    from benchmark.llm_cache import CachedLlm, PacedLlm
+    from models.llm_context import LlmContext
+
+    class Limited:
+        client = None
+        calls = 0
+
+        async def send(self, context):
+            self.calls += 1
+            if self.calls == 1:
+                raise aiohttp.ClientResponseError(None, (), status=429)
+            return {"ok": True}
+
+    seen = []
+    real_sleep = asyncio.sleep
+
+    async def fake_sleep(seconds):
+        seen.append((paced.waiting, cached.waiting, seconds))
+        await real_sleep(0)
+
+    paced = PacedLlm(Limited())
+    cached = CachedLlm(paced, "unused.jsonl")
+    monkeypatch.setattr("benchmark.llm_cache.asyncio.sleep", fake_sleep)
+    await paced.send(LlmContext("groq", "m", "p"))
+    assert seen == [(True, True, 15)]
+    assert not paced.waiting and paced.rate_limit_seconds == 15 and paced.rate_limit_waits == 1

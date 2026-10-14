@@ -51,6 +51,11 @@ class CachedLlm:
             raw = f"{self.scope}\0{raw}"
         return hashlib.sha256(raw.encode()).hexdigest()
 
+    @property
+    def waiting(self) -> bool:
+        """The wrapped handler is asleep on a rate limit (see PacedLlm)."""
+        return bool(getattr(self.inner, "waiting", False))
+
     def _add_usage(self, usage) -> None:
         self.input_tokens += usage[0]
         self.output_tokens += usage[1]
@@ -92,12 +97,26 @@ class PacedLlm:
         self.rate_limit_waits = 0
         self.latencies: list[float] = []  # seconds per live call that returned
         self.wait_seconds = 0.0  # pacing and 429 sleeps, kept out of latencies
+        self.rate_limit_seconds = 0.0  # the 429 part of wait_seconds
+        self._sleeping = 0  # sleeps in progress (pacing or 429)
         self._window: deque[tuple[float, float]] = deque()
 
     @staticmethod
     def estimate(context) -> float:
         # Prompt tokens plus room for the answer (reasoning tokens count too).
         return len(context.get_prompt()) / 3.5 + 600
+
+    @property
+    def waiting(self) -> bool:
+        """True while a call is asleep on pacing or a 429 back-off."""
+        return self._sleeping > 0
+
+    async def _sleep(self, seconds: float) -> None:
+        self._sleeping += 1
+        try:
+            await asyncio.sleep(seconds)
+        finally:
+            self._sleeping -= 1
 
     async def _wait_for_room(self, cost: float) -> None:
         while True:
@@ -109,7 +128,7 @@ class PacedLlm:
                 return
             pause = max(0.5, 60 - (now - self._window[0][0]))
             self.wait_seconds += pause
-            await asyncio.sleep(pause)
+            await self._sleep(pause)
 
     async def send(self, context) -> dict:
         await self._wait_for_room(self.estimate(context))
@@ -125,4 +144,5 @@ class PacedLlm:
                 self.rate_limit_waits += 1
                 pause = 15 * (attempt + 1)
                 self.wait_seconds += pause
-                await asyncio.sleep(pause)
+                self.rate_limit_seconds += pause
+                await self._sleep(pause)

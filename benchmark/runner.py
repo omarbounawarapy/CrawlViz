@@ -69,7 +69,9 @@ class _NoLlm:
 # The cascade runs with the production retry processor's own backoff
 # (RetryProcessor default: 2s, doubling, 3 scoring retries). Rate limits are
 # absorbed upstream by PacedLlm, so a retry here means the LLM stage itself
-# failed. The idle limit only has to outlast one slow LLM call plus backoff.
+# failed. The idle limit only has to outlast one slow LLM call plus backoff:
+# time spent waiting on a rate limit does not count towards it (the run loop
+# pauses its idle clock while the LLM wrapper reports ``waiting``).
 RETRY_BASE_DELAY = 2.0
 IDLE_LIMIT = 120.0
 
@@ -295,6 +297,7 @@ class RunResult:
     labels: list[int]  # graded label (0/1/2) of each visited page
     health: RunHealth = field(default_factory=RunHealth)
     wall_seconds: float = 0.0
+    rate_limit_seconds: float = 0.0  # wall time spent waiting on pacing or a 429; not idle time
 
     def harvest(self, k: int) -> float:
         """Share of the first k fetched pages that are relevant (label >= 1)."""
@@ -334,6 +337,7 @@ async def run_policy(
 async def _run(
     graph, label, budget, seed, scoring_args, scoring_kwargs, strategy, extra,
     extraction=EXTRACTION, retry_base_delay=0.01, idle_limit=0.5, lockstep=True,
+    rate_limited=None,
 ) -> RunResult:
     fetcher = graph.fetcher()
     broker, storage = EventBroker(), Storage()
@@ -410,10 +414,15 @@ async def _run(
             and not retry._pending
         )
 
-    last, idle, empty_for = 0, 0.0, 0.0
+    last, idle, empty_for, rate_limit_wait = 0, 0.0, 0.0, 0.0
     while len(fetcher.fetched) < budget and idle < idle_limit and empty_for < 0.5:
         await asyncio.sleep(0.02)
-        idle = idle + 0.02 if len(fetcher.fetched) == last else 0.0
+        if rate_limited is not None and rate_limited():
+            # Waiting out a rate limit is neither progress nor a stall: the
+            # idle clock stops and the time is counted on its own.
+            rate_limit_wait += 0.02
+        else:
+            idle = idle + 0.02 if len(fetcher.fetched) == last else 0.0
         last = len(fetcher.fetched)
         # In lockstep an empty, quiet frontier is final (the next fetch would
         # have to come from it). Stable for half a second to ride out the hop
@@ -432,7 +441,7 @@ async def _run(
     return RunResult(
         label, visited, [graph.label(p) for p in visited],
         assess(budget, fetcher.fetched, monitor, retry, errors, frontier_empty()),
-        wall_seconds=wall,
+        wall_seconds=wall, rate_limit_seconds=rate_limit_wait,
     )
 
 
@@ -498,4 +507,5 @@ async def run_cascade(
         graph, "cascade", budget, seed, (llm_service, nlp), kwargs,
         get_strategy(c.default_priority_strategy), [], extraction,
         retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
+        rate_limited=lambda: bool(getattr(llm, "waiting", False)),
     )

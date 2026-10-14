@@ -34,6 +34,7 @@ class RunRecord:
     llm_seconds: float = 0.0  # sum of live call latencies
     wait_seconds: float = 0.0  # pacing and rate-limit sleeps
     rate_limit_waits: int = 0
+    rate_limit_seconds: float = 0.0  # 429 back-off sleeps, part of wait_seconds
     scoring_failures: int = 0
     empty_results: int = 0
     settings: dict = field(default_factory=dict)  # flush_every, thresholds, ...

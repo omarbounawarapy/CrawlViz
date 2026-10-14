@@ -80,7 +80,9 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
         for rep in range(args.reps):
             # One cache scope per repeat: independent live LLM realizations
             # the first time, an exact replay of the same repeat afterwards.
-            calls_before, waits_before = (len(live.latencies), live.wait_seconds) if live else (0, 0.0)
+            calls_before, waits_before, limits_before = (
+                (len(live.latencies), live.wait_seconds, live.rate_limit_seconds) if live else (0, 0.0, 0.0)
+            )
             llm = CachedLlm(live, args.llm_cache, scope=f"rep{rep}", replay_only=args.replay_only)
             # And one space store per repeat: NLPService loads a saved topic
             # space instead of expanding the topic again, which would make
@@ -97,6 +99,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                 raise ReplayMiss(f"rep {rep}: {len(llm.replay_misses)} LLM lookups were not recorded")
             latencies = live.latencies[calls_before:] if live else []
             waited = live.wait_seconds - waits_before if live else 0.0
+            limited = live.rate_limit_seconds - limits_before if live else 0.0
             runkey = f"{Path(args.graph).name}:budget{args.budget}:flush{args.flush_every}:rep{rep}"
             if args.replay_only:
                 if runkey not in recorded:
@@ -129,7 +132,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                     f"    timing: wall {result.wall_seconds:.1f}s, {len(result.visited) / result.wall_seconds:.2f} pages/s; "
                     f"LLM latency mean {statistics.mean(latencies):.1f}s median {statistics.median(latencies):.1f}s "
                     f"p95 {p95:.1f}s ({len(latencies)} calls, {llm_time:.0f}s total); "
-                    f"waiting on pacing and rate limits {waited:.0f}s; "
+                    f"waiting on pacing and rate limits {waited:.0f}s (429 back-off {limited:.0f}s, idle clock paused); "
                     f"everything else {max(0.0, result.wall_seconds - llm_time - waited):.0f}s"
                 )
             print(f"    tokens: {llm.input_tokens} in, {llm.output_tokens} out over {llm.misses + llm.hits} answers")
@@ -139,6 +142,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                 input_tokens=llm.input_tokens, output_tokens=llm.output_tokens,
                 llm_seconds=round(sum(latencies), 3), wait_seconds=round(waited, 3),
                 rate_limit_waits=live.rate_limit_waits if live else 0,
+                rate_limit_seconds=round(limited, 3),
                 settings={"flush_every": args.flush_every, "provider": args.provider, "model": args.model},
             ))
             runs.append(result)
