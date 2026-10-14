@@ -3,6 +3,8 @@ import logging
 import re
 from typing import Any
 
+from .token_usage import anthropic_usage
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,6 +49,8 @@ class AnthropicTranslator:
                 ],
             },
         }
+
+    translate_usage = staticmethod(anthropic_usage)
 
     @staticmethod
     def translate_response(response: Any) -> dict:

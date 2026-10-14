@@ -10,6 +10,7 @@ class LlmContext:
         self.model_information = model_information
         self.prompt = prompt
         self.key: str | None = None
+        self.usage: tuple[int, int] = (0, 0)  # (input, output) tokens of the last answer
 
     def get_llm_type(self) -> str:
         return self.llm_type
@@ -22,6 +23,12 @@ class LlmContext:
 
     def set_key(self, key: str) -> None:
         self.key = key
+
+    def set_usage(self, input_tokens: int, output_tokens: int) -> None:
+        self.usage = (input_tokens, output_tokens)
+
+    def get_usage(self) -> tuple[int, int]:
+        return self.usage
 
     def get_model_information(self) -> str:
         return self.model_information

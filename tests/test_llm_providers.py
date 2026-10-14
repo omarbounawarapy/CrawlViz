@@ -391,6 +391,35 @@ class TestGroqTranslator:
 
 
 # =====================================================================
+# Token usage
+# =====================================================================
+class TestTokenUsage:
+    def test_each_translator_reads_its_providers_usage_block(self):
+        openai_shape = {"usage": {"prompt_tokens": 120, "completion_tokens": 30}}
+        for translator in (OpenAITranslator, GroqTranslator, NvidiaTranslator, OpenRouterTranslator):
+            assert translator.translate_usage(openai_shape) == (120, 30)
+        assert AnthropicTranslator.translate_usage(
+            {"usage": {"input_tokens": 7, "output_tokens": 3}}
+        ) == (7, 3)
+        assert GeminiTranslator.translate_usage(
+            {"usageMetadata": {"promptTokenCount": 9, "candidatesTokenCount": 4}}
+        ) == (9, 4)
+
+    def test_a_response_without_usage_counts_as_zero(self):
+        assert GroqTranslator.translate_usage({"choices": []}) == (0, 0)
+        assert AnthropicTranslator.translate_usage("not a dict") == (0, 0)
+
+    async def test_the_handler_leaves_the_usage_on_the_context(self, monkeypatch):
+        key_manager = make_key_manager(monkeypatch, {"groq": ["gsk-test"]})
+        client = FakeNetworkClient({
+            "choices": [{"message": {"content": '{"results": {}}'}}],
+            "usage": {"prompt_tokens": 55, "completion_tokens": 11},
+        })
+        ctx = ScoringContext("groq", "m", "p")
+        await LlmHandler(key_manager, client=client).send(ctx)
+        assert ctx.get_usage() == (55, 11)
+
+# =====================================================================
 # Rejected-key handling
 # =====================================================================
 

@@ -71,4 +71,7 @@ class LlmHandler:
                 ):
                     continue
                 raise
+        usage = getattr(translator_cls, "translate_usage", None)
+        if usage is not None and hasattr(context, "set_usage"):
+            context.set_usage(*usage(response))
         return translator_cls.translate_response(response)
