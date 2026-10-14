@@ -19,3 +19,7 @@ handoff.md
 # Benchmark data: recorded pages and caches (large, regenerable)
 benchmark/data/raw/
 benchmark/data/*.jsonl
+
+# Benchmark output: per-run results and analysis
+benchmark/results/
+benchmark/analysis/
