@@ -14,8 +14,11 @@ Page names must be URL path segments. The graph is served as HTML by
 import html
 import json
 import random
+import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from utils.html_utils import normalize_url
 
 BASE_URL = "https://frozen.test"
 
@@ -29,12 +32,72 @@ GENERIC_TERMS = (
 ).split()
 
 
+def page_key(name: str) -> str:
+    """A page name as the crawler identifies it (utils.html_utils.normalize_url).
+
+    The fetcher is asked for the crawler's canonical URL, so a graph keyed by
+    raw non-ASCII names would answer 404 for every one of them."""
+    return normalize_url("/" + name)[1:]
+
+
 @dataclass
 class FrozenGraph:
     seed: str
     pages: dict[str, dict] = field(default_factory=dict)
     topic: str = ""  # what "relevant" means, in words; set by the labeler
     terms: list[str] = field(default_factory=list)  # topic words for the lexical baseline
+
+    def __post_init__(self) -> None:
+        self._canonicalize()
+
+    def _canonicalize(self) -> None:
+        """Re-key pages and link targets with ``page_key``. Names that collapse
+        to one key keep the first page and pool their links."""
+        pages: dict[str, dict] = {}
+        for name, page in self.pages.items():
+            key = page_key(name)
+            if key in pages:
+                known = {link["to"] for link in pages[key]["links"]}
+                pages[key]["links"] += [
+                    link for link in page["links"] if page_key(link["to"]) not in known
+                ]
+            else:
+                pages[key] = page
+        for page in pages.values():
+            for link in page["links"]:
+                link["to"] = page_key(link["to"])
+        self.pages = pages
+        self.seed = page_key(self.seed)
+
+    def duplicate_titles(self) -> dict[str, list[str]]:
+        """Titles shared by several pages: usually a redirect crawled under two
+        names, which splits one page's inbound links and double-counts it."""
+        by_title: dict[str, list[str]] = {}
+        for name, page in self.pages.items():
+            if page.get("title"):
+                by_title.setdefault(page["title"], []).append(name)
+        return {t: names for t, names in by_title.items() if len(names) > 1}
+
+    def merge(self, keep: str, drop: str) -> None:
+        """Fold page ``drop`` into ``keep``: its links are pooled and every
+        link that pointed at it now points at ``keep``."""
+        keep, drop = page_key(keep), page_key(drop)
+        known = {link["to"] for link in self.pages[keep]["links"]}
+        for link in self.pages.pop(drop)["links"]:
+            if link["to"] not in known and link["to"] not in (keep, drop):
+                known.add(link["to"])
+                self.pages[keep]["links"].append(link)
+        for page in self.pages.values():
+            seen, links = set(), []
+            for link in page["links"]:
+                if link["to"] == drop:
+                    link["to"] = keep
+                if link["to"] not in seen:
+                    seen.add(link["to"])
+                    links.append(link)
+            page["links"] = links
+        if self.seed == drop:
+            self.seed = keep
 
     def relevant(self) -> set[str]:
         return {p for p, d in self.pages.items() if d["relevant"]}
@@ -59,12 +122,20 @@ class FrozenGraph:
     @classmethod
     def load(cls, path: Path) -> "FrozenGraph":
         data = json.loads(Path(path).read_text())
-        return cls(
+        graph = cls(
             seed=data["seed"],
             pages=data["pages"],
             topic=data.get("topic", ""),
             terms=data.get("terms", []),
         )
+        duplicates = graph.duplicate_titles()
+        if duplicates:
+            warnings.warn(
+                f"{len(duplicates)} title(s) shared by several pages, e.g. "
+                f"{next(iter(duplicates.values()))}; merge them with FrozenGraph.merge",
+                stacklevel=2,
+            )
+        return graph
 
     def fetcher(self) -> "GraphFetcher":
         return GraphFetcher(self)

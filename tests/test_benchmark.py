@@ -279,3 +279,51 @@ def test_an_exhausted_frontier_is_a_valid_early_finish_but_a_stall_is_not():
     assert early.valid and early.status == "completed_early" and early.reason == "frontier_exhausted"
     stalled = assess(100, list(range(40)), HealthMonitor(), Retry(), _ErrorLog(), frontier_empty=False)
     assert not stalled.valid and stalled.status == "failed"
+
+
+async def test_graph_names_are_encoded_the_way_the_crawler_asks_for_them():
+    from benchmark import FrozenGraph
+
+    graph = FrozenGraph(
+        seed="Université",
+        pages={
+            "Université": {"relevant": False, "title": "U", "text": "t",
+                           "links": [{"to": "Économie_(discipline)", "anchor": "eco"}]},
+            "Économie_(discipline)": {"relevant": False, "title": "E", "text": "t", "links": []},
+        },
+    )
+    assert graph.seed == "Universit%C3%A9"
+    assert set(graph.pages) == {"Universit%C3%A9", "%C3%89conomie_(discipline)"}
+    assert graph.pages["Universit%C3%A9"]["links"][0]["to"] == "%C3%89conomie_(discipline)"
+    body = await graph.fetcher().emit_request({"url": "https://frozen.test/%C3%89conomie_(discipline)"})
+    assert "E" in body
+
+
+def test_duplicate_titles_are_reported_and_can_be_merged():
+    from benchmark import FrozenGraph
+
+    def page(title, *targets):
+        return {"relevant": False, "title": title, "text": "t",
+                "links": [{"to": t, "anchor": t} for t in targets]}
+
+    graph = FrozenGraph(
+        seed="A",
+        pages={"A": page("A", "B", "C"), "B": page("Beta", "D"), "C": page("Beta", "E"),
+               "D": page("D"), "E": page("E")},
+    )
+    assert graph.duplicate_titles() == {"Beta": ["B", "C"]}
+    graph.merge("B", "C")
+    assert "C" not in graph.pages
+    assert [l["to"] for l in graph.pages["A"]["links"]] == ["B"]
+    assert {l["to"] for l in graph.pages["B"]["links"]} == {"D", "E"}
+    assert not graph.duplicate_titles()
+
+
+def test_loading_a_graph_with_duplicate_titles_warns(tmp_path):
+    from benchmark import FrozenGraph
+
+    page = {"relevant": False, "title": "Same", "text": "t", "links": []}
+    path = tmp_path / "g.json"
+    FrozenGraph(seed="A", pages={"A": dict(page), "B": dict(page)}).save(path)
+    with pytest.warns(UserWarning, match="shared by several pages"):
+        FrozenGraph.load(path)
