@@ -516,3 +516,62 @@ async def test_paced_llm_reports_waiting_while_it_backs_off(monkeypatch):
     await paced.send(LlmContext("groq", "m", "p"))
     assert seen == [(True, True, 15)]
     assert not paced.waiting and paced.rate_limit_seconds == 15 and paced.rate_limit_waits == 1
+
+
+async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monkeypatch):
+    # Live run with a jittery fake LLM, then a replay-only run on the same
+    # cache: same pages, same calls, nothing unrecorded. The last page's
+    # scoring used to race the stop, so the replay asked for one extra answer.
+    import asyncio
+    import json
+    import random
+    import re
+    import zlib
+    from pathlib import Path
+
+    import config.runtime_config as rc
+    from benchmark.llm_cache import CachedLlm
+    from benchmark.runner import run_cascade
+
+    real = rc.default_runtime_config
+
+    def hashing_config():
+        cfg = real()
+        cfg.embeddings.backend = "hashing"
+        cfg.scoring_cascade.low_threshold, cfg.scoring_cascade.high_threshold = -1.0, 0.9
+        return cfg
+
+    monkeypatch.setattr(rc, "default_runtime_config", hashing_config)
+
+    class FakeLlm:
+        rng = random.Random(7)
+
+        async def send(self, ctx):
+            await asyncio.sleep(self.rng.random() * 0.03)
+            prompt = ctx.get_prompt()
+            urls = list(dict.fromkeys(re.findall(r"https://frozen\.test/[^\s\"',]+", prompt)))
+            if not urls:
+                return {"target": "t", "descriptions": ["diabetes insulin glucose", "pancreas care"]}
+            return {"results": [
+                {"url": u, "score": zlib.crc32(u.encode()) % 100, "relevance_type": "direct",
+                 "expansions": []} for u in urls
+            ]}
+
+    graph = synthetic_graph(n_pages=200, seed=4)
+    graph.topic = "diabetes insulin"
+    bp = json.loads(Path("templates/isi.json").read_text())
+    expansion = {**bp["expansion"], "llm_type": "groq", "llm_model": "m"}
+
+    async def run(replay_only):
+        llm = CachedLlm(FakeLlm(), tmp_path / "c.jsonl", scope="rep0", replay_only=replay_only)
+        result = await run_cascade(graph, 25, 0, llm, bp["extraction"], expansion,
+                                   bp["scoring"]["strategy"], ("groq", "m"),
+                                   tmp_path / f"store-{replay_only}")
+        return result, llm
+
+    live, live_llm = await run(False)
+    replay, replay_llm = await run(True)
+    assert live.health.valid and len(live.visited) == 25
+    assert replay.visited == live.visited
+    assert not replay_llm.replay_misses
+    assert replay_llm.hits == live_llm.misses

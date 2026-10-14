@@ -76,6 +76,32 @@ RETRY_BASE_DELAY = 2.0
 IDLE_LIMIT = 120.0
 
 
+class _BudgetGate:
+    """LLM wrapper that never answers a call made once the budget is fetched.
+
+    The last page's links are scored after its fetch, and whether that call
+    started before the run was stopped depended on timing: a live run and
+    its (much faster) replay disagreed about it, so the replay asked for an
+    answer that was never recorded. That call cannot change which pages are
+    fetched. In lockstep the fetch count at call time is deterministic, so
+    the gate keys on it and the same calls are made live and in replay.
+    """
+
+    def __init__(self, llm, budget: int):
+        self.inner, self.budget = llm, budget
+        self.fetched = lambda: 0  # set by _run: pages fetched so far
+        self.skipped = 0
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+    async def send(self, context):
+        if self.fetched() >= self.budget:
+            self.skipped += 1
+            await asyncio.Event().wait()  # cancelled when the run ends
+        return await self.inner.send(context)
+
+
 class _CountedFlush:
     """NLPService stand-in that commits semantic-space growth by count, not time.
 
@@ -337,9 +363,11 @@ async def run_policy(
 async def _run(
     graph, label, budget, seed, scoring_args, scoring_kwargs, strategy, extra,
     extraction=EXTRACTION, retry_base_delay=0.01, idle_limit=0.5, lockstep=True,
-    rate_limited=None,
+    rate_limited=None, budget_gate=None,
 ) -> RunResult:
     fetcher = graph.fetcher()
+    if budget_gate is not None:
+        budget_gate.fetched = lambda: len(fetcher.fetched)
     broker, storage = EventBroker(), Storage()
     domain = Domain("frozen", BASE_URL, ".//a")
     storage.add_domain(domain)
@@ -469,6 +497,7 @@ async def run_cascade(
     from services import NLPService, ScoringService
 
     cfg = default_runtime_config()
+    llm = gate = _BudgetGate(llm, budget)
     buffer_manager = BufferManager(max_size=cfg.embeddings.buffer_max_size)
     nlp = NLPService(
         blueprint_id="benchmark",
@@ -508,4 +537,5 @@ async def run_cascade(
         get_strategy(c.default_priority_strategy), [], extraction,
         retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
         rate_limited=lambda: bool(getattr(llm, "waiting", False)),
+        budget_gate=gate,
     )
