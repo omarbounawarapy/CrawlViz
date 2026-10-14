@@ -671,3 +671,22 @@ async def test_bad_arm_or_thresholds_are_rejected(tmp_path, monkeypatch):
         await _arm(tmp_path, "cascade", _RecordingLlm(), low=0.8, high=0.3)
     with pytest.raises(ValueError, match="only apply"):
         await _arm(tmp_path, "llm_all", _RecordingLlm(), low=0.1)
+
+
+def test_analysis_counts_each_title_once(tmp_path):
+    import json
+
+    from benchmark.analyze import dedupe_records
+
+    graph = {"seed": "A", "pages": {
+        "A": {"title": "Alpha", "links": []}, "A2": {"title": "Alpha", "links": []},
+        "B": {"title": "Beta", "links": []}}}
+    (tmp_path / "g.json").write_text(json.dumps(graph))
+    run = _record("bfs", 0, [1, 1, 0])
+    run.sequence = ["A", "A2", "B"]
+    run.graph = "g.json"
+    other = _record("bfs", 1, [1])
+    other.graph = "synthetic0"  # no graph file: left as is
+    first, second = dedupe_records([run, other], tmp_path)
+    assert first.sequence == ["A", "B"] and first.labels == [1, 0]
+    assert second.labels == [1]
