@@ -410,3 +410,43 @@ async def test_every_run_leaves_a_result_file_and_a_sequence_entry(tmp_path):
     saved = json.loads((tmp_path / "seq.json").read_text())
     assert set(saved) == {f"g.json:{p}:rep{r}" for p in ("bfs", "oracle") for r in (0, 1)}
     assert saved["g.json:oracle:rep1"] == first.sequence
+
+
+def _record(policy, rep, labels, valid=True):
+    from benchmark.results import RunRecord
+
+    return RunRecord(graph="g", policy=policy, rep=rep, budget=len(labels), sequence=["p"] * len(labels),
+                     labels=labels, valid=valid, status="completed" if valid else "failed")
+
+
+def test_analysis_excludes_invalid_runs_and_pairs_the_wilcoxon_test():
+    from benchmark.analyze import by_policy, harvest_at, mean_ci, wilcoxon
+
+    records = [_record("cascade", r, [1] * (6 + r) + [0] * (4 - r)) for r in range(8)]
+    records += [_record("bfs", r, [1] * 3 + [0] * 7) for r in range(8)]
+    records += [_record("bfs", 9, [1] * 10, valid=False)]
+    groups = by_policy(records)
+    assert len(groups["bfs"]) == 8
+    assert harvest_at([1, 0, 2, 0], 4) == 0.5
+    mean, ci = mean_ci([0.5, 0.7, 0.9])
+    assert mean == pytest.approx(0.7) and ci > 0
+    (row,) = wilcoxon(groups, 10)
+    assert row["n"] == 8 and row["p"] < 0.05 and row["subject_mean"] > row["other_mean"]
+
+
+def test_identical_policies_give_p_of_one_instead_of_crashing():
+    from benchmark.analyze import by_policy, wilcoxon
+
+    records = [_record(p, r, [1, 0, 1, 0]) for p in ("cascade", "bfs") for r in range(3)]
+    (row,) = wilcoxon(by_policy(records), 4)
+    assert row["p"] == 1.0
+
+
+def test_latex_tables_name_every_policy():
+    from benchmark.analyze import by_policy, harvest_table_tex, wilcoxon, wilcoxon_table_tex
+
+    records = [_record(p, r, [1, 0] * 5) for p in ("cascade", "anchor_lexical") for r in range(3)]
+    groups = by_policy(records)
+    table = harvest_table_tex(groups, ks=(5, 10))
+    assert r"anchor\_lexical" in table and r"\toprule" in table and "0.600" in table
+    assert r"anchor\_lexical" in wilcoxon_table_tex(wilcoxon(groups, 10), 10)
