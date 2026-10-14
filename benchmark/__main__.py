@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .graph import FrozenGraph, synthetic_graph
 from .policies import POLICIES
+from .results import ResultSink, RunRecord
 from .runner import run_cascade, run_policy
 
 
@@ -25,16 +26,23 @@ async def main(args) -> None:
     )
     if args.cascade and not args.graph:
         raise SystemExit("--cascade needs a recorded, labelled --graph")
+    sink = ResultSink(args.results_dir, args.save_sequences)
     print(f"{len(graphs)} graph(s), budget {args.budget} pages\n")
     print(f"{'policy':<16}{'found (mean)':>14}{'sd':>8}{'harvest':>10}{'direct':>8}   per run")
     for name in POLICIES:
         runs = []
-        for graph in graphs:
+        for gi, graph in enumerate(graphs):
             for rep in range(args.reps):
-                runs.append(await run_policy(graph, name, args.budget, seed=rep))
+                result = await run_policy(graph, name, args.budget, seed=rep)
+                runs.append(result)
+                sink.add(RunRecord.from_result(graph_name(args, gi), rep, args.budget, result))
         report(name, runs, args.budget)
     if args.cascade:
-        await cascade_row(graphs, args)
+        await cascade_row(graphs, args, sink)
+
+
+def graph_name(args, index: int) -> str:
+    return Path(args.graph).name if args.graph else f"synthetic{index}"
 
 
 def report(name: str, runs: list, budget: int) -> None:
@@ -54,7 +62,7 @@ def report(name: str, runs: list, budget: int) -> None:
             print(f"    run {i} INVALID, excluded: {'; '.join(r.health.problems)}")
 
 
-async def cascade_row(graphs, args) -> None:
+async def cascade_row(graphs, args, sink: ResultSink) -> None:
     """The real cascade; needs a labelled recorded graph and the blueprint's settings."""
     from infrastructure import KeyManager, LlmHandler
 
@@ -122,9 +130,17 @@ async def cascade_row(graphs, args) -> None:
                     f"LLM latency mean {statistics.mean(latencies):.1f}s median {statistics.median(latencies):.1f}s "
                     f"p95 {p95:.1f}s ({len(latencies)} calls, {llm_time:.0f}s total); "
                     f"waiting on pacing and rate limits {waited:.0f}s; "
-                    f"everything else {max(0.0, result.wall_seconds - llm_time - waited):.0f}s. "
-                    "Token usage is not available: the translators discard it."
+                    f"everything else {max(0.0, result.wall_seconds - llm_time - waited):.0f}s"
                 )
+            print(f"    tokens: {llm.input_tokens} in, {llm.output_tokens} out over {llm.misses + llm.hits} answers")
+            sink.add(RunRecord.from_result(
+                Path(args.graph).name, rep, args.budget, result,
+                llm_calls=llm.misses, llm_replayed=llm.hits,
+                input_tokens=llm.input_tokens, output_tokens=llm.output_tokens,
+                llm_seconds=round(sum(latencies), 3), wait_seconds=round(waited, 3),
+                rate_limit_waits=live.rate_limit_waits if live else 0,
+                settings={"flush_every": args.flush_every, "provider": args.provider, "model": args.model},
+            ))
             runs.append(result)
     if live:
         await live.client.close()
@@ -150,4 +166,8 @@ if __name__ == "__main__":
                         help="no live LLM calls: any unrecorded lookup fails, and every repeat must reproduce its recorded run")
     parser.add_argument("--flush-every", type=int, default=8,
                         help="commit semantic-space growth after this many scored nodes (production: a 60s timer, about 8 nodes at the scoring pace measured live)")
+    parser.add_argument("--results-dir", default="benchmark/results",
+                        help="one JSON file per policy run (sequence, labels, calls, tokens, timings, validity)")
+    parser.add_argument("--save-sequences", metavar="FILE",
+                        help="write the full visit order of every policy and repeat, baselines included")
     asyncio.run(main(parser.parse_args()))

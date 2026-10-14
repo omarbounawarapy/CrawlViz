@@ -390,3 +390,23 @@ async def test_llm_cache_counts_tokens_for_live_and_replayed_answers(tmp_path):
     replay = CachedLlm(Inner(), tmp_path / "c.jsonl", replay_only=True)
     await replay.send(ctx())
     assert (replay.input_tokens, replay.output_tokens) == (100, 20)
+
+
+async def test_every_run_leaves_a_result_file_and_a_sequence_entry(tmp_path):
+    from benchmark.results import ResultSink, RunRecord, load_records
+
+    graph = synthetic_graph(n_pages=120, seed=3)
+    sink = ResultSink(tmp_path / "results", tmp_path / "seq.json")
+    for name in ("bfs", "oracle"):
+        for rep in range(2):
+            result = await run_policy(graph, name, 20, seed=rep)
+            sink.add(RunRecord.from_result("g.json", rep, 20, result, llm_calls=3, input_tokens=9))
+    records = load_records(tmp_path / "results")
+    assert len(records) == 4
+    first = next(r for r in records if r.policy == "oracle" and r.rep == 1)
+    assert len(first.sequence) == 20 and first.valid and first.llm_calls == 3 and first.input_tokens == 9
+    import json
+
+    saved = json.loads((tmp_path / "seq.json").read_text())
+    assert set(saved) == {f"g.json:{p}:rep{r}" for p in ("bfs", "oracle") for r in (0, 1)}
+    assert saved["g.json:oracle:rep1"] == first.sequence
