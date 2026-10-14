@@ -57,6 +57,9 @@ from .policies import POLICIES
 EXTRACTION = {"mode": "document", "fields": {}}
 
 
+ARMS = ("cascade", "llm_all", "no_llm")
+
+
 def _passthrough(node, link, nlp_bias, llm_bias) -> float:
     return link._nlp_score
 
@@ -485,12 +488,32 @@ async def run_cascade(
     store_dir,
     flush_every: int = 8,
     lockstep: bool = True,
+    arm: str = "cascade",
+    low: float | None = None,
+    high: float | None = None,
 ) -> RunResult:
     """The real cascade (embedding model, topic expansion, LLM scoring,
     bucketing, priority strategy) on a frozen graph. `llm` is anything with
     ``send(context)``; wrap the real handler in ``CachedLlm`` so a rerun is
     free and repeatable. Cascade settings come from the default runtime
-    config, as a normal crawl would use them."""
+    config, as a normal crawl would use them.
+
+    ``arm`` picks the experiment:
+
+    * ``cascade``: the production cascade.
+    * ``llm_all``: every discovered link goes to the LLM, with the cascade's
+      prompt and batch size (``MAX_LLM_LINKS_PER_NODE`` links per call) and no
+      embedding-based bucketing. NLP scores are still computed, because the
+      priority strategy blends them, but they decide nothing about who is sent.
+    * ``no_llm``: embedding scores only. No scoring call is made and no
+      expansion is learned from answers. The topic basis comes from ``llm``
+      (the caller replays the cascade's recorded expansion), so it is the
+      same as the cascade's.
+
+    ``low`` / ``high`` replace the absolute bucketing thresholds. The
+    percentile bucketing the cascade normally uses would make them inert for
+    nodes with enough links, so giving either switches it off.
+    """
     from config.runtime_config import default_runtime_config
     from nlp import BufferManager, SpaceUpdater
     from priority.strategy import get_strategy
@@ -523,17 +546,36 @@ async def run_cascade(
     nlp = _CountedFlush(nlp, updater, flush_every)
     llm_service = ScoringService(llm, graph.topic, scoring_strategy, *model)
     c = cfg.scoring_cascade
+    if arm not in ARMS:
+        raise ValueError(f"unknown arm {arm!r}; expected one of {ARMS}")
+    if arm != "cascade" and (low is not None or high is not None):
+        raise ValueError("low/high only apply to the cascade arm")
     kwargs = dict(
-        low_threshold=c.low_threshold,
-        high_threshold=c.high_threshold,
+        low_threshold=c.low_threshold if low is None else low,
+        high_threshold=c.high_threshold if high is None else high,
         high_score_llm_fraction=c.high_score_llm_fraction,
         low_score_sample_fraction=c.low_score_sample_fraction,
         high_score_random_fraction=c.high_score_random_fraction,
-        percentile_bucketing=NLP_PERCENTILE_BUCKETING,
+        percentile_bucketing=NLP_PERCENTILE_BUCKETING and low is None and high is None,
         max_llm_links=MAX_LLM_LINKS_PER_NODE,
     )
+    if kwargs["low_threshold"] >= kwargs["high_threshold"]:
+        raise ValueError(f"low ({kwargs['low_threshold']}) must be below high ({kwargs['high_threshold']})")
+    if arm == "llm_all":
+        kwargs.update(
+            low_threshold=-1.0, high_threshold=2.0, percentile_bucketing=False,
+            high_score_llm_fraction=0.0, low_score_sample_fraction=0.0,
+            high_score_random_fraction=0.0, max_llm_links=None,
+            llm_batch_size=MAX_LLM_LINKS_PER_NODE,
+        )
+    elif arm == "no_llm":
+        kwargs.update(
+            high_score_llm_fraction=0.0, low_score_sample_fraction=0.0,
+            high_score_random_fraction=0.0, max_llm_links=None,
+        )
+        llm_service = _NoLlm()
     return await _run(
-        graph, "cascade", budget, seed, (llm_service, nlp), kwargs,
+        graph, arm, budget, seed, (llm_service, nlp), kwargs,
         get_strategy(c.default_priority_strategy), [], extraction,
         retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
         rate_limited=lambda: bool(getattr(llm, "waiting", False)),

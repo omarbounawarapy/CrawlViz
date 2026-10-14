@@ -549,12 +549,14 @@ async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monk
         async def send(self, ctx):
             await asyncio.sleep(self.rng.random() * 0.03)
             prompt = ctx.get_prompt()
-            urls = list(dict.fromkeys(re.findall(r"https://frozen\.test/[^\s\"',]+", prompt)))
-            if not urls:
+            match = re.search(r"CANDIDATES:\n(\[.*?\])\n", prompt, re.S)
+            if not match:
                 return {"target": "t", "descriptions": ["diabetes insulin glucose", "pancreas care"]}
+            urls = [c["url"] for c in json.loads(match.group(1))]
             return {"results": [
                 {"url": u, "score": zlib.crc32(u.encode()) % 100, "relevance_type": "direct",
-                 "expansions": []} for u in urls
+                 "expansions": [f"insulin {u}"] if zlib.crc32(u.encode()) % 5 == 0 else []}
+                for u in urls
             ]}
 
     graph = synthetic_graph(n_pages=200, seed=4)
@@ -575,3 +577,97 @@ async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monk
     assert replay.visited == live.visited
     assert not replay_llm.replay_misses
     assert replay_llm.hits == live_llm.misses
+
+
+def _hashing_config(monkeypatch):
+    import config.runtime_config as rc
+
+    real = rc.default_runtime_config
+
+    def patched():
+        cfg = real()
+        cfg.embeddings.backend = "hashing"
+        cfg.scoring_cascade.low_threshold, cfg.scoring_cascade.high_threshold = 0.0, 1.0
+        return cfg
+
+    monkeypatch.setattr(rc, "default_runtime_config", patched)
+
+
+class _RecordingLlm:
+    """Answers expansion and scoring prompts; remembers how many links each scoring call carried."""
+
+    def __init__(self):
+        self.batches: list[int] = []
+
+    async def send(self, ctx):
+        import json
+        import re
+
+        match = re.search(r"CANDIDATES:\n(\[.*?\])\n", ctx.get_prompt(), re.S)
+        if not match:
+            return {"target": "t", "descriptions": ["diabetes insulin glucose", "pancreas care"]}
+        urls = [c["url"] for c in json.loads(match.group(1))]
+        self.batches.append(len(urls))
+        return {"results": [{"url": u, "score": 50, "relevance_type": "direct", "expansions": []} for u in urls]}
+
+
+def _fan_out_graph(links: int = 130):
+    leaves = {f"L{i}": {"label": 0, "title": f"L{i}", "text": "t", "links": []} for i in range(links)}
+    seed = {"label": 0, "title": "S", "text": "t",
+            "links": [{"to": f"L{i}", "anchor": f"leaf {i}"} for i in range(links)]}
+    from benchmark import FrozenGraph
+
+    return FrozenGraph(seed="S", pages={"S": seed, **leaves}, topic="diabetes insulin")
+
+
+async def _arm(tmp_path, arm, llm, **kw):
+    import json
+    from pathlib import Path
+
+    from benchmark.llm_cache import CachedLlm
+    from benchmark.runner import run_cascade
+
+    bp = json.loads(Path("templates/isi.json").read_text())
+    expansion = {**bp["expansion"], "llm_type": "groq", "llm_model": "m"}
+    cached = llm if isinstance(llm, CachedLlm) else CachedLlm(llm, tmp_path / f"{arm}.jsonl", scope="rep0")
+    result = await run_cascade(_fan_out_graph(), 4, 0, cached, bp["extraction"], expansion,
+                               bp["scoring"]["strategy"], ("groq", "m"), tmp_path / f"s-{arm}-{id(cached)}", arm=arm, **kw)
+    return result, cached
+
+
+async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, monkeypatch):
+    from config import MAX_LLM_LINKS_PER_NODE
+
+    _hashing_config(monkeypatch)
+    cascade_llm, all_llm = _RecordingLlm(), _RecordingLlm()
+    await _arm(tmp_path, "cascade", cascade_llm)
+    result, _ = await _arm(tmp_path, "llm_all", all_llm)
+    assert cascade_llm.batches[0] == MAX_LLM_LINKS_PER_NODE  # the cascade truncates the node's 130 links
+    first_node = all_llm.batches[:3]
+    assert first_node == [MAX_LLM_LINKS_PER_NODE, MAX_LLM_LINKS_PER_NODE, 130 - 2 * MAX_LLM_LINKS_PER_NODE]
+    assert result.policy == "llm_all" and result.health.valid
+
+
+async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(tmp_path, monkeypatch):
+    from benchmark.llm_cache import CachedLlm, ReplayMiss
+
+    _hashing_config(monkeypatch)
+    recorder = _RecordingLlm()
+    await _arm(tmp_path, "cascade", recorder)  # records the expansion under scope rep0
+    replay = CachedLlm(None, tmp_path / "cascade.jsonl", scope="rep0", replay_only=True)
+    result, _ = await _arm(tmp_path, "no_llm", replay)
+    assert result.policy == "no_llm" and result.health.valid
+    assert replay.hits == 1 and not replay.replay_misses  # the expansion, nothing else
+    empty = CachedLlm(None, tmp_path / "empty.jsonl", scope="rep0", replay_only=True)
+    await _arm(tmp_path, "no_llm", empty)
+    assert empty.replay_misses  # an unrecorded expansion is visible, not silently an empty topic
+
+
+async def test_bad_arm_or_thresholds_are_rejected(tmp_path, monkeypatch):
+    _hashing_config(monkeypatch)
+    with pytest.raises(ValueError, match="unknown arm"):
+        await _arm(tmp_path, "nope", _RecordingLlm())
+    with pytest.raises(ValueError, match="below"):
+        await _arm(tmp_path, "cascade", _RecordingLlm(), low=0.8, high=0.3)
+    with pytest.raises(ValueError, match="only apply"):
+        await _arm(tmp_path, "llm_all", _RecordingLlm(), low=0.1)
