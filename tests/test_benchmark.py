@@ -717,3 +717,23 @@ async def test_quiet_queue_chooses_among_all_arrivals_once_the_crawler_is_quiet(
     await queue.put(SimpleNamespace(priority=0.9, name="best"))
     quiet["now"] = True
     assert (await asyncio.wait_for(waiter, 2)).name == "best"
+
+
+def test_merge_writes_graded_labels_the_rubric_hash_and_a_derived_relevant(tmp_path, monkeypatch):
+    import json
+
+    from benchmark import FrozenGraph, label_graph
+
+    graph = FrozenGraph(seed="A", pages={
+        n: {"title": n, "text": "t", "relevant": None, "links": []} for n in ("A", "B", "C")})
+    path = tmp_path / "g.json"
+    graph.save(path)
+    labels = tmp_path / "labels.jsonl"
+    labels.write_text("".join(json.dumps({"page": n, "label": v}) + "\n" for n, v in zip("ABC", (2, 1, 0))))
+    monkeypatch.setattr(label_graph, "LABELS", labels)
+    label_graph.merge(FrozenGraph.load(path), path)
+    data = json.loads(path.read_text())
+    assert {n: data["pages"][n]["label"] for n in "ABC"} == {"A": 2, "B": 1, "C": 0}
+    assert {n: data["pages"][n]["relevant"] for n in "ABC"} == {"A": True, "B": False, "C": False}
+    assert data["rubric_sha256"] == label_graph.rubric_sha()
+    assert FrozenGraph.load(path).relevant() == {"A", "B"}  # the runner reads label >= 1

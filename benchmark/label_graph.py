@@ -69,6 +69,8 @@ def merge(graph: FrozenGraph, path: Path) -> None:
         raise SystemExit(f"{len(missing)} pages unlabelled; run without --merge first")
     for n in graph.pages:
         graph.pages[n]["label"] = got[n]
+        # Kept for files and tools that predate grading: true only for a direct target.
+        graph.pages[n]["relevant"] = got[n] == 2
     # Written through the graph, so page names stay in their canonical form.
     graph.save(path)
     data = json.loads(path.read_text())
