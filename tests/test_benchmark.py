@@ -314,8 +314,8 @@ def test_duplicate_titles_are_reported_and_can_be_merged():
     assert graph.duplicate_titles() == {"Beta": ["B", "C"]}
     graph.merge("B", "C")
     assert "C" not in graph.pages
-    assert [l["to"] for l in graph.pages["A"]["links"]] == ["B"]
-    assert {l["to"] for l in graph.pages["B"]["links"]} == {"D", "E"}
+    assert [x["to"] for x in graph.pages["A"]["links"]] == ["B"]
+    assert {x["to"] for x in graph.pages["B"]["links"]} == {"D", "E"}
     assert not graph.duplicate_titles()
 
 
@@ -657,7 +657,7 @@ async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, 
 
 
 async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(tmp_path, monkeypatch):
-    from benchmark.llm_cache import CachedLlm, ReplayMiss
+    from benchmark.llm_cache import CachedLlm
 
     _hashing_config(monkeypatch)
     recorder = _RecordingLlm()
@@ -880,7 +880,7 @@ async def test_absent_page_hits_are_counted_and_the_mode_decides_the_cost():
 async def test_every_result_carries_a_manifest(tmp_path):
     import json
 
-    from benchmark import FrozenGraph, synthetic_graph
+    from benchmark import synthetic_graph
     from benchmark.provenance import manifest
     from benchmark.results import RunRecord, load_records
 

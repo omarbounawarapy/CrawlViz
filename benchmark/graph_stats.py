@@ -25,7 +25,7 @@ def depths(graph: FrozenGraph) -> dict[str, int]:
 
 def stats(graph: FrozenGraph) -> dict:
     degrees = [len(p["links"]) for p in graph.pages.values()]
-    absent = sum(1 for p in graph.pages.values() for l in p["links"] if l["to"] not in graph.pages)
+    absent = sum(1 for p in graph.pages.values() for link in p["links"] if link["to"] not in graph.pages)
     depth = depths(graph)
     labels = {n: graph.label(n) for n in graph.pages}
     per_depth: dict[int, dict[str, int]] = {}

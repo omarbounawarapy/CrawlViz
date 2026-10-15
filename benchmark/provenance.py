@@ -20,8 +20,10 @@ def prompt_version(strategy: str) -> str:
 def git_commit() -> str:
     """HEAD, with ``+dirty`` when tracked files have uncommitted changes."""
     try:
-        run = lambda *a: subprocess.run(["git", *a], capture_output=True, text=True, check=True,
-                                        cwd=Path(__file__).parent).stdout.strip()
+        def run(*args: str) -> str:
+            return subprocess.run(["git", *args], capture_output=True, text=True, check=True,
+                                  cwd=Path(__file__).parent).stdout.strip()
+
         return run("rev-parse", "HEAD") + ("+dirty" if run("status", "--porcelain", "-uno") else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
