@@ -11,8 +11,8 @@ harvest@k is computed.
 * ``harvest_label2_table.tex``: the same for direct targets only (label == 2)
 * ``recall_table.tex``: exact recall@k, relevant pages fetched over relevant
   pages in the graph (needs the graph file in ``--graphs-dir``)
-* ``efficiency_table.tex``: relevant pages found per LLM call and per 1k tokens
-  (answers served from the cache count at the calls and tokens they cost)
+* ``efficiency_table.tex``: tokens, relevant pages per 1k tokens (the cost metric)
+  and per LLM call (answers served from the cache count at the calls and tokens they cost)
 * ``validity_table.tex``: valid / invalid / early-stopped runs per policy
 * ``replay_table.tex``: replayed runs and their cache misses per policy
 * ``ndcg_table.tex``: with ``--ndcg``, nDCG@k of the fetch order, grades 0/1/2
@@ -201,8 +201,11 @@ def efficiency(run: RunRecord) -> tuple[float, float]:
 
 
 def efficiency_table_tex(groups: dict[str, list[RunRecord]]) -> str:
+    """Tokens are the cost metric: arms batch links differently (llm_all sends
+    up to 60 per call, the cascade one batch per page), so call counts are not
+    comparable between arms. Calls are listed for reference."""
     lines = [r"\begin{tabular}{lrrrr}", r"\toprule",
-             r"Policy & LLM calls & tokens & relevant / call & relevant / 1k tokens \\", r"\midrule"]
+             r"Policy & tokens & relevant / 1k tokens & LLM calls & relevant / call \\", r"\midrule"]
     for policy, runs in groups.items():
         per_call = [e[0] for e in map(efficiency, runs) if not math.isnan(e[0])]
         per_tok = [e[1] for e in map(efficiency, runs) if not math.isnan(e[1])]
@@ -213,7 +216,7 @@ def efficiency_table_tex(groups: dict[str, list[RunRecord]]) -> str:
             mean, ci = mean_ci(vals)
             return "--" if not vals else f"{mean:.3f}" + ("" if math.isnan(ci) else f" $\\pm$ {ci:.3f}")
 
-        lines.append(f"{_tex(policy)} & {calls:.0f} & {tokens:.0f} & {cell(per_call)} & {cell(per_tok)} \\\\")
+        lines.append(f"{_tex(policy)} & {tokens:.0f} & {cell(per_tok)} & {calls:.0f} & {cell(per_call)} \\\\")
     return "\n".join(lines + [r"\bottomrule", r"\end{tabular}", ""])
 
 

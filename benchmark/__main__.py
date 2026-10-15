@@ -173,6 +173,9 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                     f"everything else {max(0.0, result.wall_seconds - llm_time - waited):.0f}s"
                 )
             print(f"    tokens: {llm.input_tokens} in, {llm.output_tokens} out over {llm.misses + llm.hits} answers")
+            if llm.misses + llm.hits and not (llm.input_tokens or llm.output_tokens):
+                print("    WARNING: LLM answers were used but no token counts were recorded; "
+                      "the provider response carried no usage, so token cost for this run is unusable")
             sink.add(RunRecord.from_result(
                 Path(args.graph).name, rep, args.budget, result,
                 llm_calls=llm.misses, llm_replayed=llm.hits, replay=bool(args.replay_only),
