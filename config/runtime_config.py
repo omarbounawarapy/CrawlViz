@@ -320,9 +320,9 @@ class PriorityConfig(BaseModel):
     """Mix of NLP and LLM scores in a link's priority (priority_pipeline.py)."""
 
     nlp_bias: float = _f(60, "Weight of the NLP score (normalized with llm_bias).",
-                         "Priority", "slider", ge=0)
+                         "Priority", "split", pair="llm_bias", ge=0)
     llm_bias: float = _f(40, "Weight of the LLM score (normalized with nlp_bias).",
-                         "Priority", "slider", ge=0)
+                         "Priority", "split", pair="nlp_bias", ge=0)
 
     aggressive_weights: dict[str, float] = _weights("aggressive")
     balanced_weights: dict[str, float] = _weights("balanced")
@@ -354,13 +354,13 @@ class NlpConfig(BaseModel):
         "Feature weights of the composite NLP score (negative subtracts).",
         "NLP", "weights")
     target_top_k: int = _f(2, "Nearest target-basis vectors averaged into target similarity.",
-                           "NLP", ge=1)
+                           "NLP", "slider", step=1, ge=1, le=10)
     cluster_eps: float = _f(0.3, "DBSCAN cosine radius used to find clusters in the semantic space.",
                             "NLP", advanced=True, gt=0.0)
     cluster_min_samples: int = _f(2, "DBSCAN minimum points per cluster.",
                                   "NLP", advanced=True, ge=1)
     link_context_length: int = _f(100, "Characters of surrounding text kept as a link's context.",
-                                  "NLP", unit="chars", ge=1)
+                                  "NLP", "slider", unit="chars", step=10, ge=10, le=1000)
 
 
 class LlmConfig(BaseModel):

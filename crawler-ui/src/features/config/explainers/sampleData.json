@@ -1,0 +1,212 @@
+{
+  "cascadeScores": [
+    0.04,
+    0.07,
+    0.09,
+    0.11,
+    0.13,
+    0.15,
+    0.17,
+    0.19,
+    0.22,
+    0.24,
+    0.26,
+    0.28,
+    0.3,
+    0.32,
+    0.34,
+    0.36,
+    0.38,
+    0.4,
+    0.42,
+    0.44,
+    0.46,
+    0.48,
+    0.5,
+    0.52,
+    0.55,
+    0.58,
+    0.61,
+    0.64,
+    0.67,
+    0.7,
+    0.73,
+    0.76,
+    0.79,
+    0.82,
+    0.85,
+    0.88,
+    0.91,
+    0.93,
+    0.95,
+    0.97
+  ],
+  "strategyLinks": [
+    {
+      "label": "Banana bread recipe",
+      "depth": 1,
+      "llm": 0.35,
+      "features": {
+        "target_similarity": 0.62,
+        "novelty_injection": 0.2,
+        "coverage_gap": 0.3,
+        "contextual_consistency": 0.55,
+        "lexical_overlap": 0.6,
+        "cluster_distance": 0.25,
+        "semantic_delta": 0.15
+      }
+    },
+    {
+      "label": "Banana varieties guide",
+      "depth": 2,
+      "llm": 0.85,
+      "features": {
+        "target_similarity": 0.88,
+        "novelty_injection": 0.3,
+        "coverage_gap": 0.35,
+        "contextual_consistency": 0.8,
+        "lexical_overlap": 0.75,
+        "cluster_distance": 0.3,
+        "semantic_delta": 0.2
+      }
+    },
+    {
+      "label": "Shipping and returns",
+      "depth": 1,
+      "llm": 0.1,
+      "features": {
+        "target_similarity": 0.18,
+        "novelty_injection": 0.55,
+        "coverage_gap": 0.6,
+        "contextual_consistency": 0.25,
+        "lexical_overlap": 0.1,
+        "cluster_distance": 0.65,
+        "semantic_delta": 0.5
+      }
+    },
+    {
+      "label": "Fruit shop opening hours",
+      "depth": 3,
+      "llm": 0.55,
+      "features": {
+        "target_similarity": 0.5,
+        "novelty_injection": 0.65,
+        "coverage_gap": 0.7,
+        "contextual_consistency": 0.45,
+        "lexical_overlap": 0.35,
+        "cluster_distance": 0.7,
+        "semantic_delta": 0.6
+      }
+    },
+    {
+      "label": "Apple pie recipe",
+      "depth": 2,
+      "llm": 0.2,
+      "features": {
+        "target_similarity": 0.3,
+        "novelty_injection": 0.75,
+        "coverage_gap": 0.8,
+        "contextual_consistency": 0.2,
+        "lexical_overlap": 0.15,
+        "cluster_distance": 0.85,
+        "semantic_delta": 0.7
+      }
+    },
+    {
+      "label": "How bananas ripen",
+      "depth": 4,
+      "llm": 0.78,
+      "features": {
+        "target_similarity": 0.8,
+        "novelty_injection": 0.25,
+        "coverage_gap": 0.2,
+        "contextual_consistency": 0.7,
+        "lexical_overlap": 0.65,
+        "cluster_distance": 0.2,
+        "semantic_delta": 0.1
+      }
+    },
+    {
+      "label": "Contact the shop",
+      "depth": 1,
+      "llm": 0.15,
+      "features": {
+        "target_similarity": 0.22,
+        "novelty_injection": 0.4,
+        "coverage_gap": 0.45,
+        "contextual_consistency": 0.3,
+        "lexical_overlap": 0.2,
+        "cluster_distance": 0.45,
+        "semantic_delta": 0.35
+      }
+    },
+    {
+      "label": "Plantain or banana?",
+      "depth": 3,
+      "llm": 0.6,
+      "features": {
+        "target_similarity": 0.58,
+        "novelty_injection": 0.5,
+        "coverage_gap": 0.55,
+        "contextual_consistency": 0.5,
+        "lexical_overlap": 0.45,
+        "cluster_distance": 0.55,
+        "semantic_delta": 0.4
+      }
+    }
+  ],
+  "topK": {
+    "topic": "bananas",
+    "link": "Banana bread recipe",
+    "basis": [
+      {
+        "label": "All about bananas",
+        "similarity": 0.82
+      },
+      {
+        "label": "Growing bananas",
+        "similarity": 0.74
+      },
+      {
+        "label": "Banana recipes",
+        "similarity": 0.58
+      },
+      {
+        "label": "Tropical fruit",
+        "similarity": 0.47
+      },
+      {
+        "label": "Fruit shop prices",
+        "similarity": 0.31
+      },
+      {
+        "label": "Car engines",
+        "similarity": 0.09
+      }
+    ]
+  },
+  "cluster": {
+    "angles": [
+      4,
+      9,
+      15,
+      22,
+      28,
+      55,
+      61,
+      68,
+      120,
+      128,
+      160,
+      175
+    ]
+  },
+  "context": {
+    "anchor": "Banana bread",
+    "text": "Our shop sells fresh fruit all year. Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf. Ask at the counter for more ideas."
+  },
+  "strategyTarget": {
+    "topic": "bananas",
+    "note": "A crawl that looks for pages about bananas, starting from a fruit shop's home page."
+  }
+}

@@ -108,8 +108,8 @@ export function isActive(field, draft) {
  * Pairs two-thumb range fields within `list`: {low, high} for the first field
  * of a pair, null for its partner (drawn with it), undefined for a plain field.
  */
-export function rangeOf(field, list) {
-  if (field.widget !== "range" || !field.pair) return undefined;
+export function rangeOf(field, list, widget = "range") {
+  if (field.widget !== widget || !field.pair) return undefined;
   const partnerPath = siblingPath(field, field.pair);
   const at = list.findIndex((f) => f.path === partnerPath);
   if (at < 0) return undefined;

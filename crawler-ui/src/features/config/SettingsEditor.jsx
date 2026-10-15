@@ -1,4 +1,4 @@
-import { useId, useMemo } from "react";
+import { Fragment, useId, useMemo } from "react";
 import { getTheme } from "../../theme";
 import { SectionTitle } from "../common/Page";
 import { Button } from "../common/Form";
@@ -76,6 +76,41 @@ function RangeRow({ low, high, draft, defaults, saved, onChange, errors }) {
   );
 }
 
+// Two weights that always make 100 %: one slider from pure NLP to pure LLM.
+function SplitRow({ nlp, llm, draft, defaults, saved, onChange, errors }) {
+  const a = Number(getIn(draft, nlp.path)) || 0;
+  const b = Number(getIn(draft, llm.path)) || 0;
+  const share = a + b > 0 ? Math.round((b / (a + b)) * 100) : 50;
+  const err = errors[nlp.path] ?? errors[llm.path];
+  const set = (x) => { onChange(nlp.path, 100 - x); onChange(llm.path, x); };
+  const field = {
+    ...nlp, title: "NLP and LLM share of the priority",
+    description: "How much a link's priority comes from the cheap NLP score and how much from the LLM's judgement. The two always add up to 100 %.",
+  };
+  return (
+    <SettingRow
+      field={field} value={[a, b]} defaultValue={[getIn(defaults, nlp.path), getIn(defaults, llm.path)]}
+      saved={[getIn(saved, nlp.path), getIn(saved, llm.path)]} error={err}
+      onChange={() => { onChange(nlp.path, getIn(defaults, nlp.path)); onChange(llm.path, getIn(defaults, llm.path)); }}
+      control={
+        <div style={{ width: 300 }}>
+          <input type="range" min={0} max={100} step={1} value={share} style={{ width: "100%" }}
+                 aria-label="Share of the LLM score in a link's priority, percent"
+                 aria-valuetext={`${100 - share} percent NLP, ${share} percent LLM`}
+                 onChange={(e) => set(Number(e.target.value))} />
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: theme.colors.text.secondary }}>
+            <span>Pure NLP</span>
+            <span className="num" style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
+              NLP {100 - share} % · LLM {share} %
+            </span>
+            <span>Pure LLM</span>
+          </div>
+        </div>
+      }
+    />
+  );
+}
+
 // One row per pipeline, one column per setting, instead of N identical rows.
 function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
   const rows = [];
@@ -121,14 +156,19 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
  */
 export default function SettingsEditor({
   fields, draft, defaults, saved, onChange, errors = {}, query = "", showAdvanced = false,
-  onResetSection, sectionExtras = {}, section, sectionOrder = [], sectionHelp = {}, onOpenSection,
+  onResetSection, sectionExtras = {}, fieldExtras = {}, hiddenPaths = [], section, sectionOrder = [], sectionHelp = {}, onOpenSection,
 }) {
   const sections = useMemo(() => {
-    const visible = fields.filter((f) => (showAdvanced || !f.advanced || query) && matches(f, query));
+    // An explainer that edits a field itself hides its plain row, except while searching.
+    const visible = fields.filter((f) => (showAdvanced || !f.advanced || query) && matches(f, query)
+      && (query || !hiddenPaths.includes(f.path)));
     const grouped = groupBySection(visible, sectionOrder);
     // A named section is shown alone, unless a search is looking across all of them.
-    return section && !query ? grouped.filter(([name]) => name === section) : grouped;
-  }, [fields, query, showAdvanced, section, sectionOrder]);
+    if (!section || query) return grouped;
+    const shown = grouped.filter(([name]) => name === section);
+    // A section whose every row is edited by its explainer has no plain rows left.
+    return shown.length === 0 && sectionExtras[section] ? [[section, []]] : shown;
+  }, [fields, query, showAdvanced, section, sectionOrder, hiddenPaths, sectionExtras]);
 
   if (sections.length === 0) {
     return (
@@ -138,7 +178,7 @@ export default function SettingsEditor({
     );
   }
   return sections.map(([name, list]) => {
-    const asTable = list.every((f) => f.group) && list.some((f) => f.topKey === "pipelines");
+    const asTable = list.length > 0 && list.every((f) => f.group) && list.some((f) => f.topKey === "pipelines");
     return (
       <section key={name} aria-labelledby={slug(name)}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
@@ -155,10 +195,18 @@ export default function SettingsEditor({
             {sectionHelp[name]}
           </p>
         )}
-        {sectionExtras[name]?.(draft)}
+        {!query && sectionExtras[name]?.(draft)}
         {asTable ? (
           <PipelinesTable fields={list} draft={draft} defaults={defaults} saved={saved} onChange={onChange} errors={errors} />
         ) : list.map((f) => {
+          const split = rangeOf(f, list, "split");
+          if (split === null) return null;
+          if (split) {
+            return (
+              <SplitRow key={f.path} nlp={split.low} llm={split.high} draft={draft} defaults={defaults}
+                        saved={saved} onChange={onChange} errors={errors} />
+            );
+          }
           const pair = rangeOf(f, list);
           if (pair === null) return null;
           if (pair) {
@@ -168,12 +216,15 @@ export default function SettingsEditor({
             );
           }
           return (
-            <SettingRow
-              key={f.path} field={f} value={getIn(draft, f.path)} defaultValue={getIn(defaults, f.path)}
-              saved={getIn(saved, f.path)} onChange={(v) => onChange(f.path, v)}
-              error={errors[f.path] ?? validateField(f, getIn(draft, f.path))}
-              active={isActive(f, draft)}
-            />
+            <Fragment key={f.path}>
+              <SettingRow
+                field={f} value={getIn(draft, f.path)} defaultValue={getIn(defaults, f.path)}
+                saved={getIn(saved, f.path)} onChange={(v) => onChange(f.path, v)}
+                error={errors[f.path] ?? validateField(f, getIn(draft, f.path))}
+                active={isActive(f, draft)}
+              />
+              {!query && fieldExtras[f.path]?.(draft)}
+            </Fragment>
           );
         })}
       </section>

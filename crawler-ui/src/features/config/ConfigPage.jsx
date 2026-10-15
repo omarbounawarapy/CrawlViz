@@ -7,6 +7,11 @@ import {
   crawlStatus, patchLiveConfig,
 } from "../../api/client";
 import PresetsPanel from "./PresetsPanel";
+import CascadeFunnel from "./explainers/CascadeFunnel";
+import HeaderPresets from "./HeaderPresets";
+import BackoffChart from "./explainers/BackoffChart";
+import StrategyCards from "./explainers/StrategyCards";
+import { TopKExample, ClusterExample, ContextExample } from "./explainers/TopKExample";
 import SettingsEditor from "./SettingsEditor";
 import KeysPanel from "./KeysPanel";
 import { useRoute } from "../../hooks/useRoute";
@@ -17,41 +22,13 @@ import {
 
 const theme = getTheme();
 
+// Edited inside StrategyCards instead of as three key/value tables.
+const HIDDEN = [
+  "priority.aggressive_weights", "priority.balanced_weights", "priority.exploration_weights",
+];
+
 const PRESETS = { name: "Presets and files", slug: "presets" };
 const KEYS = { name: "API keys", slug: "api-keys" };
-
-// The two thresholds drawn on the 0-1 NLP similarity scale, so the numbers
-// read as three zones. Vermilion marks the most promising zone.
-function CascadeScale({ low, high }) {
-  if (typeof low !== "number" || typeof high !== "number") return null;
-  const W = 600, H = 34, x = (v) => Math.max(0, Math.min(1, v)) * W;
-  const zones = [
-    { from: 0, to: low, fill: "#e3e8ee", label: "Mostly skipped" },
-    { from: low, to: high, fill: "#b7c1cd", label: "LLM decides" },
-    { from: high, to: 1, fill: theme.colors.relevance.ramp[1], label: "Trusted on NLP score" },
-  ];
-  return (
-    <figure style={{ margin: "4px 0 10px", maxWidth: 600 }}>
-      <svg viewBox={`0 0 ${W} ${H + 26}`} width="100%" role="img"
-           aria-label={`Similarity scores below ${low} are mostly skipped, between ${low} and ${high} the LLM decides, above ${high} are trusted on the NLP score.`}>
-        {zones.map((z) => (
-          <g key={z.label}>
-            <rect x={x(z.from)} y="0" width={Math.max(0, x(z.to) - x(z.from))} height={H} fill={z.fill} />
-            <text x={(x(z.from) + x(z.to)) / 2} y={H + 18} textAnchor="middle" fontSize="13" fill={theme.colors.text.secondary}>{z.label}</text>
-          </g>
-        ))}
-        {[low, high].map((v) => (
-          <g key={v}>
-            <line x1={x(v)} x2={x(v)} y1="-2" y2={H + 2} stroke={theme.colors.text.primary} strokeWidth="2" />
-          </g>
-        ))}
-      </svg>
-      <figcaption style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2 }}>
-        NLP similarity from 0 to 1. Thresholds at {low} and {high}.
-      </figcaption>
-    </figure>
-  );
-}
 
 export default function ConfigPage() {
   const [schema, setSchema] = useState(null);
@@ -206,10 +183,18 @@ export default function ConfigPage() {
     </nav>
   );
 
+  // Explainers draw from the live draft; the ones that edit a field own its plain row.
   const extras = {
-    "Scoring cascade": (d) => (
-      <CascadeScale low={getIn(d, "scoring_cascade.low_threshold")} high={getIn(d, "scoring_cascade.high_threshold")} />
-    ),
+    "Scoring cascade": (d) => <CascadeFunnel cfg={d.scoring_cascade} />,
+    Fetch: (d) => <BackoffChart cfg={d.fetch} />,
+    Priority: (d) => <StrategyCards priority={d.priority} defaults={defaults?.priority} onChange={change} />,
+  };
+  const applyHeaders = (values) => Object.entries(values).forEach(([k, v]) => change(`fetch.${k}`, v));
+  const fieldExtras = {
+    "fetch.respect_robots": (d) => <HeaderPresets fetch={d.fetch} onApply={applyHeaders} />,
+    "nlp.target_top_k": (d) => <TopKExample k={d.nlp.target_top_k} />,
+    "nlp.cluster_min_samples": (d) => <ClusterExample eps={d.nlp.cluster_eps} minSamples={d.nlp.cluster_min_samples} />,
+    "nlp.link_context_length": (d) => <ContextExample length={d.nlp.link_context_length} />,
   };
 
   return (
@@ -256,7 +241,8 @@ export default function ConfigPage() {
           <SettingsEditor
             fields={fields} draft={draft} defaults={defaults} saved={saved} onChange={change}
             errors={errors} query={query} showAdvanced={showAdvanced}
-            onResetSection={resetSection} sectionExtras={extras}
+            onResetSection={resetSection} sectionExtras={extras} fieldExtras={fieldExtras}
+            hiddenPaths={HIDDEN}
             section={current.name} sectionOrder={order} sectionHelp={help} onOpenSection={openSection}
           />
           )}
