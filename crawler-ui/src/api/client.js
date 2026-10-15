@@ -102,3 +102,4 @@ export const fetchBenchmarkEstimate = (budget)           => req("GET", `/benchma
 export const startBenchmarkJob      = (kind, args)       => req("POST", "/benchmark/jobs", { kind, args });
 export const benchmarkJob           = ()                 => req("GET",  "/benchmark/jobs/current");
 export const stopBenchmarkJob       = ()                 => req("POST", "/benchmark/jobs/stop");
+export const previewPrompt        = (body)       => req("POST", "/config/prompts/preview", body);

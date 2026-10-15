@@ -9,6 +9,9 @@ import {
 import PresetsPanel from "./PresetsPanel";
 import CascadeFunnel from "./explainers/CascadeFunnel";
 import HeaderPresets from "./HeaderPresets";
+import PromptStudio from "./PromptStudio";
+import SuggestionsStrip from "./SuggestionsStrip";
+import { suggest } from "./suggestions";
 import BackoffChart from "./explainers/BackoffChart";
 import StrategyCards from "./explainers/StrategyCards";
 import { TopKExample, ClusterExample, ContextExample } from "./explainers/TopKExample";
@@ -25,12 +28,14 @@ const theme = getTheme();
 // Edited inside StrategyCards instead of as three key/value tables.
 const HIDDEN = [
   "priority.aggressive_weights", "priority.balanced_weights", "priority.exploration_weights",
+  "prompts.scoring_system", "prompts.scoring_rules", "prompts.strategy_contexts",
 ];
 
 const PRESETS = { name: "Presets and files", slug: "presets" };
 const KEYS = { name: "API keys", slug: "api-keys" };
 
 export default function ConfigPage() {
+  const [dismissed, setDismissed] = useState([]);
   const [schema, setSchema] = useState(null);
   const [saved, setSaved] = useState(null);
   const [defaults, setDefaults] = useState(null);
@@ -187,6 +192,7 @@ export default function ConfigPage() {
   const extras = {
     "Scoring cascade": (d) => <CascadeFunnel cfg={d.scoring_cascade} />,
     Fetch: (d) => <BackoffChart cfg={d.fetch} />,
+    Prompts: (d) => <PromptStudio prompts={d.prompts} defaults={defaults?.prompts ?? d.prompts} onChange={change} />,
     Priority: (d) => <StrategyCards priority={d.priority} defaults={defaults?.priority} onChange={change} />,
   };
   const applyHeaders = (values) => Object.entries(values).forEach(([k, v]) => change(`fetch.${k}`, v));
@@ -236,6 +242,13 @@ export default function ConfigPage() {
             <p role="status" style={{ fontSize: 13, margin: "8px 0", color: status.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>
               {status.text}
             </p>
+          )}
+          {!query && (
+            <SuggestionsStrip
+              items={suggest(draft, dismissed).filter((s) => s.section === current.name)}
+              onApply={(s) => { s.fix.set.forEach(([p, v]) => change(p, v)); setDismissed((d) => [...d, s.id]); }}
+              onDismiss={(id) => setDismissed((d) => [...d, id])}
+            />
           )}
           {(query || (current.slug !== PRESETS.slug && current.slug !== KEYS.slug)) && (
           <SettingsEditor

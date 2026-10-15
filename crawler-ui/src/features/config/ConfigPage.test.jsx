@@ -24,6 +24,7 @@ vi.mock("../../api/client", () => ({
   exportConfig: vi.fn(() => Promise.resolve({})),
   validateConfig: vi.fn(() => Promise.resolve({ valid: true, errors: [] })),
   replaceConfig: vi.fn(() => Promise.resolve(defaults)),
+  previewPrompt: vi.fn(() => Promise.resolve({ blocks: [], prompt: "" })),
 }));
 
 import * as api from "../../api/client";
@@ -78,12 +79,12 @@ describe("ConfigPage", () => {
     at("fetch");
     render(<ConfigPage />);
     await screen.findByLabelText(/^Min delay/);
-    expect(screen.queryByLabelText(/^Scoring system/)).toBeNull();
+    expect(screen.queryByLabelText("System prompt")).toBeNull();
     const nav = screen.getByRole("navigation", { name: "Configuration sections" });
     expect(within(nav).getByText("Fetch").getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByText("Prompts").getAttribute("aria-current")).toBeNull();
     fireEvent.click(within(nav).getByText("Prompts"));
-    expect(await screen.findByLabelText(/^Scoring system/)).toBeTruthy();
+    expect(await screen.findByLabelText("System prompt")).toBeTruthy();
     expect(window.location.hash).toBe("#/config/prompts");
   });
 
@@ -147,7 +148,31 @@ describe("ConfigPage", () => {
   it("edits a prompt in a textarea", async () => {
     at("prompts");
     render(<ConfigPage />);
-    const box = await screen.findByLabelText(/^Scoring system/);
+    const box = await screen.findByLabelText("System prompt");
     expect(box.tagName).toBe("TEXTAREA");
+  });
+
+  it("shows what a preset changes before applying it", async () => {
+    api.fetchPresets.mockResolvedValueOnce({
+      builtin: { gentle: { fetch: { min_delay: 5 } } }, descriptions: { gentle: "Slow and kind." }, user: {},
+    });
+    at("presets");
+    render(<ConfigPage />);
+    expect(await screen.findByText("Slow and kind.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show what preset gentle changes" }));
+    const list = await screen.findByLabelText("Changes made by gentle");
+    expect(list.textContent).toMatch(/Min delay.*→.*5/);
+  });
+
+  it("suggests a fix for a risky value and applies it with one click", async () => {
+    const risky = JSON.parse(JSON.stringify(defaults));
+    risky.fetch.min_delay = 0.2;
+    risky.pipelines.requests.workers = 8;
+    api.fetchConfig.mockResolvedValueOnce(risky);
+    at("fetch");
+    render(<ConfigPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Set the pause to 1 s" }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Set the pause to 1 s" })).toBeNull());
+    expect(screen.getByLabelText(/^Min delay/).value).toBe("1");
   });
 });

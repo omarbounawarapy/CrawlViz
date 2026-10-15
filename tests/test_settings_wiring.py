@@ -325,6 +325,8 @@ def test_presets_export_and_token(client, monkeypatch):
     client = client[0]
     r = client.get("/config/presets")
     assert r.status_code == 200 and "polite" in r.json()["builtin"]
+    body = r.json()
+    assert set(body["descriptions"]) == set(body["builtin"])
     assert client.put("/config", json={"values": {"fetch": {"min_delay": 4.0}}}).status_code == 200
     assert client.get("/config/export").json() == {"fetch": {"min_delay": 4.0}}
     assert client.put("/config/presets/mine").json() == {"saved": "mine"}
@@ -334,6 +336,7 @@ def test_presets_export_and_token(client, monkeypatch):
     assert client.post("/config/presets/mine/apply").json()["fetch"]["min_delay"] == 4.0
     assert client.delete("/config/presets/mine").status_code == 200
     assert client.post("/config/presets/mine/apply").status_code == 404
+    assert client.post("/config/presets/frugal/apply").json()["scoring_cascade"]["high_score_llm_fraction"] == 0.1
 
     monkeypatch.setenv("CRAWLVIZ_API_TOKEN", "s3cret")
     assert client.get("/config").status_code == 401
@@ -403,3 +406,27 @@ def test_cascade_pair_hints_in_schema():
     assert props["low_threshold"]["ui_pair"] == "high_threshold"
     assert props["high_percentile"]["ui_pair"] == "low_percentile"
     assert list(props)[0] == "percentile_bucketing"
+
+
+def test_prompt_preview_uses_draft_wording_and_matches_builder():
+    from fastapi.testclient import TestClient
+
+    from main import app
+    from models.prompts import PromptBuilder
+
+    client = TestClient(app)
+    res = client.post("/config/prompts/preview", json={
+        "target": "tea", "strategy": "EXPLORATION",
+        "scoring_rules": "RULES:\n- be brief",
+        "strategy_contexts": {"EXPLORATION": "Roam widely."},
+    })
+    assert res.status_code == 200
+    data = res.json()
+    ids = [b["id"] for b in data["blocks"]]
+    assert ids == ["system", "task", "context", "candidates", "rules", "output", "constraints"]
+    assert "Roam widely." in data["prompt"] and "- be brief" in data["prompt"]
+    assert "target_topic: tea" in data["prompt"]
+    assert {b["id"]: b["kind"] for b in data["blocks"]}["output"] == "locked"
+    assert data["prompt"] == "\n\n".join(b["text"] for b in data["blocks"])
+    assert PromptBuilder("x").build_blocks([])[0][0] == "system"
+    assert client.post("/config/prompts/preview", json={"strategy": "NOPE"}).status_code == 422

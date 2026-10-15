@@ -3,8 +3,9 @@ import { getTheme } from "../../theme";
 import { Button, TextInput } from "../common/Form";
 import { SectionTitle } from "../common/Page";
 import {
-  applyPreset, deletePreset, exportConfig, fetchPresets, replaceConfig, savePreset, validateConfig,
+  applyPreset, deletePreset, exportConfig, fetchConfig, fetchPresets, replaceConfig, savePreset, validateConfig,
 } from "../../api/client";
+import { presetChanges, shown } from "./presetModel";
 
 const theme = getTheme();
 
@@ -12,7 +13,9 @@ const theme = getTheme();
  *  preset or an import replaces the stored settings; `onChanged` hands the
  *  new effective config back to the page. */
 export default function PresetsPanel({ onChanged, dirty }) {
-  const [presets, setPresets] = useState({ builtin: {}, user: {} });
+  const [presets, setPresets] = useState({ builtin: {}, descriptions: {}, user: {} });
+  const [current, setCurrent] = useState(null);
+  const [open, setOpen] = useState(null);
   const [name, setName] = useState("");
   const [msg, setMsg] = useState(null);
   const fileRef = useRef(null);
@@ -25,6 +28,7 @@ export default function PresetsPanel({ onChanged, dirty }) {
     fetchPresets()
       .then((p) => !cancelled && setPresets(p))
       .catch((e) => !cancelled && setMsg({ ok: false, text: e.message }));
+    fetchConfig().then((c) => !cancelled && setCurrent(c)).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -42,7 +46,7 @@ export default function PresetsPanel({ onChanged, dirty }) {
   const apply = async (n) => {
     if (dirty && !window.confirm("Applying a preset replaces your stored settings and drops unsaved edits. Continue?")) return;
     const cfg = await guard(() => applyPreset(n), `Preset “${n}” applied. It takes effect from the next crawl.`);
-    if (cfg) onChanged(cfg);
+    if (cfg) { onChanged(cfg); setCurrent(cfg); }
   };
 
   const save = async () => {
@@ -82,16 +86,32 @@ export default function PresetsPanel({ onChanged, dirty }) {
     if (cfg) onChanged(cfg);
   };
 
-  const row = { display: "flex", gap: 8, alignItems: "center", padding: "6px 0",
+  const row = { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "6px 0",
                 borderBottom: `1px solid ${theme.colors.rowBorder}` };
   const group = (title, list, deletable) => Object.keys(list).length > 0 && (
     <div style={{ marginBottom: 12 }}>
       <div style={{ fontSize: 13, color: theme.colors.text.muted, marginBottom: 4 }}>{title}</div>
       {Object.keys(list).map((n) => (
         <div key={n} style={row}>
-          <span style={{ flex: 1, fontSize: 14 }}>{n}</span>
+          <span style={{ flex: 1, fontSize: 14 }}>
+            {n}
+            {presets.descriptions?.[n] && (
+              <span style={{ display: "block", fontSize: 13, color: theme.colors.text.secondary }}>{presets.descriptions[n]}</span>
+            )}
+          </span>
+          <Button variant="quiet" aria-expanded={open === n} onClick={() => setOpen(open === n ? null : n)}
+                  aria-label={`Show what preset ${n} changes`}>What changes</Button>
           <Button onClick={() => apply(n)} aria-label={`Apply preset ${n}`}>Apply</Button>
           {deletable && <Button variant="quiet" onClick={() => remove(n)} aria-label={`Delete preset ${n}`}>Delete</Button>}
+          {open === n && (
+            <ul aria-label={`Changes made by ${n}`} style={{ flexBasis: "100%", margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
+              {(() => {
+                const changes = presetChanges(list[n], current);
+                if (changes.length === 0) return <li>Nothing: your settings already match this preset.</li>;
+                return changes.map((c) => <li key={c.path}>{c.label}: {shown(c.from)} → <strong>{shown(c.to)}</strong></li>);
+              })()}
+            </ul>
+          )}
         </div>
       ))}
     </div>

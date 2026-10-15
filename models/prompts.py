@@ -112,6 +112,17 @@ class PromptBuilder:
     def build_prompt(self, candidates: list[Any], url_prefix: str = "") -> str:
         """Assemble the full user prompt for one batch of candidate links.
 
+        The blocks are those of `build_blocks`, joined by blank lines.
+        """
+        return "\n\n".join(text for _, text in self.build_blocks(candidates, url_prefix))
+
+    def build_blocks(
+        self, candidates: list[Any], url_prefix: str = ""
+    ) -> list[tuple[str, str]]:
+        """The prompt as ordered (block name, text) pairs.
+
+        Names: system, task, context, candidates, rules, output, constraints.
+
         If `url_prefix` is given, it is stated once in the prompt and
         stripped from every candidate URL (and the LLM is told to answer
         with the same shortened URLs). The caller re-attaches the prefix to
@@ -175,15 +186,15 @@ CONSTRAINTS:
 - No trailing commas
 """.strip()
 
-        return "\n\n".join([
-            self.build_system_prompt(),
-            task_block,
-            context_block,
-            candidates_block,
-            rules_block,
-            output_block,
-            constraints_block,
-        ])
+        return [
+            ("system", self.build_system_prompt()),
+            ("task", task_block),
+            ("context", context_block),
+            ("candidates", candidates_block),
+            ("rules", rules_block),
+            ("output", output_block),
+            ("constraints", constraints_block),
+        ]
 
     def set_strategy(self, strategy: str) -> None:
         if strategy not in STRATEGIES:

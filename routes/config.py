@@ -19,6 +19,7 @@ POST /config/presets/{name}/apply    replace the settings with a preset
 DELETE /config/presets/{name}
 PATCH /config/live      change ui_apply=live fields of the running crawl
 POST /config/reset      drop one section (?section=) or everything
+POST /config/prompts/preview  the scoring prompt as the LLM receives it, from draft wording
 GET  /config/providers  LLM providers and the models templates use
 GET/POST/DELETE /keys   masked key management (full keys never returned)
 
@@ -45,6 +46,8 @@ from config.runtime_config import RuntimeConfig, default_runtime_config
 from core.live_settings import LiveSettingsError
 from infrastructure.key_manager import KeyManager
 from infrastructure.llm_handler import LlmHandler
+from models.link import Link
+from models.prompts import STRATEGIES, PromptBuilder
 
 def _require_token(authorization: str | None = Header(default=None)) -> None:
     token = os.environ.get("CRAWLVIZ_API_TOKEN")
@@ -164,6 +167,14 @@ BUILTIN_PRESETS: dict[str, dict] = {
         "fetch": {"min_delay": 0.2, "jitter_max": 0.05},
         "pipelines": {"requests": {"workers": 8}},
     },
+    "frugal": {
+        "scoring_cascade": {"high_score_llm_fraction": 0.1, "low_score_sample_fraction": 0.0},
+    },
+}
+PRESET_DESCRIPTIONS: dict[str, str] = {
+    "polite": "Gentler on small sites: a longer pause between requests and fewer parallel fetches.",
+    "fast": "Quicker crawl on sites that can take it: short pauses, eight parallel fetches. More likely to see 429s.",
+    "frugal": "Spend less LLM budget: only a tenth of the confident links are re-checked by the model, and no low-score links are kept for exploration.",
 }
 _PRESET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]{0,39}$")
 
@@ -192,7 +203,7 @@ def export_config() -> dict:
 
 @router.get("/config/presets")
 def list_presets() -> dict:
-    return {"builtin": BUILTIN_PRESETS, "user": _read_presets()}
+    return {"builtin": BUILTIN_PRESETS, "descriptions": PRESET_DESCRIPTIONS, "user": _read_presets()}
 
 
 @router.put("/config/presets/{name}")
@@ -227,6 +238,56 @@ def apply_preset(name: str) -> dict:
         return store.replace_settings(_paths().settings_file, values).model_dump()
     except ValidationError as exc:
         raise _422(exc)
+
+
+_SAMPLE_LINKS = [
+    ("https://example.org/produce/bananas/ripening-guide", "How bananas ripen",
+     "Ethylene gas triggers ripening; a guide for grocers and home cooks."),
+    ("https://example.org/about/contact", "Contact us",
+     "Write to the editorial team or find our office address."),
+    ("https://example.org/produce/fruit-exports", "Fruit exports by country",
+     "Tables of banana, mango and pineapple exports since 2010."),
+]
+
+# What a person may change in each block, and why the rest is fixed.
+_BLOCK_INFO = {
+    "system": ("System prompt", "editable", "Who the model is and what it must return."),
+    "task": ("Task", "generated", "Fixed wording; the parser expects scores from 0 to 100."),
+    "context": ("Context", "generated",
+                "Built from the crawl target, the scoring strategy and its wording (edit that wording per strategy)."),
+    "candidates": ("Candidates", "generated", "The links of one batch, filled in at crawl time."),
+    "rules": ("Rules", "editable", "Scoring rules the model should follow."),
+    "output": ("Output format", "locked", "The response parser reads exactly this JSON shape."),
+    "constraints": ("Constraints", "locked", "Keeps the answer machine-readable."),
+}
+
+
+class PromptPreviewBody(BaseModel):
+    target: str = "bananas"
+    strategy: str = "TOPICAL"
+    scoring_system: str | None = None
+    scoring_rules: str | None = None
+    strategy_contexts: dict[str, str] | None = None
+
+
+@router.post("/config/prompts/preview")
+def preview_prompt(body: PromptPreviewBody) -> dict:
+    """Render the scoring prompt with sample links, using draft wording
+    (nothing is saved). Built by the same `PromptBuilder` a crawl uses."""
+    if body.strategy not in STRATEGIES:
+        raise HTTPException(status_code=422, detail=f"Unknown scoring strategy '{body.strategy}'")
+    builder = PromptBuilder(
+        body.target, body.strategy,
+        system_prompt=body.scoring_system, rules=body.scoring_rules,
+        strategy_contexts=body.strategy_contexts,
+    )
+    links = [Link(url, anchor, ctx) for url, anchor, ctx in _SAMPLE_LINKS]
+    blocks = [
+        {"id": name, "title": _BLOCK_INFO[name][0], "kind": _BLOCK_INFO[name][1],
+         "note": _BLOCK_INFO[name][2], "text": text}
+        for name, text in builder.build_blocks(links)
+    ]
+    return {"blocks": blocks, "prompt": "\n\n".join(b["text"] for b in blocks)}
 
 
 @router.get("/config/providers")
