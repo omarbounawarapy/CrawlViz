@@ -129,6 +129,11 @@ from traceability.traced_network_client import TracedNetworkClient
 logger = logging.getLogger(__name__)
 
 
+def _qsize(bound: int | None) -> int:
+    """A configured queue bound as asyncio's maxsize: None (no limit) is 0."""
+    return bound or 0
+
+
 class Crawler:
     """Builds and runs one crawl session end to end.
 
@@ -380,13 +385,13 @@ class Crawler:
             self.event_broker,
             self.extraction_blueprint,
             max_concurrency=pl.processing.workers,
-            max_queue_size=pl.processing.max_queue_size,
+            max_queue_size=_qsize(pl.processing.max_queue_size),
             link_context_length=self.config.nlp.link_context_length,
         )
         p["requests"] = RequestsPipeline(
             self.event_broker,
             max_concurrency=self.fetch_concurrency,
-            max_queue_size=pl.requests.max_queue_size,
+            max_queue_size=_qsize(pl.requests.max_queue_size),
             fetcher=NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout),
             min_delay=fetch.min_delay,
             user_agent=fetch.user_agent,
@@ -413,7 +418,7 @@ class Crawler:
             high_score_llm_fraction=cascade.high_score_llm_fraction,
             low_score_sample_fraction=cascade.low_score_sample_fraction,
             high_score_random_fraction=cascade.high_score_random_fraction,
-            max_queue_size=pl.scoring.max_queue_size,
+            max_queue_size=_qsize(pl.scoring.max_queue_size),
             percentile_bucketing=cascade.percentile_bucketing,
             low_percentile=cascade.low_percentile,
             high_percentile=cascade.high_percentile,
@@ -426,7 +431,7 @@ class Crawler:
         p["storage"] = StoragePipeline(
             self.storage,
             self.event_broker,
-            max_queue_size=pl.storage.max_queue_size,
+            max_queue_size=_qsize(pl.storage.max_queue_size),
             max_concurrency=pl.storage.workers,
             max_depth=self.max_depth,
         )
@@ -434,7 +439,7 @@ class Crawler:
             self.event_broker,
             self.storage,
             max_concurrency=pl.filtering.workers,
-            max_queue_size=pl.filtering.max_queue_size,
+            max_queue_size=_qsize(pl.filtering.max_queue_size),
         )
         p["priority"] = PriorityPipeline(
             self.storage,
@@ -444,7 +449,7 @@ class Crawler:
             strategy_name=self.stop_conditions.get(
                 "priority_strategy", cascade.default_priority_strategy
             ),
-            max_queue_size=pl.priority.max_queue_size,
+            max_queue_size=_qsize(pl.priority.max_queue_size),
             strategy_weights=getattr(
                 self.config.priority, f"{self._priority_strategy_name()}_weights", None
             ),
@@ -467,14 +472,14 @@ class Crawler:
             self.event_broker,
             self.crawl_id,
             enabled=self.config.observability.debug_enabled,
-            max_queue_size=pl.debugging.max_queue_size,
+            max_queue_size=_qsize(pl.debugging.max_queue_size),
             max_concurrency=pl.debugging.workers,
             debug_root=self.paths.debug_dir,
         )
         p["transformation"] = TransformationPipeline(
             self.event_broker,
             self.extraction_blueprint,
-            max_queue_size=pl.transformation.max_queue_size,
+            max_queue_size=_qsize(pl.transformation.max_queue_size),
             max_concurrency=pl.transformation.workers,
         )
         p["exporting"] = ExportingPipeline(
@@ -492,7 +497,7 @@ class Crawler:
             self.storage,
             self.event_broker,
             requests_pipeline=p["requests"],
-            max_queue_size=pl.retry.max_queue_size,
+            max_queue_size=_qsize(pl.retry.max_queue_size),
             max_concurrency=pl.retry.workers,
             max_request_retries=retries.max_request_retries,
             max_scoring_retries=retries.max_scoring_retries,

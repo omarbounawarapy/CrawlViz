@@ -387,3 +387,19 @@ def test_running_crawl_sees_key_changes(tmp_path):
     f.write_text('{"openai": ["cccccccc3333"]}')
     km.reload()
     assert "groq" not in km.registry
+
+
+def test_queue_bound_none_is_unbounded_and_legacy_zero_migrates(tmp_path):
+    cfg = store.load_runtime_config(None, {"pipelines": {"filtering": {"max_queue_size": 0}}})
+    assert cfg.pipelines.filtering.max_queue_size is None
+    assert default_runtime_config().pipelines.requests.max_queue_size is None
+    _, p = build(tmp_path, {"pipelines": {"filtering": {"max_queue_size": 5}}})
+    assert p["filtering"].queue.maxsize == 5
+    assert p["requests"].queue.maxsize == 0
+
+
+def test_cascade_pair_hints_in_schema():
+    props = RuntimeConfig.model_json_schema()["$defs"]["ScoringCascadeConfig"]["properties"]
+    assert props["low_threshold"]["ui_pair"] == "high_threshold"
+    assert props["high_percentile"]["ui_pair"] == "low_percentile"
+    assert list(props)[0] == "percentile_bucketing"

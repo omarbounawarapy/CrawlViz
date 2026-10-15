@@ -81,6 +81,7 @@
           "ui_advanced": false,
           "ui_apply": "live",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -93,6 +94,7 @@
           "ui_advanced": false,
           "ui_apply": "live",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -105,6 +107,7 @@
           "ui_advanced": false,
           "ui_apply": "next_run",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -117,6 +120,7 @@
           "ui_advanced": false,
           "ui_apply": "live",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -164,6 +168,7 @@
           "ui_advanced": false,
           "ui_apply": "next_run",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -176,6 +181,7 @@
           "ui_advanced": false,
           "ui_apply": "next_run",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -198,6 +204,7 @@
           "ui_advanced": true,
           "ui_apply": "next_run",
           "ui_section": "Fetch",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -306,6 +313,7 @@
           "ui_advanced": false,
           "ui_apply": "next_run",
           "ui_section": "LLM",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         }
@@ -438,14 +446,23 @@
           "title": "Workers",
           "type": "integer",
           "ui_apply": "live",
-          "ui_widget": "number"
+          "ui_widget": "stepper"
         },
         "max_queue_size": {
-          "default": 0,
-          "description": "Queue bound; 0 is unbounded.",
-          "minimum": 0,
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Queue bound; empty is unbounded.",
           "title": "Max Queue Size",
-          "type": "integer"
+          "ui_step": 100,
+          "ui_widget": "limit"
         }
       },
       "title": "PipelineSettings",
@@ -644,6 +661,7 @@
           "ui_advanced": false,
           "ui_apply": "next_run",
           "ui_section": "Retries",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -712,6 +730,7 @@
           "ui_advanced": true,
           "ui_apply": "next_run",
           "ui_section": "Run",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         },
@@ -724,6 +743,7 @@
           "ui_advanced": true,
           "ui_apply": "next_run",
           "ui_section": "Run",
+          "ui_step": 0.1,
           "ui_unit": "s",
           "ui_widget": "number"
         }
@@ -734,6 +754,26 @@
     "ScoringCascadeConfig": {
       "description": "The two-stage NLP -> LLM relevance cascade's tunable thresholds and\nsampling fractions (report section 0.13, \"Evaluation multi-etapes\").",
       "properties": {
+        "percentile_bucketing": {
+          "default": true,
+          "description": "Bucket links by per-node score percentile instead of the absolute thresholds.",
+          "title": "Percentile Bucketing",
+          "type": "boolean",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_options": [
+            {
+              "label": "Fixed score cut-offs",
+              "value": false
+            },
+            {
+              "label": "Per-page percentiles",
+              "value": true
+            }
+          ],
+          "ui_section": "Scoring cascade",
+          "ui_widget": "segmented"
+        },
         "low_threshold": {
           "default": 0.2,
           "description": "NLP similarity score below which a link is considered low-confidence.",
@@ -741,8 +781,14 @@
           "minimum": 0.0,
           "title": "Low Threshold",
           "type": "number",
+          "ui_active_when": {
+            "field": "percentile_bucketing",
+            "value": false
+          },
+          "ui_pair": "high_threshold",
           "ui_section": "Scoring cascade",
-          "ui_widget": "slider"
+          "ui_step": 0.01,
+          "ui_widget": "range"
         },
         "high_threshold": {
           "default": 0.75,
@@ -751,8 +797,14 @@
           "minimum": 0.0,
           "title": "High Threshold",
           "type": "number",
+          "ui_active_when": {
+            "field": "percentile_bucketing",
+            "value": false
+          },
+          "ui_pair": "low_threshold",
           "ui_section": "Scoring cascade",
-          "ui_widget": "slider"
+          "ui_step": 0.01,
+          "ui_widget": "range"
         },
         "high_score_llm_fraction": {
           "default": 0.3,
@@ -797,16 +849,6 @@
           "ui_section": "Scoring cascade",
           "ui_widget": "select"
         },
-        "percentile_bucketing": {
-          "default": true,
-          "description": "Bucket links by per-node score percentile instead of the absolute thresholds.",
-          "title": "Percentile Bucketing",
-          "type": "boolean",
-          "ui_advanced": false,
-          "ui_apply": "next_run",
-          "ui_section": "Scoring cascade",
-          "ui_widget": "toggle"
-        },
         "low_percentile": {
           "default": 20.0,
           "description": "Percentile below which a link falls in the low bucket.",
@@ -814,11 +856,17 @@
           "minimum": 0.0,
           "title": "Low Percentile",
           "type": "number",
+          "ui_active_when": {
+            "field": "percentile_bucketing",
+            "value": true
+          },
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_pair": "high_percentile",
           "ui_section": "Scoring cascade",
+          "ui_step": 1,
           "ui_unit": "%",
-          "ui_widget": "slider"
+          "ui_widget": "range"
         },
         "high_percentile": {
           "default": 75.0,
@@ -827,11 +875,17 @@
           "minimum": 0.0,
           "title": "High Percentile",
           "type": "number",
+          "ui_active_when": {
+            "field": "percentile_bucketing",
+            "value": true
+          },
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_pair": "low_percentile",
           "ui_section": "Scoring cascade",
+          "ui_step": 1,
           "ui_unit": "%",
-          "ui_widget": "slider"
+          "ui_widget": "range"
         },
         "percentile_min_links": {
           "default": 10,
@@ -951,5 +1005,63 @@
     }
   },
   "title": "RuntimeConfig",
-  "type": "object"
+  "type": "object",
+  "ui_sections": [
+    {
+      "help": "Decides which links the cheap NLP score settles and which are worth an LLM call.",
+      "name": "Scoring cascade"
+    },
+    {
+      "help": "How fast and how politely pages are requested, and how the crawler backs off.",
+      "name": "Fetch"
+    },
+    {
+      "help": "How the score, depth and strategy weights order the queue of pages still to visit.",
+      "name": "Priority"
+    },
+    {
+      "help": "The instructions the LLM receives when it judges a batch of links.",
+      "name": "Prompts"
+    },
+    {
+      "help": "Which LLM service answers, and which models it may use.",
+      "name": "Providers"
+    },
+    {
+      "help": "How many workers each stage runs and how long its queue may grow.",
+      "name": "Pipelines"
+    },
+    {
+      "help": "What happens to a page whose fetch or scoring failed.",
+      "name": "Retries"
+    },
+    {
+      "help": "The model that turns text into vectors for similarity scoring.",
+      "name": "Embeddings"
+    },
+    {
+      "help": "How link text and context are turned into a similarity score.",
+      "name": "NLP"
+    },
+    {
+      "help": "Request limits for the language model calls.",
+      "name": "LLM"
+    },
+    {
+      "help": "Which links count as the same page.",
+      "name": "URLs"
+    },
+    {
+      "help": "What a finished crawl writes to disk.",
+      "name": "Export"
+    },
+    {
+      "help": "Logging, debugging and the live graph connection.",
+      "name": "Observability"
+    },
+    {
+      "help": "Seeds and shutdown timing of a crawl.",
+      "name": "Run"
+    }
+  ]
 }

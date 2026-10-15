@@ -44,39 +44,39 @@
   "pipelines": {
     "processing": {
       "workers": 1,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "requests": {
       "workers": 4,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "scoring": {
       "workers": 1,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "storage": {
       "workers": 1,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "filtering": {
       "workers": 10,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "priority": {
       "workers": 10,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "transformation": {
       "workers": 3,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "debugging": {
       "workers": 2,
-      "max_queue_size": 0
+      "max_queue_size": null
     },
     "retry": {
       "workers": 1,
-      "max_queue_size": 0
+      "max_queue_size": null
     }
   },
   "retries": {

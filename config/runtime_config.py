@@ -33,7 +33,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import config as _config
 from infrastructure.llm_handler import LlmHandler
@@ -43,15 +43,28 @@ from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
 def _f(default: Any, description: str, section: str, widget: str = "number", *,
        unit: str | None = None, apply: str = "next_run", advanced: bool = False,
-       options: list | None = None, **constraints: Any):
+       options: list | None = None, step: float | None = None, pair: str | None = None,
+       active_when: tuple[str, Any] | None = None, **constraints: Any):
     """Field with the ui hints the settings page renders from.
 
     ``apply`` is ``next_run`` (read at Crawler construction) or ``live``
-    (read per loop iteration through the run's LiveSettings)."""
+    (read per loop iteration through the run's LiveSettings). ``step`` is the
+    increment a number control moves by (seconds default to 0.1); ``pair``
+    names the sibling field drawn on the same two-thumb range, the earlier
+    field being the lower bound; ``active_when`` is ``(sibling, value)`` and
+    dims the control while that sibling holds another value."""
     extra: dict[str, Any] = {"ui_section": section, "ui_widget": widget,
                              "ui_apply": apply, "ui_advanced": advanced}
     if unit:
         extra["ui_unit"] = unit
+    if step is None and unit == "s":
+        step = 0.1
+    if step is not None:
+        extra["ui_step"] = step
+    if pair:
+        extra["ui_pair"] = pair
+    if active_when:
+        extra["ui_active_when"] = {"field": active_when[0], "value": active_when[1]}
     if options:
         extra["ui_options"] = options
     if isinstance(default, (dict, list)):
@@ -64,15 +77,26 @@ class ScoringCascadeConfig(BaseModel):
     """The two-stage NLP -> LLM relevance cascade's tunable thresholds and
     sampling fractions (report section 0.13, "Evaluation multi-etapes")."""
 
+    percentile_bucketing: bool = _f(
+        _config.NLP_PERCENTILE_BUCKETING,
+        "Bucket links by per-node score percentile instead of the absolute thresholds.",
+        "Scoring cascade", "segmented",
+        options=[{"label": "Fixed score cut-offs", "value": False},
+                 {"label": "Per-page percentiles", "value": True}])
+
     low_threshold: float = Field(
         default=_config.NLP_LOW_SCORE_THRESHOLD, ge=0.0, le=1.0,
         description="NLP similarity score below which a link is considered low-confidence.",
-        json_schema_extra={"ui_section": "Scoring cascade", "ui_widget": "slider"},
+        json_schema_extra={"ui_section": "Scoring cascade", "ui_widget": "range", "ui_step": 0.01,
+                           "ui_pair": "high_threshold",
+                           "ui_active_when": {"field": "percentile_bucketing", "value": False}},
     )
     high_threshold: float = Field(
         default=_config.NLP_HIGH_SCORE_THRESHOLD, ge=0.0, le=1.0,
         description="NLP similarity score above which a link is considered high-confidence.",
-        json_schema_extra={"ui_section": "Scoring cascade", "ui_widget": "slider"},
+        json_schema_extra={"ui_section": "Scoring cascade", "ui_widget": "range", "ui_step": 0.01,
+                           "ui_pair": "low_threshold",
+                           "ui_active_when": {"field": "percentile_bucketing", "value": False}},
     )
     high_score_llm_fraction: float = Field(
         default=_config.HIGH_SCORE_LLM_FRACTION, ge=0.0, le=1.0,
@@ -99,16 +123,14 @@ class ScoringCascadeConfig(BaseModel):
                             "ui_options": ["aggressive", "balanced", "exploration"]},
     )
 
-    percentile_bucketing: bool = _f(
-        _config.NLP_PERCENTILE_BUCKETING,
-        "Bucket links by per-node score percentile instead of the absolute thresholds.",
-        "Scoring cascade", "toggle")
     low_percentile: float = _f(
         _config.NLP_LOW_PERCENTILE, "Percentile below which a link falls in the low bucket.",
-        "Scoring cascade", "slider", unit="%", ge=0.0, le=100.0)
+        "Scoring cascade", "range", unit="%", step=1, pair="high_percentile",
+        active_when=("percentile_bucketing", True), ge=0.0, le=100.0)
     high_percentile: float = _f(
         _config.NLP_HIGH_PERCENTILE, "Percentile above which a link falls in the high bucket.",
-        "Scoring cascade", "slider", unit="%", ge=0.0, le=100.0)
+        "Scoring cascade", "range", unit="%", step=1, pair="low_percentile",
+        active_when=("percentile_bucketing", True), ge=0.0, le=100.0)
     percentile_min_links: int = _f(
         _config.PERCENTILE_MIN_LINKS,
         "Fewer links than this on a page fall back to the absolute thresholds.",
@@ -231,8 +253,16 @@ class PipelineSettings(BaseModel):
     """Worker count and queue bound of one pipeline."""
 
     workers: int = Field(default=1, ge=1, le=64, description="Concurrent worker loops.",
-                         json_schema_extra={"ui_apply": "live", "ui_widget": "number"})
-    max_queue_size: int = Field(default=0, ge=0, description="Queue bound; 0 is unbounded.")
+                         json_schema_extra={"ui_apply": "live", "ui_widget": "stepper"})
+    max_queue_size: int | None = Field(
+        default=None, ge=1, description="Queue bound; empty is unbounded.",
+        json_schema_extra={"ui_widget": "limit", "ui_step": 100})
+
+    @field_validator("max_queue_size", mode="before")
+    @classmethod
+    def _legacy_zero_is_unbounded(cls, v: Any) -> Any:
+        """Settings saved before the bound became nullable stored 0 for 'no limit'."""
+        return None if v == 0 else v
 
 
 def _pl(workers: int) -> Any:
@@ -402,6 +432,24 @@ class RunConfig(BaseModel):
                                "Run", unit="s", advanced=True, ge=0.0)
 
 
+SECTION_GUIDE = [
+    ("Scoring cascade", "Decides which links the cheap NLP score settles and which are worth an LLM call."),
+    ("Fetch", "How fast and how politely pages are requested, and how the crawler backs off."),
+    ("Priority", "How the score, depth and strategy weights order the queue of pages still to visit."),
+    ("Prompts", "The instructions the LLM receives when it judges a batch of links."),
+    ("Providers", "Which LLM service answers, and which models it may use."),
+    ("Pipelines", "How many workers each stage runs and how long its queue may grow."),
+    ("Retries", "What happens to a page whose fetch or scoring failed."),
+    ("Embeddings", "The model that turns text into vectors for similarity scoring."),
+    ("NLP", "How link text and context are turned into a similarity score."),
+    ("LLM", "Request limits for the language model calls."),
+    ("URLs", "Which links count as the same page."),
+    ("Export", "What a finished crawl writes to disk."),
+    ("Observability", "Logging, debugging and the live graph connection."),
+    ("Run", "Seeds and shutdown timing of a crawl."),
+]
+
+
 class RuntimeConfig(BaseModel):
     """Top-level runtime configuration: everything a researcher would want
     to see before trusting a crawl's results, beyond the per-run blueprint
@@ -422,6 +470,9 @@ class RuntimeConfig(BaseModel):
     run: RunConfig = Field(default_factory=RunConfig)
     prompts: PromptsConfig = Field(default_factory=PromptsConfig)
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
+
+    model_config = ConfigDict(json_schema_extra={
+        "ui_sections": [{"name": n, "help": h} for n, h in SECTION_GUIDE]})
 
 
 def default_runtime_config() -> RuntimeConfig:
