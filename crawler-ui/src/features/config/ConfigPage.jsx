@@ -1,62 +1,20 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
-import { Page, SectionTitle, Row } from "../common/Page";
-import { Button } from "../common/Form";
-import { fetchConfigSchema, fetchConfig } from "../../api/client";
+import { Page } from "../common/Page";
+import { Button, Chip, TextInput } from "../common/Form";
+import {
+  fetchConfigSchema, fetchConfig, fetchConfigDefaults, saveConfig, resetConfig,
+  crawlStatus, patchLiveConfig,
+} from "../../api/client";
+import PresetsPanel from "./PresetsPanel";
+import SettingsEditor from "./SettingsEditor";
+import { slug } from "./settingsStyle";
+import KeysPanel from "./KeysPanel";
+import {
+  buildFields, buildPatch, getIn, groupBySection, isEmptyPatch, livePatch, setIn, validateField,
+} from "./configModel";
 
 const theme = getTheme();
-
-function resolve(schema, node) {
-  if (node?.$ref) {
-    const name = node.$ref.split("/").pop();
-    return schema.$defs?.[name] || {};
-  }
-  return node;
-}
-
-// Groups every leaf field across every top-level RuntimeConfig section by
-// its ui_section hint, so "Scoring cascade" reads as one coherent block
-// even though it's one Pydantic sub-model among several at the schema level.
-function groupFields(schema) {
-  const groups = {};
-  Object.entries(schema.properties || {}).forEach(([key, ref]) => {
-    const resolved = resolve(schema, ref);
-    Object.entries(resolved.properties || {}).forEach(([fieldKey, field]) => {
-      const section = field.ui_section || resolved.title || key;
-      if (!groups[section]) groups[section] = [];
-      groups[section].push({ path: `${key}.${fieldKey}`, key: fieldKey, ...field });
-    });
-  });
-  return groups;
-}
-
-function get(values, path) {
-  return path.split(".").reduce((v, k) => (v == null ? v : v[k]), values);
-}
-
-const ACRONYMS = { llm: "LLM", nlp: "NLP", ui: "UI", url: "URL", api: "API", ws: "WS" };
-function humanize(title = "") {
-  const words = title.trim().split(/\s+/).map((w, i) => {
-    const lower = w.toLowerCase();
-    return ACRONYMS[lower] ?? (i === 0 ? w[0]?.toUpperCase() + w.slice(1).toLowerCase() : lower);
-  });
-  return words.join(" ");
-}
-const slug = (t) => `cfg-${t.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-
-// Position on the allowed range: a hairline with one tick, not a filled bar.
-function RangeTick({ value, min, max }) {
-  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min || 1)) * 100));
-  return (
-    <svg width="120" height="14" role="img" aria-label={`${value} on a scale of ${min} to ${max}`} style={{ display: "block" }}>
-      <line x1="0" y1="7" x2="120" y2="7" stroke={theme.colors.text.muted} strokeWidth="1" />
-      <line x1="0" y1="3" x2="0" y2="11" stroke={theme.colors.text.muted} strokeWidth="1" />
-      <line x1="120" y1="3" x2="120" y2="11" stroke={theme.colors.text.muted} strokeWidth="1" />
-      <circle cx={(pct / 100) * 120} cy="7" r="4.5" fill={theme.colors.text.primary} />
-    </svg>
-  );
-}
-
 
 // The two thresholds drawn on the 0-1 NLP similarity scale, so the numbers
 // read as three zones. Vermilion marks the most promising zone.
@@ -91,67 +49,144 @@ function CascadeScale({ low, high }) {
   );
 }
 
-function FieldDisplay({ field, value }) {
-  const current = value ?? field.default;
-  // The two thresholds are drawn once, on the scale above; skip their mini-sliders.
-  const hasRange = field.minimum != null && field.maximum != null && typeof current === "number" && !/^(low|high)_threshold$/.test(field.key);
-  const options = field.ui_widget === "select" && field.ui_options ? field.ui_options : null;
-
-  return (
-    <Row label={humanize(field.title)} note={field.description?.replace(/\s*--\s*/g, " — ")}>
-      {options ? (
-        <span style={{ fontWeight: 400, color: theme.colors.text.muted }}>
-          {options.map((opt, i) => (
-            <span key={opt}>
-              {i > 0 && " · "}
-              <span style={opt === current ? { fontWeight: 700, color: theme.colors.text.primary } : undefined}>{opt}</span>
-            </span>
-          ))}
-        </span>
-      ) : hasRange ? (
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
-          <RangeTick value={current} min={field.minimum} max={field.maximum} />
-          <span style={{ minWidth: 44 }}>{String(current)}</span>
-        </span>
-      ) : String(current)}
-    </Row>
-  );
-}
-
 export default function ConfigPage() {
   const [schema, setSchema] = useState(null);
-  const [values, setValues] = useState(null);
+  const [saved, setSaved] = useState(null);
+  const [defaults, setDefaults] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [status, setStatus] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [running, setRunning] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([fetchConfigSchema(), fetchConfig()])
-      .then(([schemaRes, valuesRes]) => {
+    const poll = () => crawlStatus().then((s) => !cancelled && setRunning(Boolean(s.running))).catch(() => {});
+    poll();
+    const t = setInterval(poll, 4000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([fetchConfigSchema(), fetchConfig(), fetchConfigDefaults()])
+      .then(([schemaRes, valuesRes, defaultsRes]) => {
         if (cancelled) return;
         setSchema(schemaRes);
-        setValues(valuesRes);
+        setSaved(valuesRes);
+        setDraft(valuesRes);
+        setDefaults(defaultsRes);
       })
-      .catch(err => !cancelled && setError(err.message));
+      .catch((err) => !cancelled && setError(err.message));
     return () => { cancelled = true; };
   }, []);
 
-  const groups = schema && values ? Object.entries(groupFields(schema)) : [];
+  const fields = useMemo(() => (schema ? buildFields(schema) : []), [schema]);
+  const patch = useMemo(() => (draft && saved ? buildPatch(fields, draft, saved) : {}), [fields, draft, saved]);
+  const dirty = !isEmptyPatch(patch);
+  const clientErrors = useMemo(() => {
+    const out = {};
+    if (!draft) return out;
+    fields.forEach((f) => {
+      const e = validateField(f, getIn(draft, f.path));
+      if (e) out[f.path] = e;
+    });
+    return out;
+  }, [fields, draft]);
+  const blocked = Object.keys(clientErrors).length > 0;
 
-  const index = groups.length > 0 && (
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warn = (e) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  const change = useCallback((path, value) => {
+    setDraft((d) => setIn(d, path, value));
+    setStatus(null);
+    setErrors((e) => (e[path] ? { ...e, [path]: undefined } : e));
+  }, []);
+
+  const save = async () => {
+    if (!dirty || blocked || saving) return;
+    setSaving(true);
+    setStatus(null);
+    try {
+      const next = await saveConfig(patch);
+      setSaved(next);
+      setDraft(next);
+      setErrors({});
+      setStatus({ ok: true, text: "Saved. New values apply from the next crawl." });
+    } catch (e) {
+      const byPath = {};
+      (e.errors ?? []).forEach((x) => { byPath[x.path] = x.message; });
+      setErrors(byPath);
+      setStatus({ ok: false, text: e.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const live = useMemo(() => livePatch(fields, patch), [fields, patch]);
+  const hasLive = !isEmptyPatch(live);
+
+  const applyLive = async () => {
+    try {
+      await patchLiveConfig(live);
+      await save();
+      setStatus({ ok: true, text: "Saved and applied to the running crawl." });
+    } catch (e) {
+      const byPath = {};
+      (e.errors ?? []).forEach((x) => { byPath[x.path] = x.message; });
+      setErrors(byPath);
+      setStatus({ ok: false, text: e.message });
+    }
+  };
+
+  const resetSection = async (section, list) => {
+    // Drafts only: the section returns to defaults and is saved with the rest.
+    list.forEach((f) => setDraft((d) => setIn(d, f.path, getIn(defaults, f.path))));
+    setStatus({ ok: true, text: `${section} set to defaults. Save to apply.` });
+  };
+
+  const resetAll = async () => {
+    try {
+      const next = await resetConfig();
+      setSaved(next);
+      setDraft(next);
+      setErrors({});
+      setStatus({ ok: true, text: "All settings reset to the built-in defaults." });
+    } catch (e) {
+      setStatus({ ok: false, text: e.message });
+    }
+  };
+
+  const sections = useMemo(() => groupBySection(fields).map(([s]) => s), [fields]);
+  const index = sections.length > 0 && (
     <nav aria-label="Configuration sections" style={{ width: 200, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
       <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-        {groups.map(([section]) => (
-          <li key={section}><a href={`#/config`} onClick={(e) => { e.preventDefault(); document.getElementById(slug(section))?.scrollIntoView({ behavior: "smooth" }); }}
+        {[...sections, "Presets and files", "API keys"].map((section) => (
+          <li key={section}><a href="#/config" onClick={(e) => { e.preventDefault(); document.getElementById(section === "API keys" ? "cfg-api-keys" : section === "Presets and files" ? "cfg-presets" : slug(section))?.scrollIntoView({ behavior: "smooth" }); }}
             style={{ fontSize: 14, color: theme.colors.text.secondary, textDecoration: "none" }}>{section}</a></li>
         ))}
       </ul>
     </nav>
   );
 
+  const extras = {
+    "Scoring cascade": (d) => (
+      <CascadeScale low={getIn(d, "scoring_cascade.low_threshold")} high={getIn(d, "scoring_cascade.high_threshold")} />
+    ),
+  };
+
   return (
     <Page
       title="Configuration"
-      lead="The settings the crawler is running under. These are read from the backend and cannot be edited here yet."
+      lead="Every tunable of the crawler. Changes are saved on the backend and apply from the next crawl; settings marked live can also be pushed to a crawl in progress."
       aside={index || null}
     >
       {error && (
@@ -163,17 +198,45 @@ export default function ConfigPage() {
         </div>
       )}
       {!error && !schema && <p style={{ fontSize: 14, color: theme.colors.text.muted }}>Loading configuration…</p>}
-      {groups.map(([section, fields]) => (
-        <section key={section} aria-labelledby={slug(section)}>
-          <SectionTitle id={slug(section)}>{section}</SectionTitle>
-          {section === "Scoring cascade" && (
-            <CascadeScale low={get(values, "scoring_cascade.low_threshold")} high={get(values, "scoring_cascade.high_threshold")} />
+      {schema && draft && (
+        <>
+          <div style={{ position: "sticky", top: 0, zIndex: 2, background: theme.colors.background.primary,
+                        padding: "8px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
+                        borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
+            <TextInput aria-label="Search settings" placeholder="Search settings" value={query}
+                       onChange={(e) => setQuery(e.target.value)} style={{ width: 220 }} />
+            <Chip pressed={showAdvanced} onClick={() => setShowAdvanced((v) => !v)}>Advanced</Chip>
+            <span style={{ flex: 1 }} />
+            <Button variant="quiet" disabled={!dirty} onClick={() => { setDraft(saved); setErrors({}); setStatus(null); }}>Revert</Button>
+            {running && (
+              <Button disabled={!hasLive || blocked || saving} onClick={applyLive}
+                      title="Pushes the changed live settings to the crawl in progress, then saves">
+                Apply live
+              </Button>
+            )}
+            <Button variant="primary" disabled={!dirty || blocked || saving} onClick={save}>
+              {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+            </Button>
+          </div>
+          {status && (
+            <p role="status" style={{ fontSize: 13, margin: "8px 0", color: status.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>
+              {status.text}
+            </p>
           )}
-          {fields.map(field => (
-            <FieldDisplay key={field.path} field={field} value={get(values, field.path)} />
-          ))}
-        </section>
-      ))}
+          <SettingsEditor
+            fields={fields} draft={draft} defaults={defaults} saved={saved} onChange={change}
+            errors={errors} query={query} showAdvanced={showAdvanced}
+            onResetSection={resetSection} sectionExtras={extras}
+          />
+          {!query && (
+            <PresetsPanel dirty={dirty} onChanged={(cfg) => { setSaved(cfg); setDraft(cfg); setErrors({}); }} />
+          )}
+          {!query && <KeysPanel />}
+          <div style={{ marginTop: 40 }}>
+            <Button variant="danger" onClick={resetAll}>Reset every setting to defaults</Button>
+          </div>
+        </>
+      )}
     </Page>
   );
 }

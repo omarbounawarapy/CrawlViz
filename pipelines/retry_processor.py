@@ -39,6 +39,9 @@ class RetryProcessor(BasePipeline):
         max_request_retries: int = 3,
         max_scoring_retries: int = 3,
         retry_base_delay: float = 2.0,
+        retry_growth: float = 2.0,
+        empty_score_demotion: float = 5,
+        fetch_retry_demotion: float = 2,
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
@@ -47,6 +50,9 @@ class RetryProcessor(BasePipeline):
         self.max_request_retries = max_request_retries
         self.max_scoring_retries = max_scoring_retries
         self.retry_base_delay = retry_base_delay
+        self.retry_growth = retry_growth
+        self.empty_score_demotion = empty_score_demotion
+        self.fetch_retry_demotion = fetch_retry_demotion
         self._scoring_retry_counts: dict[int, int] = {}
         self._pending: set[asyncio.Task] = set()
         # Per-node retry attempt counter, keyed by node id.
@@ -79,7 +85,7 @@ class RetryProcessor(BasePipeline):
         """Demote and reschedule a node whose LLM call returned no usable
         scores, under the same cap and backoff as a scoring failure."""
         await self._reschedule_scoring(
-            event.node, "empty LLM result", "EmptyScoreResults", demote=5
+            event.node, "empty LLM result", "EmptyScoreResults", demote=self.empty_score_demotion
         )
 
     async def _on_scoring_failed(self, event: ScoringFailedEvent) -> None:
@@ -107,7 +113,7 @@ class RetryProcessor(BasePipeline):
             node.decrease_priority(demote)
 
         async def _reschedule() -> None:
-            await asyncio.sleep(self.retry_base_delay * 2 ** (attempts - 1))
+            await asyncio.sleep(self.retry_base_delay * self.retry_growth ** (attempts - 1))
             await self.event_broker.emit(
                 ScoreRescheduledEvent(correlation_id=str(node_id), node=node)
             )
@@ -154,7 +160,7 @@ class RetryProcessor(BasePipeline):
             node.fail()
             return
 
-        node.decrease_priority(2)
+        node.decrease_priority(self.fetch_retry_demotion)
         logger.info(
             "Retrying node %s (attempt %d/%d) after %s: %s",
             node_id, attempts, self.max_request_retries,
@@ -162,7 +168,7 @@ class RetryProcessor(BasePipeline):
         )
 
         async def _requeue() -> None:
-            await asyncio.sleep(self.retry_base_delay * 2 ** (attempts - 1))
+            await asyncio.sleep(self.retry_base_delay * self.retry_growth ** (attempts - 1))
             await self.requests_pipeline.queue.put(node)
 
         self._spawn(_requeue())

@@ -106,7 +106,14 @@ class NLPService:
         tracer: "TraceEmitter | None" = None,
         buffer_manager: "BufferManager | None" = None,
         engine: BaseEmbeddingEngine | None = None,
+        composite_weights: dict[str, float] | None = None,
+        target_top_k: int = 2,
+        cluster_eps: float = 0.3,
+        cluster_min_samples: int = 2,
     ):
+        self.composite_weights = composite_weights
+        self.cluster_eps = cluster_eps
+        self.cluster_min_samples = cluster_min_samples
         self.blueprint_id = blueprint_id
         self.target_topic = target_topic
 
@@ -116,7 +123,7 @@ class NLPService:
         )
 
         self.store = SpaceStore(base_dir=store_base_dir, model_name=model_name)
-        self.extractor = FeatureExtractor()
+        self.extractor = FeatureExtractor(target_top_k=target_top_k)
         self.llm_handler = llm_handler
         self.prompt_builder = ExpansionPromptBuilder()
         self.space: VectorSpace | None = None
@@ -508,7 +515,9 @@ class NLPService:
     async def _get_cluster_centroids(self) -> dict[int, np.ndarray]:
         if self.space is None or len(self.space) < 3:
             return {}
-        clusters = self.space.get_clusters()
+        clusters = self.space.get_clusters(
+            eps=self.cluster_eps, min_samples=self.cluster_min_samples
+        )
         mat = self.space.get_matrix()
         centroids = {}
         for cluster_id, keys in clusters.items():
@@ -532,7 +541,7 @@ class NLPService:
         if not features:
             return 0.0
 
-        weights = NLP_COMPOSITE_WEIGHTS
+        weights = self.composite_weights or NLP_COMPOSITE_WEIGHTS
 
         contributions = {k: features.get(k, 0.0) * w for k, w in weights.items()}
         raw_sum = sum(contributions.values())

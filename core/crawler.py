@@ -17,16 +17,7 @@ from datetime import datetime
 
 from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
-from config import (
-    DEBUG,
-    RESPECT_ROBOTS,
-    USER_AGENT,
-    MAX_LLM_LINKS_PER_NODE,
-    NLP_HIGH_PERCENTILE,
-    NLP_LOW_PERCENTILE,
-    NLP_PERCENTILE_BUCKETING,
-    PERCENTILE_MIN_LINKS,
-)
+from utils.html_utils import configure_url_normalization
 from events import (
     ContentExtractedEvent,
     ContentFilteredEvent,
@@ -152,15 +143,25 @@ class Crawler:
         paths: RuntimePaths | None = None,
         key_manager: KeyManager | None = None,
         seed: int | None = None,
-        fetch_concurrency: int = 4,
-        scoring_concurrency: int = 1,
-        ui_port: int = 8765,
+        fetch_concurrency: int | None = None,
+        scoring_concurrency: int | None = None,
+        ui_port: int | None = None,
     ):
-        self.ui_port = ui_port
         self.config = config if config is not None else default_runtime_config()
-        self.seed = seed
-        self.fetch_concurrency = fetch_concurrency
-        self.scoring_concurrency = scoring_concurrency
+        configure_url_normalization(
+            self.config.url.strip_fragment, self.config.url.strip_trailing_slash
+        )
+        # Explicit arguments win over the config, which wins over defaults.
+        self.ui_port = ui_port if ui_port is not None else self.config.observability.ui_port
+        self.seed = seed if seed is not None else self.config.run.seed
+        self.fetch_concurrency = (
+            fetch_concurrency if fetch_concurrency is not None
+            else self.config.pipelines.requests.workers
+        )
+        self.scoring_concurrency = (
+            scoring_concurrency if scoring_concurrency is not None
+            else self.config.pipelines.scoring.workers
+        )
         self.paths = paths if paths is not None else default_runtime_paths()
         self.storage = Storage()
         self.template_file = template_file
@@ -191,12 +192,13 @@ class Crawler:
         )
 
         pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service)
+        self._pipelines = pipelines
         self._wire_subscriptions(pipelines, space_updater)
         ui_gateway = self._build_ui_layer(pipelines)
 
         tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
         try:
-            await self._run_until_stopped(tasks)
+            await self._run_until_stopped(tasks, grace=self.config.run.shutdown_grace)
         finally:
             # Two separate aiohttp.ClientSessions get opened for this
             # crawl -- requests_pipeline.network_client (page fetches)
@@ -207,6 +209,19 @@ class Crawler:
             # still runs if a pipeline task raises.
             await pipelines["requests"].network_client.close()
             await traced_network.close()
+
+    def _priority_strategy_name(self) -> str:
+        return self.stop_conditions.get(
+            "priority_strategy", self.config.scoring_cascade.default_priority_strategy
+        )
+
+    def apply_live(self, patch: dict) -> RuntimeConfig:
+        """Change live-flagged settings of the running crawl (see
+        core/live_settings.py)."""
+        from core.live_settings import apply_live
+
+        self.config = apply_live(self.config, getattr(self, "_pipelines", {}), patch)
+        return self.config
 
     async def _run_until_stopped(self, tasks: list, grace: float = 5.0) -> None:
         """Run every task; once the first one finishes (the broker, on
@@ -270,11 +285,24 @@ class Crawler:
         (see traceability/emitter.py).
         """
         if self.key_manager is None:
-            self.key_manager = KeyManager(keys_file=self.paths.keys_file)
+            self.key_manager = KeyManager(
+                cooldown=self.config.llm.key_cooldown_seconds,
+                keys_file=self.paths.keys_file,
+            )
         tracer = TraceEmitter.from_env(self.event_broker)
-        traced_network = TracedNetworkClient(NetworkClient(), tracer)
+        fetch = self.config.fetch
+        traced_network = TracedNetworkClient(
+            NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout), tracer
+        )
         traced_llm = TracedLlmHandler(
-            LlmHandler(self.key_manager, client=traced_network), tracer
+            LlmHandler(
+                self.key_manager,
+                client=traced_network,
+                max_tokens=self.config.llm.max_tokens,
+                temperature=self.config.llm.temperature,
+                endpoints=self.config.providers.endpoints,
+            ),
+            tracer,
         )
         return tracer, traced_network, traced_llm
 
@@ -299,6 +327,10 @@ class Crawler:
             persist_space=bool(self.expansion_config.get("persist_space", False)),
             tracer=tracer,
             buffer_manager=buffer_manager,
+            composite_weights=dict(self.config.nlp.composite_weights),
+            target_top_k=self.config.nlp.target_top_k,
+            cluster_eps=self.config.nlp.cluster_eps,
+            cluster_min_samples=self.config.nlp.cluster_min_samples,
         )
         await nlp_service.start()
 
@@ -315,6 +347,9 @@ class Crawler:
             self.scoring_strategy,
             self.scoring_type,
             self.model_information,
+            system_prompt=self.config.prompts.scoring_system,
+            rules=self.config.prompts.scoring_rules,
+            strategy_contexts=dict(self.config.prompts.strategy_contexts),
         )
 
         return nlp_service, space_updater, scoring_service
@@ -336,41 +371,84 @@ class Crawler:
         """
         p: dict = {}
 
-        p["processing"] = ProcessingPipeline(self.event_broker, self.extraction_blueprint)
+        pl = self.config.pipelines
+        fetch = self.config.fetch
+        cascade = self.config.scoring_cascade
+        retries = self.config.retries
+
+        p["processing"] = ProcessingPipeline(
+            self.event_broker,
+            self.extraction_blueprint,
+            max_concurrency=pl.processing.workers,
+            max_queue_size=pl.processing.max_queue_size,
+            link_context_length=self.config.nlp.link_context_length,
+        )
         p["requests"] = RequestsPipeline(
             self.event_broker,
             max_concurrency=self.fetch_concurrency,
-            user_agent=USER_AGENT,
-            respect_robots=RESPECT_ROBOTS,
+            max_queue_size=pl.requests.max_queue_size,
+            fetcher=NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout),
+            min_delay=fetch.min_delay,
+            user_agent=fetch.user_agent,
+            respect_robots=fetch.respect_robots,
             rng=self._rng("requests"),
+            jitter_max=fetch.jitter_max,
+            robots_ttl=fetch.robots_ttl_seconds,
+            backoff_start=fetch.backoff_start,
+            max_backoff=fetch.backoff_max,
+            backoff_growth=fetch.backoff_growth,
+            backoff_success_decay=fetch.backoff_success_decay,
+            backoff_failure_decay=fetch.backoff_failure_decay,
+            extra_headers=fetch.extra_headers,
+            accept=fetch.accept,
+            accept_encoding=fetch.accept_encoding,
+            accept_language=fetch.accept_language,
         )
         p["scoring"] = ScoringPipeline(
             scoring_service,
             nlp_service,
             self.event_broker,
-            low_threshold=self.config.scoring_cascade.low_threshold,
-            high_threshold=self.config.scoring_cascade.high_threshold,
-            high_score_llm_fraction=self.config.scoring_cascade.high_score_llm_fraction,
-            low_score_sample_fraction=self.config.scoring_cascade.low_score_sample_fraction,
-            high_score_random_fraction=self.config.scoring_cascade.high_score_random_fraction,
-            percentile_bucketing=NLP_PERCENTILE_BUCKETING,
-            low_percentile=NLP_LOW_PERCENTILE,
-            high_percentile=NLP_HIGH_PERCENTILE,
-            percentile_min_links=PERCENTILE_MIN_LINKS,
-            max_llm_links=MAX_LLM_LINKS_PER_NODE,
+            low_threshold=cascade.low_threshold,
+            high_threshold=cascade.high_threshold,
+            high_score_llm_fraction=cascade.high_score_llm_fraction,
+            low_score_sample_fraction=cascade.low_score_sample_fraction,
+            high_score_random_fraction=cascade.high_score_random_fraction,
+            max_queue_size=pl.scoring.max_queue_size,
+            percentile_bucketing=cascade.percentile_bucketing,
+            low_percentile=cascade.low_percentile,
+            high_percentile=cascade.high_percentile,
+            percentile_min_links=cascade.percentile_min_links,
+            max_llm_links=cascade.max_llm_links_per_node,
+            llm_batch_size=cascade.llm_batch_size,
             max_concurrency=self.scoring_concurrency,
             rng=self._rng("scoring"),
         )
         p["storage"] = StoragePipeline(
-            self.storage, self.event_broker, max_depth=self.max_depth
+            self.storage,
+            self.event_broker,
+            max_queue_size=pl.storage.max_queue_size,
+            max_concurrency=pl.storage.workers,
+            max_depth=self.max_depth,
         )
-        p["filtering"] = FilteringPipeline(self.event_broker, self.storage)
+        p["filtering"] = FilteringPipeline(
+            self.event_broker,
+            self.storage,
+            max_concurrency=pl.filtering.workers,
+            max_queue_size=pl.filtering.max_queue_size,
+        )
         p["priority"] = PriorityPipeline(
             self.storage,
             self.event_broker,
+            nlp_bias=self.config.priority.nlp_bias,
+            llm_bias=self.config.priority.llm_bias,
             strategy_name=self.stop_conditions.get(
-                "priority_strategy", self.config.scoring_cascade.default_priority_strategy
+                "priority_strategy", cascade.default_priority_strategy
             ),
+            max_queue_size=pl.priority.max_queue_size,
+            strategy_weights=getattr(
+                self.config.priority, f"{self._priority_strategy_name()}_weights", None
+            ),
+            max_concurrency=pl.priority.workers,
         )
         p["logging"] = LoggingPipeline(
             self.event_broker, self.crawl_id, log_root=self.paths.log_dir
@@ -383,11 +461,22 @@ class Crawler:
                 no_progress_timeout=self.no_progress_timeout,
                 target_url=self.target_url,
             ),
+            check_interval=self.config.run.stop_check_interval,
         )
         p["debug"] = DebuggingPipeline(
-            self.event_broker, self.crawl_id, enabled=DEBUG, debug_root=self.paths.debug_dir
+            self.event_broker,
+            self.crawl_id,
+            enabled=self.config.observability.debug_enabled,
+            max_queue_size=pl.debugging.max_queue_size,
+            max_concurrency=pl.debugging.workers,
+            debug_root=self.paths.debug_dir,
         )
-        p["transformation"] = TransformationPipeline(self.event_broker, self.extraction_blueprint)
+        p["transformation"] = TransformationPipeline(
+            self.event_broker,
+            self.extraction_blueprint,
+            max_queue_size=pl.transformation.max_queue_size,
+            max_concurrency=pl.transformation.workers,
+        )
         p["exporting"] = ExportingPipeline(
             self.crawl_id,
             self.blueprint_id,
@@ -400,7 +489,17 @@ class Crawler:
             self.crawl_id, self.event_broker, export_path=self.paths.export_dir
         )
         p["retry"] = RetryProcessor(
-            self.storage, self.event_broker, requests_pipeline=p["requests"]
+            self.storage,
+            self.event_broker,
+            requests_pipeline=p["requests"],
+            max_queue_size=pl.retry.max_queue_size,
+            max_concurrency=pl.retry.workers,
+            max_request_retries=retries.max_request_retries,
+            max_scoring_retries=retries.max_scoring_retries,
+            retry_base_delay=retries.base_delay,
+            retry_growth=retries.growth,
+            empty_score_demotion=retries.empty_score_demotion,
+            fetch_retry_demotion=retries.fetch_retry_demotion,
         )
 
         return p
@@ -552,7 +651,10 @@ class Crawler:
         visibility -- none of it required new backend instrumentation, only
         a wider subscription list and a bigger translator.
         """
-        snapshot = CrawlStateSnapshot()
+        obs = self.config.observability
+        snapshot = CrawlStateSnapshot(
+            max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
+        )
         ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())

@@ -53,6 +53,17 @@ class RequestsPipeline:
         user_agent: str = "CrawlViz/1.0",
         respect_robots: bool = False,
         rng: random.Random | None = None,
+        jitter_max: float = 0.2,
+        robots_ttl: float = 0.0,
+        backoff_start: float = 1.0,
+        max_backoff: float = 10.0,
+        backoff_growth: float = 2.0,
+        backoff_success_decay: float = 0.5,
+        backoff_failure_decay: float = 0.5,
+        extra_headers: dict[str, str] | None = None,
+        accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        accept_encoding: str = "gzip, deflate",
+        accept_language: str = "",
     ):
         self.event_broker = event_broker
         self.rng = rng if rng is not None else random.Random()
@@ -65,12 +76,15 @@ class RequestsPipeline:
 
         self.headers = {
             "User-Agent": user_agent,
-            "Accept-Encoding": "gzip, deflate",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Encoding": accept_encoding,
+            "Accept": accept,
         }
+        if accept_language:
+            self.headers["Accept-Language"] = accept_language
+        self.headers.update(extra_headers or {})
 
         self.robots = (
-            RobotsPolicy(self.network_client, user_agent, self.headers)
+            RobotsPolicy(self.network_client, user_agent, self.headers, robots_ttl)
             if respect_robots
             else None
         )
@@ -82,17 +96,53 @@ class RequestsPipeline:
         self.min_delay = min_delay    # minimum seconds between requests
         self.last_request_time = 0.0
         self.backoff_delay = 0.0      # dynamic (grows on 429)
-        self.max_backoff = 10.0
+        self.max_backoff = max_backoff
+        self.jitter_max = jitter_max
+        self.backoff_start = backoff_start
+        self.backoff_growth = backoff_growth
+        self.backoff_success_decay = backoff_success_decay
+        self.backoff_failure_decay = backoff_failure_decay
 
     # =========================================================
     # START
     # =========================================================
     async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self.worker(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
+        self._pool_closed = False
+        self._pool_next_id = 0
+        self.workers = []
+        self._pool_spawn(self.max_concurrency)
+        while True:
+            pending = [w for w in self.workers if not w.done()]
+            if not pending:
+                break
+            await asyncio.gather(*pending)
+
+    def _pool_spawn(self, count: int) -> None:
+        for _ in range(count):
+            self.workers.append(asyncio.create_task(self.worker(self._pool_next_id)))
+            self._pool_next_id += 1
+
+    def resize(self, workers: int) -> None:
+        """Change the number of fetch workers of a running crawl (see
+        BasePipeline.resize)."""
+        if workers < 1:
+            raise ValueError("workers must be at least 1")
+        if getattr(self, "_pool_closed", False) or not hasattr(self, "_pool_next_id"):
+            self.max_concurrency = workers
+            return
+        delta = workers - self.max_concurrency
+        self.max_concurrency = workers
+        if delta > 0:
+            self._pool_spawn(delta)
+        else:
+            for _ in range(-delta):
+                self._queue_shutdown()
+
+    def _queue_shutdown(self) -> None:
+        try:
+            self.queue.put_nowait(SHUTDOWN)
+        except asyncio.QueueFull:
+            asyncio.ensure_future(self.queue.put(SHUTDOWN))
 
     # =========================================================
     # STOP
@@ -103,6 +153,7 @@ class RequestsPipeline:
         matters -- this pipeline predates it and isn't a subclass, but
         needs the same guarantee).
         """
+        self._pool_closed = True
         for _ in range(self.max_concurrency):
             await self.queue.put(SHUTDOWN)
 
@@ -165,7 +216,7 @@ class RequestsPipeline:
                 elapsed = now - self.last_request_time
                 delay = max(self.min_delay - elapsed, 0)
                 delay += self.backoff_delay
-                delay += self.rng.uniform(0, 0.2)
+                delay += self.rng.uniform(0, self.jitter_max)
 
                 if delay > 0:
                     await asyncio.sleep(delay)
@@ -188,7 +239,7 @@ class RequestsPipeline:
                     )
                 )
                 # Success: reduce backoff gradually.
-                self.backoff_delay = max(self.backoff_delay * 0.5, 0)
+                self.backoff_delay = max(self.backoff_delay * self.backoff_success_decay, 0)
 
                 await self.event_broker.emit(
                     PageFetchedEvent(
@@ -210,11 +261,13 @@ class RequestsPipeline:
                 # responses, gradual decay otherwise.
                 if is_rate_limited(e):
                     if self.backoff_delay == 0:
-                        self.backoff_delay = 1.0
+                        self.backoff_delay = self.backoff_start
                     else:
-                        self.backoff_delay = min(self.backoff_delay * 2, self.max_backoff)
+                        self.backoff_delay = min(
+                            self.backoff_delay * self.backoff_growth, self.max_backoff
+                        )
                 else:
-                    self.backoff_delay = max(self.backoff_delay * 0.5, 0)
+                    self.backoff_delay = max(self.backoff_delay * self.backoff_failure_decay, 0)
 
                 await self.event_broker.emit(
                     RequestFailedEvent(

@@ -18,10 +18,10 @@ function describe(res, path, detail) {
 }
 
 async function req(method, path, body) {
-  const opts = {
-    method,
-    headers: { "Content-Type": "application/json" },
-  };
+  const headers = { "Content-Type": "application/json" };
+  const token = import.meta.env.VITE_API_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const opts = { method, headers };
   if (body !== undefined) opts.body = JSON.stringify(body);
   let res;
   try {
@@ -33,8 +33,10 @@ async function req(method, path, body) {
   announce(true);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: null }));
-    const detail = typeof err.detail === "string" ? err.detail : err.detail ? JSON.stringify(err.detail) : null;
-    throw new Error(describe(res, path, detail));
+    const detail = typeof err.detail === "string" ? err.detail
+      : Array.isArray(err.detail?.errors) ? err.detail.errors.map((e) => `${e.path}: ${e.message}`).join("; ")
+      : err.detail ? JSON.stringify(err.detail) : null;
+    throw Object.assign(new Error(describe(res, path, detail)), { errors: err.detail?.errors });
   }
   return res.json();
 }
@@ -44,7 +46,8 @@ export const fetchTemplate   = (name)         => req("GET",    `/templates/${nam
 export const createTemplate  = (name, content)=> req("POST",   `/templates?name=${encodeURIComponent(name)}`, { content });
 export const updateTemplate  = (name, content)=> req("PUT",    `/templates/${name}`, { content });
 export const deleteTemplate  = (name)         => req("DELETE",  `/templates/${name}`);
-export const runCrawl        = (templateName) => req("POST",   "/run",  { templateName });
+export const runCrawl        = (templateName, overrides, seed) =>
+  req("POST", "/run", { templateName, ...(overrides && Object.keys(overrides).length ? { overrides } : {}), ...(seed != null ? { seed } : {}) });
 export const stopCrawl       = ()             => req("POST",   "/stop");
 export const crawlStatus     = ()             => req("GET",    "/status");
 
@@ -58,9 +61,24 @@ export const fetchValidationSample = (table, crawlId, limit = 20, offset = 0) =>
 };
 
 // ── Configuration (V2) ──────────────────────────────────────────────────────
-// Read-only for now; see config/runtime_config.py.
-export const fetchConfigSchema = () => req("GET", "/config/schema");
-export const fetchConfig       = () => req("GET", "/config");
+// Schema-driven; see config/runtime_config.py. Saves apply from the next crawl.
+export const fetchConfigSchema   = ()           => req("GET",  "/config/schema");
+export const fetchConfig         = ()           => req("GET",  "/config");
+export const fetchConfigDefaults = ()           => req("GET",  "/config/defaults");
+export const saveConfig          = (values)     => req("PUT",  "/config", { values });
+export const replaceConfig       = (values)     => req("PUT",  "/config/replace", { values });
+export const validateConfig      = (values)     => req("POST", "/config/validate", { values });
+export const exportConfig        = ()           => req("GET",  "/config/export");
+export const fetchPresets        = ()           => req("GET",  "/config/presets");
+export const savePreset          = (name, values) => req("PUT", `/config/presets/${encodeURIComponent(name)}`, values ? { values } : undefined);
+export const deletePreset        = (name)       => req("DELETE", `/config/presets/${encodeURIComponent(name)}`);
+export const applyPreset         = (name)       => req("POST", `/config/presets/${encodeURIComponent(name)}/apply`);
+export const patchLiveConfig     = (values)     => req("PATCH", "/config/live", { values });
+export const resetConfig         = (section)    => req("POST", `/config/reset${section ? `?section=${encodeURIComponent(section)}` : ""}`);
+export const fetchProviders      = ()           => req("GET",  "/config/providers");
+export const fetchKeys           = ()           => req("GET",  "/keys");
+export const addKey              = (provider, key) => req("POST", "/keys", { provider, key });
+export const removeKey           = (provider, id)  => req("DELETE", `/keys/${encodeURIComponent(provider)}/${encodeURIComponent(id)}`);
 
 // ── Benchmark ───────────────────────────────────────────────────────────────
 export const fetchBenchmarkOverview = ()                 => req("GET", "/benchmark/overview");

@@ -23,7 +23,7 @@ Return ONLY valid JSON:
 """
 CONSTRAINTS_BLOCK = """
 RULES:
-- Each description: 1-2 sentences max
+- Each description: {max_sentences} sentence(s) max
 - Each must express a different semantic facet
 - No repetition
 - No commentary or extra keys
@@ -47,14 +47,22 @@ class ExpansionConfig:
 class ExpansionPromptBuilder:
     """Builds the prompt used to generate semantic expansions for a topic."""
 
-    def build(self, topic: str, config: ExpansionConfig | None = None) -> str:
-        config = config or ExpansionConfig()
+    def build(self, topic: str, config: "ExpansionConfig | dict | None" = None) -> str:
+        if config is None:
+            config = ExpansionConfig()
+        elif isinstance(config, dict):
+            defaults = ExpansionConfig()
+            config = ExpansionConfig(
+                num_descriptions=config.get("num_descriptions", defaults.num_descriptions),
+                style=config.get("style", defaults.style),
+                max_sentences=config.get("max_sentences", defaults.max_sentences),
+            )
 
         return "\n\n".join([
             BASE_PROMPT,
-            f"TASK:\nGenerate {config['num_descriptions']} semantic descriptions for:\n{topic}",
-            f"STYLE:\n{STYLE_BLOCKS[config['style']]}",
-            CONSTRAINTS_BLOCK,
+            f"TASK:\nGenerate {config.num_descriptions} semantic descriptions for:\n{topic}",
+            f"STYLE:\n{STYLE_BLOCKS[config.style]}",
+            CONSTRAINTS_BLOCK.format(max_sentences=config.max_sentences),
             FACET_BLOCK,
             OUTPUT_SCHEMA_BLOCK,
         ])

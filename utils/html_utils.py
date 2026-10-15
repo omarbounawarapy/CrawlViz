@@ -44,6 +44,21 @@ def _normalize_percent(text: str) -> str:
     return quote(_PERCENT.sub(fix, text), safe="/:@!$&'()*+,;=~%?-._")
 
 
+_strip_fragment = True
+_strip_trailing_slash = True
+
+
+def configure_url_normalization(
+    strip_fragment: bool = True, strip_trailing_slash: bool = True
+) -> None:
+    """Set the identity rules of normalize_url for this process. The
+    crawler calls it once per crawl; the defaults restore the built-in
+    behaviour."""
+    global _strip_fragment, _strip_trailing_slash
+    _strip_fragment = strip_fragment
+    _strip_trailing_slash = strip_trailing_slash
+
+
 def normalize_url(url: str) -> str:
     """Canonical form of a (possibly relative) URL used as node identity.
 
@@ -51,10 +66,12 @@ def normalize_url(url: str) -> str:
     stays), and normalizes percent-encoding, so ``/wiki/X``, ``/wiki/X/`` and
     ``/wiki/X#Y`` are one page.
     """
-    url, _ = urldefrag(url.strip())
+    url = url.strip()
+    if _strip_fragment:
+        url, _ = urldefrag(url)
     parts = urlparse(url)
     path = _normalize_percent(parts.path)
-    if len(path) > 1 and path.endswith("/"):
+    if _strip_trailing_slash and len(path) > 1 and path.endswith("/"):
         path = path.rstrip("/") or "/"
     return urlunparse(parts._replace(path=path, query=_normalize_percent(parts.query)))
 

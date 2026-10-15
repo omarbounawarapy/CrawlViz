@@ -25,9 +25,15 @@ class ScoringService:
         strategy: str,
         scoring_type: str,
         model_information: str,
+        system_prompt: str | None = None,
+        rules: str | None = None,
+        strategy_contexts: dict[str, str] | None = None,
     ):
         self.handler = llm_handler
-        self.prompt_builder = PromptBuilder(target_topic, strategy)
+        self.prompt_builder = PromptBuilder(
+            target_topic, strategy,
+            system_prompt=system_prompt, rules=rules, strategy_contexts=strategy_contexts,
+        )
         self.results_mapper = ResultMapper()
         self.scoring_type = scoring_type
         self.model_information = model_information

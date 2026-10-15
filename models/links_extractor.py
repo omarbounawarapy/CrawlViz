@@ -19,7 +19,10 @@ class LinkExtractor:
     """
 
     @staticmethod
-    def extract_links(html_content: str | Any, node: Any) -> list[Link]:
+    def extract_links(
+        html_content: str | Any, node: Any, max_context_len: int | None = None
+    ) -> list[Link]:
+        limit = MAX_CONTEXT_LEN if max_context_len is None else max_context_len
         link_selector = node.get_link_selector()
         if isinstance(html_content, str):
             tree = lxml_html.fromstring(html_content)
@@ -50,7 +53,7 @@ class LinkExtractor:
                 else:
                     context_text = ""
 
-                context_text = context_text[:min(len(context_text), MAX_CONTEXT_LEN)]
+                context_text = context_text[:limit]
                 context_text = LinkExtractor._extract_sentence(context_text, anchor)
                 link = Link(url=href, anchor=anchor, context=context_text)
                 results.append(link)

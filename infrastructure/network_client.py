@@ -40,7 +40,9 @@ class NetworkClient:
     the crawl; call `close()` once the crawl finishes.
     """
 
-    def __init__(self):
+    def __init__(self, total_timeout: float = 30, connect_timeout: float = 10):
+        self.total_timeout = total_timeout
+        self.connect_timeout = connect_timeout
         self.session: aiohttp.ClientSession | None = None
         self._strategies = {
             "GET": GetRequestStrategy(),
@@ -55,7 +57,9 @@ class NetworkClient:
         """
         if self.session is None:
             self.session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=30, connect=10)
+                timeout=aiohttp.ClientTimeout(
+                    total=self.total_timeout, connect=self.connect_timeout
+                )
             )
 
         method = params.get("method", "GET").upper()

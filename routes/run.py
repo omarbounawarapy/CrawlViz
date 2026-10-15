@@ -14,9 +14,10 @@ import logging
 import os
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
-from config import TEMPLATES_DIR
+from config import TEMPLATES_DIR, default_runtime_paths
+from config.settings_store import load_runtime_config
 from core import Crawler
 from routes.blueprint_schema import BlueprintSchemaError, validate_blueprint
 
@@ -25,20 +26,31 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["run"])
 
 _current_task: asyncio.Task | None = None
+_current_crawler: Crawler | None = None
 
 
 class RunRequest(BaseModel):
     templateName: str
+    # Partial RuntimeConfig deep-merged over the saved settings for this run.
+    overrides: dict | None = None
+    seed: int | None = None
 
 
-async def _run_crawler(template_name: str) -> None:
+async def _run_crawler(template_name: str, config=None, seed: int | None = None) -> None:
+    global _current_crawler
     try:
-        spider = Crawler(template_name)
+        if config is None:
+            spider = Crawler(template_name)
+        else:
+            spider = Crawler(template_name, config=config, seed=seed)
+        _current_crawler = spider
         await spider.start()
     except asyncio.CancelledError:
         pass
     except Exception:
         logger.exception("Crawler failed for template '%s'", template_name)
+    finally:
+        _current_crawler = None
 
 
 @router.post("/run")
@@ -58,7 +70,12 @@ async def run_crawl(body: RunRequest):
     except (json.JSONDecodeError, BlueprintSchemaError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
-    _current_task = asyncio.create_task(_run_crawler(body.templateName))
+    try:
+        config = load_runtime_config(default_runtime_paths().settings_file, body.overrides)
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    _current_task = asyncio.create_task(_run_crawler(body.templateName, config, body.seed))
     return {"started": body.templateName}
 
 

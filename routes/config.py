@@ -1,34 +1,311 @@
 """
 Config routes
 =============
-Exposes RuntimeConfig (config/runtime_config.py) to the frontend's
-Configuration section -- "what assumptions is this crawl operating
-under?".
+The runtime configuration (config/runtime_config.py) and the API keys,
+readable and editable from the frontend.
 
-Read-only in this pass: GET /config/schema returns the JSON Schema
-(generated from the Pydantic model, not hand-copied -- see
-runtime_config.py's module docstring for why that distinction matters),
-GET /config returns the values currently in effect. A write-back path
-(PUT /config with validation errors surfaced inline) is scoped as
-follow-up work rather than
-built shallow in the same pass as the protocol overhaul.
+GET  /config/schema     JSON Schema generated from the Pydantic model
+GET  /config            values in effect (defaults + saved settings)
+GET  /config/defaults   code defaults, for per-field reset
+GET  /config/stored     only the values that differ from the defaults
+PUT  /config            merge a partial config, validate, persist
+PUT  /config/replace    replace the stored settings with a full config
+POST /config/validate   validate a partial config without saving
+POST /config/effective  saved settings with per-run overrides applied
+GET  /config/export     the stored settings, for download
+GET  /config/presets    built-in and saved presets
+PUT  /config/presets/{name}          save a preset (body: values, or empty for the current settings)
+POST /config/presets/{name}/apply    replace the settings with a preset
+DELETE /config/presets/{name}
+PATCH /config/live      change ui_apply=live fields of the running crawl
+POST /config/reset      drop one section (?section=) or everything
+GET  /config/providers  LLM providers and the models templates use
+GET/POST/DELETE /keys   masked key management (full keys never returned)
+
+Access: when CRAWLVIZ_API_TOKEN is set, every route here requires
+``Authorization: Bearer <token>``. Unset, the API is open, which is only
+acceptable bound to localhost.
+
+Changes apply from the next crawl: pipelines copy their values at
+construction. Fields flagged ``ui_apply: live`` can also be pushed to the
+running crawl with PATCH /config/live (not persisted; PUT /config does that).
 """
 
-from fastapi import APIRouter
+import hmac
+import json
+import os
+import re
 
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel, ValidationError
+
+from config import RuntimePaths, default_runtime_paths
+from config import settings_store as store
 from config.runtime_config import RuntimeConfig, default_runtime_config
+from core.live_settings import LiveSettingsError
+from infrastructure.key_manager import KeyManager
+from infrastructure.llm_handler import LlmHandler
 
-router = APIRouter(prefix="/config", tags=["config"])
+def _require_token(authorization: str | None = Header(default=None)) -> None:
+    token = os.environ.get("CRAWLVIZ_API_TOKEN")
+    if not token:
+        return
+    supplied = (authorization or "").removeprefix("Bearer ").strip()
+    if not hmac.compare_digest(supplied.encode(), token.encode()):
+        raise HTTPException(status_code=401, detail="Missing or invalid API token")
 
 
-@router.get("/schema")
+router = APIRouter(tags=["config"], dependencies=[Depends(_require_token)])
+
+
+def _paths() -> RuntimePaths:
+    return default_runtime_paths()
+
+
+def _errors(exc: ValidationError) -> list[dict]:
+    return [
+        {"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]}
+        for e in exc.errors()
+    ]
+
+
+def _422(exc: ValidationError) -> HTTPException:
+    return HTTPException(status_code=422, detail={"errors": _errors(exc)})
+
+
+class ConfigPatch(BaseModel):
+    values: dict
+
+
+@router.get("/config/schema")
 def get_config_schema() -> dict:
-    """JSON Schema for RuntimeConfig, including the ui_section/ui_widget
-    hints used by the frontend's generic schema-driven form renderer."""
+    """JSON Schema for RuntimeConfig, including the ui_* hints used by the
+    frontend's generic schema-driven form renderer."""
     return RuntimeConfig.model_json_schema()
 
 
-@router.get("")
+@router.get("/config")
 def get_config() -> dict:
     """The runtime configuration currently in effect."""
+    return store.load_runtime_config(_paths().settings_file).model_dump()
+
+
+@router.get("/config/defaults")
+def get_defaults() -> dict:
     return default_runtime_config().model_dump()
+
+
+@router.get("/config/stored")
+def get_stored() -> dict:
+    return store.read_stored(_paths().settings_file)
+
+
+@router.put("/config")
+def put_config(body: ConfigPatch) -> dict:
+    try:
+        return store.save_settings(_paths().settings_file, body.values).model_dump()
+    except ValidationError as exc:
+        raise _422(exc)
+
+
+@router.put("/config/replace")
+def replace_config(body: ConfigPatch) -> dict:
+    try:
+        return store.replace_settings(_paths().settings_file, body.values).model_dump()
+    except ValidationError as exc:
+        raise _422(exc)
+
+
+@router.post("/config/validate")
+def validate_config(body: ConfigPatch) -> dict:
+    try:
+        store.load_runtime_config(_paths().settings_file, body.values)
+    except ValidationError as exc:
+        return {"valid": False, "errors": _errors(exc)}
+    return {"valid": True, "errors": []}
+
+
+@router.post("/config/effective")
+def effective_config(body: ConfigPatch) -> dict:
+    try:
+        return store.load_runtime_config(_paths().settings_file, body.values).model_dump()
+    except ValidationError as exc:
+        raise _422(exc)
+
+
+@router.patch("/config/live")
+def patch_live(body: ConfigPatch) -> dict:
+    from routes import run as run_routes
+
+    crawler = run_routes._current_crawler
+    if crawler is None:
+        raise HTTPException(status_code=409, detail="No active crawl")
+    try:
+        return crawler.apply_live(body.values).model_dump()
+    except ValidationError as exc:
+        raise _422(exc)
+    except LiveSettingsError as exc:
+        raise HTTPException(status_code=422, detail={"errors": [{"path": "", "message": str(exc)}]})
+
+
+@router.post("/config/reset")
+def reset_config(section: str | None = None) -> dict:
+    if section is not None and section not in RuntimeConfig.model_fields:
+        raise HTTPException(status_code=404, detail=f"Unknown section '{section}'")
+    return store.reset_settings(_paths().settings_file, section).model_dump()
+
+
+BUILTIN_PRESETS: dict[str, dict] = {
+    "polite": {
+        "fetch": {"min_delay": 2.0, "jitter_max": 0.5},
+        "pipelines": {"requests": {"workers": 2}},
+    },
+    "fast": {
+        "fetch": {"min_delay": 0.2, "jitter_max": 0.05},
+        "pipelines": {"requests": {"workers": 8}},
+    },
+}
+_PRESET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]{0,39}$")
+
+
+def _presets_file():
+    return _paths().settings_file.with_name("presets.json")
+
+
+def _read_presets() -> dict:
+    try:
+        data = json.loads(_presets_file().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _check_preset_name(name: str) -> None:
+    if name in BUILTIN_PRESETS or not _PRESET_NAME.match(name):
+        raise HTTPException(status_code=422, detail=f"Invalid preset name '{name}'")
+
+
+@router.get("/config/export")
+def export_config() -> dict:
+    return store.read_stored(_paths().settings_file)
+
+
+@router.get("/config/presets")
+def list_presets() -> dict:
+    return {"builtin": BUILTIN_PRESETS, "user": _read_presets()}
+
+
+@router.put("/config/presets/{name}")
+def save_preset(name: str, body: ConfigPatch | None = None) -> dict:
+    _check_preset_name(name)
+    values = body.values if body and body.values else store.read_stored(_paths().settings_file)
+    try:
+        store.load_runtime_config(None, values)
+    except ValidationError as exc:
+        raise _422(exc)
+    presets = _read_presets()
+    presets[name] = values
+    store._write(_presets_file(), presets)
+    return {"saved": name}
+
+
+@router.delete("/config/presets/{name}")
+def delete_preset(name: str) -> dict:
+    presets = _read_presets()
+    if presets.pop(name, None) is None:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    store._write(_presets_file(), presets)
+    return {"removed": name}
+
+
+@router.post("/config/presets/{name}/apply")
+def apply_preset(name: str) -> dict:
+    values = BUILTIN_PRESETS.get(name) or _read_presets().get(name)
+    if values is None:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    try:
+        return store.replace_settings(_paths().settings_file, values).model_dump()
+    except ValidationError as exc:
+        raise _422(exc)
+
+
+@router.get("/config/providers")
+def get_providers() -> dict:
+    """Registered LLM providers, with the models blueprints already use
+    (read from templates/*.json) so the UI can offer them as choices."""
+    providers = {name: {"models": [], "keys": 0} for name in LlmHandler.translators}
+    templates_dir = _paths().templates_dir
+    try:
+        names = sorted(os.listdir(templates_dir))
+    except OSError:
+        names = []
+    for name in names:
+        if not name.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(templates_dir, name), encoding="utf-8") as f:
+                bp = json.load(f)
+            pairs = [
+                (bp["scoring"]["params"]["scoring_type"],
+                 bp["scoring"]["params"]["model_information"]),
+                (bp["expansion"]["llm_type"], bp["expansion"]["llm_model"]),
+            ]
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        for provider, model in pairs:
+            if provider in providers and model not in providers[provider]["models"]:
+                providers[provider]["models"].append(model)
+    for provider, keys in _keys().snapshot().items():
+        if provider in providers:
+            providers[provider]["keys"] = len(keys)
+    return providers
+
+
+# ---------------------------------------------------------------- keys
+
+def _keys() -> KeyManager:
+    path = _paths().keys_file
+    if not path.exists():
+        path.write_text("{}", encoding="utf-8")
+        os.chmod(path, 0o600)
+    return KeyManager(keys_file=path)
+
+
+def _reload_running_keys() -> None:
+    """Make a key change visible to the crawl in progress."""
+    from routes import run as run_routes
+
+    crawler = run_routes._current_crawler
+    manager = getattr(crawler, "key_manager", None)
+    if manager is not None:
+        manager.reload()
+
+
+class KeyBody(BaseModel):
+    provider: str
+    key: str
+
+
+@router.get("/keys")
+def list_keys() -> dict:
+    return _keys().snapshot()
+
+
+@router.post("/keys")
+def add_key(body: KeyBody) -> dict:
+    if body.provider not in LlmHandler.translators:
+        raise HTTPException(status_code=422, detail=f"Unknown provider '{body.provider}'")
+    try:
+        key_id = _keys().add_key(body.provider, body.key)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    _reload_running_keys()
+    return {"id": key_id}
+
+
+@router.delete("/keys/{provider}/{key_id}")
+def delete_key(provider: str, key_id: str) -> dict:
+    if not _keys().remove_key(provider, key_id):
+        raise HTTPException(status_code=404, detail="Key not found")
+    _reload_running_keys()
+    return {"removed": key_id}

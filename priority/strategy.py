@@ -61,49 +61,60 @@ def _depth_penalty(node, scale: float) -> float:
 # Bias: high relevance + LLM confidence, punish depth hard
 # =========================================================
 
-def aggressive(node, link, nlp_bias, llm_bias) -> float:
-    """Prioritizes links that are most directly relevant to the target topic.
+DEFAULT_WEIGHTS: dict[str, dict[str, float]] = {
+    "aggressive": {
+        "target_similarity": 0.40,
+        "coverage_gap": 0.15,
+        "novelty_injection": 0.10,
+        "contextual_consistency": 0.05,
+        "depth_penalty": 0.08,
+    },
+    "balanced": {
+        "target_similarity": 0.25,
+        "novelty_injection": 0.20,
+        "coverage_gap": 0.15,
+        "contextual_consistency": 0.10,
+        "lexical_overlap": 0.05,
+        "depth_penalty": 0.05,
+    },
+    "exploration": {
+        "novelty_injection": 0.35,
+        "cluster_distance": 0.25,
+        "coverage_gap": 0.20,
+        "target_similarity": 0.05,
+        "semantic_delta": 0.05,
+        "depth_penalty": 0.03,
+    },
+}
 
-    Treats depth as a strong penalty -- prefers shallow, high-confidence paths.
+# Features a strategy may weight (the NLP feature vector keys), plus the
+# per-depth penalty. Used to validate user-supplied weights.
+WEIGHT_KEYS = frozenset(
+    {k for w in DEFAULT_WEIGHTS.values() for k in w}
+    | {"region_density", "anchor_similarity", "parent_relevance", "boilerplate_score"}
+)
 
-    Weight breakdown:
-        target_similarity   0.40   primary signal
-        llm_score            llm_bias   LLM confidence
-        coverage_gap         0.15   fills holes toward target
-        novelty_injection    0.10   small exploration bonus
-        contextual_cons.     0.05   anchor context coherence
-        depth_penalty       -0.08 * depth
-    """
-    nlp = (
-        0.40 * _nlp(link, "target_similarity")
-        + 0.15 * _nlp(link, "coverage_gap")
-        + 0.10 * _nlp(link, "novelty_injection")
-        + 0.05 * _nlp(link, "contextual_consistency")
-        - _depth_penalty(node, 0.08)
-    )
 
-    score = llm_bias * _llm(link) + nlp_bias * nlp
+def _score(strategy: str, node, link, nlp_bias, llm_bias, weights) -> float:
+    w = weights if weights is not None else DEFAULT_WEIGHTS[strategy]
+    nlp = sum(wt * _nlp(link, key) for key, wt in w.items() if key != "depth_penalty")
+    nlp -= _depth_penalty(node, w.get("depth_penalty", 0.0))
+    return round(max(0.0, nlp_bias * nlp + llm_bias * _llm(link)), 6)
 
-    return round(max(0.0, score), 6)
+
+def aggressive(node, link, nlp_bias, llm_bias, weights=None) -> float:
+    """Most directly relevant links first; depth is a strong penalty, so
+    shallow high-confidence paths win. Weights: DEFAULT_WEIGHTS["aggressive"]."""
+    return _score("aggressive", node, link, nlp_bias, llm_bias, weights)
 
 
 # =========================================================
 # STRATEGY 2 -- BALANCED
 # Goal: stable, broad crawling without runaway exploration or tunnel vision
-# Bias: equal weight across relevance, novelty, LLM and depth
 # =========================================================
 
-def balanced(node, link, nlp_bias: float = 0.5, llm_bias: float = 0.5) -> float:
-    nlp = (
-        0.25 * _nlp(link, "target_similarity")
-        + 0.20 * _nlp(link, "novelty_injection")
-        + 0.15 * _nlp(link, "coverage_gap")
-        + 0.10 * _nlp(link, "contextual_consistency")
-        + 0.05 * _nlp(link, "lexical_overlap")
-        - _depth_penalty(node, 0.05)
-    )
-
-    return round(max(0.0, nlp_bias * nlp + llm_bias * _llm(link)), 6)
+def balanced(node, link, nlp_bias: float = 0.5, llm_bias: float = 0.5, weights=None) -> float:
+    return _score("balanced", node, link, nlp_bias, llm_bias, weights)
 
 
 # =========================================================
@@ -112,17 +123,8 @@ def balanced(node, link, nlp_bias: float = 0.5, llm_bias: float = 0.5) -> float:
 # Bias: novelty + cluster distance + coverage gap; LLM score is a weak signal
 # =========================================================
 
-def exploration(node, link, nlp_bias: float = 0.85, llm_bias: float = 0.15) -> float:
-    nlp = (
-        0.35 * _nlp(link, "novelty_injection")
-        + 0.25 * _nlp(link, "cluster_distance")
-        + 0.20 * _nlp(link, "coverage_gap")
-        + 0.05 * _nlp(link, "target_similarity")
-        + 0.05 * _nlp(link, "semantic_delta")
-        - _depth_penalty(node, 0.03)
-    )
-
-    return round(max(0.0, nlp_bias * nlp + llm_bias * _llm(link)), 6)
+def exploration(node, link, nlp_bias: float = 0.85, llm_bias: float = 0.15, weights=None) -> float:
+    return _score("exploration", node, link, nlp_bias, llm_bias, weights)
 
 
 # =========================================================
@@ -138,8 +140,9 @@ STRATEGY_REGISTRY: dict[str, StrategyFn] = {
 }
 
 
-def get_strategy(name: str) -> StrategyFn:
-    """Resolve a strategy by name.
+def get_strategy(name: str, weights: dict[str, float] | None = None) -> StrategyFn:
+    """Resolve a strategy by name; `weights` replaces its built-in feature
+    weights (keys: WEIGHT_KEYS) for the returned function.
 
     Raises:
         ValueError: If `name` is not a registered strategy.
@@ -149,6 +152,10 @@ def get_strategy(name: str) -> StrategyFn:
         raise ValueError(
             f"Unknown priority strategy: {name!r}. "
             f"Registered strategies: {list(STRATEGY_REGISTRY)}"
+        )
+    if weights is not None and name in DEFAULT_WEIGHTS:
+        return lambda node, link, nlp_bias, llm_bias: fn(
+            node, link, nlp_bias, llm_bias, weights=weights
         )
     return fn
 

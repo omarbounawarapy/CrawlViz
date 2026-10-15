@@ -33,8 +33,10 @@ class StoppingPipeline(BasePipeline):
         conditions: StopConditions,
         max_queue_size: int = 0,
         max_concurrency: int = 1,
+        check_interval: float = 0.1,
     ):
         super().__init__(max_concurrency=max_concurrency)
+        self.check_interval = check_interval
         self.event_broker = event_broker
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
@@ -70,9 +72,9 @@ class StoppingPipeline(BasePipeline):
         finally:
             timer.cancel()
 
-    async def _time_watch(self, interval: float = 0.1) -> None:
+    async def _time_watch(self) -> None:
         while not self.stopped:
-            await asyncio.sleep(interval)
+            await asyncio.sleep(self.check_interval)
             await self._check_time_conditions()
 
     async def _process(self, event, worker_id: int) -> None:

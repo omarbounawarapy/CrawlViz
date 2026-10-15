@@ -1,3 +1,4 @@
+import time
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 
@@ -12,19 +13,30 @@ class RobotsPolicy:
     flaky request cannot halt a crawl.
     """
 
-    def __init__(self, fetcher: Fetcher, user_agent: str, headers: dict | None = None):
+    def __init__(
+        self, fetcher: Fetcher, user_agent: str, headers: dict | None = None,
+        ttl: float = 0.0,
+    ):
         self.fetcher = fetcher
         self.user_agent = user_agent
         self.headers = headers or {}
+        # ttl 0 keeps a parsed robots.txt for the whole crawl.
+        self.ttl = ttl
         self._parsers: dict[str, RobotFileParser] = {}
+        self._loaded_at: dict[str, float] = {}
 
     async def allowed(self, url: str) -> bool:
         parts = urlsplit(url)
         origin = f"{parts.scheme}://{parts.netloc}"
         parser = self._parsers.get(origin)
-        if parser is None:
+        expired = (
+            parser is not None and self.ttl > 0
+            and time.monotonic() - self._loaded_at[origin] >= self.ttl
+        )
+        if parser is None or expired:
             parser = await self._load(origin)
             self._parsers[origin] = parser
+            self._loaded_at[origin] = time.monotonic()
         return parser.can_fetch(self.user_agent, url)
 
     async def _load(self, origin: str) -> RobotFileParser:

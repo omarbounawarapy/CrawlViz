@@ -27,3 +27,7 @@ benchmark/analysis/
 # Smoke-test output
 benchmark/smoke/
 benchmark/data/smoke_*
+
+# Local UI-edited settings and presets
+settings.json
+presets/

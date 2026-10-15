@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { fetchTemplates, fetchTemplate, runCrawl, stopCrawl, crawlStatus } from "../../api/client";
 import { getTheme } from "../../theme";
 import { formatDuration } from "../../utils/formatters";
 import { Page, SectionTitle, Row } from "../common/Page";
 import { buttonPrimary, buttonOutline } from "../common/buttons";
+import RunOverrides from "./RunOverrides";
 
 const theme = getTheme();
 
@@ -87,12 +88,15 @@ export default function RunPage({ onNavigate, state, metrics }) {
     return () => { cancelled = true; };
   }, [selected]);
 
+  const [overrides, setOverrides] = useState({});
+  const onPatch = useCallback((p) => setOverrides(p), []);
+
   const handleRun = async () => {
     if (!selected || loading) return;
     setLoading(true);
     setMsg(null);
     try {
-      await runCrawl(selected);
+      await runCrawl(selected, overrides);
       setRunning(true);
       setMsg({ ok: true, text: `Started "${selected}".` });
       if (onNavigate) setTimeout(() => onNavigate("graph"), 900);
@@ -157,6 +161,8 @@ export default function RunPage({ onNavigate, state, metrics }) {
           {msg.ok ? msg.text : `${msg.text.replace(/[.!?]?\s*$/, ".")} Check that the backend is running (make dev-backend), then try again.`}
         </p>
       )}
+
+      <RunOverrides onPatch={onPatch} disabled={isRunning} />
 
       <BlueprintPreview blueprint={blueprint} />
       <SessionSummary state={state} metrics={metrics} />

@@ -1,0 +1,955 @@
+{
+  "$defs": {
+    "EmbeddingConfig": {
+      "description": "Semantic-space embedding backend (nlp/vector_space.py, nlp/space_updater.py).",
+      "properties": {
+        "backend": {
+          "default": "sentence_transformers",
+          "description": "Embedding backend used to build the crawl's semantic space.",
+          "title": "Backend",
+          "type": "string",
+          "ui_options": [
+            "sentence_transformers"
+          ],
+          "ui_section": "Embeddings",
+          "ui_widget": "select"
+        },
+        "model_name": {
+          "default": "all-MiniLM-L6-v2",
+          "description": "Model identifier passed to the embedding backend.",
+          "title": "Model Name",
+          "type": "string",
+          "ui_section": "Embeddings",
+          "ui_widget": "text"
+        },
+        "flush_interval_seconds": {
+          "default": 60.0,
+          "description": "Maximum time between semantic-space growth flushes.",
+          "exclusiveMinimum": 0,
+          "title": "Flush Interval Seconds",
+          "type": "number",
+          "ui_section": "Embeddings",
+          "ui_widget": "number"
+        },
+        "flush_threshold": {
+          "default": 50,
+          "description": "Buffered scored-link count that triggers an early flush.",
+          "exclusiveMinimum": 0,
+          "title": "Flush Threshold",
+          "type": "integer",
+          "ui_section": "Embeddings",
+          "ui_widget": "number"
+        },
+        "buffer_max_size": {
+          "default": 500,
+          "description": "Upper bound on the flush buffer before backpressure applies.",
+          "exclusiveMinimum": 0,
+          "title": "Buffer Max Size",
+          "type": "integer",
+          "ui_section": "Embeddings",
+          "ui_widget": "number"
+        }
+      },
+      "title": "EmbeddingConfig",
+      "type": "object"
+    },
+    "ExportConfig": {
+      "description": "Item export / persistence batching (pipelines/exporting_pipeline.py).",
+      "properties": {
+        "batch_size": {
+          "default": 1,
+          "description": "Number of transformed items grouped into one export batch.",
+          "exclusiveMinimum": 0,
+          "title": "Batch Size",
+          "type": "integer",
+          "ui_section": "Export",
+          "ui_widget": "number"
+        }
+      },
+      "title": "ExportConfig",
+      "type": "object"
+    },
+    "FetchConfig": {
+      "description": "Page fetching: politeness, backoff, timeouts and request headers\n(pipelines/requests_pipeline.py, infrastructure/network_client.py).",
+      "properties": {
+        "min_delay": {
+          "default": 1.0,
+          "description": "Minimum seconds between two requests (global, all workers).",
+          "minimum": 0.0,
+          "title": "Min Delay",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "live",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "jitter_max": {
+          "default": 0.2,
+          "description": "Random 0..N seconds added to every request delay.",
+          "minimum": 0.0,
+          "title": "Jitter Max",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "live",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "backoff_start": {
+          "default": 1.0,
+          "description": "First backoff delay after a 429 response.",
+          "minimum": 0.0,
+          "title": "Backoff Start",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "backoff_max": {
+          "default": 10.0,
+          "description": "Upper bound for the shared 429 backoff.",
+          "minimum": 0.0,
+          "title": "Backoff Max",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "live",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "backoff_growth": {
+          "default": 2.0,
+          "description": "Backoff multiplier on each further 429.",
+          "minimum": 1.0,
+          "title": "Backoff Growth",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "number"
+        },
+        "backoff_success_decay": {
+          "default": 0.5,
+          "description": "Backoff multiplier after a successful fetch.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Backoff Success Decay",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "number"
+        },
+        "backoff_failure_decay": {
+          "default": 0.5,
+          "description": "Backoff multiplier after a non-429 failure.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Backoff Failure Decay",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "number"
+        },
+        "http_total_timeout": {
+          "default": 30.0,
+          "description": "Whole-request timeout for page fetches and LLM calls.",
+          "exclusiveMinimum": 0.0,
+          "title": "Http Total Timeout",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "http_connect_timeout": {
+          "default": 10.0,
+          "description": "Connection-establishment timeout.",
+          "exclusiveMinimum": 0.0,
+          "title": "Http Connect Timeout",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "respect_robots": {
+          "default": true,
+          "description": "Honor robots.txt before fetching.",
+          "title": "Respect Robots",
+          "type": "boolean",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "toggle"
+        },
+        "robots_ttl_seconds": {
+          "default": 0.0,
+          "description": "Seconds a parsed robots.txt is kept; 0 keeps it for the whole crawl.",
+          "minimum": 0.0,
+          "title": "Robots Ttl Seconds",
+          "type": "number",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "user_agent": {
+          "default": "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)",
+          "description": "User-Agent header sent with every request.",
+          "title": "User Agent",
+          "type": "string",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "text"
+        },
+        "accept": {
+          "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+          "description": "Accept header.",
+          "title": "Accept",
+          "type": "string",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "text"
+        },
+        "accept_encoding": {
+          "default": "gzip, deflate",
+          "description": "Accept-Encoding header.",
+          "title": "Accept Encoding",
+          "type": "string",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "text"
+        },
+        "accept_language": {
+          "default": "",
+          "description": "Accept-Language header; empty omits it.",
+          "title": "Accept Language",
+          "type": "string",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "text"
+        },
+        "extra_headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional request headers; override the ones above on a name clash.",
+          "title": "Extra Headers",
+          "type": "object",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Fetch",
+          "ui_widget": "headers"
+        }
+      },
+      "title": "FetchConfig",
+      "type": "object"
+    },
+    "LlmConfig": {
+      "description": "Request parameters shared by every LLM provider call.",
+      "properties": {
+        "max_tokens": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Completion token cap; empty uses the provider default.",
+          "title": "Max Tokens",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "LLM",
+          "ui_widget": "number"
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "maximum": 2.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Sampling temperature; empty uses the provider default.",
+          "title": "Temperature",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "LLM",
+          "ui_widget": "number"
+        },
+        "key_cooldown_seconds": {
+          "default": 0.0,
+          "description": "Minimum gap before the same API key is reused.",
+          "minimum": 0.0,
+          "title": "Key Cooldown Seconds",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "LLM",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        }
+      },
+      "title": "LlmConfig",
+      "type": "object"
+    },
+    "NlpConfig": {
+      "description": "NLP composite score (services/nlp_service.py).",
+      "properties": {
+        "composite_weights": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Feature weights of the composite NLP score (negative subtracts).",
+          "title": "Composite Weights",
+          "type": "object",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "NLP",
+          "ui_widget": "weights"
+        },
+        "target_top_k": {
+          "default": 2,
+          "description": "Nearest target-basis vectors averaged into target similarity.",
+          "minimum": 1,
+          "title": "Target Top K",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "NLP",
+          "ui_widget": "number"
+        },
+        "cluster_eps": {
+          "default": 0.3,
+          "description": "DBSCAN cosine radius used to find clusters in the semantic space.",
+          "exclusiveMinimum": 0.0,
+          "title": "Cluster Eps",
+          "type": "number",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "NLP",
+          "ui_widget": "number"
+        },
+        "cluster_min_samples": {
+          "default": 2,
+          "description": "DBSCAN minimum points per cluster.",
+          "minimum": 1,
+          "title": "Cluster Min Samples",
+          "type": "integer",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "NLP",
+          "ui_widget": "number"
+        },
+        "link_context_length": {
+          "default": 100,
+          "description": "Characters of surrounding text kept as a link's context.",
+          "minimum": 1,
+          "title": "Link Context Length",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "NLP",
+          "ui_unit": "chars",
+          "ui_widget": "number"
+        }
+      },
+      "title": "NlpConfig",
+      "type": "object"
+    },
+    "ObservabilityConfig": {
+      "properties": {
+        "debug_enabled": {
+          "default": true,
+          "description": "Write the per-crawl debug trace file.",
+          "title": "Debug Enabled",
+          "type": "boolean",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Observability",
+          "ui_widget": "toggle"
+        },
+        "ui_port": {
+          "default": 8765,
+          "description": "Websocket port the live graph connects to.",
+          "maximum": 65535,
+          "minimum": 1,
+          "title": "Ui Port",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Observability",
+          "ui_widget": "number"
+        },
+        "snapshot_max_candidates": {
+          "default": 4000,
+          "description": "Scoring decisions kept for the live view.",
+          "minimum": 1,
+          "title": "Snapshot Max Candidates",
+          "type": "integer",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Observability",
+          "ui_widget": "number"
+        },
+        "snapshot_max_errors": {
+          "default": 1000,
+          "description": "Crawl errors kept for the live view.",
+          "minimum": 1,
+          "title": "Snapshot Max Errors",
+          "type": "integer",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Observability",
+          "ui_widget": "number"
+        }
+      },
+      "title": "ObservabilityConfig",
+      "type": "object"
+    },
+    "PipelineSettings": {
+      "description": "Worker count and queue bound of one pipeline.",
+      "properties": {
+        "workers": {
+          "default": 1,
+          "description": "Concurrent worker loops.",
+          "maximum": 64,
+          "minimum": 1,
+          "title": "Workers",
+          "type": "integer",
+          "ui_apply": "live",
+          "ui_widget": "number"
+        },
+        "max_queue_size": {
+          "default": 0,
+          "description": "Queue bound; 0 is unbounded.",
+          "minimum": 0,
+          "title": "Max Queue Size",
+          "type": "integer"
+        }
+      },
+      "title": "PipelineSettings",
+      "type": "object"
+    },
+    "PipelinesConfig": {
+      "description": "Per-pipeline parallelism (core/crawler.py:_build_pipelines). Logging\nand canonicalization stay single-worker so output order is preserved.",
+      "properties": {
+        "processing": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "requests": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "scoring": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "storage": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "filtering": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "priority": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "transformation": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "debugging": {
+          "$ref": "#/$defs/PipelineSettings"
+        },
+        "retry": {
+          "$ref": "#/$defs/PipelineSettings"
+        }
+      },
+      "title": "PipelinesConfig",
+      "type": "object"
+    },
+    "PriorityConfig": {
+      "description": "Mix of NLP and LLM scores in a link's priority (priority_pipeline.py).",
+      "properties": {
+        "nlp_bias": {
+          "default": 60,
+          "description": "Weight of the NLP score (normalized with llm_bias).",
+          "minimum": 0,
+          "title": "Nlp Bias",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Priority",
+          "ui_widget": "slider"
+        },
+        "llm_bias": {
+          "default": 40,
+          "description": "Weight of the LLM score (normalized with nlp_bias).",
+          "minimum": 0,
+          "title": "Llm Bias",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Priority",
+          "ui_widget": "slider"
+        },
+        "aggressive_weights": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Feature weights of the 'aggressive' priority strategy; depth_penalty is subtracted per level of depth.",
+          "title": "Aggressive Weights",
+          "type": "object",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Priority",
+          "ui_widget": "weights"
+        },
+        "balanced_weights": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Feature weights of the 'balanced' priority strategy; depth_penalty is subtracted per level of depth.",
+          "title": "Balanced Weights",
+          "type": "object",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Priority",
+          "ui_widget": "weights"
+        },
+        "exploration_weights": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Feature weights of the 'exploration' priority strategy; depth_penalty is subtracted per level of depth.",
+          "title": "Exploration Weights",
+          "type": "object",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Priority",
+          "ui_widget": "weights"
+        }
+      },
+      "title": "PriorityConfig",
+      "type": "object"
+    },
+    "PromptsConfig": {
+      "description": "Wording of the scoring prompt (models/prompts.py). The output format\nand JSON constraints are fixed because the response parser depends on\nthem.",
+      "properties": {
+        "scoring_system": {
+          "default": "You are a semantic relevance scoring engine for a focused web crawler.\n\nYour job is to evaluate candidate links and assign:\n- a relevance score (0 to 100)\n- a relevance type\n- optional semantic expansions\n\nReturn ONLY valid JSON.\nNo markdown.\nNo explanation outside JSON.",
+          "description": "System prompt of the link-scoring LLM call.",
+          "minLength": 1,
+          "title": "Scoring System",
+          "type": "string",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Prompts",
+          "ui_widget": "textarea"
+        },
+        "scoring_rules": {
+          "default": "RULES:\n- Each candidate URL is independent\n- Use strategy_context as soft bias only\n- Score range: integer 0\u2013100\n- Assign exactly one relevance_type:\n  direct | partial | irrelevant | ambiguous\n- Generate 2\u20134 semantic expansions per link\n- Expansions must be conceptual, not copied text",
+          "description": "RULES block of the scoring prompt.",
+          "minLength": 1,
+          "title": "Scoring Rules",
+          "type": "string",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Prompts",
+          "ui_widget": "textarea"
+        },
+        "strategy_contexts": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Wording that biases the scoring LLM, per scoring strategy.",
+          "title": "Strategy Contexts",
+          "type": "object",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Prompts",
+          "ui_widget": "stringmap"
+        }
+      },
+      "title": "PromptsConfig",
+      "type": "object"
+    },
+    "ProvidersConfig": {
+      "description": "Request URL per LLM provider (infrastructure/llm_handler.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
+      "properties": {
+        "endpoints": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Request URL used for each provider.",
+          "title": "Endpoints",
+          "type": "object",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Providers",
+          "ui_widget": "stringmap"
+        }
+      },
+      "title": "ProvidersConfig",
+      "type": "object"
+    },
+    "RetryConfig": {
+      "description": "Retry policy (pipelines/retry_processor.py).",
+      "properties": {
+        "max_request_retries": {
+          "default": 3,
+          "description": "Requeues of a node after failed fetches.",
+          "minimum": 0,
+          "title": "Max Request Retries",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "live",
+          "ui_section": "Retries",
+          "ui_widget": "number"
+        },
+        "max_scoring_retries": {
+          "default": 3,
+          "description": "Reschedules of a node after failed scoring.",
+          "minimum": 0,
+          "title": "Max Scoring Retries",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "live",
+          "ui_section": "Retries",
+          "ui_widget": "number"
+        },
+        "base_delay": {
+          "default": 2.0,
+          "description": "First retry delay; grows by `growth` each attempt.",
+          "minimum": 0.0,
+          "title": "Base Delay",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Retries",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "growth": {
+          "default": 2.0,
+          "description": "Retry delay multiplier per attempt.",
+          "minimum": 1.0,
+          "title": "Growth",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Retries",
+          "ui_widget": "number"
+        },
+        "empty_score_demotion": {
+          "default": 5,
+          "description": "Priority removed from a node whose LLM result was empty.",
+          "minimum": 0,
+          "title": "Empty Score Demotion",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Retries",
+          "ui_widget": "number"
+        },
+        "fetch_retry_demotion": {
+          "default": 2,
+          "description": "Priority removed from a node on each fetch retry.",
+          "minimum": 0,
+          "title": "Fetch Retry Demotion",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Retries",
+          "ui_widget": "number"
+        }
+      },
+      "title": "RetryConfig",
+      "type": "object"
+    },
+    "RunConfig": {
+      "properties": {
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Seed for every random stream; empty is unseeded.",
+          "title": "Seed",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Run",
+          "ui_widget": "number"
+        },
+        "stop_check_interval": {
+          "default": 0.1,
+          "description": "Seconds between stop-condition checks on a quiet crawl.",
+          "exclusiveMinimum": 0.0,
+          "title": "Stop Check Interval",
+          "type": "number",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Run",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        },
+        "shutdown_grace": {
+          "default": 5.0,
+          "description": "Seconds the other tasks get to finish once a crawl stops.",
+          "minimum": 0.0,
+          "title": "Shutdown Grace",
+          "type": "number",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Run",
+          "ui_unit": "s",
+          "ui_widget": "number"
+        }
+      },
+      "title": "RunConfig",
+      "type": "object"
+    },
+    "ScoringCascadeConfig": {
+      "description": "The two-stage NLP -> LLM relevance cascade's tunable thresholds and\nsampling fractions (report section 0.13, \"Evaluation multi-etapes\").",
+      "properties": {
+        "low_threshold": {
+          "default": 0.2,
+          "description": "NLP similarity score below which a link is considered low-confidence.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Low Threshold",
+          "type": "number",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "slider"
+        },
+        "high_threshold": {
+          "default": 0.75,
+          "description": "NLP similarity score above which a link is considered high-confidence.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High Threshold",
+          "type": "number",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "slider"
+        },
+        "high_score_llm_fraction": {
+          "default": 0.3,
+          "description": "Fraction of the high-confidence bucket still sent to the LLM rather than trusted outright -- this is the cascade's cost-saving lever.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High Score Llm Fraction",
+          "type": "number",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "slider"
+        },
+        "high_score_random_fraction": {
+          "default": 0.3,
+          "description": "Of the LLM-bound slice of the high bucket, the fraction chosen at random rather than by top NLP rank (bias correction).",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "High Score Random Fraction",
+          "type": "number",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "slider"
+        },
+        "low_score_sample_fraction": {
+          "default": 0.01,
+          "description": "Fraction of the low-confidence bucket kept anyway, for exploration, instead of dropped outright.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Low Score Sample Fraction",
+          "type": "number",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "slider"
+        },
+        "default_priority_strategy": {
+          "default": "balanced",
+          "description": "Priority strategy used when a blueprint doesn't specify one.",
+          "title": "Default Priority Strategy",
+          "type": "string",
+          "ui_options": [
+            "aggressive",
+            "balanced",
+            "exploration"
+          ],
+          "ui_section": "Scoring cascade",
+          "ui_widget": "select"
+        },
+        "percentile_bucketing": {
+          "default": true,
+          "description": "Bucket links by per-node score percentile instead of the absolute thresholds.",
+          "title": "Percentile Bucketing",
+          "type": "boolean",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "toggle"
+        },
+        "low_percentile": {
+          "default": 20.0,
+          "description": "Percentile below which a link falls in the low bucket.",
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "Low Percentile",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Scoring cascade",
+          "ui_unit": "%",
+          "ui_widget": "slider"
+        },
+        "high_percentile": {
+          "default": 75.0,
+          "description": "Percentile above which a link falls in the high bucket.",
+          "maximum": 100.0,
+          "minimum": 0.0,
+          "title": "High Percentile",
+          "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Scoring cascade",
+          "ui_unit": "%",
+          "ui_widget": "slider"
+        },
+        "percentile_min_links": {
+          "default": 10,
+          "description": "Fewer links than this on a page fall back to the absolute thresholds.",
+          "minimum": 1,
+          "title": "Percentile Min Links",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "number"
+        },
+        "max_llm_links_per_node": {
+          "default": 60,
+          "description": "Hard cap on links sent to the LLM for one page.",
+          "minimum": 1,
+          "title": "Max Llm Links Per Node",
+          "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "number"
+        },
+        "llm_batch_size": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Links per LLM call; empty sends all of a page's links in one call.",
+          "title": "Llm Batch Size",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "Scoring cascade",
+          "ui_widget": "number"
+        }
+      },
+      "title": "ScoringCascadeConfig",
+      "type": "object"
+    },
+    "UrlConfig": {
+      "description": "Node identity rules (utils/html_utils.py:normalize_url). Changing them\nchanges which links count as the same page.",
+      "properties": {
+        "strip_fragment": {
+          "default": true,
+          "description": "Treat /page#a and /page as one page.",
+          "title": "Strip Fragment",
+          "type": "boolean",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "URLs",
+          "ui_widget": "toggle"
+        },
+        "strip_trailing_slash": {
+          "default": true,
+          "description": "Treat /page/ and /page as one page.",
+          "title": "Strip Trailing Slash",
+          "type": "boolean",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_section": "URLs",
+          "ui_widget": "toggle"
+        }
+      },
+      "title": "UrlConfig",
+      "type": "object"
+    }
+  },
+  "description": "Top-level runtime configuration: everything a researcher would want\nto see before trusting a crawl's results, beyond the per-run blueprint\n(target topic, seeds, extraction schema) already covered by\nroutes/blueprint_schema.py.",
+  "properties": {
+    "scoring_cascade": {
+      "$ref": "#/$defs/ScoringCascadeConfig"
+    },
+    "embeddings": {
+      "$ref": "#/$defs/EmbeddingConfig"
+    },
+    "export": {
+      "$ref": "#/$defs/ExportConfig"
+    },
+    "fetch": {
+      "$ref": "#/$defs/FetchConfig"
+    },
+    "pipelines": {
+      "$ref": "#/$defs/PipelinesConfig"
+    },
+    "retries": {
+      "$ref": "#/$defs/RetryConfig"
+    },
+    "priority": {
+      "$ref": "#/$defs/PriorityConfig"
+    },
+    "url": {
+      "$ref": "#/$defs/UrlConfig"
+    },
+    "nlp": {
+      "$ref": "#/$defs/NlpConfig"
+    },
+    "llm": {
+      "$ref": "#/$defs/LlmConfig"
+    },
+    "observability": {
+      "$ref": "#/$defs/ObservabilityConfig"
+    },
+    "run": {
+      "$ref": "#/$defs/RunConfig"
+    },
+    "prompts": {
+      "$ref": "#/$defs/PromptsConfig"
+    },
+    "providers": {
+      "$ref": "#/$defs/ProvidersConfig"
+    }
+  },
+  "title": "RuntimeConfig",
+  "type": "object"
+}

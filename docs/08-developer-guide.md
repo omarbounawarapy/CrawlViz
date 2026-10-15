@@ -63,9 +63,9 @@ make dev-frontend  # cd crawler-ui && npm run dev
 | Templates | `GET /templates`, `GET /templates/{name}`, `POST /templates?name=`, `PUT /templates/{name}`, `DELETE /templates/{name}` |
 | Crawl control | `POST /run`, `POST /stop`, `GET /status` |
 | Validation (read-only) | `GET /validation/tables`, `GET /validation/{table}/crawls`, `GET /validation/{table}/sample` |
-| Config (read-only) | schema/introspection endpoints over `RuntimeConfig`, see note below |
+| Config | schema, values, save, presets, live apply, keys over `RuntimeConfig`, see note below |
 
-**Config is read-only from the API in the current build.** `config/runtime_config.py`'s own module docstring states this directly: it's a Pydantic mirror of the constants in `config/config.py`, meant for introspection (so the UI can render what the current configuration *is*), not a write path pipelines actually read from. There is no `PUT`/`PATCH` config endpoint. If you need to change scoring thresholds, the embedding model, or other tuning constants, edit `config/config.py` directly and restart. The schema render shows you what those constants currently are, not a way to set them from the browser yet.
+**Config is editable from the API and the Config page.** `config/runtime_config.py` is a validated Pydantic model; the effective values are code defaults, then `settings.json` (only the difference from the defaults is stored), then per-run overrides sent with `POST /run`. Pipelines copy their values at construction, so a saved change applies from the next crawl. Fields flagged `ui_apply: live` (fetch delay and jitter, backoff cap, retry limits, per-pipeline worker counts) can also be pushed to the crawl in progress with `PATCH /config/live`; anything else is rejected with 422. Prompt wording (`prompts`) and provider request URLs (`providers.endpoints`) are settings too; the scoring output format is not editable because the response parser depends on it. Keys added or removed through `/keys` reach a running crawl immediately. Set `CRAWLVIZ_API_TOKEN` to require `Authorization: Bearer <token>` on the config and key routes (the UI sends `VITE_API_TOKEN`); unset, the API is open and should stay bound to localhost. The logging and canonicalization pipelines stay single-worker on purpose, to preserve output order.
 
 ## Testing
 
@@ -97,7 +97,7 @@ cd crawler-ui && npm test
 | `VITE_WS_URL` | `crawler-ui/.env.local` | `ws://localhost:8765` |
 | `TRACE_MODE` / `TRACE_SAMPLE_RATE` | backend env | `full` / `0.1`, see `traceability/emitter.py` |
 
-Scoring thresholds (`LOW`/`HIGH` bucket cutoffs), the embedding model name, and export batching live as constants in `config/config.py`.
+Scoring thresholds (`LOW`/`HIGH` bucket cutoffs), the embedding model name, and export batching are the defaults in `config/config.py`; the Config page overrides them without editing the file.
 
 ## Development workflow
 
@@ -121,7 +121,7 @@ make lint   # ruff (backend) + eslint (frontend)
 | `priority/` | The three named priority strategies |
 | `ui_bridge/` | WebSocket gateway, telemetry bridge, server-side state snapshot |
 | `traceability/` | Correlation-ID-based causal tracing, two-tier logging |
-| `config/` | Tuning constants + read-only runtime config schema |
+| `config/` | Tuning constants, runtime config schema, persisted settings |
 | `services/` | `NLPService`, `ScoringService`, `ResultMapper`, the stable interfaces pipelines call into |
 | `templates/` | JSON blueprint examples (`wikiMD.json`, `isi.json`) |
 | `tests/` | pytest suite |

@@ -61,6 +61,18 @@ STRATEGIES: dict[str, dict[str, str]] = {
 }
 
 
+SCORING_RULES = """
+RULES:
+- Each candidate URL is independent
+- Use strategy_context as soft bias only
+- Score range: integer 0–100
+- Assign exactly one relevance_type:
+  direct | partial | irrelevant | ambiguous
+- Generate 2–4 semantic expansions per link
+- Expansions must be conceptual, not copied text
+""".strip()
+
+
 class PromptBuilder:
     """Builds the system and user prompts sent to the scoring LLM.
 
@@ -68,20 +80,34 @@ class PromptBuilder:
         target_topic: The crawl's target topic, restated in every prompt.
         strategy: One of the keys in `STRATEGIES`, biasing how candidates
             are scored.
+        system_prompt: Replaces SCORING_SYSTEM_PROMPT.
+        rules: Replaces the RULES block (SCORING_RULES). The output format and
+            JSON constraints are not replaceable: the response parser needs them.
+        strategy_contexts: Replaces the per-strategy wording, by strategy key.
 
     Raises:
         ValueError: If `strategy` is not a key in `STRATEGIES`.
     """
 
-    def __init__(self, target_topic: str, strategy: str = "TOPICAL"):
+    def __init__(
+        self,
+        target_topic: str,
+        strategy: str = "TOPICAL",
+        system_prompt: str | None = None,
+        rules: str | None = None,
+        strategy_contexts: dict[str, str] | None = None,
+    ):
         if strategy not in STRATEGIES:
             raise ValueError(f"Unknown scoring strategy: {strategy!r}")
 
         self.target_topic = target_topic
         self.strategy = strategy
+        self.system_prompt = system_prompt or SCORING_SYSTEM_PROMPT
+        self.rules = rules or SCORING_RULES
+        self.strategy_contexts = strategy_contexts or {}
 
     def build_system_prompt(self) -> str:
-        return SCORING_SYSTEM_PROMPT
+        return self.system_prompt
 
     def build_prompt(self, candidates: list[Any], url_prefix: str = "") -> str:
         """Assemble the full user prompt for one batch of candidate links.
@@ -91,7 +117,9 @@ class PromptBuilder:
         with the same shortened URLs). The caller re-attaches the prefix to
         the response keys -- see `ScoringService.score_links`.
         """
-        strategy_cfg = STRATEGIES[self.strategy]
+        strategy_context = self.strategy_contexts.get(
+            self.strategy, STRATEGIES[self.strategy]["context"]
+        )
         candidate_dicts = [c.to_dict() for c in candidates]
         if url_prefix:
             for d in candidate_dicts:
@@ -108,7 +136,7 @@ Score each candidate URL independently from 0 to 100 based on relevance to targe
 CONTEXT:
 target_topic: {self.target_topic}
 strategy: {self.strategy}
-strategy_context: {strategy_cfg["context"]}
+strategy_context: {strategy_context}
 """.strip()
         if url_prefix:
             context_block += (
@@ -122,16 +150,7 @@ CANDIDATES:
 {candidates_json}
 """.strip()
 
-        rules_block = """
-RULES:
-- Each candidate URL is independent
-- Use strategy_context as soft bias only
-- Score range: integer 0–100
-- Assign exactly one relevance_type:
-  direct | partial | irrelevant | ambiguous
-- Generate 2–4 semantic expansions per link
-- Expansions must be conceptual, not copied text
-""".strip()
+        rules_block = self.rules.strip()
 
         output_block = """
 OUTPUT FORMAT (STRICT JSON ONLY):

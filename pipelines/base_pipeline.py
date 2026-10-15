@@ -102,16 +102,49 @@ class BasePipeline:
         await self.queue.put(event)
 
     async def start(self) -> None:
-        self.workers = [
-            asyncio.create_task(self._worker_loop(i))
-            for i in range(self.max_concurrency)
-        ]
-        await asyncio.gather(*self.workers)
+        self._pool_closed = False
+        self._pool_next_id = 0
+        self.workers = []
+        self._pool_spawn(self.max_concurrency)
+        # resize() may add workers while running; wait for those too.
+        while True:
+            pending = [w for w in self.workers if not w.done()]
+            if not pending:
+                break
+            await asyncio.gather(*pending)
+
+    def _pool_spawn(self, count: int) -> None:
+        for _ in range(count):
+            self.workers.append(
+                asyncio.create_task(self._worker_loop(self._pool_next_id))
+            )
+            self._pool_next_id += 1
+
+    def resize(self, workers: int) -> None:
+        """Change the worker count of a running pipeline. Growing starts
+        workers at once; shrinking queues one SHUTDOWN per surplus worker,
+        so it takes effect once the items ahead of it are handled."""
+        if workers < 1:
+            raise ValueError("workers must be at least 1")
+        if getattr(self, "_pool_closed", False) or not hasattr(self, "_pool_next_id"):
+            self.max_concurrency = workers
+            return
+        delta = workers - self.max_concurrency
+        self.max_concurrency = workers
+        if delta > 0:
+            self._pool_spawn(delta)
+        else:
+            for _ in range(-delta):
+                try:
+                    self.queue.put_nowait(SHUTDOWN)
+                except asyncio.QueueFull:
+                    asyncio.ensure_future(self.queue.put(SHUTDOWN))
 
     async def stop(self) -> None:
         """Wake every worker so start() returns, even if the queue would
         otherwise sit empty forever. Safe to call more than once.
         """
+        self._pool_closed = True
         for _ in range(self.max_concurrency):
             await self.queue.put(SHUTDOWN)
 

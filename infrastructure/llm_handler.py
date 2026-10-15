@@ -28,6 +28,16 @@ class LlmHandler:
             to a plain NetworkClient.
     """
 
+    # Request URL per provider (Gemini: base URL, the model is appended).
+    DEFAULT_ENDPOINTS = {
+        "openrouter": "https://openrouter.ai/api/v1/chat/completions",
+        "openai": "https://api.openai.com/v1/chat/completions",
+        "anthropic": "https://api.anthropic.com/v1/messages",
+        "gemini": GeminiTranslator.BASE_URL,
+        "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
+        "groq": "https://api.groq.com/openai/v1/chat/completions",
+    }
+
     translators = {
         "openrouter": OpenRouterTranslator,
         "openai": OpenAITranslator,
@@ -37,9 +47,50 @@ class LlmHandler:
         "groq": GroqTranslator,
     }
 
-    def __init__(self, key_manager: KeyManager, client: NetworkClient | None = None):
+    def __init__(
+        self,
+        key_manager: KeyManager,
+        client: NetworkClient | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        endpoints: dict[str, str] | None = None,
+    ):
         self.client = client or NetworkClient()
         self.key_manager = key_manager
+        # Optional request parameters; None leaves the provider's default.
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        # Only entries that differ from the built-in URL are applied.
+        self.endpoints = {
+            p: u for p, u in (endpoints or {}).items()
+            if u and u != self.DEFAULT_ENDPOINTS.get(p)
+        }
+
+    def _apply_options(self, llm_type: str, params: dict) -> None:
+        """Set the configured max_tokens/temperature in the provider's own
+        request shape (Gemini nests them under generationConfig)."""
+        data = params.get("data")
+        if not isinstance(data, dict):
+            return
+        if llm_type == "gemini":
+            cfg = data.setdefault("generationConfig", {})
+            if self.max_tokens is not None:
+                cfg["maxOutputTokens"] = self.max_tokens
+            if self.temperature is not None:
+                cfg["temperature"] = self.temperature
+            return
+        if self.max_tokens is not None:
+            data["max_tokens"] = self.max_tokens
+        if self.temperature is not None:
+            data["temperature"] = self.temperature
+
+    def _apply_endpoint(self, llm_type: str, params: dict, context) -> None:
+        endpoint = self.endpoints.get(llm_type)
+        if not endpoint:
+            return
+        if llm_type == "gemini":
+            endpoint = f"{endpoint.rstrip('/')}/{context.get_model_information()}:generateContent"
+        params["url"] = endpoint
 
     async def send(self, context) -> dict:
         """Send one LLM request end to end: key, translate, dispatch, normalize.
@@ -60,6 +111,8 @@ class LlmHandler:
             key = await self.key_manager.next_key(llm_type)
             context.set_key(key)
             params = translator_cls.translate_request(context)
+            self._apply_endpoint(llm_type, params, context)
+            self._apply_options(llm_type, params)
             try:
                 response = await self.client.emit_request(params)
                 break

@@ -35,6 +35,7 @@ class PriorityPipeline(BasePipeline):
         strategy_name: str = "balanced",
         max_queue_size: int = 0,
         max_concurrency: int = 10,
+        strategy_weights: dict | None = None,
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
@@ -50,7 +51,7 @@ class PriorityPipeline(BasePipeline):
         self._llm_weight = llm_bias / total
         # Strategy resolution fails fast at init, not at crawl time.
         self.strategy_name = strategy_name
-        self.strategy: StrategyFn = get_strategy(strategy_name)
+        self.strategy: StrategyFn = get_strategy(strategy_name, strategy_weights)
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 

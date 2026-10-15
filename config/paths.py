@@ -25,6 +25,8 @@ class RuntimePaths:
     debug_dir: Path = BASE_DIR / "debug"
     space_store_dir: Path = BASE_DIR / SPACE_STORE_DIR
     keys_file: Path = BASE_DIR / "keys.json"
+    settings_file: Path = BASE_DIR / "settings.json"
+    presets_dir: Path = BASE_DIR / "presets"
     templates_dir: Path = TEMPLATES_DIR
 
     @classmethod
@@ -39,6 +41,8 @@ class RuntimePaths:
             "debug_dir": root / "debug",
             "space_store_dir": root / ".space_store",
             "keys_file": root / "keys.json",
+            "settings_file": root / "settings.json",
+            "presets_dir": root / "presets",
         }
         return cls(**{**base, **overrides})
 

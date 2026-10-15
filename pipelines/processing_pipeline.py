@@ -25,9 +25,11 @@ class ProcessingPipeline(BasePipeline):
         extraction_blueprint,
         max_concurrency: int = 1,
         max_queue_size: int = 0,
+        link_context_length: int | None = None,
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
+        self.link_context_length = link_context_length
 
         self.queue: asyncio.PriorityQueue = asyncio.PriorityQueue(maxsize=max_queue_size)
 
@@ -75,7 +77,9 @@ class ProcessingPipeline(BasePipeline):
             )
 
             # Link extraction
-            links = self.link_extractor.extract_links(content, node)
+            links = self.link_extractor.extract_links(
+                content, node, self.link_context_length
+            )
             await self.event_broker.emit(
                 LinkExtractionCompletedEvent(
                     correlation_id=str(node.get_id()),

@@ -13,6 +13,9 @@ class FeatureExtractor:
     already be embedded.
     """
 
+    def __init__(self, target_top_k: int = 2):
+        self.target_top_k = target_top_k
+
     # =========================================================
     # LINK vs PARENT ANALYSIS
     # =========================================================
@@ -120,7 +123,7 @@ class FeatureExtractor:
         return float(min(distances))
 
     def target_similarity(
-        self, link_vec: np.ndarray, target_space: VectorSpace, top_k: int = 2
+        self, link_vec: np.ndarray, target_space: VectorSpace, top_k: int | None = None
     ) -> float:
         """Mean similarity to the top-k nearest vectors in the target's
         semantic basis (report eq. 1 -- a basis rather than a single
@@ -129,6 +132,7 @@ class FeatureExtractor:
         if link_vec is None or len(target_space) == 0:
             return 0.0
 
+        top_k = top_k if top_k is not None else self.target_top_k
         neighbors = target_space.similarity_search(query=link_vec, top_k=top_k)
         if not neighbors:
             return 0.0

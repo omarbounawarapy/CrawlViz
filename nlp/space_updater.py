@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+_POLL_SECONDS = 1.0
+
+
 class SpaceUpdater:
     """Periodic background task that:
 
@@ -22,10 +25,9 @@ class SpaceUpdater:
     NEVER called in the hot scoring path.
 
     Flushing is interval-driven: every `flush_interval` seconds, whatever
-    is in the buffer gets committed. `flush_threshold` is not currently
-    used to trigger an *earlier* flush -- doing that would need the
-    buffer to wake this loop on insert rather than relying on a fixed
-    wait, which is a bigger change than this pass makes.
+    is in the buffer gets committed. The loop also wakes every
+    `_POLL_SECONDS` and flushes early once the buffer holds at least
+    `flush_threshold` items.
 
     Shutdown: this loop waits on an ``asyncio.Event`` (with the interval
     as a timeout) rather than a plain ``asyncio.sleep``, so ``stop()``
@@ -76,18 +78,23 @@ class SpaceUpdater:
             self.flush_interval, self.flush_threshold,
         )
 
+        loop = asyncio.get_running_loop()
+        last_flush = loop.time()
+        poll = min(self.flush_interval, _POLL_SECONDS)
+
         while not self._stop_event.is_set():
             try:
-                await asyncio.wait_for(
-                    self._stop_event.wait(), timeout=self.flush_interval
-                )
+                await asyncio.wait_for(self._stop_event.wait(), timeout=poll)
             except asyncio.TimeoutError:
-                pass  # normal case: interval elapsed, no stop requested
+                pass  # normal case: poll elapsed, no stop requested
 
             if self._stop_event.is_set():
                 break
 
-            await self._maybe_flush()
+            due = loop.time() - last_flush >= self.flush_interval
+            if due or self.buffer.is_ready_for_flush(self.flush_threshold):
+                await self._maybe_flush()
+                last_flush = loop.time()
 
         # Don't drop whatever's still buffered when the crawl ends.
         await self.force_flush()

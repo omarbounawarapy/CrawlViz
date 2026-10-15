@@ -182,7 +182,9 @@ class CrawlStateSnapshot:
     asyncio event loop — no locking required.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self, max_candidates: int = _MAX_CANDIDATES, max_errors: int = _MAX_ERRORS
+    ) -> None:
         self.status:      str                  = "RUNNING"  # RUNNING | STOPPED
         self.stop_reason: Optional[str]        = None
         self.metrics:     CrawlMetrics         = CrawlMetrics()
@@ -192,9 +194,9 @@ class CrawlStateSnapshot:
         self.pipeline_stats: Dict[str, StageStats] = {
             stage: StageStats() for stage in PIPELINE_STAGES
         }
-        self._candidates: Deque[CandidateRecord] = deque(maxlen=_MAX_CANDIDATES)
+        self._candidates: Deque[CandidateRecord] = deque(maxlen=max_candidates)
         self._node_details: Dict[str, NodeDetailRecord] = {}
-        self._errors: Deque[ErrorRecord] = deque(maxlen=_MAX_ERRORS)
+        self._errors: Deque[ErrorRecord] = deque(maxlen=max_errors)
 
     # ------------------------------------------------------------------
     # Node writes (V1, unchanged)
