@@ -737,3 +737,79 @@ def test_merge_writes_graded_labels_the_rubric_hash_and_a_derived_relevant(tmp_p
     assert {n: data["pages"][n]["relevant"] for n in "ABC"} == {"A": True, "B": False, "C": False}
     assert data["rubric_sha256"] == label_graph.rubric_sha()
     assert FrozenGraph.load(path).relevant() == {"A", "B"}  # the runner reads label >= 1
+
+
+def _audit_graph(n=120):
+    from benchmark import FrozenGraph
+
+    pages = {}
+    for i in range(n):
+        label = 2 if i < 8 else 1 if i < 40 else 0
+        where = "en Tunisie" if i % 3 == 0 else "ailleurs"
+        pages[f"P{i}"] = {"label": label, "title": f"Page {i}", "text": f"Texte {i} {where}. " * 40,
+                          "links": []}
+    return FrozenGraph(seed="P0", pages=pages)
+
+
+def test_audit_sample_is_stratified_blind_and_seeded(tmp_path):
+    import csv
+    import json
+
+    from benchmark import audit
+
+    graph = _audit_graph()
+    path = tmp_path / "g.json"
+    graph.save(path)
+    pilot = tmp_path / "pilot.tsv"
+    pilot.write_text("id\tpage\n1\tP0\n2\tP50\n")
+    out, key = tmp_path / "a.tsv", tmp_path / "k.json"
+    audit.sample(path, out, key, total=40, seed=3, exclude_files=[pilot])
+    rows = list(csv.DictReader(out.open(), delimiter="\t"))
+    assert list(rows[0]) == ["id", "title", "excerpt", "human_label"]
+    assert all(r["human_label"] == "" and len(r["excerpt"]) <= 450 for r in rows)
+    k = json.loads(key.read_text())
+    assert len(rows) == 40 and set(k["items"]) == {r["id"] for r in rows}
+    pages = {v["page"] for v in k["items"].values()}
+    assert "P0" not in pages and "P50" not in pages
+    strata = [v["stratum"] for v in k["items"].values()]
+    assert strata.count("label2") == 7  # P0 is excluded
+    assert all(v["judge_label"] == 2 for v in k["items"].values() if v["stratum"] == "label2")
+    assert [r["id"] for r in rows] == [str(i) for i in range(1, 41)]
+    first = [v["page"] for v in k["items"].values()]
+    audit.sample(path, tmp_path / "b.tsv", tmp_path / "k2.json", total=40, seed=3, exclude_files=[pilot])
+    assert first == [v["page"] for v in json.loads((tmp_path / "k2.json").read_text())["items"].values()]
+
+
+def test_audit_kappa_and_reweighting():
+    from benchmark import audit
+
+    perfect = [(0, 0), (1, 1), (2, 2), (0, 0)]
+    assert audit.kappa(perfect) == 1.0 and audit.agreement(perfect) == 1.0
+    # po = 0.7, pe = 0.3*0.4 + 0.7*0.6 = 0.54
+    pairs = [(1, 1)] * 20 + [(0, 0)] * 50 + [(1, 0)] * 10 + [(0, 1)] * 20
+    assert abs(audit.kappa(pairs) - 0.16 / 0.46) < 1e-9
+    lo, hi = audit.bootstrap_ci(pairs, audit.kappa)
+    assert lo < 0.16 / 0.46 < hi
+    # judge class 2 is rare in the sample and common in the graph
+    pairs = [(2, 2)] * 5 + [(0, 0)] * 5 + [(0, 1)] * 5
+    rw, missing = audit.reweighted_agreement(pairs, {0: 10, 1: 5, 2: 85})
+    assert missing == [1] and abs(rw - (10 * 0.5 + 85 * 1.0) / 95) < 1e-9
+    assert audit.confusion(pairs, (0, 1, 2)) == [[5, 5, 0], [0, 0, 0], [0, 0, 5]]
+
+
+def test_audit_score_with_two_annotators(tmp_path, capsys):
+    import json
+
+    from benchmark import audit
+
+    items = {str(i): {"page": f"P{i}", "stratum": "uniform", "judge_label": i % 3} for i in range(1, 31)}
+    (tmp_path / "k.json").write_text(json.dumps(
+        {"graph_label_counts": {"0": 60, "1": 30, "2": 10}, "items": items}))
+    for name, shift in (("h1.tsv", 0), ("h2.tsv", 1)):
+        rows = ["id\ttitle\texcerpt\thuman_label"] + [
+            f"{i}\tt\te\t{(i % 3 + (shift if i % 5 == 0 else 0)) % 3}" for i in range(1, 31)]
+        (tmp_path / name).write_text("\n".join(rows))
+    audit.score(tmp_path / "h1.tsv", tmp_path / "k.json", tmp_path / "h2.tsv")
+    out = capsys.readouterr().out
+    assert "judge vs annotator 1" in out and "annotator 1 vs annotator 2" in out
+    assert "kappa" in out and "reweighted" in out
