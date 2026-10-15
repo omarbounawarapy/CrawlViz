@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getTheme } from "../../theme";
 import { Button, TextInput, Select } from "../common/Form";
+import Stepper from "./Stepper";
 
 const theme = getTheme();
 const { text } = theme.colors;
@@ -10,7 +11,7 @@ const NUM_WIDTH = 110;
 function NumberInput({ field, value, onChange, id, invalid }) {
   const [raw, setRaw] = useState(null); // text while typing, so "0." and "" survive
   const shown = raw ?? (value === null || value === undefined ? "" : String(value));
-  const step = field.type === "integer" ? 1 : "any";
+  const step = field.step ?? (field.type === "integer" ? 1 : "any");
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
       <TextInput
@@ -31,10 +32,28 @@ function NumberInput({ field, value, onChange, id, invalid }) {
   );
 }
 
+// A 0-1 fraction is shown and typed as a percentage; the stored value stays 0-1.
 function Slider({ field, value, onChange, id, invalid }) {
   const min = field.minimum ?? 0;
   const max = field.maximum ?? 1;
-  const step = field.type === "integer" || max > 10 ? 1 : 0.01;
+  const fraction = min === 0 && max === 1 && !field.unit;
+  if (fraction) {
+    const pct = Math.round(Number(value ?? 0) * 100);
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+        <input
+          type="range" min={0} max={100} step={1} value={pct}
+          aria-label={`${field.title} (percent)`} onChange={(e) => onChange(Number(e.target.value) / 100)}
+          style={{ width: 150 }}
+        />
+        <NumberInput
+          field={{ ...field, type: "integer", minimum: 0, maximum: 100, unit: "%", step: 1 }}
+          value={pct} id={id} invalid={invalid} onChange={(v) => onChange(v === "" ? "" : Number(v) / 100)}
+        />
+      </span>
+    );
+  }
+  const step = field.step ?? (field.type === "integer" || max > 10 ? 1 : 0.01);
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
       <input
@@ -44,6 +63,49 @@ function Slider({ field, value, onChange, id, invalid }) {
       />
       <NumberInput field={field} value={value} onChange={onChange} id={id} invalid={invalid} />
     </span>
+  );
+}
+
+// "No limit" switch plus a stepper that appears while a limit is set.
+function LimitControl({ field, value, onChange, id }) {
+  const step = field.step ?? 100;
+  const unlimited = value === null || value === undefined;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
+        <input type="checkbox" checked={unlimited} aria-label={`${field.ariaLabel ?? field.title} no limit`}
+               onChange={(e) => onChange(e.target.checked ? null : step)} />
+        No limit
+      </label>
+      {!unlimited && (
+        <Stepper
+          id={id} label={field.ariaLabel ?? field.title} value={Number(value)}
+          min={Math.min(step, Number(value))} max={field.maximum ?? Infinity} step={step} onChange={onChange}
+        />
+      )}
+    </span>
+  );
+}
+
+// Two named choices of a boolean (or any value), shown side by side.
+function Segmented({ field, value, onChange, id }) {
+  const options = field.options ?? [];
+  return (
+    <div id={id} role="radiogroup" aria-label={field.title}
+         style={{ display: "inline-flex", border: `1px solid ${theme.colors.background.border}`, borderRadius: theme.radii.sm, overflow: "hidden" }}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button key={String(o.value)} type="button" role="radio" aria-checked={on}
+                  onClick={() => onChange(o.value)}
+                  style={{ height: 32, padding: "0 14px", fontSize: 13, fontWeight: on ? 700 : 500, border: "none",
+                           background: on ? text.primary : "transparent",
+                           color: on ? theme.colors.background.panel : text.secondary }}>
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -111,6 +173,16 @@ export default function FieldControl({ field, value, onChange, id, error }) {
   switch (field.widget) {
     case "slider":
       return <Slider field={field} value={value} onChange={onChange} id={id} invalid={invalid} />;
+    case "stepper":
+      return (
+        <Stepper id={id} label={field.ariaLabel ?? field.title} value={Number(value ?? field.minimum ?? 0)}
+                 min={field.minimum ?? 0} max={field.maximum ?? Infinity} step={field.step ?? 1}
+                 unit={field.unit} onChange={onChange} />
+      );
+    case "limit":
+      return <LimitControl field={field} value={value} onChange={onChange} id={id} />;
+    case "segmented":
+      return <Segmented field={field} value={value} onChange={onChange} id={id} />;
     case "toggle":
       return <Toggle value={value} onChange={onChange} id={id} />;
     case "select":
