@@ -70,7 +70,7 @@ function EmptyCanvas({ onRun, onDemo }) {
 
 export default function App() {
   const { path, navigate } = useRoute();
-  const route = path.replace(/^\//, "") || "graph";
+  const route = path.replace(/^\//, "").split("/")[0] || "graph";
   const notFound = !PAGE_ROUTES.has(route) && !LEGACY_ROUTES.has(route);
   const activeSection = PAGE_ROUTES.has(route) ? route : notFound ? "none" : "graph";
 

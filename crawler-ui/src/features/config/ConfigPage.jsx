@@ -8,13 +8,17 @@ import {
 } from "../../api/client";
 import PresetsPanel from "./PresetsPanel";
 import SettingsEditor from "./SettingsEditor";
-import { slug } from "./settingsStyle";
 import KeysPanel from "./KeysPanel";
+import { useRoute } from "../../hooks/useRoute";
 import {
-  buildFields, buildPatch, getIn, groupBySection, isEmptyPatch, livePatch, setIn, validateField,
+  buildFields, buildPatch, buildSections, getIn, groupBySection, isEmptyPatch, livePatch, sectionSlug,
+  setIn, validateField,
 } from "./configModel";
 
 const theme = getTheme();
+
+const PRESETS = { name: "Presets and files", slug: "presets" };
+const KEYS = { name: "API keys", slug: "api-keys" };
 
 // The two thresholds drawn on the 0-1 NLP similarity scale, so the numbers
 // read as three zones. Vermilion marks the most promising zone.
@@ -61,6 +65,8 @@ export default function ConfigPage() {
   const [query, setQuery] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [running, setRunning] = useState(false);
+  const { path, navigate } = useRoute();
+  const wanted = path.split("/")[2];
 
   useEffect(() => {
     let cancelled = false;
@@ -165,14 +171,37 @@ export default function ConfigPage() {
     }
   };
 
-  const sections = useMemo(() => groupBySection(fields).map(([s]) => s), [fields]);
+  const guide = useMemo(() => (schema ? buildSections(schema) : []), [schema]);
+  const order = useMemo(() => guide.map((g) => g.name), [guide]);
+  const help = useMemo(() => Object.fromEntries(guide.map((g) => [g.name, g.help])), [guide]);
+  const sections = useMemo(() => groupBySection(fields, order).map(([s]) => s), [fields, order]);
+  const entries = useMemo(
+    () => [...sections.map((name) => ({ name, slug: sectionSlug(name) })), PRESETS, KEYS],
+    [sections],
+  );
+  const current = entries.find((e) => e.slug === wanted) ?? entries[0];
+  const open = (entry) => navigate(`/config/${entry.slug}`);
+  const openSection = (name) => { setQuery(""); navigate(`/config/${sectionSlug(name)}`); };
+
   const index = sections.length > 0 && (
     <nav aria-label="Configuration sections" style={{ width: 200, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
       <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
-        {[...sections, "Presets and files", "API keys"].map((section) => (
-          <li key={section}><a href="#/config" onClick={(e) => { e.preventDefault(); document.getElementById(section === "API keys" ? "cfg-api-keys" : section === "Presets and files" ? "cfg-presets" : slug(section))?.scrollIntoView({ behavior: "smooth" }); }}
-            style={{ fontSize: 14, color: theme.colors.text.secondary, textDecoration: "none" }}>{section}</a></li>
-        ))}
+        {entries.map((entry) => {
+          const active = !query && entry.slug === current.slug;
+          return (
+            <li key={entry.slug}>
+              <a href={`#/config/${entry.slug}`} aria-current={active ? "page" : undefined}
+                 onClick={(e) => { e.preventDefault(); setQuery(""); open(entry); }}
+                 style={{
+                   display: "inline-block", fontSize: active ? 16 : 14, fontWeight: active ? 700 : 400,
+                   color: active ? theme.colors.text.primary : theme.colors.text.secondary, textDecoration: "none",
+                   paddingBottom: 2, borderBottom: `2px solid ${active ? theme.colors.accent.blue : "transparent"}`,
+                 }}>
+                {entry.name}
+              </a>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
@@ -223,18 +252,23 @@ export default function ConfigPage() {
               {status.text}
             </p>
           )}
+          {(query || (current.slug !== PRESETS.slug && current.slug !== KEYS.slug)) && (
           <SettingsEditor
             fields={fields} draft={draft} defaults={defaults} saved={saved} onChange={change}
             errors={errors} query={query} showAdvanced={showAdvanced}
             onResetSection={resetSection} sectionExtras={extras}
+            section={current.name} sectionOrder={order} sectionHelp={help} onOpenSection={openSection}
           />
-          {!query && (
+          )}
+          {!query && current.slug === PRESETS.slug && (
             <PresetsPanel dirty={dirty} onChanged={(cfg) => { setSaved(cfg); setDraft(cfg); setErrors({}); }} />
           )}
-          {!query && <KeysPanel />}
-          <div style={{ marginTop: 40 }}>
-            <Button variant="danger" onClick={resetAll}>Reset every setting to defaults</Button>
-          </div>
+          {!query && current.slug === KEYS.slug && <KeysPanel />}
+          {!query && current.slug === PRESETS.slug && (
+            <div style={{ marginTop: 40 }}>
+              <Button variant="danger" onClick={resetAll}>Reset every setting to defaults</Button>
+            </div>
+          )}
         </>
       )}
     </Page>

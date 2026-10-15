@@ -29,13 +29,16 @@ vi.mock("../../api/client", () => ({
 import * as api from "../../api/client";
 import ConfigPage from "./ConfigPage";
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); window.location.hash = ""; });
 afterEach(cleanup);
+
+const at = (slug) => { window.location.hash = `#/config/${slug}`; };
 
 const type = (el, v) => fireEvent.change(el, { target: { value: v } });
 
 describe("ConfigPage", () => {
   it("edits a setting and saves only the changed value", async () => {
+    at("fetch");
     render(<ConfigPage />);
     const delay = await screen.findByLabelText(/^Min delay/);
     type(delay, "2.5");
@@ -45,23 +48,75 @@ describe("ConfigPage", () => {
     expect(await screen.findByText(/^Saved\. New values apply/)).toBeTruthy();
   });
 
-  it("blocks saving a value outside the schema bounds", async () => {
+  it("keeps worker counts inside the schema bounds", async () => {
+    at("pipelines");
     render(<ConfigPage />);
     const table = await screen.findByRole("table");
     const workers = within(table).getByLabelText("filtering workers");
-    type(workers, "0");
-    expect(screen.getByRole("button", { name: "Save changes" }).disabled).toBe(true);
+    expect(workers.getAttribute("aria-valuemin")).toBe("1");
+    expect(workers.getAttribute("aria-valuemax")).toBe("64");
+    fireEvent.keyDown(workers, { key: "Home" });
+    expect(workers.getAttribute("aria-valuenow")).toBe("1");
+    expect(within(table).getByLabelText("Decrease filtering workers").disabled).toBe(true);
+    fireEvent.keyDown(workers, { key: "ArrowUp" });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { workers: 2 } } }));
   });
 
-  it("filters settings by search", async () => {
+  it("stores no queue limit as null and a limit as a number", async () => {
+    at("pipelines");
+    render(<ConfigPage />);
+    const table = await screen.findByRole("table");
+    const none = within(table).getByLabelText("filtering max queue size no limit");
+    expect(none.checked).toBe(true);
+    fireEvent.click(none);
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { max_queue_size: 100 } } }));
+  });
+
+  it("shows one section at a time and marks it current", async () => {
+    at("fetch");
     render(<ConfigPage />);
     await screen.findByLabelText(/^Min delay/);
+    expect(screen.queryByLabelText(/^Scoring system/)).toBeNull();
+    const nav = screen.getByRole("navigation", { name: "Configuration sections" });
+    expect(within(nav).getByText("Fetch").getAttribute("aria-current")).toBe("page");
+    expect(within(nav).getByText("Prompts").getAttribute("aria-current")).toBeNull();
+    fireEvent.click(within(nav).getByText("Prompts"));
+    expect(await screen.findByLabelText(/^Scoring system/)).toBeTruthy();
+    expect(window.location.hash).toBe("#/config/prompts");
+  });
+
+  it("opens on the first section in workflow order", async () => {
+    render(<ConfigPage />);
+    expect(await screen.findByText(/Decides which links the cheap NLP score settles/)).toBeTruthy();
+    const nav = screen.getByRole("navigation", { name: "Configuration sections" });
+    const names = within(nav).getAllByRole("link").map((a) => a.textContent);
+    expect(names.slice(0, 3)).toEqual(["Scoring cascade", "Fetch", "Priority"]);
+  });
+
+  it("dims the cut-off pair that percentile mode is not using", async () => {
+    render(<ConfigPage />);
+    const thresholds = await screen.findAllByRole("slider", { name: /threshold/i });
+    expect(thresholds).toHaveLength(2);
+    const opacity = () => thresholds[0].closest("div[style*='opacity']").style.opacity;
+    const percentiles = screen.getByRole("radio", { name: "Per-page percentiles" });
+    expect(percentiles.getAttribute("aria-checked")).toBe("true");
+    expect(opacity()).toBe("0.45");
+    fireEvent.click(screen.getByRole("radio", { name: "Fixed score cut-offs" }));
+    await waitFor(() => expect(opacity()).toBe("1"));
+  });
+
+  it("filters settings by search across sections", async () => {
+    render(<ConfigPage />);
+    await screen.findByText("Scoring cascade", { selector: "h2" });
     type(screen.getByLabelText("Search settings"), "user agent");
     expect(screen.getByLabelText(/^User agent/)).toBeTruthy();
     expect(screen.queryByLabelText(/^Min delay/)).toBeNull();
   });
 
   it("lists masked keys and adds one", async () => {
+    at("api-keys");
     render(<ConfigPage />);
     expect(await screen.findByText("••••1234")).toBeTruthy();
     type(screen.getByLabelText("API key"), "sk-new-key");
@@ -70,6 +125,7 @@ describe("ConfigPage", () => {
   });
 
   it("pushes only live fields to a running crawl", async () => {
+    at("fetch");
     render(<ConfigPage />);
     type(await screen.findByLabelText(/^Min delay/), "0.4");
     const apply = await screen.findByRole("button", { name: "Apply live" });
@@ -80,6 +136,7 @@ describe("ConfigPage", () => {
   });
 
   it("applies and deletes presets", async () => {
+    at("presets");
     render(<ConfigPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Apply preset polite" }));
     await waitFor(() => expect(api.applyPreset).toHaveBeenCalledWith("polite"));
@@ -88,6 +145,7 @@ describe("ConfigPage", () => {
   });
 
   it("edits a prompt in a textarea", async () => {
+    at("prompts");
     render(<ConfigPage />);
     const box = await screen.findByLabelText(/^Scoring system/);
     expect(box.tagName).toBe("TEXTAREA");
