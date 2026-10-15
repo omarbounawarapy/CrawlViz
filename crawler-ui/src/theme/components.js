@@ -2,7 +2,7 @@
 // Reusable style builders. Each accepts a theme object and returns style objects.
 
 export const createComponentStyles = (theme) => {
-  const { colors, spacing, typography, radii, shadows } = theme;
+  const { colors, spacing, typography, radii } = theme;
 
   return {
     // ── Shared ─────────────────────────────────────────────────────────────
@@ -14,61 +14,7 @@ export const createComponentStyles = (theme) => {
     },
 
     // ── MetricsPanel ────────────────────────────────────────────────────────
-    metricsContainer: {
-      padding:   `${spacing.md} ${spacing.lg}`,
-      height:    "100%",
-      overflowY: "auto",
-    },
-    metricRowWrap: {
-      display:        "flex",
-      justifyContent: "space-between",
-      alignItems:     "baseline",
-      padding:        `${spacing.sm} 0`,
-      borderBottom:   `1px solid ${colors.rowBorder}`,
-    },
-    metricRowLabel: {
-      fontSize:      typography.size.xs,
-      color:         colors.text.muted,
-      fontFamily:    typography.fontMono,
-      letterSpacing: "0",
-    },
-    metricRowValue: (accent) => ({
-      fontSize:   typography.size.xl,
-      color:      accent || colors.accent.blue,
-      fontFamily: typography.fontMono,
-      fontWeight: typography.weight.semibold,
-    }),
 
-    sectionLabel: {
-      fontSize:      typography.size.xxs,
-      color:         colors.text.muted,
-      letterSpacing: "0",
-      fontFamily:    typography.fontMono,
-    },
-
-    statusBadgeWrap: (status) => {
-      const s = colors.status[statusKey(status)];
-      return {
-        display:      "inline-flex",
-        alignItems:   "center",
-        gap:          spacing.sm,
-        padding:      `${spacing.xs} 10px`,
-        borderRadius: "20px",
-        background:   s.bg,
-        border:       `1px solid ${s.border}`,
-      };
-    },
-    statusDot: (status, isRunning) => {
-      const s = colors.status[statusKey(status)];
-      return {
-        width:        "6px",
-        height:       "6px",
-        borderRadius: radii.full,
-        background:   s.dot,
-        boxShadow:    isRunning ? `0 0 6px ${s.dot}` : "none",
-        animation:    isRunning ? "pulse 1.4s ease-in-out infinite" : "none",
-      };
-    },
     statusText: (status) => {
       const s = colors.status[statusKey(status)];
       return {
@@ -85,45 +31,7 @@ export const createComponentStyles = (theme) => {
       fontFamily: typography.fontMono,
     },
 
-    stateBarTrack: {
-      height:       "3px",
-      background:   colors.background.border,
-      borderRadius: radii.sm,
-    },
-    stateBarFill: (stateColor, width) => ({
-      height:       "100%",
-      borderRadius: radii.sm,
-      width:        "100%",
-      background:   stateColor,
-      transform:    `scaleX(${parseFloat(width) / 100})`,
-      transformOrigin: "left",
-      transition:   "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
-    }),
-
     // ── NodeDetail ──────────────────────────────────────────────────────────
-    nodeDetailPanel: {
-      position:     "absolute",
-      bottom:       spacing.lg,
-      left:         spacing.lg,
-      zIndex:       10,
-      background:   colors.background.primary,
-      border:       `1px solid ${colors.background.border}`,
-      borderRadius: radii.lg,
-      padding:      `${spacing.md} ${spacing.lg}`,
-      minWidth:     "260px",
-      boxShadow:    shadows.panel,
-    },
-    nodeDetailHeader: {
-      display:        "flex",
-      justifyContent: "space-between",
-      marginBottom:   "10px",
-    },
-    nodeDetailTitle: (stateColor) => ({
-      fontSize:      typography.size.xs,
-      color:         stateColor,
-      fontFamily:    typography.fontMono,
-      letterSpacing: "0",
-    }),
     nodeDetailCloseBtn: {
       background: "none",
       border:     "none",
@@ -154,61 +62,7 @@ export const createComponentStyles = (theme) => {
       maxWidth:      "160px",
     },
 
-    // ── Legend ──────────────────────────────────────────────────────────────
-    legendWrap: {
-      display:    "flex",
-      gap:        spacing.lg,
-      alignItems: "center",
-      flexWrap:   "wrap",
-    },
-    legendItem: {
-      display:    "flex",
-      alignItems: "center",
-      gap:        "5px",
-    },
-    legendDot: (stateColor, labelColor, glowColor) => ({
-      width:        "8px",
-      height:       "8px",
-      borderRadius: radii.full,
-      background:   stateColor,
-      border:       `1px solid ${labelColor}`,
-      boxShadow:    `${shadows.glow} ${glowColor}`,
-    }),
-    legendLabel: {
-      fontSize:   typography.size.xxs,
-      color:      colors.text.muted,
-      fontFamily: typography.fontMono,
-    },
-
     // ── EventTimeline ────────────────────────────────────────────────────────
-    timelineWrap: {
-      display:        "flex",
-      flexDirection:  "column",
-      height:         "100%",
-    },
-    timelineHeader: {
-      display:        "flex",
-      alignItems:     "center",
-      justifyContent: "space-between",
-      padding:        `10px 14px 6px`,
-      borderBottom:   `1px solid ${colors.background.border}`,
-    },
-    timelineHeaderLabel: {
-      fontSize:      typography.size.xs,
-      letterSpacing: "0",
-      color:         colors.text.secondary,
-      fontFamily:    typography.fontMono,
-    },
-    exitReplayBtn: {
-      background:   colors.replay.bg,
-      border:       `1px solid ${colors.replay.border}`,
-      borderRadius: radii.md,
-      padding:      `2px 8px`,
-      fontSize:     typography.size.xs,
-      color:        colors.replay.text,
-      cursor:       "pointer",
-      fontFamily:   typography.fontMono,
-    },
     timelineList: {
       flex:      1,
       overflowY: "auto",
@@ -253,25 +107,6 @@ export const createComponentStyles = (theme) => {
       textOverflow:  "ellipsis",
       whiteSpace:    "nowrap",
     }),
-    timelineScrubberWrap: {
-      padding:     `8px 14px`,
-      borderTop:   `1px solid ${colors.background.border}`,
-    },
-    timelineScrubberRange: {
-      width:       "100%",
-      accentColor: colors.replay.text,
-      cursor:      "pointer",
-    },
-    timelineScrubberLabels: {
-      display:        "flex",
-      justifyContent: "space-between",
-      marginTop:      "3px",
-    },
-    timelineScrubberLabel: {
-      fontSize:   typography.size.xxs,
-      color:      colors.text.muted,
-      fontFamily: typography.fontMono,
-    },
 
     // ── GraphView ───────────────────────────────────────────────────────────
     graphWrap: {
@@ -345,35 +180,6 @@ export const createComponentStyles = (theme) => {
       marginBottom:  spacing.md,
       textTransform: "none",
     },
-    statTileGrid: (minWidth = "150px") => ({
-      display:             "grid",
-      gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}, 1fr))`,
-      gap:                 spacing.md,
-    }),
-    statTile: {
-      background:   colors.background.panel,
-      border:       `1px solid ${colors.background.border}`,
-      borderRadius: radii.lg,
-      padding:      spacing.md,
-    },
-    statTileLabel: {
-      fontSize:      typography.size.xxs,
-      letterSpacing: "0",
-      color:         colors.text.muted,
-      textTransform: "none",
-    },
-    statTileValue: (accent) => ({
-      fontSize:   typography.size.xxl,
-      fontWeight: typography.weight.semibold,
-      color:      accent || colors.text.primary,
-      marginTop:  "4px",
-      fontVariantNumeric: "tabular-nums",
-    }),
-    statTileSub: {
-      fontSize:  typography.size.xxs,
-      color:     colors.text.muted,
-      marginTop: "2px",
-    },
     emptyState: {
       display:        "flex",
       flexDirection:  "column",
@@ -384,55 +190,6 @@ export const createComponentStyles = (theme) => {
       color:          colors.text.muted,
       fontSize:       typography.size.sm,
       textAlign:      "center",
-    },
-    dataTable: {
-      width:           "100%",
-      borderCollapse:  "collapse",
-      fontSize:        typography.size.xs,
-      fontFamily:      typography.fontMono,
-      fontVariantNumeric: "tabular-nums",
-    },
-    dataTableTh: {
-      textAlign:     "left",
-      padding:       `6px ${spacing.sm}`,
-      color:         colors.text.muted,
-      fontSize:      typography.size.xxs,
-      letterSpacing: "0",
-      textTransform: "none",
-      borderBottom:  `1px solid ${colors.background.border}`,
-      whiteSpace:    "nowrap",
-    },
-    dataTableTd: {
-      padding:      `6px ${spacing.sm}`,
-      borderBottom: `1px solid ${colors.rowBorder}`,
-      color:        colors.text.secondary,
-      whiteSpace:   "nowrap",
-      overflow:     "hidden",
-      textOverflow: "ellipsis",
-      maxWidth:     "320px",
-    },
-    pill: (tone = "muted") => {
-      const map = {
-        muted:   { bg: "rgba(15,27,45,0.05)", fg: colors.text.muted },
-        blue:    { bg: "rgba(15,27,45,0.06)",   fg: colors.accent.blue },
-        green:   { bg: "rgba(31,111,90,0.10)",   fg: colors.accent.green },
-        gold:    { bg: "rgba(122,90,0,0.10)",   fg: colors.accent.gold },
-        red:     { bg: "rgba(122,31,92,0.08)",    fg: colors.accent.red },
-        purple:  { bg: "rgba(15,27,45,0.05)",  fg: colors.accent.purple },
-      };
-      const c = map[tone] || map.muted;
-      return {
-        display:       "inline-flex",
-        alignItems:    "center",
-        padding:       "1px 7px",
-        borderRadius:  radii.sm,
-        fontSize:      typography.size.xxs,
-        fontFamily:    typography.fontMono,
-        letterSpacing: "0",
-        background:    c.bg,
-        color:         c.fg,
-        whiteSpace:    "nowrap",
-      };
     },
     tabRow: {
       display:      "flex",

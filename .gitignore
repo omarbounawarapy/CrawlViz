@@ -31,3 +31,16 @@ benchmark/data/smoke_*
 # Local UI-edited settings and presets
 settings.json
 presets/
+
+# Runtime output and local tooling state
+logs/
+debug/
+export/
+.space_store/
+items.db*
+.impeccable/
+.left-undone.json
+paper_results.md
+benchmark/data/audit.html
+benchmark/data/audit_second.html
+benchmark/data/exp_runs.json
