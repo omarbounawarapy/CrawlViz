@@ -906,3 +906,28 @@ async def test_every_result_carries_a_manifest(tmp_path):
     old = RunRecord.from_result("g.json", 0, 10, result).to_json()
     del old["manifest"], old["absent_page_hits"]
     assert RunRecord.from_json(old).manifest == {}
+
+
+def test_graph_stats_counts_depths_labels_and_absent_links():
+    from benchmark import FrozenGraph
+    from benchmark.graph_stats import stats, to_tex
+
+    def link(to):
+        return {"to": to, "anchor": to}
+
+    graph = FrozenGraph(seed="A", pages={
+        "A": {"label": 0, "links": [link("B"), link("C"), link("GONE")]},
+        "B": {"label": 1, "links": [link("D")]},
+        "C": {"label": 0, "links": [link("D")]},
+        "D": {"label": 2, "links": []},
+        "E": {"label": 2, "links": [link("A")]},  # relevant, not reachable from the seed
+    })
+    s = stats(graph)
+    assert (s["pages"], s["edges"], s["absent_links"], s["reachable"]) == (5, 6, 1, 4)
+    assert s["out_degree"] == {"mean": 1.2, "median": 1, "max": 3}
+    assert s["depth_histogram"] == {0: 1, 1: 2, 2: 1}
+    assert s["labels"] == {0: 2, 1: 1, 2: 2}
+    assert s["relevant_per_depth"][1] == {"pages": 2, "label1": 1, "label2": 0}
+    assert s["relevant_per_depth"][2]["label2"] == 1
+    assert s["relevant_unreachable"] == 1
+    assert r"\begin{tabular}" in to_tex(s)
