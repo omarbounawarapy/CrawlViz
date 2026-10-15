@@ -180,8 +180,8 @@ class _Lockstep:
     they arrived. Live and replayed runs therefore walk the same pages.
     """
 
-    def __init__(self, fetcher, quiet):
-        self.fetcher, self.quiet = fetcher, quiet
+    def __init__(self, fetcher, quiet, budget: int | None = None):
+        self.fetcher, self.quiet, self.budget = fetcher, quiet, budget
 
     @property
     def fetched(self):
@@ -194,6 +194,11 @@ class _Lockstep:
             # waiting on a slow LLM call. The wait only costs time.
             polls += 1
             await asyncio.sleep(0 if polls < 200 else 0.0005 if polls < 1000 else 0.005)
+        if self.budget is not None and len(self.fetcher.fetched) >= self.budget:
+            # The budget is spent. Without this, nodes the cheap tiers score
+            # without an LLM call kept the crawler quiet and it fetched on
+            # until one needed the LLM (hundreds of pages past the budget).
+            await asyncio.Event().wait()  # cancelled when the run ends
         return await self.fetcher.emit_request(params)
 
     async def close(self) -> None:
@@ -413,7 +418,7 @@ async def _run(
     domain = Domain("frozen", BASE_URL, ".//a")
     storage.add_domain(domain)
 
-    gated = _Lockstep(fetcher, lambda: False) if lockstep else fetcher
+    gated = _Lockstep(fetcher, lambda: False, budget) if lockstep else fetcher
     requests = RequestsPipeline(
         broker, max_concurrency=1, fetcher=gated, min_delay=0,
         rng=_NoJitter(),
