@@ -1092,3 +1092,19 @@ async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monk
     monkeypatch.setattr(label_graph.asyncio, "sleep", no_sleep)
     await label_graph.label(graph, tmp_path / "k.json", tmp_path / "l.jsonl")
     assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
+
+
+def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_path):
+    import json
+
+    from benchmark import audit
+
+    tsv = tmp_path / "a.tsv"
+    tsv.write_text("id\ttitle\texcerpt\thuman_label\n1\tA </script> B\tx <!-- y\t\n2\tC\tz\t\n")
+    out = tmp_path / "a.html"
+    audit.form(tsv, out, limit=1)
+    page = out.read_text()
+    assert page.count("</script>") == 1  # only the real closing tag
+    assert "A \\u003c/script> B" in page and "<!--" not in page
+    items = json.loads(page.split("const ITEMS = ", 1)[1].split(";\nconst KEY", 1)[0])
+    assert items == [{"id": "1", "title": "A </script> B", "excerpt": "x <!-- y"}]
