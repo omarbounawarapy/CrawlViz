@@ -241,3 +241,21 @@ written above, none of which change an arm, a metric or a threshold:
 - 43 of the 45 relevant pages are direct links from the seed (depth 1; 69
   pages at that depth), so BFS is expected to do well at every budget. This
   is a property of the graph and is stated as such in the paper.
+
+**2026-10-15, audit result, before any crawl result.** One annotator (Omar),
+blind, all 150 sampled pages (`audit_filled.tsv`, key `audit_key.json`):
+
+| | human 0 | human 1 | human 2 |
+|---|---|---|---|
+| judge 0 | 106 | 1 | 0 |
+| judge 1 | 18 | 24 | 0 |
+| judge 2 | 0 | 0 | 1 |
+
+Binary (label >= 1): raw agreement 0.873 (95% CI 0.820 to 0.920), Cohen's
+kappa 0.649 (0.504 to 0.778), precision of "relevant" 0.581, recall 0.962;
+agreement reweighted to the graph's label distribution 0.978. Both acceptance
+conditions (kappa >= 0.60, reweighted agreement >= 0.85) are met, so labels
+and rubric stand. Read with it: the judge over-calls relevance (18 of its 43
+label-1/2 pages in the sample were 0 for the human), so the true number of
+relevant pages is below the judge's 45 and the harvest values are judged
+harvest, not human harvest. There was no second annotator.

@@ -1,0 +1,762 @@
+{
+ "graph": "isi.json",
+ "graph_sha256": "c173bc1dfbac99b6741273f5821628667e39e63b7a42c35bfb63726f35cfee75",
+ "seed": 0,
+ "graph_label_counts": {
+  "0": 1417,
+  "1": 44,
+  "2": 1
+ },
+ "items": {
+  "1": {
+   "page": "1960_au_th%C3%A9%C3%A2tre",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "2": {
+   "page": "Universit%C3%A9_de_Bologne",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "3": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Ksar_Hellal",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "4": {
+   "page": "Universit%C3%A9_de_Jendouba",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "5": {
+   "page": "1960_en_philosophie",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "6": {
+   "page": "Universit%C3%A9_internationale_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "7": {
+   "page": "12_janvier",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "8": {
+   "page": "Front_national_de_lib%C3%A9ration_de_l'Angola",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "9": {
+   "page": "1960_en_journalisme",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "10": {
+   "page": "South_Mediterranean_University",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "11": {
+   "page": "Institut_sup%C3%A9rieur_d'informatique_(Tunisie)",
+   "stratum": "label2",
+   "judge_label": 2
+  },
+  "12": {
+   "page": "1960_en_Saskatchewan",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "13": {
+   "page": "Voltaire",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "14": {
+   "page": "Institut_pr%C3%A9paratoire_aux_%C3%A9tudes_d'ing%C3%A9nieurs_d'El_Manar",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "15": {
+   "page": "Ahmed_S%C3%A9kou_Tour%C3%A9",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "16": {
+   "page": "Universit%C3%A9_virtuelle_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "17": {
+   "page": "S%C3%A9oul",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "18": {
+   "page": "20_janvier",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "19": {
+   "page": "Octobre_1960",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "20": {
+   "page": "Portugal",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "21": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "22": {
+   "page": "1960_en_Ontario",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "23": {
+   "page": "Louis_Alibert",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "24": {
+   "page": "Acad%C3%A9mie_arabe_de_Damas",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "25": {
+   "page": "Universit%C3%A9_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "26": {
+   "page": "Paris",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "27": {
+   "page": "Massachusetts_Institute_of_Technology",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "28": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_B%C3%A9ja",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "29": {
+   "page": "1960_en_sociologie",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "30": {
+   "page": "Universit%C3%A9_de_Sfax",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "31": {
+   "page": "1960_en_Lorraine",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "32": {
+   "page": "Oromos",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "33": {
+   "page": "Ifriqiya",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "34": {
+   "page": "Bouebdelli_University",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "35": {
+   "page": "Empire_britannique",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "36": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Sousse",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "37": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Kasserine",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "38": {
+   "page": "Liste_des_chronologies_th%C3%A9matiques",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "39": {
+   "page": "Recherche_&_formation",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "40": {
+   "page": "1960_dans_le_catholicisme",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "41": {
+   "page": "Universit%C3%A9_de_Tunis_El_Manar",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "42": {
+   "page": "Universit%C3%A9_Paris-Dauphine_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "43": {
+   "page": "Avar",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "44": {
+   "page": "Wolof_(langue)",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "45": {
+   "page": "1960_en_architecture",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "46": {
+   "page": "Amharique",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "47": {
+   "page": "7_juillet",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "48": {
+   "page": "Nigeria",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "49": {
+   "page": "Universit%C3%A9_priv%C3%A9e_de_Sousse",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "50": {
+   "page": "Explosion_de_la_Coubre",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "51": {
+   "page": "%C3%89gypte",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "52": {
+   "page": "IIe_mill%C3%A9naire",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "53": {
+   "page": "1957",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "54": {
+   "page": "London_School_of_Economics",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "55": {
+   "page": "Groupe_Bayard",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "56": {
+   "page": "Enseignement_sup%C3%A9rieur_en_Tunisie",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "57": {
+   "page": "1993",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "58": {
+   "page": "Universit%C3%A9_priv%C3%A9e_Mahmoud_El_Materi",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "59": {
+   "page": "15_mai",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "60": {
+   "page": "Naguib_Mahfouz",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "61": {
+   "page": "Ann%C3%A9es_1950",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "62": {
+   "page": "%C3%88re_Meiji",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "63": {
+   "page": "Doukkala",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "64": {
+   "page": "Z%C3%A9ro",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "65": {
+   "page": "1960_aux_%C3%89tats-Unis",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "66": {
+   "page": "Universit%C3%A9_de_Kairouan",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "67": {
+   "page": "Universit%C3%A9_priv%C3%A9e_Tunis_Carthage",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "68": {
+   "page": "Facult%C3%A9_des_sciences_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "69": {
+   "page": "Henri_II_d'Angleterre",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "70": {
+   "page": "Histoire_de_la_physique",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "71": {
+   "page": "Calligraphie",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "72": {
+   "page": "%C3%89cole_pluridisciplinaire_internationale",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "73": {
+   "page": "Salvador",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "74": {
+   "page": "Histoire_des_math%C3%A9matiques",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "75": {
+   "page": "Gerboise_rouge",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "76": {
+   "page": "Universit%C3%A9_de_Carthage",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "77": {
+   "page": "1968",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "78": {
+   "page": "Gouvernement_provisoire_de_la_R%C3%A9publique_alg%C3%A9rienne",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "79": {
+   "page": "Maghreb",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "80": {
+   "page": "Universit%C3%A9_de_Monastir",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "81": {
+   "page": "1960_au_cin%C3%A9ma",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "82": {
+   "page": "Universit%C3%A9_de_Gab%C3%A8s",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "83": {
+   "page": "Biblioth%C3%A8que_d'Alexandrie",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "84": {
+   "page": "Bengali",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "85": {
+   "page": "Facult%C3%A9_de_droit_et_des_sciences_politiques_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "86": {
+   "page": "R%C3%A9gime_concordataire",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "87": {
+   "page": "Superstrat",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "88": {
+   "page": "Ahmad_Am%C3%AEn",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "89": {
+   "page": "Siculo-arabe",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "90": {
+   "page": "15_juillet",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "91": {
+   "page": "Leonardo_Fibonacci",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "92": {
+   "page": "Transcription_et_translitt%C3%A9ration",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "93": {
+   "page": "Universit%C3%A9_Stanford",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "94": {
+   "page": "Nouvelle-Z%C3%A9lande",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "95": {
+   "page": "Oxford",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "96": {
+   "page": "Bruegel_(think_tank)",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "97": {
+   "page": "Universit%C3%A9_Zitouna",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "98": {
+   "page": "Digital_Object_Identifier",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "99": {
+   "page": "Institut_sup%C3%A9rieur_des_sciences_infirmi%C3%A8res_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "100": {
+   "page": "Universit%C3%A9_de_La_Manouba",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "101": {
+   "page": "Lom%C3%A9",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "102": {
+   "page": "Facult%C3%A9_de_m%C3%A9decine_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "103": {
+   "page": "Professeur_des_universit%C3%A9s",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "104": {
+   "page": "Barrage_de_Kariba",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "105": {
+   "page": "1960_en_science",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "106": {
+   "page": "Hautes_%C3%A9tudes_commerciales_(Paris)",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "107": {
+   "page": "Stylistique_de_l'arabe",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "108": {
+   "page": "Universit%C3%A9_de_B%C3%A2le",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "109": {
+   "page": "Centre_international_d'%C3%A9tudes_p%C3%A9dagogiques",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "110": {
+   "page": "Universit%C3%A9_de_Lom%C3%A9",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "111": {
+   "page": "1960_en_Italie",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "112": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_K%C3%A9libia",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "113": {
+   "page": "Tenzin_Gyatso",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "114": {
+   "page": "Parlers_hilaliens",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "115": {
+   "page": "3_ao%C3%BBt",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "116": {
+   "page": "Universit%C3%A9_de_Li%C3%A8ge",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "117": {
+   "page": "Universit%C3%A9_du_Cap",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "118": {
+   "page": "Palestine_(r%C3%A9gion)",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "119": {
+   "page": "%C3%89cole_nationale_d'ing%C3%A9nieurs_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "120": {
+   "page": "Universit%C3%A9_de_Vienne",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "121": {
+   "page": "Malais_(langue)",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "122": {
+   "page": "Inejir%C5%8D_Asanuma",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "123": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Gafsa",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "124": {
+   "page": "Alg%C3%A8bre",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "125": {
+   "page": "Journal_officiel_de_la_R%C3%A9publique_tunisienne",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "126": {
+   "page": "Universit%C3%A9_de_Gafsa",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "127": {
+   "page": "Universit%C3%A9_Harvard",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "128": {
+   "page": "1960_en_arts_plastiques",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "129": {
+   "page": "Universit%C3%A9_de_Sousse",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "130": {
+   "page": "Ouzbek",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "131": {
+   "page": "%C3%89cole_sup%C3%A9rieure_des_sciences_et_techniques_de_la_sant%C3%A9_de_Tunis",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "132": {
+   "page": "1960_en_Finlande",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "133": {
+   "page": "Si_Salah",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "134": {
+   "page": "Cour_internationale_de_justice",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "135": {
+   "page": "F%C3%A9lix-Roland_Moumi%C3%A9",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "136": {
+   "page": "Universit%C3%A9_centrale_(Tunis)",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "137": {
+   "page": "Alphabet_arabe",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "138": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Gab%C3%A8s",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "139": {
+   "page": "Coll%C3%A8ge_de_William_et_Mary",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "140": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Rad%C3%A8s",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "141": {
+   "page": "Haoussa",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "142": {
+   "page": "Montpellier",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "143": {
+   "page": "P%C3%A9dagogie",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "144": {
+   "page": "Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Nabeul",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "145": {
+   "page": "14_d%C3%A9cembre",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "146": {
+   "page": "Hilaliens",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "147": {
+   "page": "1960_en_combin%C3%A9_nordique",
+   "stratum": "label0",
+   "judge_label": 0
+  },
+  "148": {
+   "page": "Universit%C3%A9_Ibn_Khaldoun",
+   "stratum": "label1",
+   "judge_label": 1
+  },
+  "149": {
+   "page": "Science",
+   "stratum": "uniform",
+   "judge_label": 0
+  },
+  "150": {
+   "page": "Coll%C3%A8ge_(%C3%A9ducation)",
+   "stratum": "label0",
+   "judge_label": 0
+  }
+ }
+}
