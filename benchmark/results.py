@@ -39,6 +39,7 @@ class RunRecord:
     scoring_failures: int = 0
     empty_results: int = 0
     settings: dict = field(default_factory=dict)  # flush_every, thresholds, ...
+    manifest: dict = field(default_factory=dict)  # provenance, see benchmark.provenance.manifest
 
     @classmethod
     def from_result(cls, graph: str, rep: int, budget: int, result: RunResult, **extra) -> "RunRecord":

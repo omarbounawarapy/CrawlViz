@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .graph import FrozenGraph, synthetic_graph
 from .policies import POLICIES
+from .provenance import manifest
 from .results import ResultSink, RunRecord
 from .runner import run_cascade, run_policy
 
@@ -35,7 +36,10 @@ async def main(args) -> None:
             for rep in range(args.reps):
                 result = await run_policy(graph, name, args.budget, seed=rep)
                 runs.append(result)
-                sink.add(RunRecord.from_result(graph_name(args, gi), rep, args.budget, result))
+                sink.add(RunRecord.from_result(
+                    graph_name(args, gi), rep, args.budget, result,
+                    manifest=manifest(args.graph, graph, result, budget=args.budget, seed=rep, rep=rep),
+                ))
         report(name, runs, args.budget)
     if args.cascade:
         await cascade_row(graphs, args, sink)
@@ -163,6 +167,10 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
                 llm_seconds=round(sum(latencies), 3), wait_seconds=round(waited, 3),
                 rate_limit_waits=live.rate_limit_waits if live else 0,
                 rate_limit_seconds=round(limited, 3),
+                manifest=manifest(
+                    args.graph, graph, result, budget=args.budget, seed=rep, rep=rep,
+                    model=args.model, provider=args.provider, prompt=cache_id["prompt_version"],
+                ),
                 settings={"flush_every": args.flush_every, "provider": args.provider, "model": args.model,
                           "arm": arm, "low": args.low, "high": args.high,
                           "low_pct": args.low_pct, "high_pct": args.high_pct},

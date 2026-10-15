@@ -646,6 +646,14 @@ async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, 
     first_node = all_llm.batches[:3]
     assert first_node == [MAX_LLM_LINKS_PER_NODE, MAX_LLM_LINKS_PER_NODE, 130 - 2 * MAX_LLM_LINKS_PER_NODE]
     assert result.policy == "llm_all" and result.health.valid
+    assert result.thresholds["mode"] == "none"
+    plain, _ = await _arm(tmp_path, "cascade", _RecordingLlm())
+    assert plain.thresholds["mode"] == "percentile"
+    assert (plain.thresholds["low_percentile"], plain.thresholds["high_percentile"]) == (20, 75)
+    pct, _ = await _arm(tmp_path, "cascade", _RecordingLlm(), low_pct=30, high_pct=80)
+    assert pct.thresholds["low_percentile"] == 30
+    absolute, _ = await _arm(tmp_path, "cascade", _RecordingLlm(), low=0.3, high=0.6)
+    assert absolute.thresholds["mode"] == "absolute" and absolute.thresholds["low"] == 0.3
 
 
 async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(tmp_path, monkeypatch):
@@ -868,3 +876,33 @@ async def test_absent_page_hits_are_counted_and_the_mode_decides_the_cost():
     assert free.visited == ["A", "B", "C"] and free.absent_page_hits == 1 and free.health.valid
     assert "GONE" in paid.visited and paid.absent_page_hits == 1 and len(paid.visited) == 3
     assert paid.labels[paid.visited.index("GONE")] == 0
+
+
+async def test_every_result_carries_a_manifest(tmp_path):
+    import json
+
+    from benchmark import FrozenGraph, synthetic_graph
+    from benchmark.provenance import manifest
+    from benchmark.results import RunRecord, load_records
+
+    graph = synthetic_graph(n_pages=60, seed=1)
+    path = tmp_path / "g.json"
+    graph.save(path)
+    data = json.loads(path.read_text())
+    data["rubric_sha256"] = "abc"
+    path.write_text(json.dumps(data))
+    result = await run_policy(graph, "bfs", 10)
+    assert result.thresholds["mode"] == "none"
+    m = manifest(path, graph, result, budget=10, seed=2, rep=2, model="m", provider="p", prompt="TOPICAL:1")
+    assert set(m) == {"git_commit", "graph_sha256", "rubric_sha256", "model", "provider", "prompt_version",
+                      "budget", "thresholds", "seed", "repeat", "absent_page_mode"}
+    assert m["rubric_sha256"] == "abc" and len(m["graph_sha256"]) == 64 and m["git_commit"]
+    RunRecord.from_result("g.json", 2, 10, result, manifest=m).filename()
+    out = tmp_path / "r"
+    out.mkdir()
+    (out / "x.json").write_text(json.dumps(RunRecord.from_result("g.json", 2, 10, result, manifest=m).to_json()))
+    assert load_records(out)[0].manifest == m
+    # a result written before manifests existed still loads
+    old = RunRecord.from_result("g.json", 0, 10, result).to_json()
+    del old["manifest"], old["absent_page_hits"]
+    assert RunRecord.from_json(old).manifest == {}

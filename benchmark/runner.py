@@ -348,6 +348,7 @@ class RunResult:
     health: RunHealth = field(default_factory=RunHealth)
     wall_seconds: float = 0.0
     rate_limit_seconds: float = 0.0  # wall time spent waiting on pacing or a 429; not idle time
+    thresholds: dict = field(default_factory=dict)  # bucketing in force: mode, absolute and percentile values
     absent_page_hits: int = 0  # requests for pages outside the frozen graph (graph.ABSENT_PAGE_HITS)
 
     def harvest(self, k: int) -> float:
@@ -362,6 +363,21 @@ class RunResult:
     def found_direct(self, k: int) -> int:
         """Direct targets (label 2) among the first k fetched."""
         return sum(1 for v in self.labels[:k] if v == 2)
+
+
+def _thresholds(kwargs: dict, percentiles) -> dict:
+    """The bucketing a run used, absolute and percentile values both."""
+    if kwargs.get("percentile_bucketing"):
+        mode = "percentile"
+    elif kwargs["low_threshold"] <= -1.0 and kwargs["high_threshold"] >= 2.0:
+        mode = "none"  # every link is admitted (baselines, llm_all)
+    else:
+        mode = "absolute"
+    return {
+        "mode": mode,
+        "low": kwargs["low_threshold"], "high": kwargs["high_threshold"],
+        "low_percentile": percentiles[0], "high_percentile": percentiles[1],
+    }
 
 
 async def run_policy(
@@ -499,6 +515,7 @@ async def _run(
         assess(budget, fetcher.fetched, monitor, retry, errors, frontier_empty()),
         wall_seconds=wall, rate_limit_seconds=rate_limit_wait,
         absent_page_hits=fetcher.absent_hits,
+        thresholds=_thresholds(scoring_kwargs, percentiles),
     )
 
 

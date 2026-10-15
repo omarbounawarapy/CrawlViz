@@ -37,6 +37,14 @@ LLM contribution on an identical page sequence. Overlapped, production-style
 execution is a different experiment and is not built (`lockstep=False` runs it
 but nothing reports on it).
 
+## Manifest
+Every result JSON has a `manifest` block: git commit (`+dirty` when tracked
+files are modified), graph SHA-256, the rubric SHA-256 recorded in the graph
+file (null if the graph was not labelled with `label_graph`), model, provider,
+prompt version, budget, the bucketing thresholds in force (mode, absolute and
+percentile values), seed and repeat index. Results written before the
+manifest existed load with an empty one.
+
 ## Links to pages outside the graph
 `benchmark.graph.ABSENT_PAGE_HITS` decides what a request for an absent page
 does. The default, `"fail"`, is the behaviour the benchmark always had: the

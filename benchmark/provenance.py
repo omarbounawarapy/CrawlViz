@@ -1,5 +1,6 @@
 """What a benchmark result was produced from: code, data, prompts and settings."""
 import hashlib
+import json
 import subprocess
 from pathlib import Path
 
@@ -24,3 +25,43 @@ def git_commit() -> str:
         return run("rev-parse", "HEAD") + ("+dirty" if run("status", "--porcelain", "-uno") else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+def graph_sha256(graph_path: Path | None, graph=None) -> str:
+    """The graph file's hash; for a generated graph, the hash of its pages."""
+    if graph_path:
+        return file_sha256(graph_path)
+    return hashlib.sha256(json.dumps(graph.pages, sort_keys=True).encode()).hexdigest()
+
+
+def rubric_sha256(graph_path: Path | None) -> str | None:
+    """The hash of the rubric the graph was labelled under, as recorded in it."""
+    if not graph_path:
+        return None
+    return json.loads(Path(graph_path).read_text()).get("rubric_sha256")
+
+
+def manifest(
+    graph_path: Path | None, graph, result, *, budget: int, seed: int, rep: int,
+    model: str | None = None, provider: str | None = None, prompt: str | None = None,
+) -> dict:
+    """Everything needed to say what produced a result and to reproduce it."""
+    return {
+        "git_commit": git_commit(),
+        "graph_sha256": graph_sha256(graph_path, graph),
+        "rubric_sha256": rubric_sha256(graph_path),
+        "model": model,
+        "provider": provider,
+        "prompt_version": prompt,
+        "budget": budget,
+        "thresholds": result.thresholds,
+        "seed": seed,
+        "repeat": rep,
+        "absent_page_mode": graph_module().ABSENT_PAGE_HITS,
+    }
+
+
+def graph_module():
+    from . import graph
+
+    return graph
