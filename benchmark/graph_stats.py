@@ -97,7 +97,10 @@ def main() -> None:
     ap.add_argument("--graph", type=Path, required=True)
     ap.add_argument("--tex", type=Path, help="also write the LaTeX tables to this file")
     args = ap.parse_args()
-    s = stats(FrozenGraph.load(args.graph))
+    graph = FrozenGraph.load(args.graph)
+    for problem in graph.grading_problems():
+        print(f"WARNING: {problem}")
+    s = stats(graph)
     print(to_text(s))
     tex = to_tex(s)
     print("\n" + tex)

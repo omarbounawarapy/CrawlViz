@@ -48,6 +48,11 @@ ABSENT_PAGE_HITS = "fail"
 ABSENT_PAGE_MODES = ("fail", "free", "budget")
 
 
+# A graph with fewer relevant pages than this cannot tell policies apart at
+# the protocol's budgets (50 to 200 fetches, harvest@30).
+MIN_RELEVANT_PAGES = 30
+
+
 def page_key(name: str) -> str:
     """A page name as the crawler identifies it (utils.html_utils.normalize_url).
 
@@ -124,6 +129,23 @@ class FrozenGraph:
         if page.get("label") is not None:
             return int(page["label"])
         return 1 if page.get("relevant") else 0
+
+    def grading_problems(self, min_relevant: int = MIN_RELEVANT_PAGES) -> list[str]:
+        """Reasons this graph cannot support a graded harvest comparison.
+
+        Empty for a graph labelled 0/1/2 on every page with enough relevant
+        pages and at least one direct target."""
+        ungraded = sum(1 for p in self.pages.values() if p.get("label") is None)
+        if ungraded:
+            return [f"{ungraded} of {len(self.pages)} pages have no 0/1/2 label "
+                    "(label it with benchmark.label_graph, then --merge)"]
+        problems = []
+        relevant = len(self.relevant())
+        if relevant < min_relevant:
+            problems.append(f"only {relevant} relevant pages (label >= 1); at least {min_relevant} needed")
+        if not any(self.label(n) == 2 for n in self.pages):
+            problems.append("no label-2 pages, so harvest of direct targets is undefined")
+        return problems
 
     def relevant(self) -> set[str]:
         """Pages with label 1 or 2."""

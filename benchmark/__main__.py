@@ -27,6 +27,13 @@ async def main(args) -> None:
     )
     if args.cascade and not args.graph:
         raise SystemExit("--cascade needs a recorded, labelled --graph")
+    if args.graph and not args.allow_ungraded:
+        problems = graphs[0].grading_problems()
+        if problems:
+            raise SystemExit(
+                f"{args.graph} cannot support a graded comparison: {'; '.join(problems)}. "
+                "Pass --allow-ungraded to run anyway."
+            )
     sink = ResultSink(args.results_dir, args.save_sequences)
     print(f"{len(graphs)} graph(s), budget {args.budget} pages\n")
     print(f"{'policy':<16}{'found (mean)':>14}{'sd':>8}{'harvest':>10}{'direct':>8}   per run")
@@ -191,6 +198,8 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--graph", help="frozen graph JSON (default: synthetic)")
+    parser.add_argument("--allow-ungraded", action="store_true",
+                        help="run on a --graph that is not fully labelled 0/1/2 or has too few relevant pages")
     parser.add_argument("--budget", type=int, default=100)
     parser.add_argument("--runs", type=int, default=5, help="synthetic graphs to generate")
     parser.add_argument("--reps", type=int, default=1, help="repeats per graph (policy seeds)")

@@ -37,6 +37,13 @@ LLM contribution on an identical page sequence. Overlapped, production-style
 execution is a different experiment and is not built (`lockstep=False` runs it
 but nothing reports on it).
 
+## Graph readiness
+`python -m benchmark --graph FILE` refuses a graph that has pages without a
+0/1/2 `label`, fewer than 30 relevant pages (`MIN_RELEVANT_PAGES`) or no
+label-2 page, because harvest on it is meaningless; `--allow-ungraded`
+overrides. `graph_stats` prints the same reasons as warnings and
+`audit sample` refuses an unlabelled graph.
+
 ## Manifest
 Every result JSON has a `manifest` block: git commit (`+dirty` when tracked
 files are modified), graph SHA-256, the rubric SHA-256 recorded in the graph

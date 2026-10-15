@@ -81,6 +81,10 @@ def draw(graph: FrozenGraph, total: int | None, seed: int, exclude: set[str]) ->
 
 def sample(graph_path: Path, out: Path, key: Path, total: int | None, seed: int, exclude_files) -> None:
     graph = FrozenGraph.load(graph_path)
+    unlabelled = sum(1 for p in graph.pages.values() if p.get("label") is None)
+    if unlabelled:
+        raise SystemExit(f"{graph_path}: {unlabelled} of {len(graph.pages)} pages have no judge label; "
+                         "finish benchmark.label_graph and --merge before sampling")
     exclude = excluded_pages(exclude_files)
     picks = draw(graph, total, seed, exclude)
     random.Random(f"audit-order:{seed}").shuffle(picks)

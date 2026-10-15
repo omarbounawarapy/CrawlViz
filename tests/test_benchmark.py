@@ -1018,3 +1018,41 @@ def test_analyze_main_writes_every_table(tmp_path, monkeypatch, capsys):
     printed = capsys.readouterr().out
     assert "cascade vs bfs" in printed and "6/1/0" in printed
     assert "--" not in (out / "recall_table.tex").read_text().split(r"\midrule")[1].split(r"\bottomrule")[0]
+
+
+def test_grading_problems_flag_ungraded_and_sparse_graphs():
+    from benchmark import FrozenGraph
+
+    def graph(labels):
+        return FrozenGraph(seed="p0", pages={
+            f"p{i}": {**({"label": v} if v is not None else {"relevant": False}), "links": []}
+            for i, v in enumerate(labels)})
+
+    assert "no 0/1/2 label" in graph([None, 0, 1]).grading_problems()[0]
+    assert "no label-2" in " ".join(graph([0] * 5 + [1] * 40).grading_problems())
+    assert "only 3 relevant" in " ".join(graph([0, 1, 2, 2]).grading_problems())
+    assert graph([0] * 5 + [1] * 30 + [2] * 3).grading_problems() == []
+
+
+def test_audit_sample_refuses_a_graph_without_judge_labels(tmp_path):
+    import pytest
+
+    from benchmark import FrozenGraph, audit
+
+    path = tmp_path / "g.json"
+    FrozenGraph(seed="a", pages={"a": {"relevant": None, "title": "A", "text": "t", "links": []}}).save(path)
+    with pytest.raises(SystemExit, match="no judge label"):
+        audit.sample(path, tmp_path / "o.tsv", tmp_path / "k.json", total=None, seed=0, exclude_files=[])
+
+
+def test_cli_refuses_an_ungraded_graph_before_running_anything(tmp_path):
+    import subprocess
+    import sys
+
+    from benchmark import FrozenGraph
+
+    path = tmp_path / "g.json"
+    FrozenGraph(seed="a", pages={"a": {"relevant": True, "links": []}}).save(path)
+    run = subprocess.run([sys.executable, "-m", "benchmark", "--graph", str(path), "--budget", "1"],
+                         capture_output=True, text=True, timeout=60)
+    assert run.returncode != 0 and "cannot support a graded comparison" in run.stderr
