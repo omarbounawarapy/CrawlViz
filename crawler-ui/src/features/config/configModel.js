@@ -60,6 +60,9 @@ export function buildFields(schema) {
         minimum: node.minimum ?? node.exclusiveMinimum,
         maximum: node.maximum,
         unit: raw.ui_unit,
+        step: raw.ui_step,
+        pair: raw.ui_pair,
+        activeWhen: raw.ui_active_when,
         apply: raw.ui_apply ?? "next_run",
         advanced: Boolean(raw.ui_advanced),
         options: raw.ui_options,
@@ -74,15 +77,44 @@ export function buildFields(schema) {
   return fields;
 }
 
-export function groupBySection(fields) {
+/** Sections in workflow order, each with its one-sentence purpose, from the schema's `ui_sections`. */
+export function buildSections(schema) {
+  return (schema.ui_sections ?? []).map((s) => ({ name: s.name, help: s.help }));
+}
+
+/** [section, fields][] in `order`'s sequence; sections it does not name keep schema order, last. */
+export function groupBySection(fields, order = []) {
   const out = new Map();
   fields.forEach((f) => {
     if (!out.has(f.section)) out.set(f.section, []);
     out.get(f.section).push(f);
   });
-  return [...out.entries()];
+  const rank = (name) => { const i = order.indexOf(name); return i < 0 ? order.length : i; };
+  return [...out.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 }
 
+export const sectionSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/** The sibling path a pair/active-when hint names, relative to `field`'s own object. */
+export const siblingPath = (field, key) => field.path.split(".").slice(0, -1).concat(key).join(".");
+
+/** False while a field's `ui_active_when` sibling holds another value (the control is dimmed). */
+export function isActive(field, draft) {
+  if (!field.activeWhen) return true;
+  return getIn(draft, siblingPath(field, field.activeWhen.field)) === field.activeWhen.value;
+}
+
+/**
+ * Pairs two-thumb range fields within `list`: {low, high} for the first field
+ * of a pair, null for its partner (drawn with it), undefined for a plain field.
+ */
+export function rangeOf(field, list) {
+  if (field.widget !== "range" || !field.pair) return undefined;
+  const partnerPath = siblingPath(field, field.pair);
+  const at = list.findIndex((f) => f.path === partnerPath);
+  if (at < 0) return undefined;
+  return at < list.indexOf(field) ? null : { low: field, high: list[at] };
+}
 export const getIn = (obj, path) => path.split(".").reduce((v, k) => (v == null ? v : v[k]), obj);
 
 export function setIn(obj, path, value) {
@@ -119,7 +151,7 @@ export const isEmptyPatch = (patch) => Object.keys(patch).length === 0;
 
 /** Client-side bounds check mirroring the schema; the server stays authoritative. */
 export function validateField(field, value) {
-  if (field.widget === "number" || field.widget === "slider") {
+  if (["number", "slider", "stepper", "limit", "range"].includes(field.widget)) {
     if (value === null || value === undefined || value === "") {
       return field.nullable ? null : "Required";
     }
@@ -137,3 +169,15 @@ export function matches(field, query) {
   const q = query.toLowerCase();
   return [field.path, field.title, field.description, field.section].some((s) => s?.toLowerCase().includes(q));
 }
+
+const snap = (v, min, step) => Math.round((v - min) / step) * step + min;
+export const roundStep = (v) => Math.round(v * 1e6) / 1e6;
+
+/** Move one thumb of a low/high pair to `value`; the thumbs can never cross or leave [min, max]. */
+export function clampPair({ low, high }, which, value, { min, max, step }) {
+  const v = roundStep(snap(value, min, step));
+  if (which === "low") return { low: Math.max(min, Math.min(v, roundStep(high - step))), high };
+  return { low, high: Math.min(max, Math.max(v, roundStep(low + step))) };
+}
+
+export const clampRange = (v, min, max) => Math.max(min, Math.min(max, v));
