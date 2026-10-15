@@ -3,18 +3,22 @@ import { getTheme } from "../../theme";
 import { SectionTitle } from "../common/Page";
 import { Button } from "../common/Form";
 import FieldControl from "./FieldControl";
+import RangeSlider from "./RangeSlider";
 import { badgeStyle, slug } from "./settingsStyle";
-import { getIn, groupBySection, matches, sameValue, validateField } from "./configModel";
+import {
+  getIn, groupBySection, isActive, matches, rangeOf, sameValue, validateField,
+} from "./configModel";
 
 const theme = getTheme();
 
-function SettingRow({ field, value, defaultValue, saved, onChange, error }) {
+function SettingRow({ field, value, defaultValue, saved, onChange, error, active = true, control }) {
   const id = useId();
   const modified = !sameValue(value, defaultValue);
   const changed = !sameValue(value, saved);
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24,
-                  padding: "11px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
+                  padding: "11px 0", borderBottom: `1px solid ${theme.colors.rowBorder}`,
+                  opacity: active ? 1 : 0.45 }}>
       <div style={{ minWidth: 0 }}>
         <label htmlFor={id} style={{ fontSize: 14, color: theme.colors.text.primary }}>
           {field.title}
@@ -34,9 +38,41 @@ function SettingRow({ field, value, defaultValue, saved, onChange, error }) {
         )}
       </div>
       <div style={{ flexShrink: 0 }}>
-        <FieldControl field={field} value={value} onChange={onChange} id={id} error={error} />
+        {control ?? <FieldControl field={field} value={value} onChange={onChange} id={id} error={error} />}
       </div>
     </div>
+  );
+}
+
+// Both cut-offs of a pair on one track; the thumbs cannot cross.
+function RangeRow({ low, high, draft, defaults, saved, onChange, errors }) {
+  const lv = getIn(draft, low.path);
+  const hv = getIn(draft, high.path);
+  const percent = low.unit === "%";
+  const format = (v) => (percent ? `${Math.round(v)} %` : String(Math.round(v * 100) / 100));
+  const err = errors[low.path] ?? errors[high.path] ?? validateField(low, lv) ?? validateField(high, hv);
+  const pair = {
+    ...low,
+    title: `${low.title} and ${high.title.toLowerCase()}`,
+    description: percent
+      ? `${low.description} ${high.description} Measured against the page's own links: 0 % is its weakest link, 100 % its strongest.`
+      : `${low.description} ${high.description}`,
+  };
+  const reset = () => { onChange(low.path, getIn(defaults, low.path)); onChange(high.path, getIn(defaults, high.path)); };
+  return (
+    <SettingRow
+      field={pair} value={[lv, hv]} defaultValue={[getIn(defaults, low.path), getIn(defaults, high.path)]}
+      saved={[getIn(saved, low.path), getIn(saved, high.path)]} error={err} active={isActive(low, draft)}
+      onChange={reset}
+      control={
+        <RangeSlider
+          low={Number(lv)} high={Number(hv)} min={low.minimum ?? 0} max={high.maximum ?? 1}
+          step={low.step ?? 0.01} format={format} invalid={Boolean(err)}
+          lowLabel={low.title} highLabel={high.title}
+          onChange={(l, h) => { if (l !== lv) onChange(low.path, l); if (h !== hv) onChange(high.path, h); }}
+        />
+      }
+    />
   );
 }
 
@@ -85,36 +121,61 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
  */
 export default function SettingsEditor({
   fields, draft, defaults, saved, onChange, errors = {}, query = "", showAdvanced = false,
-  onResetSection, sectionExtras = {},
+  onResetSection, sectionExtras = {}, section, sectionOrder = [], sectionHelp = {}, onOpenSection,
 }) {
   const sections = useMemo(() => {
     const visible = fields.filter((f) => (showAdvanced || !f.advanced || query) && matches(f, query));
-    return groupBySection(visible);
-  }, [fields, query, showAdvanced]);
+    const grouped = groupBySection(visible, sectionOrder);
+    // A named section is shown alone, unless a search is looking across all of them.
+    return section && !query ? grouped.filter(([name]) => name === section) : grouped;
+  }, [fields, query, showAdvanced, section, sectionOrder]);
 
   if (sections.length === 0) {
-    return <p style={{ fontSize: 14, color: theme.colors.text.muted }}>No setting matches “{query}”.</p>;
+    return (
+      <p style={{ fontSize: 14, color: theme.colors.text.muted }}>
+        {query ? `No setting matches “${query}”.` : "Nothing to show in this section."}
+      </p>
+    );
   }
-  return sections.map(([section, list]) => {
+  return sections.map(([name, list]) => {
     const asTable = list.every((f) => f.group) && list.some((f) => f.topKey === "pipelines");
     return (
-      <section key={section} aria-labelledby={slug(section)}>
+      <section key={name} aria-labelledby={slug(name)}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <SectionTitle id={slug(section)}>{section}</SectionTitle>
-          {onResetSection && (
-            <Button variant="quiet" onClick={() => onResetSection(section, list)}>Reset section</Button>
+          <SectionTitle id={slug(name)}>{name}</SectionTitle>
+          {query && onOpenSection && (
+            <Button variant="quiet" onClick={() => onOpenSection(name)}>Open section</Button>
+          )}
+          {!query && onResetSection && (
+            <Button variant="quiet" onClick={() => onResetSection(name, list)}>Reset section</Button>
           )}
         </div>
-        {sectionExtras[section]?.(draft)}
+        {!query && sectionHelp[name] && (
+          <p style={{ fontSize: 14, color: theme.colors.text.secondary, maxWidth: "62ch", margin: "0 0 8px" }}>
+            {sectionHelp[name]}
+          </p>
+        )}
+        {sectionExtras[name]?.(draft)}
         {asTable ? (
           <PipelinesTable fields={list} draft={draft} defaults={defaults} saved={saved} onChange={onChange} errors={errors} />
-        ) : list.map((f) => (
-          <SettingRow
-            key={f.path} field={f} value={getIn(draft, f.path)} defaultValue={getIn(defaults, f.path)}
-            saved={getIn(saved, f.path)} onChange={(v) => onChange(f.path, v)}
-            error={errors[f.path] ?? validateField(f, getIn(draft, f.path))}
-          />
-        ))}
+        ) : list.map((f) => {
+          const pair = rangeOf(f, list);
+          if (pair === null) return null;
+          if (pair) {
+            return (
+              <RangeRow key={f.path} low={pair.low} high={pair.high} draft={draft} defaults={defaults}
+                        saved={saved} onChange={onChange} errors={errors} />
+            );
+          }
+          return (
+            <SettingRow
+              key={f.path} field={f} value={getIn(draft, f.path)} defaultValue={getIn(defaults, f.path)}
+              saved={getIn(saved, f.path)} onChange={(v) => onChange(f.path, v)}
+              error={errors[f.path] ?? validateField(f, getIn(draft, f.path))}
+              active={isActive(f, draft)}
+            />
+          );
+        })}
       </section>
     );
   });
