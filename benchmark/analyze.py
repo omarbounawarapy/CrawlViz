@@ -20,7 +20,8 @@ harvest@k is computed.
 * ``wilcoxon_table.tex``: paired Wilcoxon signed-rank test of the cascade
   against every other policy on harvest@``--test-k``
 
-Invalid runs are excluded from every table except validity and replay. Runs
+Invalid runs are excluded from every table except validity and replay.
+Replay records (``__replay.json``) are only used by the replay table. Runs
 are paired on (graph, repeat).
 """
 import argparse
@@ -126,7 +127,7 @@ def mean_ci(values: list[float]) -> tuple[float, float]:
 def by_policy(records: list[RunRecord]) -> dict[str, list[RunRecord]]:
     groups: dict[str, list[RunRecord]] = defaultdict(list)
     for r in records:
-        if r.valid:
+        if r.valid and not r.replay:  # a replay repeats a live run; it is not another sample
             groups[r.policy].append(r)
     return dict(groups)
 
@@ -220,6 +221,8 @@ def validity_counts(records: list[RunRecord]) -> dict[str, dict[str, int]]:
     """policy -> valid / invalid / early (completed_early; valid, and counted in ``valid``)."""
     out: dict[str, dict[str, int]] = {}
     for r in records:
+        if r.replay:
+            continue
         row = out.setdefault(r.policy, {"valid": 0, "invalid": 0, "early": 0})
         row["valid" if r.valid else "invalid"] += 1
         row["early"] += r.status == "completed_early"
@@ -283,7 +286,8 @@ def main() -> None:
     groups = by_policy(records)
     if not groups:
         raise SystemExit(f"no valid runs in {args.results}")
-    skipped = len(records) - sum(len(v) for v in groups.values())
+    live = [r for r in records if not r.replay]
+    skipped = len(live) - sum(len(v) for v in groups.values())
     args.out.mkdir(parents=True, exist_ok=True)
 
     with (args.out / "curves.csv").open("w", newline="") as f:
@@ -311,7 +315,7 @@ def main() -> None:
     tests = wilcoxon(groups, args.test_k)
     (args.out / "wilcoxon_table.tex").write_text(wilcoxon_table_tex(tests, args.test_k))
 
-    print(f"{len(records)} runs read, {skipped} invalid excluded; wrote {args.out}/")
+    print(f"{len(live)} live runs read ({len(records) - len(live)} replays), {skipped} invalid excluded; wrote {args.out}/")
     for policy, runs in groups.items():
         mean, ci = mean_ci([harvest_at(r.labels, args.test_k) for r in runs])
         print(f"  {policy:<16} harvest@{args.test_k} {mean:.3f} +/- {ci:.3f}  (n={len(runs)})")

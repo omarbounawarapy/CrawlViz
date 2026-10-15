@@ -82,8 +82,8 @@ class ResultSink:
         if self.directory:
             self.directory.mkdir(parents=True, exist_ok=True)
             name = record.filename()
-            if record.replay_misses:  # a failed replay must not overwrite the live run it tried to reproduce
-                name = name.replace(".json", "__replay-miss.json")
+            if record.replay:  # a replay never overwrites the live run it reproduces
+                name = name.replace(".json", "__replay-miss.json" if record.replay_misses else "__replay.json")
             (self.directory / name).write_text(
                 json.dumps(record.to_json(), ensure_ascii=False, indent=1)
             )

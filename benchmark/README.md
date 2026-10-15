@@ -123,8 +123,10 @@ replayed arm), `ndcg_table.tex` with `--ndcg` (grades 0/1/2 as gains, ideal
 order from the whole graph), and `wilcoxon_table.tex` (cascade against each
 other policy on harvest@30, paired on graph and repeat).
 
-A replay that misses the cache is written to `<run>__replay-miss.json`, so it
-never overwrites the live run it tried to reproduce, and then aborts.
+A `--replay-only` run is written to `<run>__replay.json`, or to
+`<run>__replay-miss.json` when it missed the cache (it then aborts), so it never
+overwrites the live run's calls, tokens and timings. Analysis keeps replays out
+of every statistic and uses them only for the replay table.
 
 ## Graph files
 Page names and link targets are re-encoded on load the way the crawler

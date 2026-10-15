@@ -964,7 +964,7 @@ def test_analyze_metrics_on_known_runs(tmp_path):
                _record("bfs", 0, [1], status="completed_early"),
                _record("cascade", 2, [1], replay=True, replay_misses=2, valid=False, status="failed")]
     assert analyze.validity_counts(records) == {
-        "cascade": {"valid": 1, "invalid": 2, "early": 0}, "bfs": {"valid": 1, "invalid": 0, "early": 1}}
+        "cascade": {"valid": 1, "invalid": 1, "early": 0}, "bfs": {"valid": 1, "invalid": 0, "early": 1}}
     assert analyze.replay_counts(records) == {"cascade": {"replays": 1, "with_misses": 1, "misses": 2}}
     for tex in (analyze.validity_table_tex(records), analyze.replay_table_tex(records),
                 analyze.efficiency_table_tex(analyze.by_policy(records))):
@@ -981,8 +981,16 @@ def test_failed_replay_does_not_overwrite_the_live_record(tmp_path):
     sink = ResultSink(tmp_path)
     sink.add(_record("cascade", 0, [1, 2]))
     sink.add(_record("cascade", 0, [1, 2], replay=True, replay_misses=3, valid=False, status="failed"))
+    sink.add(_record("cascade", 0, [1, 2], replay=True, llm_replayed=9))
     recs = load_records(tmp_path)
-    assert sorted((r.replay_misses, r.valid) for r in recs) == [(0, True), (3, False)]
+    assert sorted((r.replay, r.replay_misses, r.valid) for r in recs) == [
+        (False, 0, True), (True, 0, True), (True, 3, False)]
+    live = [r for r in recs if not r.replay]
+    assert len(live) == 1 and live[0].llm_replayed == 0  # the live record is intact
+    from benchmark import analyze
+
+    assert list(analyze.by_policy(recs)["cascade"]) == live  # replays are not extra samples
+    assert analyze.validity_counts(recs) == {"cascade": {"valid": 1, "invalid": 0, "early": 0}}
 
 
 def test_analyze_main_writes_every_table(tmp_path, monkeypatch, capsys):
