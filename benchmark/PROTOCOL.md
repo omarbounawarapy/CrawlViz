@@ -226,4 +226,18 @@ audit report, and the manifest hashes in an appendix. Venue and page limit are n
 
 ## Amendments
 
-(none)
+**2026-10-15, after labelling and before any crawl result.** `isi.json` was
+labelled in full by the judge (1,462 pages): 1,417 label 0, 44 label 1, 1
+label 2, so 45 relevant pages, above the 30 minimum. Consequences for what is
+written above, none of which change an arm, a metric or a threshold:
+
+- The audit sample is 150 pages, not 180: after excluding the 42 pilot pages,
+  only 42 label-1 pages exist (the draw takes them all), plus the single
+  label-2 page, 72 label-0 pages and 35 uniform pages (`--total 180 --seed
+  0`). The second annotator still takes the first 50 ids.
+- With one label-2 page, label-2 harvest and 3-class kappa carry almost no
+  information; the primary metric (label >= 1) and the binary audit numbers
+  are the ones the conclusions rest on.
+- 43 of the 45 relevant pages are direct links from the seed (depth 1; 69
+  pages at that depth), so BFS is expected to do well at every budget. This
+  is a property of the graph and is stated as such in the paper.
