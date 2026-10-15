@@ -738,8 +738,7 @@ def test_merge_writes_graded_labels_the_rubric_hash_and_a_derived_relevant(tmp_p
     graph.save(path)
     labels = tmp_path / "labels.jsonl"
     labels.write_text("".join(json.dumps({"page": n, "label": v}) + "\n" for n, v in zip("ABC", (2, 1, 0))))
-    monkeypatch.setattr(label_graph, "LABELS", labels)
-    label_graph.merge(FrozenGraph.load(path), path)
+    label_graph.merge(FrozenGraph.load(path), path, labels)
     data = json.loads(path.read_text())
     assert {n: data["pages"][n]["label"] for n in "ABC"} == {"A": 2, "B": 1, "C": 0}
     assert {n: data["pages"][n]["relevant"] for n in "ABC"} == {"A": True, "B": False, "C": False}
@@ -1056,3 +1055,9 @@ def test_cli_refuses_an_ungraded_graph_before_running_anything(tmp_path):
     run = subprocess.run([sys.executable, "-m", "benchmark", "--graph", str(path), "--budget", "1"],
                          capture_output=True, text=True, timeout=60)
     assert run.returncode != 0 and "cannot support a graded comparison" in run.stderr
+
+
+def test_label_log_is_per_graph(tmp_path):
+    from benchmark import label_graph
+
+    assert label_graph.labels_path(tmp_path / "isi.json") == tmp_path / "isi_labels.jsonl"

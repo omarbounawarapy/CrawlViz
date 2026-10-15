@@ -1,6 +1,6 @@
 """Labels every page of a frozen graph 0/1/2 under the frozen rubric (benchmark/rubric.md).
 
-Answers are cached (pilot_cache.jsonl) and each label is appended to a JSONL as it lands, so
+Answers are cached (pilot_cache.jsonl) and each label is appended to <graph>_labels.jsonl as it lands, so
 a stopped run resumes where it left off. ``--merge`` writes the labels and the rubric hash
 into the graph file.
 
@@ -23,7 +23,6 @@ from .pilot import judge  # same prompt and validation as the pilot
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
-LABELS = Path("benchmark/data/ball_labels.jsonl")
 CACHE = Path("benchmark/data/pilot_cache.jsonl")
 
 
@@ -31,14 +30,19 @@ def rubric_sha() -> str:
     return hashlib.sha256(RUBRIC.read_bytes()).hexdigest()
 
 
-def done() -> dict[str, int]:
-    if not LABELS.exists():
+def labels_path(graph_file: Path) -> Path:
+    """Each graph has its own label log: <graph>_labels.jsonl next to it."""
+    return graph_file.with_name(graph_file.stem + "_labels.jsonl")
+
+
+def done(labels: Path) -> dict[str, int]:
+    if not labels.exists():
         return {}
-    return {page_key(d["page"]): d["label"] for d in map(json.loads, LABELS.read_text().splitlines())}
+    return {page_key(d["page"]): d["label"] for d in map(json.loads, labels.read_text().splitlines())}
 
 
-async def label(graph: FrozenGraph, keys: Path) -> None:
-    got = done()
+async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
+    got = done(labels)
     todo = [n for n in sorted(graph.pages) if n not in got]
     llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
     for s in range(0, len(todo), BATCH):
@@ -51,7 +55,7 @@ async def label(graph: FrozenGraph, keys: Path) -> None:
             print(f"\nbatch at {batch[0]} failed: {e!r}; waiting 60 s", flush=True)
             await asyncio.sleep(60)
             continue
-        with LABELS.open("a") as f:
+        with labels.open("a") as f:
             for n, v in result.items():
                 f.write(json.dumps({"page": n, "label": v}, ensure_ascii=False) + "\n")
         if llm.misses > before:
@@ -62,8 +66,8 @@ async def label(graph: FrozenGraph, keys: Path) -> None:
     await llm.inner.client.close()
 
 
-def merge(graph: FrozenGraph, path: Path) -> None:
-    got = done()
+def merge(graph: FrozenGraph, path: Path, labels: Path) -> None:
+    got = done(labels)
     missing = [n for n in graph.pages if n not in got]
     if missing:
         raise SystemExit(f"{len(missing)} pages unlabelled; run without --merge first")
@@ -89,9 +93,9 @@ def main() -> None:
     args = ap.parse_args()
     graph = FrozenGraph.load(args.graph)
     if args.merge:
-        merge(graph, args.graph)
+        merge(graph, args.graph, labels_path(args.graph))
     else:
-        asyncio.run(label(graph, args.keys))
+        asyncio.run(label(graph, args.keys, labels_path(args.graph)))
 
 
 if __name__ == "__main__":
