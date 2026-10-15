@@ -348,6 +348,7 @@ class RunResult:
     health: RunHealth = field(default_factory=RunHealth)
     wall_seconds: float = 0.0
     rate_limit_seconds: float = 0.0  # wall time spent waiting on pacing or a 429; not idle time
+    absent_page_hits: int = 0  # requests for pages outside the frozen graph (graph.ABSENT_PAGE_HITS)
 
     def harvest(self, k: int) -> float:
         """Share of the first k fetched pages that are relevant (label >= 1)."""
@@ -497,6 +498,7 @@ async def _run(
         label, visited, [graph.label(p) for p in visited],
         assess(budget, fetcher.fetched, monitor, retry, errors, frontier_empty()),
         wall_seconds=wall, rate_limit_seconds=rate_limit_wait,
+        absent_page_hits=fetcher.absent_hits,
     )
 
 

@@ -37,6 +37,16 @@ LLM contribution on an identical page sequence. Overlapped, production-style
 execution is a different experiment and is not built (`lockstep=False` runs it
 but nothing reports on it).
 
+## Links to pages outside the graph
+`benchmark.graph.ABSENT_PAGE_HITS` decides what a request for an absent page
+does. The default, `"fail"`, is the behaviour the benchmark always had: the
+fetch 404s, the crawler retries and gives up, no budget is spent, and the
+`RequestFailedEvent`s make the run INVALID. `"free"` serves an empty page
+without spending budget; `"budget"` serves it and counts it as a fetch
+(label 0). Every result JSON carries `absent_page_hits`, the number of such
+requests (in `"fail"` mode each retry counts). Recorded graphs are closed
+(GRAPH_RULE.md), so it should be 0.
+
 ## Cascade repeats
 Each repeat has its own LLM cache scope and its own semantic-space store, so
 repeats are independent live realizations and a rerun replays each one.

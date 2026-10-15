@@ -840,3 +840,31 @@ async def test_cache_key_separates_graph_prompt_version_provider_and_model(tmp_p
     ):
         assert await CachedLlm(inner, path, **other).send(ctx) != {"n": 1}
     assert inner.calls == 5
+
+
+async def test_absent_page_hits_are_counted_and_the_mode_decides_the_cost():
+    from benchmark import FrozenGraph, graph as graph_module
+
+    def build():
+        return FrozenGraph(seed="A", pages={
+            "A": {"label": 0, "links": [{"to": "GONE", "anchor": "gone"}, {"to": "B", "anchor": "b"}]},
+            "B": {"label": 1, "links": [{"to": "C", "anchor": "c"}]},
+            "C": {"label": 2, "links": []}})
+
+    assert graph_module.ABSENT_PAGE_HITS == "fail"  # the documented default
+    failed = await run_policy(build(), "bfs", 3)
+    assert failed.visited == ["A", "B", "C"] and failed.absent_page_hits >= 1
+    assert not failed.health.valid
+
+    graph = build()
+    original = graph_module.ABSENT_PAGE_HITS
+    try:
+        graph_module.ABSENT_PAGE_HITS = "free"
+        free = await run_policy(graph, "bfs", 3)
+        graph_module.ABSENT_PAGE_HITS = "budget"
+        paid = await run_policy(build(), "bfs", 3)
+    finally:
+        graph_module.ABSENT_PAGE_HITS = original
+    assert free.visited == ["A", "B", "C"] and free.absent_page_hits == 1 and free.health.valid
+    assert "GONE" in paid.visited and paid.absent_page_hits == 1 and len(paid.visited) == 3
+    assert paid.labels[paid.visited.index("GONE")] == 0

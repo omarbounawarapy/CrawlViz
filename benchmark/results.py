@@ -35,6 +35,7 @@ class RunRecord:
     wait_seconds: float = 0.0  # pacing and rate-limit sleeps
     rate_limit_waits: int = 0
     rate_limit_seconds: float = 0.0  # 429 back-off sleeps, part of wait_seconds
+    absent_page_hits: int = 0  # requests for pages outside the frozen graph
     scoring_failures: int = 0
     empty_results: int = 0
     settings: dict = field(default_factory=dict)  # flush_every, thresholds, ...
@@ -47,6 +48,7 @@ class RunRecord:
             sequence=list(result.visited), labels=[int(v) for v in result.labels],
             valid=h.valid, status=h.status, problems=list(h.problems),
             wall_seconds=round(result.wall_seconds, 3),
+            absent_page_hits=result.absent_page_hits,
             scoring_failures=h.scoring_failures, empty_results=h.empty_results,
             **extra,
         )

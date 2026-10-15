@@ -32,6 +32,22 @@ GENERIC_TERMS = (
 ).split()
 
 
+# What the fetcher does when the crawler asks for a page the graph does not
+# contain (a link to a page outside the frozen set):
+#   "fail"   the request 404s. The crawler retries, then gives up. The page costs
+#            no budget, but every attempt is a RequestFailedEvent, which makes
+#            the run INVALID (see runner.assess). This is the behaviour the
+#            benchmark has always had.
+#   "free"   the page is served empty (no text, no links) and costs no budget;
+#            the hit is only counted.
+#   "budget" the page is served empty and counts as a fetched page (label 0),
+#            so it spends budget like any other fetch.
+# Recorded graphs are closed (GRAPH_RULE.md): they have no such links, and
+# every run reports ``absent_page_hits`` so that stays checkable.
+ABSENT_PAGE_HITS = "fail"
+ABSENT_PAGE_MODES = ("fail", "free", "budget")
+
+
 def page_key(name: str) -> str:
     """A page name as the crawler identifies it (utils.html_utils.normalize_url).
 
@@ -102,7 +118,9 @@ class FrozenGraph:
     def label(self, name: str) -> int:
         """Graded relevance: 0 irrelevant, 1 topical neighbourhood, 2 direct
         target. Files written before grading carry only ``relevant``."""
-        page = self.pages[name]
+        page = self.pages.get(name)
+        if page is None:  # an absent page served under ABSENT_PAGE_HITS = "budget"
+            return 0
         if page.get("label") is not None:
             return int(page["label"])
         return 1 if page.get("relevant") else 0
@@ -153,15 +171,24 @@ class FrozenGraph:
 class GraphFetcher:
     """Satisfies the ``Fetcher`` protocol from a frozen graph."""
 
-    def __init__(self, graph: FrozenGraph):
+    def __init__(self, graph: FrozenGraph, absent: str | None = None):
+        self.absent = ABSENT_PAGE_HITS if absent is None else absent
+        if self.absent not in ABSENT_PAGE_MODES:
+            raise ValueError(f"unknown absent-page mode {self.absent!r}; expected one of {ABSENT_PAGE_MODES}")
         self.graph = graph
         self.fetched: list[str] = []
+        self.absent_hits = 0  # requests for pages the graph does not contain
 
     async def emit_request(self, params: dict) -> str:
         name = params["url"].rsplit("/", 1)[1]
         page = self.graph.pages.get(name)
         if page is None:
-            raise RuntimeError("404 Not Found")
+            self.absent_hits += 1
+            if self.absent == "fail":
+                raise RuntimeError("404 Not Found")
+            if self.absent == "budget":
+                self.fetched.append(name)
+            return f"<html><body><h1>{html.escape(name)}</h1></body></html>"
         self.fetched.append(name)
         items = "".join(
             f'<li><a href="/{link["to"]}">{html.escape(link["anchor"])}</a></li>' for link in page["links"]
