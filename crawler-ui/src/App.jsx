@@ -20,6 +20,7 @@ import BlueprintManager from "./features/blueprints/BlueprintManager";
 import DataExplorer from "./features/data/DataExplorer";
 import ConfigPage from "./features/config/ConfigPage";
 import BenchmarkPage from "./features/benchmark/BenchmarkPage";
+import NotFoundPage from "./features/errors/NotFoundPage";
 
 const theme = getTheme();
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
@@ -27,6 +28,7 @@ const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
 // Routes. The graph is home. The old #/overview, #/pipeline and #/timeline
 // links still work: they land on the graph with the matching panel open.
 const PAGE_ROUTES = new Set(["graph", "run", "blueprints", "data", "config", "benchmark"]);
+const LEGACY_ROUTES = new Set(["overview", "pipeline", "timeline"]);
 
 function initialDemo() {
   try { return new URLSearchParams(window.location.search).has("demo"); } catch { return false; }
@@ -69,7 +71,8 @@ function EmptyCanvas({ onRun, onDemo }) {
 export default function App() {
   const { path, navigate } = useRoute();
   const route = path.replace(/^\//, "") || "graph";
-  const activeSection = PAGE_ROUTES.has(route) ? route : "graph";
+  const notFound = !PAGE_ROUTES.has(route) && !LEGACY_ROUTES.has(route);
+  const activeSection = PAGE_ROUTES.has(route) ? route : notFound ? "none" : "graph";
 
   const [state, dispatch] = useReducer(crawlReducer, INITIAL_STATE);
   const [demoMode, setDemoMode] = useState(initialDemo);
@@ -214,6 +217,7 @@ export default function App() {
       )}
       {activeSection === "config" && <ConfigPage />}
       {activeSection === "benchmark" && <BenchmarkPage />}
+      {notFound && <NotFoundPage route={route} onNavigate={navigateSection} />}
     </Shell>
   );
 }
