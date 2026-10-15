@@ -14,6 +14,7 @@ const SECTIONS = [
   { id: "blueprints", label: "Blueprints", question: "What is this crawl configured to do?" },
   { id: "data",       label: "Data",       question: "What did we actually extract?" },
   { id: "config",     label: "Config",     question: "What assumptions is this crawl operating under?" },
+  { id: "benchmark",  label: "Benchmark",  question: "Does the cascade beat the baselines, and at what cost?" },
 ];
 
 function StatusMark({ status }) {

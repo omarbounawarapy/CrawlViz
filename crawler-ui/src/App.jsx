@@ -19,13 +19,14 @@ import RunPage from "./features/run/RunPage";
 import BlueprintManager from "./features/blueprints/BlueprintManager";
 import DataExplorer from "./features/data/DataExplorer";
 import ConfigPage from "./features/config/ConfigPage";
+import BenchmarkPage from "./features/benchmark/BenchmarkPage";
 
 const theme = getTheme();
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
 
 // Routes. The graph is home. The old #/overview, #/pipeline and #/timeline
 // links still work: they land on the graph with the matching panel open.
-const PAGE_ROUTES = new Set(["graph", "run", "blueprints", "data", "config"]);
+const PAGE_ROUTES = new Set(["graph", "run", "blueprints", "data", "config", "benchmark"]);
 
 function initialDemo() {
   try { return new URLSearchParams(window.location.search).has("demo"); } catch { return false; }
@@ -212,6 +213,7 @@ export default function App() {
         />
       )}
       {activeSection === "config" && <ConfigPage />}
+      {activeSection === "benchmark" && <BenchmarkPage />}
     </Shell>
   );
 }
