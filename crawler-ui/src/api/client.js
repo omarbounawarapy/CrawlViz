@@ -1,15 +1,40 @@
 const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+export const API_STATUS_EVENT = "crawlviz:api-status";
+
+function announce(reachable) {
+  try { window.dispatchEvent(new CustomEvent(API_STATUS_EVENT, { detail: { reachable } })); } catch { /* no window */ }
+}
+
+// Error text a person can act on: what was asked, and what to check.
+function describe(res, path, detail) {
+  if (res.status === 404 && (!detail || detail === "Not Found")) {
+    return `The backend has no endpoint ${path}. It may be running an older version; restart it from the repository root.`;
+  }
+  if (res.status >= 500) {
+    return `The backend failed handling ${path} (${res.status}). ${detail && detail !== res.statusText ? detail : "See its log for the traceback."}`;
+  }
+  return detail ?? res.statusText;
+}
+
 async function req(method, path, body) {
   const opts = {
     method,
     headers: { "Content-Type": "application/json" },
   };
   if (body !== undefined) opts.body = JSON.stringify(body);
-  const res = await fetch(`${BASE}${path}`, opts);
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, opts);
+  } catch {
+    announce(false);
+    throw new Error(`Cannot reach the backend at ${BASE}.`);
+  }
+  announce(true);
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(err.detail ?? res.statusText);
+    const err = await res.json().catch(() => ({ detail: null }));
+    const detail = typeof err.detail === "string" ? err.detail : err.detail ? JSON.stringify(err.detail) : null;
+    throw new Error(describe(res, path, detail));
   }
   return res.json();
 }
