@@ -36,3 +36,26 @@ export const fetchValidationSample = (table, crawlId, limit = 20, offset = 0) =>
 // Read-only for now; see config/runtime_config.py.
 export const fetchConfigSchema = () => req("GET", "/config/schema");
 export const fetchConfig       = () => req("GET", "/config");
+
+// ── Benchmark ───────────────────────────────────────────────────────────────
+export const fetchBenchmarkOverview = ()                 => req("GET", "/benchmark/overview");
+export const fetchBenchmarkRuns     = ()                 => req("GET", "/benchmark/runs");
+export const fetchBenchmarkRun      = (name)             => req("GET", `/benchmark/runs/${encodeURIComponent(name)}`);
+export const fetchBenchmarkCurves   = (minGrade = 1, budget) => {
+  const p = new URLSearchParams({ min_grade: minGrade });
+  if (budget) p.set("budget", budget);
+  return req("GET", `/benchmark/curves?${p}`);
+};
+export const fetchBenchmarkGraph    = (name, maxDepth = 1, limit = 300) =>
+  req("GET", `/benchmark/graph?name=${encodeURIComponent(name)}&max_depth=${maxDepth}&limit=${limit}`);
+export const fetchBenchmarkPage     = (graph, page)      =>
+  req("GET", `/benchmark/page?graph=${encodeURIComponent(graph)}&name=${encodeURIComponent(page)}`);
+export const fetchAudit             = (annotator = "1")  => req("GET", `/benchmark/audit?annotator=${annotator}`);
+export const putAuditLabel          = (id, humanLabel, annotator = "1") =>
+  req("PUT", `/benchmark/audit/${encodeURIComponent(id)}?annotator=${annotator}`, { human_label: humanLabel });
+export const fetchAuditScore        = (annotator = "1", source = "ui") =>
+  req("POST", `/benchmark/audit/score?annotator=${annotator}&source=${source}`);
+export const fetchBenchmarkEstimate = (budget)           => req("GET", `/benchmark/estimate?budget=${budget}`);
+export const startBenchmarkJob      = (kind, args)       => req("POST", "/benchmark/jobs", { kind, args });
+export const benchmarkJob           = ()                 => req("GET",  "/benchmark/jobs/current");
+export const stopBenchmarkJob       = ()                 => req("POST", "/benchmark/jobs/stop");
