@@ -67,6 +67,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
     from infrastructure import KeyManager, LlmHandler
 
     from .llm_cache import CachedLlm, PacedLlm, ReplayMiss
+    from .provenance import file_sha256, prompt_version
 
     bp = json.loads(Path(args.template).read_text())
     # The provider is stated here, not read from the template: the template names
@@ -81,6 +82,9 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
     # never talks to a provider; every other arm does unless replaying.
     offline = args.replay_only or arm == "no_llm"
     live = None if offline else PacedLlm(LlmHandler(KeyManager(keys_file=Path("keys.json"))))
+    # The cache key carries the model, provider, prompt version and graph hash
+    # (besides the prompt), so an answer is never replayed for another graph or prompt.
+    cache_id = dict(prompt_version=prompt_version(bp["scoring"]["strategy"]), graph_sha=file_sha256(args.graph))
     recorded = json.loads(Path(args.runs_file).read_text()) if Path(args.runs_file).exists() else {}
     runs = []
     for graph in graphs:
@@ -90,7 +94,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
             calls_before, waits_before, limits_before = (
                 (len(live.latencies), live.wait_seconds, live.rate_limit_seconds) if live else (0, 0.0, 0.0)
             )
-            llm = CachedLlm(live, args.llm_cache, scope=f"rep{rep}", replay_only=offline)
+            llm = CachedLlm(live, args.llm_cache, scope=f"rep{rep}", replay_only=offline, **cache_id)
             # And one space store per repeat: NLPService loads a saved topic
             # space instead of expanding the topic again, which would make
             # repeat 1 inherit repeat 0's expansion.

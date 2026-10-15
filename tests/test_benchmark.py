@@ -813,3 +813,30 @@ def test_audit_score_with_two_annotators(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "judge vs annotator 1" in out and "annotator 1 vs annotator 2" in out
     assert "kappa" in out and "reweighted" in out
+
+
+async def test_cache_key_separates_graph_prompt_version_provider_and_model(tmp_path):
+    from benchmark.llm_cache import CachedLlm
+    from models.llm_context import LlmContext
+
+    class Inner:
+        calls = 0
+
+        async def send(self, context):
+            self.calls += 1
+            return {"n": self.calls}
+
+    inner = Inner()
+    path = tmp_path / "c.jsonl"
+    base = dict(prompt_version="TOPICAL:aaa", graph_sha="g1")
+    await CachedLlm(inner, path, **base).send(LlmContext("groq", "m", "p"))
+    same = CachedLlm(inner, path, **base)
+    assert await same.send(LlmContext("groq", "m", "p")) == {"n": 1}
+    for other, ctx in (
+        (dict(base, graph_sha="g2"), LlmContext("groq", "m", "p")),
+        (dict(base, prompt_version="TOPICAL:bbb"), LlmContext("groq", "m", "p")),
+        (base, LlmContext("openrouter", "m", "p")),
+        (base, LlmContext("groq", "m2", "p")),
+    ):
+        assert await CachedLlm(inner, path, **other).send(ctx) != {"n": 1}
+    assert inner.calls == 5

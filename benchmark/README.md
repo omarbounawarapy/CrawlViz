@@ -47,6 +47,13 @@ and standard deviation; handled LLM failures and empty answers stay in and are
 reported. `--replay-only` makes no LLM calls, fails on any unrecorded lookup
 and checks that each repeat visits exactly the pages it visited originally.
 
+The cache key is the scope, provider, model, prompt version (the scoring
+strategy plus a hash of `models/prompts.py`), the graph file's SHA-256 and the
+prompt text. Entries written before the prompt version and graph hash joined
+the key are never hit, so an old `--llm-cache` cannot be replayed: record the
+repeats again. The judge cache (`pilot_cache.jsonl`) keeps its original key;
+its prompt already carries the rubric.
+
 Time spent asleep on pacing or a 429 back-off pauses the runner's idle clock
 (and is reported as 429 back-off time), so a long rate-limit wait is not
 mistaken for a stall. Scoring calls made after the budget is fetched are

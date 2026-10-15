@@ -1,6 +1,7 @@
 """LLM wrappers for the benchmark. All satisfy ``send(context)`` like ``LlmHandler``.
 
-``CachedLlm`` is a disk cache keyed on scope, provider, model and prompt. A
+``CachedLlm`` is a disk cache keyed on scope, provider, model, prompt version,
+graph SHA-256 and prompt. A
 ``scope`` separates independent realizations of the same prompt: the cascade
 gives every repeat its own scope, so repeat 1 makes live calls instead of
 replaying repeat 0, and a later rerun replays each repeat's own answers. The
@@ -29,9 +30,14 @@ class ReplayMiss(RuntimeError):
 
 
 class CachedLlm:
-    def __init__(self, inner, path: Path, scope: str = "", replay_only: bool = False):
+    def __init__(
+        self, inner, path: Path, scope: str = "", replay_only: bool = False,
+        prompt_version: str = "", graph_sha: str = "",
+    ):
         self.inner = inner
         self.scope = scope
+        self.prompt_version = prompt_version
+        self.graph_sha = graph_sha
         self.replay_only = replay_only
         self.path = Path(path)
         self.hits = self.misses = 0
@@ -47,6 +53,8 @@ class CachedLlm:
 
     def key(self, context) -> str:
         raw = f"{context.get_llm_type()}\0{context.get_model_information()}\0{context.get_prompt()}"
+        if self.prompt_version or self.graph_sha:
+            raw = f"{self.prompt_version}\0{self.graph_sha}\0{raw}"
         if self.scope:  # no scope keeps the original key, so the judge cache stays valid
             raw = f"{self.scope}\0{raw}"
         return hashlib.sha256(raw.encode()).hexdigest()
