@@ -114,8 +114,17 @@ Each run writes one JSON file to `--results-dir` (default
 tokens, timings. `--save-sequences FILE` writes the visit order of every
 policy and repeat. `python -m benchmark.analyze` reads the result files and
 writes `benchmark/analysis/`: `curves.csv` (harvest@k to k = 100, mean and 95%
-CI), `harvest_table.tex`, and `wilcoxon_table.tex` (cascade against each other
-policy on harvest@30, paired on graph and repeat).
+CI), `harvest_table.tex` (label >= 1), `harvest_label2_table.tex` (direct
+targets only), `recall_table.tex` (relevant fetched over relevant in the
+graph, from the graph file in `--graphs-dir`), `efficiency_table.tex`
+(relevant pages per LLM call and per 1k tokens), `validity_table.tex`
+(valid / invalid / early-stopped), `replay_table.tex` (cache misses per
+replayed arm), `ndcg_table.tex` with `--ndcg` (grades 0/1/2 as gains, ideal
+order from the whole graph), and `wilcoxon_table.tex` (cascade against each
+other policy on harvest@30, paired on graph and repeat).
+
+A replay that misses the cache is written to `<run>__replay-miss.json`, so it
+never overwrites the live run it tried to reproduce, and then aborts.
 
 ## Graph files
 Page names and link targets are re-encoded on load the way the crawler

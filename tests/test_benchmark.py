@@ -931,3 +931,82 @@ def test_graph_stats_counts_depths_labels_and_absent_links():
     assert s["relevant_per_depth"][2]["label2"] == 1
     assert s["relevant_unreachable"] == 1
     assert r"\begin{tabular}" in to_tex(s)
+
+
+def _record(policy, rep, labels, graph="g.json", valid=True, status="completed", **kw):
+    from benchmark.results import RunRecord
+
+    return RunRecord(graph=graph, policy=policy, rep=rep, budget=len(labels), sequence=[f"p{i}" for i in labels],
+                     labels=labels, valid=valid, status=status, **kw)
+
+
+def test_analyze_metrics_on_known_runs(tmp_path):
+    import math
+
+    from benchmark import analyze
+
+    labels = [2, 0, 1, 0]
+    assert analyze.harvest_at(labels, 4) == 0.5
+    assert analyze.harvest_at(labels, 4, min_grade=2) == 0.25
+    assert analyze.recall_at(labels, 3, relevant_in_graph=10) == 0.2
+    assert math.isnan(analyze.recall_at(labels, 3, 0))
+    grades = {0: 50, 1: 2, 2: 1}  # ideal order 2, 1, 1
+    ideal = 2 / 1 + 1 / math.log2(3) + 1 / 2
+    got = 2 / 1 + 1 / math.log2(4)  # the run's [2, 0, 1]
+    assert abs(analyze.ndcg_at(labels, 3, grades) - got / ideal) < 1e-9
+    assert analyze.ndcg_at([2, 1, 1], 3, grades) == 1.0
+
+    run = _record("cascade", 0, [1, 1, 0, 2], llm_calls=3, llm_replayed=1, input_tokens=1500, output_tokens=500)
+    assert analyze.efficiency(run) == (3 / 4, 3 / 2.0)
+    assert math.isnan(analyze.efficiency(_record("bfs", 0, [1]))[0])
+
+    records = [run, _record("cascade", 1, [0, 0], valid=False, status="failed"),
+               _record("bfs", 0, [1], status="completed_early"),
+               _record("cascade", 2, [1], replay=True, replay_misses=2, valid=False, status="failed")]
+    assert analyze.validity_counts(records) == {
+        "cascade": {"valid": 1, "invalid": 2, "early": 0}, "bfs": {"valid": 1, "invalid": 0, "early": 1}}
+    assert analyze.replay_counts(records) == {"cascade": {"replays": 1, "with_misses": 1, "misses": 2}}
+    for tex in (analyze.validity_table_tex(records), analyze.replay_table_tex(records),
+                analyze.efficiency_table_tex(analyze.by_policy(records))):
+        assert tex.count(r"\begin{tabular}") == 1 and r"\end{tabular}" in tex
+
+    (tmp_path / "g.json").write_text('{"seed": "a", "pages": {"a": {"label": 2}, "b": {"relevant": true}, "c": {"label": 0}}}')
+    assert analyze.graph_grades(tmp_path, "g.json") == {0: 1, 1: 1, 2: 1}
+    assert analyze.graph_grades(tmp_path, "missing.json") is None
+
+
+def test_failed_replay_does_not_overwrite_the_live_record(tmp_path):
+    from benchmark.results import ResultSink, load_records
+
+    sink = ResultSink(tmp_path)
+    sink.add(_record("cascade", 0, [1, 2]))
+    sink.add(_record("cascade", 0, [1, 2], replay=True, replay_misses=3, valid=False, status="failed"))
+    recs = load_records(tmp_path)
+    assert sorted((r.replay_misses, r.valid) for r in recs) == [(0, True), (3, False)]
+
+
+def test_analyze_main_writes_every_table(tmp_path, monkeypatch, capsys):
+    import json
+    import sys
+
+    from benchmark import analyze
+    from benchmark.results import ResultSink
+
+    (tmp_path / "g.json").write_text(json.dumps({"seed": "a", "pages": {
+        f"p{i}": {"label": 2 if i < 3 else 1 if i < 8 else 0, "links": []} for i in range(30)}}))
+    sink = ResultSink(tmp_path / "res")
+    for rep in range(6):
+        sink.add(_record("cascade", rep, [2, 1, 1, 0, 1] * 8, llm_calls=10, input_tokens=4000, output_tokens=1000))
+        sink.add(_record("bfs", rep, [0, 1, 0, 0, 0] * 8 if rep % 2 else [0, 0, 0, 1, 0] * 8))
+    sink.add(_record("cascade", 9, [0], valid=False, status="failed"))
+    out = tmp_path / "out"
+    monkeypatch.setattr(sys, "argv", ["analyze", "--results", str(tmp_path / "res"), "--out", str(out),
+                                      "--graphs-dir", str(tmp_path), "--no-dedupe", "--ndcg"])
+    analyze.main()
+    names = {p.name for p in out.iterdir()}
+    assert {"curves.csv", "harvest_table.tex", "harvest_label2_table.tex", "recall_table.tex",
+            "efficiency_table.tex", "validity_table.tex", "replay_table.tex", "ndcg_table.tex",
+            "wilcoxon_table.tex"} <= names
+    printed = capsys.readouterr().out
+    assert "cascade vs bfs" in printed and "6/1/0" in printed
+    assert "--" not in (out / "recall_table.tex").read_text().split(r"\midrule")[1].split(r"\bottomrule")[0]

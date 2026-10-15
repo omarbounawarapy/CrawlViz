@@ -36,6 +36,8 @@ class RunRecord:
     rate_limit_waits: int = 0
     rate_limit_seconds: float = 0.0  # 429 back-off sleeps, part of wait_seconds
     absent_page_hits: int = 0  # requests for pages outside the frozen graph
+    replay: bool = False  # produced with --replay-only
+    replay_misses: int = 0  # LLM lookups a replay could not find in the cache
     scoring_failures: int = 0
     empty_results: int = 0
     settings: dict = field(default_factory=dict)  # flush_every, thresholds, ...
@@ -79,7 +81,10 @@ class ResultSink:
         self.sequences[f"{record.graph}:{record.policy}:rep{record.rep}"] = record.sequence
         if self.directory:
             self.directory.mkdir(parents=True, exist_ok=True)
-            (self.directory / record.filename()).write_text(
+            name = record.filename()
+            if record.replay_misses:  # a failed replay must not overwrite the live run it tried to reproduce
+                name = name.replace(".json", "__replay-miss.json")
+            (self.directory / name).write_text(
                 json.dumps(record.to_json(), ensure_ascii=False, indent=1)
             )
         if self.sequences_file:

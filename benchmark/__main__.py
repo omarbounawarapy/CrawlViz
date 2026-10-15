@@ -113,6 +113,12 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
             result.policy = name
             h = result.health
             if llm.replay_misses:  # the pipeline may have swallowed ReplayMiss
+                # Kept for the analysis' replay table, under its own file name.
+                h.problems.append(f"{len(llm.replay_misses)} replay cache miss(es)")
+                sink.add(RunRecord.from_result(
+                    Path(args.graph).name, rep, args.budget, result, replay=True,
+                    replay_misses=len(llm.replay_misses), llm_replayed=llm.hits,
+                ))
                 raise ReplayMiss(f"rep {rep}: {len(llm.replay_misses)} LLM lookups were not recorded")
             latencies = live.latencies[calls_before:] if live else []
             waited = live.wait_seconds - waits_before if live else 0.0
@@ -162,7 +168,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
             print(f"    tokens: {llm.input_tokens} in, {llm.output_tokens} out over {llm.misses + llm.hits} answers")
             sink.add(RunRecord.from_result(
                 Path(args.graph).name, rep, args.budget, result,
-                llm_calls=llm.misses, llm_replayed=llm.hits,
+                llm_calls=llm.misses, llm_replayed=llm.hits, replay=bool(args.replay_only),
                 input_tokens=llm.input_tokens, output_tokens=llm.output_tokens,
                 llm_seconds=round(sum(latencies), 3), wait_seconds=round(waited, 3),
                 rate_limit_waits=live.rate_limit_waits if live else 0,
