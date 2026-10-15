@@ -252,7 +252,7 @@ def score(tsv: Path, key: Path, tsv2: Path | None = None) -> None:
         report(hh, counts, "annot1", "annot2", reweight=False)
 
 
-FORM = """<!doctype html>
+FORM = r"""<!doctype html>
 <html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>__TITLE__</title>
 <style>

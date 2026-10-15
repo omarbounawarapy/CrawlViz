@@ -1108,3 +1108,4 @@ def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_pat
     assert "A \\u003c/script> B" in page and "<!--" not in page
     items = json.loads(page.split("const ITEMS = ", 1)[1].split(";\nconst KEY", 1)[0])
     assert items == [{"id": "1", "title": "A </script> B", "excerpt": "x <!-- y"}]
+    assert r'/[\t\r\n]+/g' in page and '"id\\ttitle' in page  # escapes reach the script unchanged
