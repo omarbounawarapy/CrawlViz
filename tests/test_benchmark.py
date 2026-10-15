@@ -1061,3 +1061,34 @@ def test_label_log_is_per_graph(tmp_path):
     from benchmark import label_graph
 
     assert label_graph.labels_path(tmp_path / "isi.json") == tmp_path / "isi_labels.jsonl"
+
+
+async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monkeypatch):
+    from benchmark import FrozenGraph, label_graph
+
+    graph = FrozenGraph(seed="a", pages={
+        f"p{i}": {"title": "t", "text": "x", "relevant": None, "links": []} for i in range(100)})
+    calls = []
+
+    async def failing_judge(llm, rows):
+        calls.append(len(rows))
+        raise RuntimeError("no usable answer")
+
+    class _Client:
+        async def close(self):
+            pass
+
+    class _Llm:
+        misses = 0
+        inner = type("I", (), {"client": _Client()})()
+
+    async def no_sleep(_):
+        pass
+
+    monkeypatch.setattr(label_graph, "judge", failing_judge)
+    monkeypatch.setattr(label_graph, "CachedLlm", lambda *a, **k: _Llm())
+    monkeypatch.setattr(label_graph, "LlmHandler", lambda *a, **k: None)
+    monkeypatch.setattr(label_graph, "KeyManager", lambda *a, **k: None)
+    monkeypatch.setattr(label_graph.asyncio, "sleep", no_sleep)
+    await label_graph.label(graph, tmp_path / "k.json", tmp_path / "l.jsonl")
+    assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES

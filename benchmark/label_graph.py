@@ -23,6 +23,10 @@ from .pilot import judge  # same prompt and validation as the pilot
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
+# Batches that fail in a row before the run stops. A provider's daily token cap
+# answers 429 to everything, which the judge reports as "no usable answer";
+# going on would only spend a few minutes per batch for nothing.
+MAX_CONSECUTIVE_FAILURES = 3
 CACHE = Path("benchmark/data/pilot_cache.jsonl")
 
 
@@ -45,6 +49,7 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
     got = done(labels)
     todo = [n for n in sorted(graph.pages) if n not in got]
     llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
+    failures = 0
     for s in range(0, len(todo), BATCH):
         batch = todo[s : s + BATCH]
         rows = [{"id": n, "title": graph.pages[n]["title"], "excerpt": graph.pages[n]["text"][:EXCERPT_CHARS].replace("\n", " ")} for n in batch]
@@ -52,9 +57,15 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
         try:
             result = await judge(llm, rows)
         except (RuntimeError, aiohttp.ClientError) as e:
+            failures += 1
             print(f"\nbatch at {batch[0]} failed: {e!r}; waiting 60 s", flush=True)
+            if failures >= MAX_CONSECUTIVE_FAILURES:
+                print(f"\n{failures} batches in a row failed (likely the provider's daily token cap); "
+                      "stopping. Rerun later: finished labels are kept.", flush=True)
+                break
             await asyncio.sleep(60)
             continue
+        failures = 0
         with labels.open("a") as f:
             for n, v in result.items():
                 f.write(json.dumps({"page": n, "label": v}, ensure_ascii=False) + "\n")
