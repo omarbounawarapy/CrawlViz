@@ -21,10 +21,10 @@ from pydantic import BaseModel
 
 from benchmark import audit as audit_mod
 from benchmark.analyze import (
-    by_policy, curves as harvest_curves, dedupe_records, efficiency, harvest_at, mean_ci,
+    by_policy, dedupe_records, efficiency, harvest_at, mean_ci,
     validity_counts,
 )
-from benchmark.graph import FrozenGraph, page_key
+from benchmark.graph import FrozenGraph
 from benchmark.graph_stats import stats as graph_stats
 from benchmark.results import RunRecord
 
