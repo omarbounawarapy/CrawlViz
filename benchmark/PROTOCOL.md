@@ -259,3 +259,14 @@ and rubric stand. Read with it: the judge over-calls relevance (18 of its 43
 label-1/2 pages in the sample were 0 for the human), so the true number of
 relevant pages is below the judge's 45 and the harvest values are judged
 harvest, not human harvest. There was no second annotator.
+
+**2026-10-15, LLM cache format, before any result is used.** The first
+budget-50 cascade repeat failed its `--replay-only` check: one live call had
+returned an empty answer, the cache did not store empty answers, and the
+replay missed that lookup and drifted from page 36. The cache now records
+empty answers and serves the answers to one prompt in the order they were
+given (an empty answer, then its retry), so a replay runs the same retry.
+New entries also store the prompt text, and a replay miss records the first
+missed prompt. No cache key, prompt or scoring behaviour changed. Every
+result and cache from before this change (the budget-50 repeats on
+`isi.json`) was erased and is not used; the grid is re-recorded from rep 0.

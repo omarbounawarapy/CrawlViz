@@ -122,6 +122,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
             if llm.replay_misses:  # the pipeline may have swallowed ReplayMiss
                 # Kept for the analysis' replay table, under its own file name.
                 h.problems.append(f"{len(llm.replay_misses)} replay cache miss(es)")
+                h.problems.append(f"first missed prompt: {llm.miss_prompts[0]!r}")
                 sink.add(RunRecord.from_result(
                     Path(args.graph).name, rep, args.budget, result, replay=True,
                     replay_misses=len(llm.replay_misses), llm_replayed=llm.hits,

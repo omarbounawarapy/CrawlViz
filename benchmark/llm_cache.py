@@ -43,13 +43,19 @@ class CachedLlm:
         self.hits = self.misses = 0
         self.input_tokens = self.output_tokens = 0  # tokens behind every answer served, replayed ones included
         self.replay_misses: list[str] = []
-        self._cache: dict[str, dict] = {}
-        self._usage: dict[str, tuple[int, int]] = {}
+        self.miss_prompts: list[str] = []  # prompt text of each miss, for diagnosing a diverged replay
+        # Answers per key in the order they were given. The same prompt can
+        # be answered more than once (an empty answer, then its retry), and a
+        # replay must hand them out in that order or the retry logic runs on
+        # different input and the visit order drifts.
+        self._cache: dict[str, list[dict]] = {}
+        self._usage: dict[str, list[tuple[int, int]]] = {}
+        self._served: dict[str, int] = {}
         if self.path.exists():
             for line in self.path.read_text().splitlines():
                 entry = json.loads(line)
-                self._cache[entry["key"]] = entry["result"]
-                self._usage[entry["key"]] = tuple(entry.get("usage", (0, 0)))
+                self._cache.setdefault(entry["key"], []).append(entry["result"])
+                self._usage.setdefault(entry["key"], []).append(tuple(entry.get("usage", (0, 0))))
 
     def key(self, context) -> str:
         raw = f"{context.get_llm_type()}\0{context.get_model_information()}\0{context.get_prompt()}"
@@ -70,27 +76,34 @@ class CachedLlm:
 
     async def send(self, context) -> dict:
         key = self.key(context)
-        if key in self._cache:
+        n = self._served.get(key, 0)
+        recorded = self._cache.get(key, [])
+        # Past the last answer a repeat gets that answer again, unless it was
+        # empty: then a live run asks the model again (the retry).
+        if n < len(recorded) or (recorded and (self.replay_only or recorded[-1])):
             self.hits += 1
-            self._add_usage(self._usage.get(key, (0, 0)))
-            return json.loads(json.dumps(self._cache[key]))
+            self._served[key] = n + 1
+            i = min(n, len(recorded) - 1)  # past the last answer: repeat it
+            self._add_usage(self._usage[key][i])
+            return json.loads(json.dumps(self._cache[key][i]))
         if self.replay_only:
             # The pipeline may swallow this exception, so it is also recorded
             # here and checked by the caller after the run.
             self.replay_misses.append(key)
+            self.miss_prompts.append(context.get_prompt())
             raise ReplayMiss(f"scope {self.scope!r}: no recorded answer for {context.get_prompt()[:80]!r}")
         result = await self.inner.send(context)
         self.misses += 1
         usage = context.get_usage() if hasattr(context, "get_usage") else (0, 0)
         self._add_usage(usage)
-        # An empty answer is a failed call (the translator never raises), so
-        # it is not worth remembering.
-        if result:
-            self._cache[key] = result
-            self._usage[key] = tuple(usage)
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a") as f:
-                f.write(json.dumps({"key": key, "result": result, "usage": list(usage)}, ensure_ascii=False) + "\n")
+        # An empty answer is recorded too: the pipeline reschedules it, and a
+        # replay that skipped it would never run that retry.
+        self._cache.setdefault(key, []).append(result or {})
+        self._usage.setdefault(key, []).append(tuple(usage))
+        self._served[key] = len(self._cache[key])
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a") as f:
+            f.write(json.dumps({"key": key, "result": result or {}, "usage": list(usage), "prompt": context.get_prompt()}, ensure_ascii=False) + "\n")
         return result
 
 
