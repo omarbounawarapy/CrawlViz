@@ -1,4 +1,4 @@
-import { useState, useReducer, useCallback, useMemo } from "react";
+import { useState, useReducer, useCallback, useMemo, useEffect } from "react";
 import { deriveMetrics } from "./state/metrics";
 import { INITIAL_STATE } from "./state/initialState";
 import { crawlReducer } from "./state/reducer";
@@ -6,7 +6,7 @@ import { useCrawlStream } from "./hooks/useCrawlStream";
 import { useDemoMode } from "./hooks/useDemoMode";
 import { useBatchedDispatch } from "./hooks/useBatchedDispatch";
 import { useRoute } from "./hooks/useRoute";
-import { stopCrawl } from "./api/client";
+import { stopCrawl, API_STATUS_EVENT } from "./api/client";
 import { getTheme } from "./theme";
 
 import Shell from "./app/Shell";
@@ -88,6 +88,14 @@ export default function App() {
 
   const replayIndex = state._replayIndex ?? null;
 
+  // The REST client announces whether the last request reached the backend.
+  const [apiDown, setApiDown] = useState(false);
+  useEffect(() => {
+    const on = (e) => setApiDown(!e.detail.reachable);
+    window.addEventListener(API_STATUS_EVENT, on);
+    return () => window.removeEventListener(API_STATUS_EVENT, on);
+  }, []);
+
   // Live events are applied once per frame; replay controls dispatch directly.
   const liveDispatch = useBatchedDispatch(dispatch);
   useCrawlStream(demoMode ? () => {} : liveDispatch, wsUrl);
@@ -117,7 +125,24 @@ export default function App() {
     ? `${state.nodes.size} pages · ${metrics.candidatesDropped} links skipped`
     : null;
 
-  const banner = demoMode ? (
+  const offline = apiDown && !demoMode ? (
+    <div role="alert" style={{
+      padding: "8px 16px", fontSize: 13, background: theme.colors.background.panel, color: theme.colors.text.primary,
+      borderBottom: `1px solid ${theme.colors.accent.red}`,
+      display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap",
+    }}>
+      <span>
+        The backend is not answering. Pages that load data will show errors until it is back;
+        start it with <code>uvicorn main:app</code> from the repository root.
+      </span>
+      <button type="button" onClick={() => window.location.reload()} style={{
+        height: 26, padding: "0 10px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
+        background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
+      }}>Retry</button>
+    </div>
+  ) : null;
+
+  const banner = offline ?? (demoMode ? (
     <div role="status" style={{
       flexShrink: 0, padding: "8px 20px", fontSize: 13, fontWeight: 500,
       background: theme.colors.background.panel, color: theme.colors.text.primary,
@@ -132,7 +157,7 @@ export default function App() {
         Leave sample
       </a>
     </div>
-  ) : null;
+  ) : null);
 
   return (
     <Shell
