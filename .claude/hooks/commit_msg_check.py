@@ -28,7 +28,9 @@ BANNED_PATTERNS = {
     r"(?<![\w/])#\d+\b": "task numbers describe the plan, not the change",
     r"(?i)\bstep\s+\d+\b": "step numbers describe the plan, not the change",
     r"(?i)\b(wip|done|todo|plan|audit item)\b": "say what changed instead",
-    r"(?i)\b(claude|anthropic|co-authored-by|generated with)\b": "no AI attribution",
+    # File names such as .claude/ and CLAUDE.md are fine; crediting the tool is not.
+    r"(?i)(?<![./\w])(claude|anthropic)(?![./\w])|\b(co-authored-by|generated with)\b":
+        "no AI attribution",
     r"(?i)(^|\s)ai(\s|$)": "no AI attribution",
     "—": "no em dashes",
 }
