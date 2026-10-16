@@ -17,11 +17,14 @@ const rule   = "#d3d9e0";
 const ink    = "#0f1b2d";
 const ink2   = "#33435a";    // 8.6:1 on paper
 const muted  = "#566478";    // 5.4:1 on paper
-const vermilion = "#c7311a"; // 4.6:1 on paper
+const vermilion = "#c7311a"; // 4.9:1 on paper
+// Non-text marks that must be seen (control borders, graph edges, chart lines) are >= 3:1.
+const control = "#707d90";   // 3.8:1 on paper, 4.1:1 on sheet
 
 const plate = {
   colors: {
     background: { primary: paper, panel: sheet, border: rule },
+    control,
     text: { primary: ink, secondary: ink2, muted },
 
     accent: {
@@ -76,8 +79,8 @@ const plate = {
       text: ink, currentRow: "rgba(15,27,45,0.07)",
     },
 
-    edge: "#a3adba", arrow: "#8794a5", nodeText: ink2,
-    rowBorder: "#e3e8ee", scrubber: "#aab4c0",
+    edge: control, arrow: "#56657a", nodeText: ink2,
+    rowBorder: "#e3e8ee", scrubber: control,
   },
 
   spacing: { xs: "4px", sm: "8px", md: "12px", lg: "16px", xl: "24px" },

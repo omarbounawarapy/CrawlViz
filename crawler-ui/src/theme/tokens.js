@@ -23,6 +23,7 @@ export const tokenShape = {
       panel:   null,  // sidebar / panel surfaces
       border:  null,  // dividers and borders
     },
+    control: null,    // borders and marks that must reach 3:1 (WCAG 1.4.11)
     text: {
       primary:   null,
       secondary: null,

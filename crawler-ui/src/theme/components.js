@@ -68,14 +68,15 @@ export const createComponentStyles = (theme) => {
       overflowY: "auto",
       padding:   `${spacing.xs} 0`,
     },
-    timelineEntry: (isCurrent, isPast, isReplaying) => ({
+    timelineEntry: (isCurrent) => ({
       display:     "flex",
       alignItems:  "baseline",
       gap:         "8px",
       padding:     `${spacing.xs} 14px`,
       cursor:      "pointer",
       background:  isCurrent ? colors.replay.currentRow : "transparent",
-      opacity:     isReplaying && !isCurrent && !isPast ? 0.3 : 1,
+      // Events after the replay point are told apart by the muted summary, not by fading the
+      // row: opacity would drop the text under 4.5:1 (WCAG 1.4.3).
       borderLeft:  isCurrent
         ? `2px solid ${colors.replay.text}`
         : "2px solid transparent",
