@@ -3,8 +3,8 @@ import { getTheme } from "../../theme";
 const { text } = getTheme().colors;
 
 function Loading({ state, children }) {
-  if (state.error) return <p style={{ color: getTheme().colors.accent.red, fontSize: 14 }}>{state.error}</p>;
-  if (state.loading && !state.data) return <p style={{ color: text.muted, fontSize: 14 }}>Loading…</p>;
+  if (state.error) return <p role="alert" style={{ color: getTheme().colors.accent.red, fontSize: 14 }}>{state.error}</p>;
+  if (state.loading && !state.data) return <p role="status" style={{ color: text.muted, fontSize: 14 }}>Loading…</p>;
   return children(state.data);
 }
 

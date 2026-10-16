@@ -1,22 +1,24 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchBenchmarkCurves } from "../../api/client";
 import { getTheme } from "../../theme";
 import { SectionTitle } from "../common/Page";
-import { Tabs } from "../common/Form";
+import { Tabs, TabPanel } from "../common/Form";
 import Loading from "./Loading";
 import {useLoad, POLICY_ORDER, num} from "./shared";
+import ScrollRegion from "../common/ScrollRegion";
 
 const { text, background } = getTheme().colors;
 const W = 640, H = 300, M = { l: 44, r: 110, t: 12, b: 34 };
 
-// Policies are told apart by lightness, dash and a direct label, not hue.
+// Policies are told apart by dash, weight and a direct label, not hue. Every line keeps 3:1
+// on the paper (WCAG 1.4.11); the lighter inks rely on their dash pattern.
 const STYLE = {
   cascade:        { stroke: "#0f1b2d", width: 2.5, dash: "" },
   no_llm:         { stroke: "#33435a", width: 1.6, dash: "6 3" },
   llm_all:        { stroke: "#56657a", width: 1.6, dash: "2 3" },
-  anchor_lexical: { stroke: "#7b889a", width: 1.6, dash: "" },
-  bfs:            { stroke: "#8794a5", width: 1.6, dash: "8 3 2 3" },
-  random:         { stroke: "#aab4c0", width: 1.6, dash: "" },
+  anchor_lexical: { stroke: "#707d90", width: 1.6, dash: "" },
+  bfs:            { stroke: "#707d90", width: 1.6, dash: "8 3 2 3" },
+  random:         { stroke: "#707d90", width: 1.6, dash: "12 4" },
   oracle:         { stroke: "#c7311a", width: 1.6, dash: "4 2" },
 };
 
@@ -26,6 +28,13 @@ function Chart({ series }) {
   const x = (k) => M.l + ((k - 1) / Math.max(1, maxK - 1)) * (W - M.l - M.r);
   const y = (v) => H - M.b - v * (H - M.t - M.b);
   const [hover, setHover] = useState(null);
+  // The hover box can be dismissed without moving the pointer (WCAG 1.4.13).
+  useEffect(() => {
+    if (hover == null) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setHover(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [hover]);
   // Direct labels sit at the line ends; push them apart so they never overprint.
   const ends = policies.map((p) => {
     const pts = series[p].points.filter((d) => d.mean != null);
@@ -35,9 +44,15 @@ function Chart({ series }) {
   const labelY = Object.fromEntries(ends.map((e) => [e.p, e.y]));
   const ticks = [0, 0.25, 0.5, 0.75, 1];
   const xt = [1, 10, 30, 50, 100].filter((k) => k <= maxK);
+  // The picture's text alternative: the ranking at the last k every policy reached.
+  const kEnd = Math.min(...policies.map((p) => series[p].points.filter((d) => d.mean != null).length).filter(Boolean), maxK);
+  const ranking = policies
+    .map((p) => [p, series[p].points[kEnd - 1]?.mean])
+    .filter(([, v]) => v != null).sort((a, b) => b[1] - a[1])
+    .map(([p, v]) => `${p} ${v.toFixed(2)}`).join(", ");
   return (
     <svg viewBox={`0 0 ${W} ${H}`} role="img" style={{ width: "100%", maxWidth: W }}
-      aria-label="Harvest rate against pages fetched, one line per policy"
+      aria-label={`Harvest rate against pages fetched, one line per policy. At k = ${kEnd}: ${ranking}. The table under the chart has the values.`}
       onMouseLeave={() => setHover(null)}
       onMouseMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect();
@@ -99,7 +114,9 @@ export default function ResultsTab() {
     <>
       <Tabs id="grade" label="Relevance threshold" value={grade} onChange={setGrade}
         options={[["1", "Label ≥ 1"], ["2", "Label 2 only"]]} />
-      <Loading state={state}>{(d) => <Body d={d} />}</Loading>
+      <TabPanel tabsId="grade" value={grade}>
+        <Loading state={state}>{(d) => <Body d={d} />}</Loading>
+      </TabPanel>
     </>
   );
 }
@@ -118,7 +135,7 @@ function Body({ d }) {
         "Short" counts runs that stopped well under their budget; check them on the Runs tab before averaging.
       </p>
       <Chart series={d.series} />
-      <ul style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", listStyle: "none", padding: 0, margin: "8px 0 0", fontSize: 12 }}>
+      <ul aria-label="Line key" style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", listStyle: "none", padding: 0, margin: "8px 0 0", fontSize: 12 }}>
         {policies.map((p) => {
           const s = STYLE[p] ?? STYLE.random;
           return (
@@ -131,12 +148,13 @@ function Body({ d }) {
           );
         })}
       </ul>
+      <CurveTable series={d.series} policies={policies} />
       <SectionTitle>Summary</SectionTitle>
-      <div style={{ overflowX: "auto" }}>
+      <ScrollRegion label="Summary table">
       <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
         <thead><tr>
           {["Policy", "n", "@10", "@30", "@50", "Rel / call", "Rel / 1k tok", "Valid / invalid", "Short"].map((h, i) => (
-            <th key={h} style={{ textAlign: i ? "right" : "left", padding: "6px 8px", color: text.muted, fontWeight: 600 }}>{h}</th>
+            <th scope="col" key={h} style={{ textAlign: i ? "right" : "left", padding: "6px 8px", color: text.muted, fontWeight: 600 }}>{h}</th>
           ))}
         </tr></thead>
         <tbody>{policies.map((p) => {
@@ -144,7 +162,7 @@ function Body({ d }) {
           const cell = (k) => at(p, k) ? `${num(at(p, k).mean, 2)}${at(p, k).ci95 != null ? ` ±${num(at(p, k).ci95, 2)}` : ""}` : "n/a";
           return (
             <tr key={p} style={{ borderTop: `1px solid ${background.border}` }}>
-              <td style={{ padding: "6px 8px", fontWeight: 600 }}>{p}</td>
+              <th scope="row" style={{ padding: "6px 8px", fontWeight: 600, textAlign: "left" }}>{p}</th>
               <td className="num" style={{ textAlign: "right", padding: "6px 8px" }}>{d.series[p].runs}</td>
               {[10, 30, 50].map((k) => <td key={k} className="num" style={{ textAlign: "right", padding: "6px 8px" }}>{cell(k)}</td>)}
               <td className="num" style={{ textAlign: "right", padding: "6px 8px" }}>{num(d.series[p].rel_per_call, 2)}</td>
@@ -157,7 +175,34 @@ function Body({ d }) {
           );
         })}</tbody>
       </table>
-      </div>
+      </ScrollRegion>
     </>
+  );
+}
+
+// The curves as numbers, every tenth k: what the chart shows on hover, for keyboard and screen readers.
+function CurveTable({ series, policies }) {
+  const maxK = Math.max(...policies.map((p) => series[p].points.length));
+  const ks = [1, ...Array.from({ length: Math.floor(maxK / 10) }, (_, i) => (i + 1) * 10)].filter((k) => k <= maxK);
+  const cell = { textAlign: "right", padding: "4px 8px" };
+  return (
+    <details style={{ margin: "10px 0 0" }}>
+      <summary style={{ fontSize: 13, cursor: "pointer", color: text.primary }}>The curves as a table</summary>
+      <ScrollRegion label="Curves table">
+        <table style={{ fontSize: 12, borderCollapse: "collapse", marginTop: 6 }}>
+          <caption className="sr-only">Share of the first k fetched pages that are relevant, mean over repeats</caption>
+          <thead><tr>
+            <th scope="col" style={{ ...cell, textAlign: "left", color: text.muted }}>k</th>
+            {policies.map((p) => <th scope="col" key={p} style={{ ...cell, color: text.muted }}>{p}</th>)}
+          </tr></thead>
+          <tbody>{ks.map((k) => (
+            <tr key={k} style={{ borderTop: `1px solid ${background.border}` }}>
+              <th scope="row" style={{ ...cell, textAlign: "left", fontWeight: 600 }}>{k}</th>
+              {policies.map((p) => <td key={p} className="num" style={cell}>{num(series[p].points[k - 1]?.mean, 2)}</td>)}
+            </tr>
+          ))}</tbody>
+        </table>
+      </ScrollRegion>
+    </details>
   );
 }

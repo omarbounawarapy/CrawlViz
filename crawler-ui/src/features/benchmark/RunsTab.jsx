@@ -7,6 +7,7 @@ import { SectionTitle } from "../common/Page";
 import { Button, Chip, Field, Grid, Select, Status, TextInput } from "../common/Form";
 import Loading from "./Loading";
 import {LABEL, useLoad, num} from "./shared";
+import ScrollRegion from "../common/ScrollRegion";
 
 const { text, background } = getTheme().colors;
 
@@ -107,7 +108,7 @@ function JobPanel() {
             {job.command} · {job.new_results?.length ?? 0}{job.expected_results ? ` of ${job.expected_results}` : ""} result files
             written · {job.rate_limit_mentions} rate-limit lines
           </p>
-          <pre aria-label="Job output" style={{
+          <pre role="log" aria-label="Job output" tabIndex={0} className="focus-box" style={{
             fontFamily: getTheme().typography.fontData, fontSize: 12, maxHeight: 220, overflow: "auto",
             background: background.panel, border: `1px solid ${background.border}`, padding: 10, margin: 0, whiteSpace: "pre-wrap",
           }}>{job.log.join("\n")}</pre>
@@ -120,6 +121,8 @@ function JobPanel() {
 function Strip({ run }) {
   // One cell per fetched page, in fetch order: the visit order is the result.
   const found = run.labels.reduce((a, l) => a + (l >= 1 ? 1 : 0), 0);
+  const hits = run.labels.map((l, i) => (l >= 1 ? i + 1 : null)).filter((i) => i != null);
+  const page = (i) => { try { return decodeURIComponent(run.sequence[i] ?? ""); } catch { return run.sequence[i] ?? ""; } };
   return (
     <>
       <p style={{ fontSize: 13, color: text.secondary, margin: "8px 0" }}>
@@ -127,18 +130,27 @@ function Strip({ run }) {
         {run.replay_misses ? ` · ${run.replay_misses} replay cache misses` : ""}
         {run.short ? " · stopped well short of the budget, do not average with full reps" : ""}
       </p>
-      <div role="img" aria-label="Visit order, one cell per fetched page" style={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+      <div role="img" style={{ display: "flex", flexWrap: "wrap", gap: 2 }}
+        aria-label={`Visit order, one cell per fetched page. ${hits.length ? `Relevant at positions ${hits.join(", ")}` : "No relevant page"}.`}>
         {run.labels.map((l, i) => (
-          <span key={i} title={`${i + 1}. ${decodeURIComponent(run.sequence[i] ?? "")} (label ${l})`} style={{
-            width: 14, height: 14, background: LABEL[l]?.fill, border: l === 2 ? `2px solid ${text.primary}` : "none",
+          <span key={i} title={`${i + 1}. ${page(i)} (label ${l})`} style={{
+            width: 14, height: 14, boxSizing: "border-box", background: LABEL[l]?.fill,
+            border: l === 2 ? `2px solid ${text.primary}` : l === 0 ? `1px solid ${getTheme().colors.control}` : "none",
           }} />
         ))}
       </div>
-      <div style={{ display: "flex", gap: 14, margin: "8px 0", fontSize: 12, color: text.muted }}>
+      <ul aria-label="Cell key" style={{ listStyle: "none", padding: 0, display: "flex", flexWrap: "wrap", gap: 14, margin: "8px 0", fontSize: 12, color: text.muted }}>
         {[0, 1, 2].map((l) => (
-          <span key={l}><span style={{ display: "inline-block", width: 10, height: 10, background: LABEL[l].fill, marginRight: 5 }} />{LABEL[l].name}</span>
+          <li key={l}><span aria-hidden="true" style={{ display: "inline-block", width: 10, height: 10, boxSizing: "border-box", background: LABEL[l].fill, marginRight: 5,
+            border: l === 2 ? `2px solid ${text.primary}` : l === 0 ? `1px solid ${getTheme().colors.control}` : "none" }} />{LABEL[l].name}</li>
         ))}
-      </div>
+      </ul>
+      <details>
+        <summary style={{ fontSize: 13, cursor: "pointer" }}>Visit order as a list</summary>
+        <ol style={{ fontSize: 13, paddingLeft: 28, margin: "6px 0", maxHeight: 240, overflow: "auto" }}>
+          {run.labels.map((l, i) => <li key={i} style={{ wordBreak: "break-all" }}>{page(i)}: {LABEL[l]?.name ?? `label ${l}`}</li>)}
+        </ol>
+      </details>
       <details>
         <summary style={{ fontSize: 13, cursor: "pointer" }}>Manifest and settings</summary>
         <pre style={{ fontSize: 12, overflow: "auto" }}>{JSON.stringify({ manifest: run.manifest, settings: run.settings }, null, 2)}</pre>
@@ -157,28 +169,32 @@ export default function RunsTab() {
     <>
       <JobPanel />
       <SectionTitle>Runs</SectionTitle>
-      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+      <div role="group" aria-label="Rows shown" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
         <Chip pressed={show.replay} onClick={() => setShow((s) => ({ ...s, replay: !s.replay }))}>Replays</Chip>
         <Chip pressed={show.invalid} onClick={() => setShow((s) => ({ ...s, invalid: !s.invalid }))}>Invalid</Chip>
         <Button variant="quiet" onClick={runs.reload}>Refresh</Button>
       </div>
       <Loading state={runs}>{(list) => (
-        <div style={{ overflowX: "auto" }}>
+        <ScrollRegion label="Runs table">
         <table style={{ fontSize: 13, borderCollapse: "collapse", width: "100%" }}>
+          <caption className="sr-only">Recorded runs. Choose a policy to see its visit order.</caption>
           <thead><tr>{["Policy", "Rep", "Budget", "Fetched", "Found", "@30", "Tokens", "Status"].map((h, i) => (
-            <th key={h} style={{ textAlign: i < 2 ? "left" : "right", padding: "5px 8px", color: text.muted, fontWeight: 600 }}>{h}</th>
+            <th scope="col" key={h} style={{ textAlign: i < 2 ? "left" : "right", padding: "5px 8px", color: text.muted, fontWeight: 600 }}>{h}</th>
           ))}</tr></thead>
           <tbody>
             {list.filter((r) => (show.replay || !r.replay) && (show.invalid || r.valid)).map((r) => (
               <tr key={r.name} onClick={() => setSel(r.name)} style={{
                 cursor: "pointer", borderTop: `1px solid ${background.border}`,
                 background: sel === r.name ? "rgba(15,27,45,0.07)" : "transparent",
+                boxShadow: sel === r.name ? `inset 3px 0 0 ${text.primary}` : "none",
               }}>
-                <td style={{ padding: "5px 8px" }}>
-                  <button type="button" onClick={() => setSel(r.name)} style={{
+                <th scope="row" style={{ padding: "5px 8px", textAlign: "left", fontWeight: 400 }}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); setSel(r.name); }} aria-pressed={sel === r.name}
+                    aria-label={`${r.policy}${r.replay ? " (replay)" : ""}, rep ${r.rep}`} style={{
                     background: "none", border: "none", padding: 0, font: "inherit", fontWeight: 600, color: text.primary, cursor: "pointer",
+                    textDecoration: "underline", textUnderlineOffset: 3,
                   }}>{r.policy}{r.replay ? " (replay)" : ""}</button>
-                </td>
+                </th>
                 <td className="num" style={{ padding: "5px 8px" }}>{r.rep}</td>
                 <td className="num" style={{ padding: "5px 8px", textAlign: "right" }}>{r.budget}</td>
                 <td className="num" style={{ padding: "5px 8px", textAlign: "right" }}>{r.fetched}</td>
@@ -186,13 +202,13 @@ export default function RunsTab() {
                 <td className="num" style={{ padding: "5px 8px", textAlign: "right" }}>{num(r.harvest30, 2)}</td>
                 <td className="num" style={{ padding: "5px 8px", textAlign: "right" }}>{(r.input_tokens + r.output_tokens).toLocaleString()}</td>
                 <td style={{ padding: "5px 8px", textAlign: "right" }}>
-                  <Status ok={r.valid && !r.short}>{!r.valid ? "invalid" : r.short ? "short" : r.status}</Status>
+                  <Status live={false} ok={r.valid && !r.short}>{!r.valid ? "invalid" : r.short ? "short" : r.status}</Status>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        </div>
+        </ScrollRegion>
       )}</Loading>
       {sel && (
         <>

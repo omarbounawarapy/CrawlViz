@@ -40,8 +40,8 @@ export default function OverviewTab() {
         )}
 
         {Object.entries(o.graphs).map(([name, g]) => (
-          <section key={name}>
-            <SectionTitle>Graph: {name}</SectionTitle>
+          <section key={name} aria-labelledby={`bench-graph-${name}`}>
+            <SectionTitle id={`bench-graph-${name}`}>Graph: {name}</SectionTitle>
             <Row label="Pages / edges">{g.pages.toLocaleString()} / {g.edges.toLocaleString()}</Row>
             <Row label="Labels 0 / 1 / 2">{g.labels[0]} / {g.labels[1]} / {g.labels[2]}</Row>
             <Row label="Out-degree mean / median / max">
@@ -54,12 +54,13 @@ export default function OverviewTab() {
             <table style={{ marginTop: 12, fontSize: 13, borderCollapse: "collapse" }}>
               <thead><tr>
                 {["Depth", "Pages", "Label 1", "Label 2"].map((h) => (
-                  <th key={h} style={{ textAlign: "right", padding: "4px 14px", color: text.muted, fontWeight: 600 }}>{h}</th>
+                  <th scope="col" key={h} style={{ textAlign: "right", padding: "4px 14px", color: text.muted, fontWeight: 600 }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>{g.depth.map((d) => (
                 <tr key={d.depth}>
-                  {[d.depth, d.pages, d.label1, d.label2].map((v, i) => (
+                  <th scope="row" className="num" style={{ textAlign: "right", padding: "4px 14px", fontWeight: 600 }}>{d.depth}</th>
+                  {[d.pages, d.label1, d.label2].map((v, i) => (
                     <td key={i} className="num" style={{ textAlign: "right", padding: "4px 14px" }}>{v}</td>
                   ))}
                 </tr>

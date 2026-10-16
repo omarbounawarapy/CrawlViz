@@ -6,7 +6,8 @@ const { text, relevance } = getTheme().colors;
 // Label 0/1/2 is graded relevance, so it rides the relevance ramp: neutral for 0,
 // vermilion strengthening for 1 and 2. Shape (radius) repeats it.
 export const LABEL = {
-  0: { name: "Not relevant", fill: "#c5ccd5", ink: text.muted, r: 3 },
+  // Pale fill, drawn with a 3:1 outline wherever it is a mark on its own (WCAG 1.4.11).
+  0: { name: "Not relevant", fill: "#e3e8ee", ink: text.muted, r: 3 },
   1: { name: "Topical (1)", fill: relevance.ramp[2], ink: relevance.mark, r: 5 },
   2: { name: "Target (2)", fill: relevance.mark, ink: relevance.mark, r: 8 },
 };

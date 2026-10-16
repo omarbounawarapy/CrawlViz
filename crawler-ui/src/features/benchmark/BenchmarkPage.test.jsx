@@ -29,7 +29,7 @@ describe("BenchmarkPage", () => {
     render(<BenchmarkPage />);
     fireEvent.click(screen.getByRole("tab", { name: "Audit" }));
     expect(await screen.findByText("Page one")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "1" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Label 1" }));
     await waitFor(() => expect(putAuditLabel).toHaveBeenCalledWith("1", 1, "1"));
     expect(screen.queryByText(/judge_label/)).toBeNull();
   });
