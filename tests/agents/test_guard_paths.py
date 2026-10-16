@@ -5,6 +5,9 @@ from __future__ import annotations
 
 import pytest
 
+import subprocess
+from pathlib import Path
+
 from tests.agents.hook_runner import BLOCKED, ROOT, edit, run_hook
 
 
@@ -58,3 +61,11 @@ def test_chore_runner_area_comes_from_the_brief(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setenv("CRAWLVIZ_CHORE_PATHS", "pipelines/**")
     assert edit("chore-runner", "pipelines/robots.py").returncode == 0
     assert edit("chore-runner", "routes/run.py").returncode == BLOCKED
+
+
+def test_repository_under_a_temp_folder_is_still_guarded(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    payload = {"tool_name": "Edit", "cwd": str(tmp_path),
+               "tool_input": {"file_path": str(tmp_path / "pipelines" / "robots.py")}}
+    assert run_hook("guard_paths.py", payload, "--agent", "frontend-engineer").returncode == BLOCKED
+    assert run_hook("guard_paths.py", payload, "--agent", "backend-engineer").returncode == 0

@@ -29,13 +29,14 @@ def main() -> None:
     if not file_path:
         return
 
-    absolute = file_path if os.path.isabs(file_path) else os.path.join(
-        payload.get("cwd") or os.getcwd(), file_path)
-    if in_temp_root(absolute):
-        return
-
+    # Ownership rules apply inside any git work tree, including checkouts that live under
+    # a temp folder; temp roots are only free scratch space outside repositories.
     rel_path = repo_relative(file_path, payload.get("cwd"))
     if rel_path is None:
+        absolute = file_path if os.path.isabs(file_path) else os.path.join(
+            payload.get("cwd") or os.getcwd(), file_path)
+        if in_temp_root(absolute):
+            return
         block(f"{file_path} is outside the repository and outside the temp roots; "
               f"{agent} may not write there.")
     if can_write(agent, rel_path):
