@@ -4,6 +4,7 @@ import { formatTs, eventSummary } from "../../utils/formatters";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
 import Scrubber from "./Scrubber";
+import EmptyState from "../common/EmptyState";
 
 const theme  = getTheme();
 const styles = createComponentStyles(theme);
@@ -243,7 +244,7 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
             })}
             </ol>
             {visibleIndices.length === 0 && (
-              <div style={S.emptyState}>No events match the current filter.</div>
+              <EmptyState>No events match the current filter.</EmptyState>
             )}
           </div>
         </div>
