@@ -3,7 +3,7 @@ import Spider from "./Spider";
 import "./loading.css";
 
 const TIPS = [
-  "Scoring every link before it is fetched.",
+  "This screen only loads the app. No crawl is running.",
   "A local embedding pass runs first. It costs milliseconds.",
   "Only mid-confidence links reach the language model.",
   "Every decision is logged, so the crawl can be replayed.",
