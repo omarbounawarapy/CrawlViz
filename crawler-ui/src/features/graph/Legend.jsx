@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { getTheme } from "../../theme";
 
 const theme = getTheme();
@@ -7,22 +8,32 @@ const STAGES = ["CREATED", "FETCHED", "FILTERED", "SCORED", "EXPANDED"];
 // Plain-language key. Four ideas, four groups: lightness = how far the page
 // got, vermilion ring = how promising it looked, square/diamond = links the
 // crawler never turned into pages.
+// On a phone-width screen the key would cover the whole plate, so it starts folded there.
+const wideScreen = () => {
+  try { return window.matchMedia?.("(min-width: 601px)").matches ?? true; } catch { return true; }
+};
+
 export default function Legend() {
+  const [open, setOpen] = useState(wideScreen);
   const label = { fontSize: 12, color: theme.colors.text.secondary };
   const group = { display: "flex", flexDirection: "column", gap: 6 };
   const head  = { fontSize: 12, fontWeight: 600, color: theme.colors.text.primary };
 
   return (
-    <div
-      role="group"
-      aria-label="How to read the graph"
+    <details
+      className="graph-legend"
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
       style={{
-        position: "absolute", left: 16, right: 16, bottom: 16, zIndex: 5, width: "fit-content", maxWidth: "calc(100% - 32px)",
-        display: "flex", flexWrap: "wrap", gap: "12px 28px", alignItems: "flex-start",
+        position: "absolute", left: 16, bottom: 16, zIndex: 5, width: "fit-content", maxWidth: "calc(100% - 96px)",
         background: theme.colors.background.panel, border: `1px solid ${theme.colors.background.border}`,
-        borderRadius: theme.radii.lg, padding: "10px 14px", fontFamily: theme.typography.fontMono,
+        borderRadius: theme.radii.lg, padding: "6px 14px", fontFamily: theme.typography.fontMono,
       }}
     >
+      <summary className="disclosure" style={{ display: "flex", alignItems: "center", minHeight: 28, cursor: "pointer", fontSize: 12, fontWeight: 600, color: theme.colors.text.primary }}>
+        How to read the graph
+      </summary>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px 28px", alignItems: "flex-start", padding: "6px 0 4px" }}>
       <div style={group}>
         <span style={head}>How far it got</span>
         <svg width="148" height="22" aria-hidden="true">
@@ -66,6 +77,7 @@ export default function Legend() {
           Followed without the LLM
         </span>
       </div>
-    </div>
+      </div>
+    </details>
   );
 }

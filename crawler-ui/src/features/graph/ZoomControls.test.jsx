@@ -44,7 +44,7 @@ describe("zoom utility", () => {
 
   it("ignores the zoom keys while typing in a field", () => {
     setup();
-    const input = screen.getByLabelText("Find a node by URL");
+    const input = screen.getByLabelText("Find a page by URL");
     expect(() => fireEvent.keyDown(input, { key: "+" })).not.toThrow();
   });
 });

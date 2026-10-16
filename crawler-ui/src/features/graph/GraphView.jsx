@@ -30,29 +30,43 @@ function safeDecode(t) { try { return decodeURIComponent(t); } catch { return t;
 function ghostKey(c) { return `${c.parent_id}::${c.url}`; }
 
 // ── Filter bar: URL search + excluded-candidate toggle + fold control ──────
-function GraphControls({ showCandidates, onToggleCandidates, candidateCount, search, onSearch, fold }) {
+function GraphControls({ showCandidates, onToggleCandidates, candidateCount, search, onSearch, fold, matches, annotation }) {
   return (
-    <div style={{
-      position: "absolute", top: 16, left: 16, zIndex: 5,
+    <div className="graph-controls" style={{
+      position: "absolute", top: 16, left: 16, zIndex: 6,
       display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", maxWidth: "calc(100% - 32px)",
       background: theme.colors.background.panel, border: `1px solid ${theme.colors.background.border}`,
       borderRadius: theme.radii.lg, padding: "8px 12px", fontFamily: theme.typography.fontMono,
     }}>
+      {/* The toolbar floats over the plate, so its label is for assistive tech; the placeholder is an example. */}
+      <label htmlFor="graph-find" className="sr-only">Find a page by URL</label>
       <input
+        id="graph-find" type="search"
         value={search}
         onChange={e => onSearch(e.target.value)}
         placeholder="Find a URL…"
-        aria-label="Find a node by URL" className="find-input"
+        className="find-input"
         style={{
           background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none", borderBottom: `1px solid ${theme.colors.text.muted}`,
-          padding: "3px 2px", fontSize: 13, color: theme.colors.text.primary, width: 180,
+          padding: "3px 2px", fontSize: 13, color: theme.colors.text.primary, width: 180, maxWidth: "100%",
         }}
       />
+      <p role="status" className="sr-only">
+        {search.trim() ? `${matches} ${matches === 1 ? "page matches" : "pages match"}` : ""}
+      </p>
       {candidateCount > 0 && (
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: theme.colors.text.secondary, cursor: "pointer" }}>
           <input type="checkbox" checked={showCandidates} onChange={e => onToggleCandidates(e.target.checked)} />
           Show {candidateCount} links the crawler skipped
         </label>
+      )}
+      {annotation && (
+        <button type="button" onClick={() => document.getElementById(annotation)?.focus()} style={{
+          minHeight: 26, padding: "0 10px", borderRadius: theme.radii.md, fontSize: 12, fontWeight: 600,
+          background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
+        }}>
+          Read the annotation
+        </button>
       )}
       {fold && (
         <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: theme.colors.text.secondary }}>
@@ -60,7 +74,7 @@ function GraphControls({ showCandidates, onToggleCandidates, candidateCount, sea
             ? <>Showing the {fold.shown.toLocaleString()} most important of {fold.total.toLocaleString()} pages, so each stays legible.</>
             : <>Showing all {fold.total.toLocaleString()} pages.</>}
           <button type="button" onClick={fold.onToggle} style={{
-            height: 26, padding: "0 10px", borderRadius: theme.radii.md, fontSize: 12, fontWeight: 600,
+            minHeight: 26, padding: "0 10px", borderRadius: theme.radii.md, fontSize: 12, fontWeight: 600,
             background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
           }}>
             {fold.folded ? "Show all" : "Fold to important"}
@@ -85,7 +99,7 @@ function ZoomButton({ label, icon, onClick, disabled, shortcut }) {
     <button
       type="button" onClick={onClick} disabled={disabled} aria-label={label} title={shortcut ? `${label} (${shortcut})` : label}
       style={{
-        width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
+        minWidth: 30, minHeight: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
         borderRadius: theme.radii.md, background: "transparent",
         border: `1px solid ${disabled ? theme.colors.background.border : theme.colors.text.primary}`,
         color: disabled ? theme.colors.text.muted : theme.colors.text.primary,
@@ -100,7 +114,7 @@ function ZoomButton({ label, icon, onClick, disabled, shortcut }) {
 
 function ZoomControls({ k, canFocus, onIn, onOut, onFit, onFocus }) {
   return (
-    <div role="group" aria-label="Zoom" style={{
+    <div role="group" aria-label="Zoom" className="graph-zoom" style={{
       position: "absolute", right: 16, bottom: 16, zIndex: 5, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4,
       background: theme.colors.background.panel, border: `1px solid ${theme.colors.background.border}`,
       borderRadius: theme.radii.lg, padding: 6, fontFamily: theme.typography.fontMono,
@@ -159,7 +173,17 @@ function textWidth(str, bold) {
   return w;
 }
 
-export default function GraphView({ nodes, edges, candidates = [], replayIndex, onNodeClick, onBackgroundClick, selectedNodeId }) {
+const STATE_WORD = { CREATED: "found", FETCHED: "fetched", FILTERED: "filtered", SCORED: "scored", EXPANDED: "expanded" };
+
+/**
+ * The crawl plate. For the keyboard it is one tab stop: the focused page holds tabindex 0
+ * (roving tabindex), arrow keys walk the tree (Up: parent, Down: first child, Left/Right:
+ * siblings, Home: seed), Enter or Space selects. Zoom keys (+, -, 0, F) work only while focus
+ * is inside the graph, so they never capture typing elsewhere (WCAG 2.1.4).
+ * `heading` names the view for screen readers when the page has no other h1 for it.
+ * `annotationId` is the id of the panel that describes the selection; a button jumps to it.
+ */
+export default function GraphView({ nodes, edges, candidates = [], replayIndex, onNodeClick, onBackgroundClick, selectedNodeId, heading, annotationId }) {
   const svgRef     = useRef(null);
   const canvasRef  = useRef(null);
   const engineRef  = useRef(null);
@@ -176,6 +200,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   const annotateRef = useRef(() => {});
   const centerRef  = useRef({ x: 0, y: 0, aspect: 1.5 });
   const selectedRef = useRef(null);
+  const roverRef   = useRef(null);   // id of the page that holds the graph's one tab stop
+  const keyNavRef  = useRef(() => {});
 
   const [showCandidates, setShowCandidates] = useState(true);
   const [search, setSearch] = useState("");
@@ -217,6 +243,22 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
 
   const searchLower = search.trim().toLowerCase();
   selectedRef.current = selectedNodeId;
+  const matchCount = useMemo(() => {
+    if (!searchLower) return 0;
+    let n = 0;
+    for (const v of nodes.values()) if ((v.url || "").toLowerCase().includes(searchLower)) n += 1;
+    return n;
+  }, [nodes, searchLower]);
+  // Skipped and trusted links per page, so a page's spoken name says what the marks around it say.
+  const ghostCounts = useMemo(() => {
+    const m = new Map();
+    for (const c of candidates) {
+      const e = m.get(c.parent_id) ?? { dropped: 0, trusted: 0 };
+      if (c.decision === "dropped") e.dropped += 1; else e.trusted += 1;
+      m.set(c.parent_id, e);
+    }
+    return m;
+  }, [candidates]);
 
   // What to draw. The whole crawl if it stays legible at the zoom that fits it on screen; otherwise
   // the pinned pages plus as many of the most important others as still leave it legible. The heavy
@@ -267,12 +309,15 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     centerRef.current = { ...centerRef.current, x: W / 2, y: H / 2 };
 
     const container = svg.append("g").attr("class", "container");
-    container.append("g").attr("class", "ghosts");
+    // Skipped-link marks are drawn detail; each page's name carries their counts instead.
+    container.append("g").attr("class", "ghosts").attr("aria-hidden", "true");
     container.append("g").attr("class", "nodes");
 
     // ── Edges live on a canvas under the SVG: thousands of <line>s are the most
     // expensive thing the plate can draw, and a canvas redraws them in one pass.
-    // A rule is a hairline: one screen pixel at every zoom. More links, fainter each.
+    // A rule is a hairline: one screen pixel at every zoom. Links in view are drawn at full
+    // strength so each one keeps 3:1 against the paper (WCAG 1.4.11); only links outside the
+    // selected neighbourhood fade back.
     let drawQueued = false;
     const drawEdges = () => {
       drawQueued = false;
@@ -293,7 +338,7 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       ctx.strokeStyle = theme.colors.edge;
       ctx.fillStyle = theme.colors.arrow;
       ctx.lineWidth = 1;
-      const base = Math.min(0.7, Math.max(0.25, 1.25 - 0.3 * Math.log10(links.length + 1)));
+      const base = 1;
       for (const pass of [1, 0]) {
         ctx.globalAlpha = pass === 1 ? base : base * 0.12;
         ctx.beginPath();
@@ -724,17 +769,17 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
           // Let go and the page returns to its place in the tree.
           .on("end", (e, d) => { d.dragging = false; engineRef.current.retarget(250); })
       )
-      .attr("tabindex", 0)
       .attr("role", "button")
-      .attr("aria-label", d => d.isAggregate ? `Show ${d.count} more pages` : `Page ${d.url || d.node_id || d.id}`)
       .on("keydown", (event, d) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           activate(d);
-        }
+        } else keyNavRef.current(event, d);
       })
+      .on("focus", (event, d) => { roverRef.current = d.id; })
       .on("click", (event, d) => {
         event.stopPropagation();
+        roverRef.current = d.id;
         activate(d);
       });
 
@@ -809,6 +854,36 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       .attr("r", d => radius(d) + 9)
       .attr("opacity", d => (d.node_id ?? d.id) === selectedNodeId ? 1 : 0);
 
+    // What a page says when focused: where it points, how far it got, how promising it looked.
+    const childCount = new Map();
+    for (const n of nodeMapRef.current.values()) if (n.parent_id) childCount.set(n.parent_id, (childCount.get(n.parent_id) ?? 0) + 1);
+    const spoken = (d) => {
+      if (d.isAggregate) return `Show ${d.count} more pages`;
+      const url = d.url || d.node_id || d.id;
+      const parts = [safeDecode(url)];
+      parts.push(d.depth === 0 || !d.parent_id ? "seed page" : `depth ${d.depth ?? "unknown"}`);
+      if (STATE_WORD[d.state]) parts.push(STATE_WORD[d.state]);
+      const rel = relOf(d);
+      if (rel != null) parts.push(`relevance ${Math.round(rel * 100)} of 100`);
+      const kids = childCount.get(d.id) ?? 0;
+      if (kids) parts.push(`${kids} ${kids === 1 ? "child page" : "child pages"}`);
+      const g = ghostCounts.get(d.id);
+      if (g?.dropped) parts.push(`${g.dropped} ${g.dropped === 1 ? "link" : "links"} skipped`);
+      if (g?.trusted) parts.push(`${g.trusted} followed without the LLM`);
+      if (searchLower && !matchesSearch(d)) parts.push("does not match the search");
+      return parts.join(", ");
+    };
+    // One tab stop for the whole plate: the selected page, else the one last focused, else the seed.
+    const ids = new Set(d3Nodes.map(n => n.id));
+    if (!ids.has(roverRef.current)) roverRef.current = null;
+    if (selectedNodeId && ids.has(selectedNodeId)) roverRef.current = selectedNodeId;
+    if (!roverRef.current) roverRef.current = (d3Nodes.find(n => !n.parent_id || n.depth === 0) ?? d3Nodes[0])?.id ?? null;
+    nodeAll
+      .attr("data-node-id", d => d.id)
+      .attr("tabindex", d => (d.id === roverRef.current ? 0 : -1))
+      .attr("aria-label", spoken)
+      .attr("aria-current", d => ((d.node_id ?? d.id) === selectedNodeId ? "true" : null));
+
     // Handles for the annotation pass, and the page's visibility for it.
     nodeAll.each(function (d) {
       d.__t = { label: this.querySelector("text.label"), score: this.querySelector("text.score"), leader: this.querySelector("line.leader") };
@@ -821,24 +896,58 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     cullRef.current();
     annotateRef.current(120);
 
-  }, [vNodes, vEdges, liveCandidates, onNodeClick, selectedNodeId, maxPriority, neighborhood, searchLower, animate]);
+  }, [vNodes, vEdges, liveCandidates, onNodeClick, selectedNodeId, maxPriority, neighborhood, searchLower, animate, ghostCounts]);
 
-  // Keyboard: + and - step, 0 fits the plate, F centres on the selection. Ignored while typing.
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const t = e.target;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
-      const eng = engineRef.current;
-      if (!eng) return;
-      if (e.key === "+" || e.key === "=") { e.preventDefault(); eng.zoomBy(ZOOM_STEP); }
-      else if (e.key === "-" || e.key === "_") { e.preventDefault(); eng.zoomBy(1 / ZOOM_STEP); }
-      else if (e.key === "0") { e.preventDefault(); eng.fit(); }
-      else if ((e.key === "f" || e.key === "F") && selectedRef.current) { e.preventDefault(); eng.focusOn(selectedRef.current); }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  // Arrow keys walk the tree from the focused page. Siblings are ordered around the plate.
+  keyNavRef.current = (event, d) => {
+    const map = nodeMapRef.current;
+    const angle = (n) => Math.atan2(n.ty ?? 0, n.tx ?? 0);
+    const kids = (id) => [...map.values()].filter(n => n.parent_id === id).sort((a, b) => angle(a) - angle(b));
+    let next = null;
+    if (event.key === "ArrowUp") next = d.parent_id ? map.get(d.parent_id) : null;
+    else if (event.key === "ArrowDown") next = kids(d.id)[0] ?? null;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      const sibs = d.parent_id ? kids(d.parent_id) : [...map.values()].filter(n => !n.parent_id);
+      const i = sibs.findIndex(n => n.id === d.id);
+      if (sibs.length > 1) next = sibs[(i + (event.key === "ArrowRight" ? 1 : -1) + sibs.length) % sibs.length];
+    } else if (event.key === "Home") next = [...map.values()].find(n => !n.parent_id) ?? null;
+    else return;
+    event.preventDefault();
+    if (!next) return;
+    focusNode(next.id);
+  };
+
+  // Move the tab stop to a page and focus it, panning it into view if it is off screen.
+  function focusNode(id) {
+    const svg = svgRef.current;
+    const el = svg?.querySelector(`g.node-group[data-node-id="${CSS.escape(String(id))}"]`);
+    if (!el) return;
+    svg.querySelectorAll('g.node-group[tabindex="0"]').forEach(g => g.setAttribute("tabindex", "-1"));
+    el.setAttribute("tabindex", "0");
+    roverRef.current = id;
+    const n = nodeMapRef.current.get(id);
+    const t = transformRef.current;
+    if (n && Number.isFinite(n.x)) {
+      const X = n.x * t.k + t.x, Y = n.y * t.k + t.y;
+      if (X < 24 || Y < 24 || X > svg.clientWidth - 24 || Y > svg.clientHeight - 24) engineRef.current?.focusOn(id);
+    }
+    if (el.style.display === "none") el.style.display = null;
+    el.focus();
+  }
+
+  // Keyboard: + and - step, 0 fits the plate, F centres on the selection. Only while focus is in
+  // the graph (a single-key shortcut must not fire from anywhere on the page), never while typing.
+  const onGraphKey = (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+    const eng = engineRef.current;
+    if (!eng) return;
+    if (e.key === "+" || e.key === "=") { e.preventDefault(); eng.zoomBy(ZOOM_STEP); }
+    else if (e.key === "-" || e.key === "_") { e.preventDefault(); eng.zoomBy(1 / ZOOM_STEP); }
+    else if (e.key === "0") { e.preventDefault(); eng.fit(); }
+    else if ((e.key === "f" || e.key === "F") && selectedRef.current) { e.preventDefault(); eng.focusOn(selectedRef.current); }
+  };
 
   const fold = auto.folded ? {
     folded: folding,
@@ -848,14 +957,21 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   } : null;
 
   return (
-    <div style={styles.graphWrap}>
-      <canvas ref={canvasRef} aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
-      <svg ref={svgRef} style={{ ...styles.graphSvg, position: "relative" }} />
+    <div style={styles.graphWrap} onKeyDown={onGraphKey}>
+      {heading && <h1 className="sr-only">{heading}</h1>}
+      {/* The toolbar comes first in the tab order, as it reads on screen: find, then the plate. */}
       {nodes.size > 0 && <GraphControls
         showCandidates={showCandidates} onToggleCandidates={setShowCandidates}
         candidateCount={liveCandidates.length}
-        search={search} onSearch={setSearch} fold={fold}
+        search={search} onSearch={setSearch} fold={fold} matches={matchCount}
+        annotation={selectedNodeId && annotationId ? annotationId : null}
       />}
+      <canvas ref={canvasRef} aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+      <svg
+        ref={svgRef} style={{ ...styles.graphSvg, position: "relative" }}
+        role="group" aria-roledescription="crawl graph"
+        aria-label={`${nodes.size.toLocaleString()} ${nodes.size === 1 ? "page" : "pages"}. Arrow keys move between linked pages, Enter selects, plus and minus zoom.`}
+      />
       {nodes.size > 0 && <Legend />}
       {nodes.size > 0 && (
         <ZoomControls
