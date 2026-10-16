@@ -7,7 +7,9 @@ import sample from "./sampleData.json";
 const theme = getTheme();
 const { text } = theme.colors;
 const R = 78;
-const PALETTE = ["#0f1b2d", "#56657a", "#3d4c62", "#8794a5", "#33435a", "#aab4c0"];
+// Cluster inks keep 3:1 on the card; each dot also carries its cluster's letter (WCAG 1.4.1).
+const PALETTE = ["#0f1b2d", "#56657a", "#707d90", "#33435a"];
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const f2 = (v) => v.toFixed(2);
 
 /** `target_top_k`: which reference vectors count towards a link's topic similarity. */
@@ -24,20 +26,26 @@ export function TopKExample({ k }) {
       <p style={{ fontSize: 13, color: text.secondary, margin: "0 0 8px" }}>
         Link being scored: “{sample.topK.link}”. Each row is a reference text describing the target, with how close the link is to it.
       </p>
+      <ol style={{ listStyle: "none", margin: 0, padding: 0 }}>
       {sorted.map((b, i) => {
         const on = i < kk;
+        // Rows outside the top k keep full-contrast text; the bar goes hollow and the row says so.
         return (
-          <div key={b.label} style={{ display: "grid", gridTemplateColumns: "210px 1fr 40px", gap: 10, alignItems: "center", padding: "2px 0", opacity: on ? 1 : 0.45 }}>
-            <span style={{ fontSize: 13 }}>{b.label}</span>
-            <div style={{ height: 12, background: "#e3e8ee" }}>
-              <div style={{ width: `${b.similarity * 100}%`, height: "100%", background: on ? text.primary : "#aab4c0" }} />
+          <li key={b.label} style={{ display: "grid", gridTemplateColumns: "minmax(0, 210px) minmax(60px, 1fr) 40px", gap: 10, alignItems: "center", padding: "2px 0" }}>
+            <span style={{ fontSize: 13, color: on ? text.primary : text.secondary }}>
+              {b.label}{!on && <span style={{ color: text.muted }}> (not counted)</span>}
+            </span>
+            <div aria-hidden="true" style={{ height: 12, background: "#e3e8ee" }}>
+              <div style={{ width: `${b.similarity * 100}%`, height: "100%", boxSizing: "border-box",
+                            background: on ? text.primary : "transparent", border: on ? "none" : `1.5px solid ${theme.colors.control}` }} />
             </div>
             <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}>{f2(b.similarity)}</span>
-          </div>
+          </li>
         );
       })}
+      </ol>
       <p style={{ fontSize: 13, color: text.muted, margin: "6px 0 0" }}>
-        Darker rows count towards the average. A larger k rewards links that match several reference texts at once.
+        Filled bars count towards the average; hollow ones do not. A larger k rewards links that match several reference texts at once.
       </p>
     </ExplainerFrame>
   );
@@ -56,20 +64,27 @@ export function ClusterExample({ eps, minSamples }) {
       summary={`${groups} cluster${groups === 1 ? "" : "s"} and ${noise} stray link${noise === 1 ? "" : "s"}. Two links are neighbours when they sit within ${Math.round(reach)}° of each other.`}
     >
       <svg viewBox="-100 -100 200 200" width="220" role="img"
-           aria-label={`${angles.length} example links on a circle, grouped into ${groups} clusters with ${noise} strays.`}>
-        <circle r={R} fill="none" stroke="#d3d9e0" />
+           aria-label={`${angles.length} example links on a circle, grouped into ${groups} clusters with ${noise} strays.${
+             groups ? ` ${[...new Set(labels.filter((l) => l >= 0))].map((l) => `Cluster ${LETTERS[l % 26]}: ${labels.filter((x) => x === l).length} links`).join(". ")}.` : ""}`}>
+        <circle r={R} fill="none" stroke={theme.colors.control} />
         {angles.map((a, i) => {
           const rad = (a * Math.PI) / 180;
           const l = labels[i];
+          const x = R * Math.cos(rad), y = -R * Math.sin(rad);
           return (
-            <circle key={a} cx={R * Math.cos(rad)} cy={-R * Math.sin(rad)} r="5"
-                    fill={l < 0 ? "none" : PALETTE[l % PALETTE.length]}
-                    stroke={l < 0 ? text.muted : "none"} strokeWidth="1.5" />
+            <g key={a}>
+              <circle cx={x} cy={y} r="5"
+                      fill={l < 0 ? "none" : PALETTE[l % PALETTE.length]}
+                      stroke={l < 0 ? text.muted : "none"} strokeWidth="1.5" />
+              {l >= 0 && (
+                <text x={x * 1.22} y={y * 1.22 + 4} textAnchor="middle" fontSize="11" fill={text.secondary}>{LETTERS[l % 26]}</text>
+              )}
+            </g>
           );
         })}
       </svg>
       <p style={{ fontSize: 13, color: text.muted, margin: "0" }}>
-        Filled dots share a colour with their cluster; hollow dots belong to none. A cluster needs at least {minSamples} links
+        Filled dots are lettered by cluster; hollow dots belong to none. A cluster needs at least {minSamples} links
         counting the link itself.
       </p>
     </ExplainerFrame>

@@ -36,7 +36,7 @@ function DelayHandle({ top, max, value, onChange }) {
   };
   return (
     <g>
-      <line x1={PAD.l} x2={W - PAD.r} y1={y(value)} y2={y(value)} stroke={text.primary} strokeDasharray="4 3" />
+      <line aria-hidden="true" x1={PAD.l} x2={W - PAD.r} y1={y(value)} y2={y(value)} stroke={text.primary} strokeDasharray="4 3" />
       <circle cx={W - PAD.r} cy={y(value)} r="8" fill={text.primary} stroke="#fff" strokeWidth="2"
               role="slider" tabIndex={0} aria-label="Minimum delay between requests"
               aria-valuemin={0} aria-valuemax={MAX_DELAY} aria-valuenow={value} aria-valuetext={`${fmt(value)} seconds`}
@@ -75,6 +75,8 @@ function Panel({ top, points, field, max, tMax, label, handle }) {
   const hits = points.filter((p) => p.outcome === "429");
   return (
     <g>
+      {/* The drawn chart is described by the frame's label and summary; only the handle is a control. */}
+      <g aria-hidden="true">
       <text x={PAD.l} y={top + 10} fontSize="13" fontWeight="600" fill={text.primary}>{label}</text>
       {hits.length > 0 && (
         <rect x={x(hits[0].t)} y={y(max)} width={Math.max(x(hits[hits.length - 1].t) - x(hits[0].t), 2)} height={PANEL_H}
@@ -90,6 +92,7 @@ function Panel({ top, points, field, max, tMax, label, handle }) {
         <text key={t} x={x(t)} y={y(0) + 16} textAnchor="middle" fontSize="12" fill={text.muted}>{Math.round(t)}</text>
       ))}
       <path d={d} fill="none" stroke={text.primary} strokeWidth="2" />
+      </g>
       {handle && <DelayHandle top={top} max={max} value={handle.value} onChange={handle.onChange} />}
     </g>
   );
@@ -124,12 +127,12 @@ export default function BackoffChart({ cfg, latency = 0.3, onMinDelay }) {
       <div style={{ marginBottom: 8 }}>
         <Chip pressed={burst} onClick={() => setBurst((v) => !v)}>Site answers 429 for 8 requests in a row</Chip>
       </div>
-      <svg viewBox={`0 0 ${W} ${total}`} width="100%" role="img"
+      <svg viewBox={`0 0 ${W} ${total}`} width="100%" role="group"
            aria-label={`Example of ${N} requests over ${fmt(tMax)} seconds. The wait before a request peaks at ${fmt(Math.max(...points.map((p) => p.wait)))} seconds.`}>
         <Panel top={0} points={points} field="wait" max={waitMax} tMax={tMax} label="Wait before each request (seconds)"
                handle={handle} />
         <Panel top={panelH + GAP - 8} points={points} field="rate" max={rateMax} tMax={tMax} label="Requests per second" />
-        <text x={PAD.l + (W - PAD.l - PAD.r) / 2} y={total - 2} textAnchor="middle" fontSize="12" fill={text.secondary}>
+        <text aria-hidden="true" x={PAD.l + (W - PAD.l - PAD.r) / 2} y={total - 2} textAnchor="middle" fontSize="12" fill={text.secondary}>
           Time since the crawl started (seconds)
         </text>
       </svg>

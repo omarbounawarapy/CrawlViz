@@ -53,7 +53,7 @@ export default function CascadeFunnel({ cfg }) {
           const mid = (i + 0.5) / BINS;
           return (
             <rect key={i} x={x(i / BINS) + 1} y={HIST_H - h} width={W / BINS - 2} height={h}
-                  fill={ZONE[zoneOf(mid)]} />
+                  fill={ZONE[zoneOf(mid)]} stroke={h > 0 ? theme.colors.control : "none"} strokeWidth="1" />
           );
         })}
         {[c.lowCut, c.highCut].map((v, i) => (
@@ -86,7 +86,8 @@ export default function CascadeFunnel({ cfg }) {
         {rows.map((r, i) => (
           <g key={r.label} transform={`translate(0 ${i * 26})`}>
             <text x="0" y="16" fontSize="13" fill={text.secondary}>{r.label}</text>
-            <rect x={labelW} y="3" width={Math.max(r.n > 0 ? 3 : 0, (r.n / c.total) * barW)} height="16" fill={r.fill} />
+            <rect x={labelW} y="3" width={Math.max(r.n > 0 ? 3 : 0, (r.n / c.total) * barW)} height="16" fill={r.fill}
+                  stroke={r.n > 0 ? theme.colors.control : "none"} strokeWidth="1" />
             <text x={labelW + Math.max(r.n > 0 ? 3 : 0, (r.n / c.total) * barW) + 8} y="16" fontSize="13" fill={text.primary}>
               {r.n}{r.llm ? " to LLM" : ""}
             </text>
