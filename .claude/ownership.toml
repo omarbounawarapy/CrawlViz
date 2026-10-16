@@ -1,0 +1,175 @@
+# Who may write where. Single source for .claude/hooks/guard_paths.py and AGENTS.md.
+#
+# Paths are repo-relative globs: "*" matches inside one path segment, "**" matches any
+# number of segments. A path is writable by an agent when it matches one of the agent's
+# `write` globs and none of its `exclude` globs. The first agent (in file order) whose
+# area matches is reported as the owner when another agent is blocked.
+#
+# Paths outside the repository are writable only under the temp roots in [shared].
+
+[shared]
+# Every agent may write here (scratch output, tool caches).
+temp_roots = ["/tmp/claude-*", "/tmp/pytest-*"]
+# Files that change scores, ordering or prompts. Writable by their owner, but every
+# change needs research-scientist review (AGENTS.md, workflow step 3).
+method_files = [
+  "pipelines/scoring_pipeline.py",
+  "pipelines/priority_pipeline.py",
+  "priority/**",
+  "nlp/**",
+  "services/nlp_service.py",
+  "services/scoring_service.py",
+  "services/results_mapper.py",
+  "models/prompts.py",
+  "src/crawlviz/score/**",
+  "src/crawlviz/rank/**",
+  "src/crawlviz/nlp/**",
+  "prompts/**",
+]
+
+[agents.lead]
+write = [".claude/**", "AGENTS.md", "CLAUDE.md", ".left-undone.json", ".gitignore"]
+
+[agents.architect]
+write = ["docs/adr/**"]
+
+[agents.research-scientist]
+write = ["benchmark/**", "docs/research/**", "tools/nlp_eval.py"]
+exclude = ["benchmark/results/**", "benchmark/analysis/**", "**/SHA256SUMS"]
+
+[agents.ux-researcher]
+write = ["PRODUCT.md", "docs/ux/**", "docs/usability-log.md", "crawler-ui/e2e/usability/**"]
+
+[agents.contracts-steward]
+write = [
+  "src/crawlviz/contracts/**",
+  "src/crawlviz/api/schemas/**",
+  "crawler-ui/src/shared/api/**",
+  "tools/gen_*",
+  "docs/crawl_messages.ts",
+  "crawler-ui/src/features/config/fixtures/**",
+  "tests/contracts/**",
+  "tests/test_wire_protocol.py",
+  "tests/test_explainer_fixtures.py",
+]
+
+[agents.llm-engineer]
+write = [
+  "src/crawlviz/score/llm/**",
+  "prompts/**",
+  "infrastructure/*_translator.py",
+  "infrastructure/llm_handler.py",
+  "infrastructure/key_manager.py",
+  "infrastructure/call_budget.py",
+  "infrastructure/token_usage.py",
+  "services/llm_contracts.py",
+  "models/prompts.py",
+  "models/llm_context.py",
+  "models/scoring_context.py",
+  "nlp/expansion_prompt_builder.py",
+  "traceability/traced_llm_handler.py",
+  "tests/llm/**",
+  "tests/test_llm_providers.py",
+  "tests/test_call_budget.py",
+]
+
+[agents.backend-engineer]
+write = [
+  "src/crawlviz/**",
+  "core/**", "config/**", "events/**", "infrastructure/**", "models/**", "nlp/**",
+  "pipelines/**", "priority/**", "routes/**", "services/**", "traceability/**",
+  "ui_bridge/**", "utils/**", "tools/**", "templates/**", "main.py",
+  "tests/**",
+]
+exclude = [
+  "src/crawlviz/score/llm/**", "src/crawlviz/contracts/**", "src/crawlviz/api/schemas/**",
+  "tools/gen_*", "tools/nlp_eval.py",
+  "tests/pins/**", "tests/load/**", "tests/conftest.py", "tests/contracts/**",
+  "tests/llm/**", "tests/agents/**",
+  "tests/test_wire_protocol.py", "tests/test_explainer_fixtures.py",
+  "tests/test_llm_providers.py", "tests/test_call_budget.py", "tests/test_benchmark*.py",
+  # Owned by llm-engineer until the package move puts them under src/crawlviz/score/llm/.
+  "infrastructure/*_translator.py", "infrastructure/llm_handler.py",
+  "infrastructure/key_manager.py", "infrastructure/call_budget.py",
+  "infrastructure/token_usage.py", "services/llm_contracts.py", "models/prompts.py",
+  "models/llm_context.py", "models/scoring_context.py", "nlp/expansion_prompt_builder.py",
+  "traceability/traced_llm_handler.py",
+]
+
+[agents.design-system-engineer]
+write = [
+  "DESIGN.md",
+  "docs/glossary.md",
+  "crawler-ui/src/shared/theme/**",
+  "crawler-ui/src/shared/ui/**",
+  "crawler-ui/src/theme/**",
+  "crawler-ui/src/global.css",
+  "crawler-ui/scripts/build-tokens.*",
+  "crawler-ui/public/fonts/**",
+]
+
+[agents.frontend-engineer]
+write = ["crawler-ui/src/**", "crawler-ui/e2e/**", "crawler-ui/index.html", "crawler-ui/public/**"]
+exclude = [
+  "crawler-ui/src/shared/theme/**", "crawler-ui/src/shared/ui/**", "crawler-ui/src/shared/api/**",
+  "crawler-ui/src/theme/**", "crawler-ui/src/global.css",
+  "crawler-ui/src/features/config/fixtures/**",
+  "crawler-ui/e2e/support/**", "crawler-ui/e2e/usability/**", "crawler-ui/src/test/**",
+  "crawler-ui/public/fonts/**",
+]
+
+[agents.platform-engineer]
+write = [
+  "Makefile", ".github/**", "pyproject.toml", "uv.lock", "pytest.ini",
+  "crawler-ui/package.json", "crawler-ui/package-lock.json", "crawler-ui/*.config.*",
+  "crawler-ui/tsconfig*.json", "crawler-ui/.env.example", "crawler-ui/.nvmrc",
+  "lefthook.yml", "Dockerfile", "compose.yml", ".dockerignore", ".python-version",
+  ".env.example", ".git-blame-ignore-revs", "tools/check_changed.py",
+]
+
+[agents.test-engineer]
+write = [
+  "tests/pins/**", "tests/load/**", "tests/conftest.py", "tests/agents/**",
+  "crawler-ui/e2e/support/**", "crawler-ui/src/test/**", "crawler-ui/playwright.config.*",
+]
+
+[agents.docs-writer]
+write = [
+  "docs/**", "README.md", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md",
+  "CITATION.cff", "codemeta.json", "crawler-ui/README.md", "LICENSE",
+]
+exclude = [
+  "docs/adr/**", "docs/ux/**", "docs/research/**", "docs/usability-log.md",
+  "docs/glossary.md", "docs/crawl_messages.ts",
+]
+
+[agents.chore-runner]
+# Area comes from the task brief: the lead passes it as CRAWLVIZ_CHORE_PATHS
+# (comma-separated globs) in the environment of the run.
+write = []
+from_env = "CRAWLVIZ_CHORE_PATHS"
+
+# Gatekeepers and support agents with no write area.
+[agents.code-reviewer]
+write = []
+
+[agents.security-reviewer]
+write = []
+
+[agents.a11y-perf-auditor]
+write = []
+
+# Shell rules read by .claude/hooks/guard_bash.py.
+[bash]
+# Agents whose shell must not change files (redirects only into temp roots).
+readonly = ["code-reviewer", "security-reviewer", "a11y-perf-auditor", "architect"]
+# Agents that may create local commits in their worktree. Nobody pushes: Omar does.
+committers = [
+  "lead", "contracts-steward", "backend-engineer", "llm-engineer", "design-system-engineer",
+  "frontend-engineer", "platform-engineer", "test-engineer", "docs-writer", "chore-runner",
+  "research-scientist", "ux-researcher",
+]
+# Agents that may add or upgrade dependencies (uv add, npm install <pkg>).
+dependency_managers = ["platform-engineer"]
+# Agents that may use network tools (curl, wget). Live LLM runs still need Omar's go-ahead.
+network = ["lead", "research-scientist", "platform-engineer"]
