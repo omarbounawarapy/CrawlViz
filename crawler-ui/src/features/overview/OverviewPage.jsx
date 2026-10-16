@@ -18,7 +18,7 @@ function FunnelBar({ label, count, max, color }) {
       <div style={{ width: 76, fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, textTransform: "none", letterSpacing: theme.typography.letterSpacing.wide }}>
         {label}
       </div>
-      <div style={{ flex: 1, height: 18, background: theme.colors.background.border, borderRadius: theme.radii.sm, overflow: "hidden" }}>
+      <div aria-hidden="true" style={{ flex: 1, height: 18, background: theme.colors.background.border, borderRadius: theme.radii.sm, overflow: "hidden", boxShadow: `inset 0 0 0 1px ${theme.colors.control}` }}>
         <div style={{ width: "100%", height: "100%", background: color, transform: `scaleX(${pct / 100})`, transformOrigin: "left", transition: "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)" }} />
       </div>
       <div style={{ width: 46, textAlign: "right", fontSize: theme.typography.size.sm, color: theme.colors.text.primary, fontVariantNumeric: "tabular-nums" }}>
@@ -61,7 +61,7 @@ export default function OverviewPage({ state, metrics }) {
     <div style={S.panel}>
       <div style={S.panelHeader}>
         <div>
-          <div style={S.panelHeaderTitle}>Overview</div>
+          <h2 style={{ ...S.panelHeaderTitle, margin: 0 }}>Overview</h2>
           <div style={S.panelHeaderSubtitle}>What is this crawl doing right now?</div>
         </div>
       </div>
@@ -77,19 +77,18 @@ export default function OverviewPage({ state, metrics }) {
             ["Errors", state.errors.length, "across all pipeline stages"],
             ["Slowest stage", bottleneckStage ? PIPELINE_STAGE_LABELS[bottleneckStage.stage] : "Not enough data yet", bottleneckStage ? `average ${formatDuration(bottleneckStage.avg)}` : null],
           ].map(([label, value, sub]) => (
-            <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, padding: "10px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-              <div>
-                <dt style={{ fontSize: 14, color: theme.colors.text.primary }}>{label}</dt>
-                {sub && <dd style={{ margin: 0, fontSize: 12, color: theme.colors.text.muted }}>{sub}</dd>}
-              </div>
-              <dd className="num" style={{ margin: 0, fontSize: 16, fontWeight: 600, color: theme.colors.text.primary, textAlign: "right" }}>{value}</dd>
+            // A <div> may group one term with its values directly under <dl>; the layout is a grid.
+            <div key={label} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", columnGap: 16, alignItems: "baseline", padding: "10px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
+              <dt style={{ fontSize: 14, color: theme.colors.text.primary, gridColumn: 1, gridRow: 1 }}>{label}</dt>
+              <dd className="num" style={{ margin: 0, fontSize: 16, fontWeight: 600, color: theme.colors.text.primary, textAlign: "right", gridColumn: 2, gridRow: 1 }}>{value}</dd>
+              {sub && <dd style={{ margin: 0, fontSize: 12, color: theme.colors.text.muted, gridColumn: 1, gridRow: 2 }}>{sub}</dd>}
             </div>
           ))}
         </dl>
 
         {/* Cascade funnel */}
         <div style={{ marginTop: 24 }}>
-          <div style={S.sectionCardTitle}>How far pages got</div>
+          <h3 style={{ ...S.sectionCardTitle, fontWeight: 400 }}>How far pages got</h3>
           {FUNNEL_STAGES.map((stage, i) => (
             <FunnelBar
               key={stage}
@@ -106,14 +105,14 @@ export default function OverviewPage({ state, metrics }) {
 
         {/* Pipeline snapshot */}
         <div style={{ marginTop: 24 }}>
-          <div style={S.sectionCardTitle}>Pipeline completions</div>
+          <h3 style={{ ...S.sectionCardTitle, fontWeight: 400 }}>Pipeline completions</h3>
           {PIPELINE_STAGES.map(stage => {
             const stats = state.pipelineStats[stage];
             const pct = maxPipelineCompleted > 0 ? ((stats?.completed || 0) / maxPipelineCompleted) * 100 : 0;
             return (
               <div key={stage} style={S.breakdownRow}>
                 <div style={S.breakdownLabel}>{PIPELINE_STAGE_LABELS[stage]}</div>
-                <div style={S.breakdownBarTrack}>
+                <div style={S.breakdownBarTrack} aria-hidden="true">
                   <div style={S.breakdownBarFill(`${pct}%`, theme.colors.pipeline.completed)} />
                 </div>
                 <div style={S.breakdownValue}>{stats?.completed || 0}</div>

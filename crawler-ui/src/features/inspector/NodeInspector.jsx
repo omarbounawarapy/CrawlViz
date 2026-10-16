@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
 import { formatDuration, hostnameOf, pathOf, shortId } from "../../utils/formatters";
+import { Tabs, TabPanel } from "../common/Form";
 
 const theme = getTheme();
 const S = createComponentStyles(theme);
 
-const TABS = ["Overview", "Scoring", "Activity"];
+
 
 // Every named sub-signal the cascade's NLP stage can produce (see
 // nlp/feature_extractor.py FeatureExtractor.extract_all / traceability's
@@ -56,23 +57,27 @@ function StateBadge({ state }) {
   );
 }
 
+// One term and its value; a run of Rows sits inside a <dl>.
 function Row({ label, value, mono = true }) {
   return (
     <div style={S.nodeDetailRow}>
-      <div style={S.nodeDetailKey}>{label}</div>
-      <div style={{ ...S.nodeDetailVal, maxWidth: "220px", fontFamily: mono ? theme.typography.fontMono : theme.typography.fontDisplay }}>
+      <dt style={S.nodeDetailKey}>{label}</dt>
+      <dd style={{ ...S.nodeDetailVal, margin: 0, maxWidth: "220px", fontFamily: mono ? theme.typography.fontMono : theme.typography.fontDisplay }}>
         {value ?? "—"}
-      </div>
+      </dd>
     </div>
   );
 }
 
+const subhead = { ...S.sectionCardTitle, fontWeight: 400 };
+
 function OverviewTab({ node, children, onSelectNode }) {
   return (
     <div>
+      <dl style={{ margin: 0 }}>
       <div style={{ marginBottom: 14 }}>
-        <div style={S.breakdownLabel}>URL</div>
-        <div style={S.inspectorUrl}>{node.url}</div>
+        <dt style={S.breakdownLabel}>URL</dt>
+        <dd style={{ ...S.inspectorUrl, margin: 0 }}>{node.url}</dd>
       </div>
       <Row label="State" value={<StateBadge state={node.state} />} />
       <Row label="Depth" value={node.depth} />
@@ -81,27 +86,31 @@ function OverviewTab({ node, children, onSelectNode }) {
       <Row
         label="Parent"
         value={node.parent_id ? (
-          <button onClick={() => onSelectNode(node.parent_id)} style={linkBtnStyle}>{shortId(node.parent_id, 12)}</button>
+          <button type="button" onClick={() => onSelectNode(node.parent_id)} style={linkBtnStyle}
+                  aria-label={`Parent page ${shortId(node.parent_id, 12)}, select it`}>{shortId(node.parent_id, 12)}</button>
         ) : "None (seed page)"}
       />
       <Row label="Discovered" value={relativeAge(node.created_at)} />
       <Row label="Links found" value={node.links_accepted != null ? `${node.links_accepted} accepted / ${node.links_rejected ?? 0} rejected` : "—"} />
       <Row label="Items stored" value={node.items_accepted ?? "—"} />
+      </dl>
 
-      <div style={{ ...S.sectionCardTitle, marginTop: 16 }}>Children ({children.length})</div>
+      <h3 style={{ ...subhead, marginTop: 16 }}>Children ({children.length})</h3>
       {children.length === 0 ? (
         <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted }}>
           {node.state === "EXPANDED" ? "Expanded with no surviving children." : "Not expanded yet."}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 180, overflowY: "auto" }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 3, maxHeight: 180, overflowY: "auto" }}>
           {children.map(c => (
-            <button key={c.node_id} onClick={() => onSelectNode(c.node_id)} style={{ ...linkBtnStyle, textAlign: "left", display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pathOf(c.url) || hostnameOf(c.url)}</span>
-              <StateBadge state={c.state} />
-            </button>
+            <li key={c.node_id}>
+              <button type="button" onClick={() => onSelectNode(c.node_id)} style={{ ...linkBtnStyle, textAlign: "left", display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pathOf(c.url) || hostnameOf(c.url)}</span>
+                <StateBadge state={c.state} />
+              </button>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
@@ -131,7 +140,7 @@ function ScoringTab({ detail }) {
 
   return (
     <div>
-      <div style={S.sectionCardTitle}>NLP breakdown</div>
+      <h3 style={subhead}>NLP breakdown</h3>
       {signals.length === 0 ? (
         <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, marginBottom: 12 }}>
           No sub-signal breakdown available.
@@ -142,7 +151,7 @@ function ScoringTab({ detail }) {
         return (
           <div key={key} style={S.breakdownRow}>
             <div style={S.breakdownLabel} title={key}>{key.replace(/_/g, " ")}</div>
-            <div style={S.breakdownBarTrack}>
+            <div style={S.breakdownBarTrack} aria-hidden="true">
               <div style={S.breakdownBarFill(`${pct}%`, positive ? theme.colors.text.primary : `repeating-linear-gradient(45deg, ${theme.colors.text.secondary} 0 2px, transparent 2px 5px)`)} />
             </div>
             <div style={S.breakdownValue}>{value.toFixed(2)}</div>
@@ -152,6 +161,7 @@ function ScoringTab({ detail }) {
 
       <div style={{ height: 1, background: theme.colors.background.border, margin: "14px 0" }} />
 
+      <dl style={{ margin: 0 }}>
       <Row label="NLP score" value={typeof detail.nlp_score === "number" ? detail.nlp_score.toFixed(3) : "—"} />
       <Row
         label="LLM score"
@@ -161,6 +171,7 @@ function ScoringTab({ detail }) {
       />
       <Row label="Final priority" value={typeof detail.priority === "number" ? detail.priority.toFixed(3) : "—"} />
       <Row label="Strategy" value={detail.priority_strategy} />
+      </dl>
     </div>
   );
 }
@@ -170,7 +181,7 @@ function ActivityTab({ history, errors }) {
     <div>
       {errors.length > 0 && (
         <>
-          <div style={{ ...S.sectionCardTitle, color: theme.colors.accent.red }}>Errors ({errors.length})</div>
+          <h3 style={{ ...subhead, color: theme.colors.accent.red }}>Errors ({errors.length})</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
             {errors.map((e, i) => (
               <div key={i} style={{
@@ -189,7 +200,7 @@ function ActivityTab({ history, errors }) {
         </>
       )}
 
-      <div style={S.sectionCardTitle}>Pipeline history</div>
+      <h3 style={subhead}>Pipeline history</h3>
       {history.length === 0 ? (
         <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted }}>
           No pipeline-stage events recorded for this node in the current event log
@@ -232,7 +243,7 @@ function whySentence(node, detail) {
 }
 
 export default function NodeInspector({ node, detail, allNodes, errors, eventLog, onSelectNode, onClose }) {
-  const [tab, setTab] = useState("Overview");
+  const [tab, setTab] = useState("overview");
 
   const children = useMemo(() => {
     if (!node) return [];
@@ -258,19 +269,19 @@ export default function NodeInspector({ node, detail, allNodes, errors, eventLog
   if (!node) return null;
 
   return (
-    <div className="inspector-dock" style={S.inspectorDock}>
+    <aside id="inspector" tabIndex={-1} aria-labelledby="inspector-title" className="inspector-dock focus-box" style={S.inspectorDock}>
       <div style={S.inspectorHeader}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: theme.typography.size.xs, fontFamily: theme.typography.fontDisplay, fontWeight: 600, color: theme.colors.text.primary }}>
-            {pathOf(node.url) || hostnameOf(node.url)}
-          </div>
+          <h2 id="inspector-title" style={{ fontSize: theme.typography.size.xs, fontFamily: theme.typography.fontDisplay, fontWeight: 600, color: theme.colors.text.primary, margin: 0 }}>
+            <span className="sr-only">Annotation:</span>{" "}{pathOf(node.url) || hostnameOf(node.url)}
+          </h2>
           {hostnameOf(node.url) && hostnameOf(node.url) !== (pathOf(node.url) || hostnameOf(node.url)) && (
             <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "260px" }}>
               {hostnameOf(node.url)}
             </div>
           )}
         </div>
-        <button onClick={onClose} style={S.nodeDetailCloseBtn} aria-label="Close annotation panel">
+        <button type="button" onClick={onClose} style={{ ...S.nodeDetailCloseBtn, minWidth: 24, minHeight: 24 }} aria-label="Close annotation panel">
           <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
         </button>
       </div>
@@ -282,19 +293,20 @@ export default function NodeInspector({ node, detail, allNodes, errors, eventLog
         {whySentence(node, detail)}
       </p>
 
-      <div style={S.tabRow}>
-        {TABS.map(t => (
-          <button key={t} onClick={() => setTab(t)} style={S.tabBtn(tab === t)}>
-            {t}{t === "Activity" && nodeErrors.length > 0 ? ` (${nodeErrors.length})` : ""}
-          </button>
-        ))}
+      <div style={{ ...S.tabRow, padding: `0 ${theme.spacing.lg}` }}>
+        <Tabs id="inspector" label="Annotation views" value={tab} onChange={setTab} options={[
+          ["overview", "Overview"], ["scoring", "Scoring"],
+          ["activity", `Activity${nodeErrors.length > 0 ? ` (${nodeErrors.length})` : ""}`],
+        ]} />
       </div>
 
       <div style={S.panelScroll}>
-        {tab === "Overview" && <OverviewTab node={node} children={children} onSelectNode={onSelectNode} />}
-        {tab === "Scoring" && <ScoringTab detail={detail} />}
-        {tab === "Activity" && <ActivityTab history={history} errors={nodeErrors} />}
+        <TabPanel tabsId="inspector" value={tab}>
+          {tab === "overview" && <OverviewTab node={node} children={children} onSelectNode={onSelectNode} />}
+          {tab === "scoring" && <ScoringTab detail={detail} />}
+          {tab === "activity" && <ActivityTab history={history} errors={nodeErrors} />}
+        </TabPanel>
       </div>
-    </div>
+    </aside>
   );
 }

@@ -16,12 +16,18 @@ function stagePhase(stats) {
   return "idle";
 }
 
+const PHASE_WORD = { idle: "Idle", active: "Running", completed: "Done", failed: "Has failures" };
+
 function StageBox({ stage, stats }) {
   const phase = stagePhase(stats);
   const inFlight = Math.max(0, (stats?.started || 0) - (stats?.completed || 0) - (stats?.failed || 0));
   return (
-    <div style={S.stageBox(phase)}>
-      <div style={S.stageBoxLabel}>{PIPELINE_STAGE_LABELS[stage] || stage}</div>
+    <div style={{ ...S.stageBox(phase), borderStyle: phase === "idle" ? "dashed" : "solid", borderWidth: phase === "failed" ? 2 : 1 }}>
+      <h3 style={{ ...S.stageBoxLabel, fontWeight: 400, margin: 0 }}>{PIPELINE_STAGE_LABELS[stage] || stage}</h3>
+      {/* The phase in words: the border colour alone would not say it (WCAG 1.4.1). */}
+      <div style={{ fontSize: theme.typography.size.xxs, fontWeight: 600, color: phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary }}>
+        {PHASE_WORD[phase]}
+      </div>
       <div style={{ fontSize: theme.typography.size.xl, fontWeight: theme.typography.weight.semibold, color: theme.colors.text.primary, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
         {stats?.completed || 0}
       </div>
@@ -43,7 +49,7 @@ function ThroughputBar({ stage, stats, maxCompleted }) {
   return (
     <div style={S.breakdownRow}>
       <div style={S.breakdownLabel}>{PIPELINE_STAGE_LABELS[stage] || stage}</div>
-      <div style={S.breakdownBarTrack}>
+      <div style={S.breakdownBarTrack} aria-hidden="true">
         <div style={S.breakdownBarFill(`${pct}%`, theme.colors.pipeline.completed)} />
       </div>
       <div style={S.breakdownValue}>{stats?.completed || 0}</div>
@@ -68,35 +74,35 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
     <div style={S.panel}>
       <div style={S.panelHeader}>
         <div>
-          <div style={S.panelHeaderTitle}>Pipeline Monitor</div>
+          <h2 style={{ ...S.panelHeaderTitle, margin: 0 }}>Pipeline Monitor</h2>
           <div style={S.panelHeaderSubtitle}>Where is the bottleneck?</div>
         </div>
       </div>
 
       <div style={S.panelScroll}>
         {/* Stage DAG */}
-        <div style={S.sectionCardTitle}>Request → Extraction → Filtering → Scoring → Priority → Transform → Export</div>
-        <div style={S.stageRow}>
+        <p style={S.sectionCardTitle}>Request, extraction, filtering, scoring, priority, transform, export, in that order.</p>
+        <ol style={{ ...S.stageRow, listStyle: "none", margin: 0, padding: 0 }}>
           {PIPELINE_STAGES.map((stage, i) => (
-            <div key={stage} style={{ display: "flex", alignItems: "stretch" }}>
+            <li key={stage} style={{ display: "flex", alignItems: "stretch" }}>
               <StageBox stage={stage} stats={pipelineStats[stage]} />
-              {i < PIPELINE_STAGES.length - 1 && <div style={S.stageBoxArrow}>→</div>}
-            </div>
+              {i < PIPELINE_STAGES.length - 1 && <div aria-hidden="true" style={S.stageBoxArrow}>→</div>}
+            </li>
           ))}
-        </div>
+        </ol>
 
         {/* Throughput comparison */}
         <div style={{ ...S.sectionCard, marginTop: 20 }}>
-          <div style={S.sectionCardTitle}>Completed per stage</div>
+          <h3 style={{ ...S.sectionCardTitle, fontWeight: 400 }}>Completed per stage</h3>
           {PIPELINE_STAGES.map(stage => (
             <ThroughputBar key={stage} stage={stage} stats={pipelineStats[stage]} maxCompleted={maxCompleted} />
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 16, marginTop: 20 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 20 }}>
           {/* Recent activity */}
-          <div style={{ ...S.sectionCard, flex: 1, minWidth: 0 }}>
-            <div style={S.sectionCardTitle}>Recent activity</div>
+          <div style={{ ...S.sectionCard, flex: "1 1 240px", minWidth: 0 }}>
+            <h3 style={{ ...S.sectionCardTitle, fontWeight: 400 }}>Recent activity</h3>
             {recentTicks.length === 0 ? (
               <EmptyState>No pipeline events yet.</EmptyState>
             ) : (
@@ -114,10 +120,10 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
           </div>
 
           {/* Recent errors */}
-          <div style={{ ...S.sectionCard, flex: 1, minWidth: 0 }}>
-            <div style={{ ...S.sectionCardTitle, color: recentErrors.length ? theme.colors.accent.red : theme.colors.text.muted }}>
+          <div style={{ ...S.sectionCard, flex: "1 1 240px", minWidth: 0 }}>
+            <h3 style={{ ...S.sectionCardTitle, fontWeight: 400, color: recentErrors.length ? theme.colors.accent.red : theme.colors.text.muted }}>
               Recent errors ({errors.length} total)
-            </div>
+            </h3>
             {recentErrors.length === 0 ? (
               <EmptyState>No errors recorded.</EmptyState>
             ) : (
