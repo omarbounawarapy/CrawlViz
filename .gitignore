@@ -11,7 +11,12 @@ dist/
 
 # OS
 .DS_Store
-.claude/
+
+# Claude Code: the agent team setup is shared; personal settings and run state are not
+.claude/settings.local.json
+.claude/worktrees/
+.claude/agent-memory-local/
+.claude/skills/impeccable/
 
 # Local notes
 handoff.md
@@ -29,8 +34,8 @@ benchmark/smoke/
 benchmark/data/smoke_*
 
 # Local UI-edited settings and presets
-settings.json
-presets/
+/settings.json
+/presets/
 
 # Runtime output and local tooling state
 logs/
