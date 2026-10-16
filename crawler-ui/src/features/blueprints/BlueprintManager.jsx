@@ -12,7 +12,7 @@ import {
 } from "../../api/client";
 import { getTheme } from "../../theme";
 import { Page, SectionTitle, Row } from "../common/Page";
-import { Field, TextInput, Select, Grid, Button, Tabs, TabPanel, Chip, Group, Status } from "../common/Form";
+import { Field, TextInput, Select, Grid, Button, Tabs, TabPanel, Chip, Group, Status, ConfirmButton } from "../common/Form";
 import NumberField from "../config/NumberField";
 import { Explain } from "../config/Term";
 import { useCrawlCost } from "../config/crawlCost";
@@ -46,16 +46,24 @@ function TransformPipeline({ transforms, onChange }) {
       {transforms.map((t, i) => {
         const cfg = TRANSFORMS_WITH_CONFIG[t.type];
         return (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "150px 1fr auto", gap: 8, alignItems: "center", marginBottom: 8 }}>
-            <Select aria-label={`Transform ${i + 1}`} value={t.type} onChange={(e) => {
+          <div key={i} role="group" aria-label={`Transform ${i + 1}`} style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "flex-end", marginBottom: 8 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 12, color: text.secondary, flex: "0 1 150px", minWidth: 0 }}>
+            Transform {i + 1}
+            <Select value={t.type} onChange={(e) => {
               const nc = TRANSFORMS_WITH_CONFIG[e.target.value];
               upd(i, { type: e.target.value, paramValue: nc ? String(nc.default) : "" });
             }}>
               {ALL_TRANSFORMS.map((tr) => <option key={tr} value={tr}>{tr}</option>)}
             </Select>
+            </label>
             {cfg
-              ? <TextInput aria-label={cfg.label} type={cfg.inputType} placeholder={cfg.label} value={t.paramValue} onChange={(e) => upd(i, { paramValue: e.target.value })} />
-              : <span style={{ fontSize: 13, color: text.muted }}>No setting</span>}
+              ? (
+                <label style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 12, color: text.secondary, flex: "1 1 160px", minWidth: 0 }}>
+                  {cfg.label}
+                  <TextInput type={cfg.inputType} value={t.paramValue} onChange={(e) => upd(i, { paramValue: e.target.value })} />
+                </label>
+              )
+              : <span style={{ fontSize: 13, color: text.muted, flex: "1 1 160px", alignSelf: "center" }}>No setting</span>}
             <Button variant="quiet" aria-label={`Remove transform ${i + 1}`} onClick={() => rm(i)}>Remove</Button>
           </div>
         );
@@ -308,7 +316,6 @@ export default function BlueprintManager({ onNavigate }) {
   const [form, setForm] = useState(() => blueprintToForm(null));
   const [editorText, setEditorText] = useState(() => pretty(DEFAULT_BLUEPRINT));
   const [baseline, setBaseline] = useState(() => pretty(DEFAULT_BLUEPRINT));
-  const [armed, setArmed] = useState(false);           // Delete needs two clicks
   const [pending, setPending] = useState(null);        // action waiting on "discard changes?"
   const [step, setStep] = useState("about");
 
@@ -347,13 +354,13 @@ export default function BlueprintManager({ onNavigate }) {
       const data = await fetchTemplate(name);
       const bp = data.content ?? data;
       setSelected(name); setForm(blueprintToForm(bp)); setEditorText(pretty(bp)); setBaseline(pretty(bp));
-      setMode("edit"); setTab("form"); setStep("about"); setStatus(null); setErrors([]); setArmed(false);
+      setMode("edit"); setTab("form"); setStep("about"); setStatus(null); setErrors([]);
     } catch (e) { setStatus({ ok: false, msg: e.message }); }
   };
 
   const startNew = () => {
     setSelected(null); setNewName(""); setForm(blueprintToForm(null)); setEditorText(pretty(DEFAULT_BLUEPRINT));
-    setBaseline(pretty(DEFAULT_BLUEPRINT)); setMode("new"); setTab("form"); setStep("about"); setStatus(null); setErrors([]); setArmed(false);
+    setBaseline(pretty(DEFAULT_BLUEPRINT)); setMode("new"); setTab("form"); setStep("about"); setStatus(null); setErrors([]);
   };
 
   // Leaving with unsaved edits asks first, inline.
@@ -399,9 +406,8 @@ export default function BlueprintManager({ onNavigate }) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
+  // ConfirmButton asks for the second press, with no timer to race (WCAG 2.2.1, 3.3.4).
   const remove = async () => {
-    if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 4000); return; }
-    setArmed(false);
     try {
       await deleteTemplate(selected);
       setSelected(null); setMode("idle"); setForm(blueprintToForm(null)); setEditorText(pretty(DEFAULT_BLUEPRINT));
@@ -438,7 +444,7 @@ export default function BlueprintManager({ onNavigate }) {
             <button
               type="button" aria-current={id === step ? "step" : undefined} onClick={() => setStep(id)}
               style={{
-                display: "flex", alignItems: "center", gap: 8, height: 40, padding: "0 12px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
+                display: "flex", alignItems: "center", gap: 8, minHeight: 40, padding: "0 12px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
                 borderBottom: `2px solid ${id === step ? text.primary : "transparent"}`, whiteSpace: "nowrap",
                 fontSize: 14, fontWeight: id === step ? 600 : 500, color: id === step ? text.primary : text.secondary,
               }}
@@ -474,7 +480,7 @@ export default function BlueprintManager({ onNavigate }) {
       {mode === "edit" && (
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
           <Button onClick={runThis} disabled={dirty} title={dirty ? "Save first to run the saved version" : undefined}>Run this blueprint</Button>
-          <Button variant="danger" armed={armed} onClick={remove}>{armed ? "Confirm delete" : "Delete blueprint"}</Button>
+          <ConfirmButton label="Delete blueprint" confirmLabel="Confirm delete" onConfirm={remove} />
         </div>
       )}
     </section>
@@ -524,8 +530,8 @@ export default function BlueprintManager({ onNavigate }) {
       </ul>
 
       {pending && (
-        <div role="alertdialog" aria-label="Unsaved changes" tabIndex={-1} ref={(el) => el?.focus()} style={{ border: `1px solid ${text.primary}`, padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 14, flex: "1 1 240px" }}>You have unsaved changes. Discard them?</span>
+        <div role="alertdialog" aria-label="Unsaved changes" aria-describedby="bp-discard-q" tabIndex={-1} ref={(el) => el?.focus()} style={{ border: `1px solid ${text.primary}`, padding: "12px 14px", marginBottom: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <span id="bp-discard-q" style={{ fontSize: 14, flex: "1 1 240px" }}>You have unsaved changes. Discard them?</span>
           <Button variant="danger" onClick={() => { const a = pending; setPending(null); a(); }}>Discard changes</Button>
           <Button onClick={() => setPending(null)}>Keep editing</Button>
         </div>
@@ -543,7 +549,13 @@ export default function BlueprintManager({ onNavigate }) {
             display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap",
           }}>
             {mode === "new"
-              ? <TextInput id="bp-file-name" aria-label="Blueprint file name" invalid={!!errorFor("bp-file-name")} placeholder="file-name.json" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ flex: "1 1 160px", width: "auto", minWidth: 0 }} />
+              ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 220px", minWidth: 0 }}>
+                  <label htmlFor="bp-file-name" style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap" }}>File name</label>
+                  <TextInput id="bp-file-name" invalid={!!errorFor("bp-file-name")} aria-invalid={!!errorFor("bp-file-name") || undefined}
+                             placeholder="e.g. my-topic.json" value={newName} onChange={(e) => setNewName(e.target.value)} style={{ flex: 1, width: "auto", minWidth: 0 }} />
+                </span>
+              )
               : <span style={{ fontSize: 14, fontWeight: 600 }}>{selected}</span>}
             <Tabs id="bp-view" label="Editor view" value={tab} onChange={switchTab} options={[["form", "Form"], ["json", "JSON"]]} />
             <span style={{ flex: 1 }} />
@@ -588,7 +600,7 @@ export default function BlueprintManager({ onNavigate }) {
                 style={{
                   width: "100%", minHeight: 520, padding: 12, resize: "vertical", lineHeight: 1.6, fontSize: 13,
                   fontFamily: theme.typography.fontMono, background: background.panel, color: text.primary,
-                  border: `1px solid ${background.border}`, borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.control}`, borderRadius: theme.radii.sm,
                 }}
               />
             </div>

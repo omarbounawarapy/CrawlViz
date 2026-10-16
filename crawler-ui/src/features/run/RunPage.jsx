@@ -29,8 +29,8 @@ function BlueprintPreview({ blueprint }) {
   const seeds = count(blueprint.domains);
   const fields = count(blueprint.extraction?.fields);
   return (
-    <section aria-label="What this will run">
-      <SectionTitle>What this will run</SectionTitle>
+    <section aria-labelledby="run-preview-title">
+      <SectionTitle id="run-preview-title">What this will run</SectionTitle>
       <p style={{ fontFamily: theme.typography.fontDisplay, fontSize: 18, lineHeight: 1.4, color: theme.colors.text.primary, marginBottom: 6, maxWidth: "52ch" }}>
         {blueprint.target_topic || "No target topic set."}
       </p>
@@ -48,8 +48,8 @@ function BlueprintPreview({ blueprint }) {
 function SessionSummary({ state, metrics }) {
   if (!state || state.nodes.size === 0) return null;
   return (
-    <section aria-label="This session">
-      <SectionTitle>{state.status === "RUNNING" ? "This session, live" : "This session"}</SectionTitle>
+    <section aria-labelledby="run-session-title">
+      <SectionTitle id="run-session-title">{state.status === "RUNNING" ? "This session, live" : "This session"}</SectionTitle>
       <Row label="Pages discovered">{state.nodes.size}</Row>
       <Row label="Elapsed">{formatDuration((metrics?.elapsed_seconds || 0) * 1000)}</Row>
       <Row label="Errors">{state.errors.length}</Row>
@@ -163,7 +163,7 @@ export default function RunPage({ onNavigate, state, metrics }) {
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
           style={{
-            height: 38, minWidth: 260, padding: "0 10px", fontSize: 14,
+            minHeight: 38, minWidth: "min(260px, 100%)", padding: "0 10px", fontSize: 14,
             background: theme.colors.background.panel, border: `1px solid ${theme.colors.text.muted}`,
             borderRadius: theme.radii.md, color: theme.colors.text.primary,
           }}
@@ -171,16 +171,16 @@ export default function RunPage({ onNavigate, state, metrics }) {
           {templates.length === 0 && <option value="">No blueprints found</option>}
           {templates.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
-        <button onClick={handleRun} disabled={blocked} style={buttonPrimary(blocked)}>
+        <button type="button" onClick={handleRun} disabled={blocked} style={buttonPrimary(blocked)}>
           {loading && !isRunning ? "Starting…" : "Start crawl"}
         </button>
-        <button onClick={handleStop} disabled={loading || !isRunning} style={buttonOutline(loading || !isRunning)}>
+        <button type="button" onClick={handleStop} disabled={loading || !isRunning} style={buttonOutline(loading || !isRunning)}>
           Stop crawl
         </button>
       </div>
 
       {msg && (
-        <p role="status" style={{ fontSize: 14, marginTop: 12, fontWeight: 500, color: msg.ok ? theme.colors.text.primary : theme.colors.accent.red }}>
+        <p role={msg.ok ? "status" : "alert"} style={{ fontSize: 14, marginTop: 12, fontWeight: 500, color: msg.ok ? theme.colors.text.primary : theme.colors.accent.red }}>
           {msg.ok ? msg.text : `${msg.text.replace(/[.!?]?\s*$/, ".")} Check that the backend is running (make dev-backend), then try again.`}
         </p>
       )}

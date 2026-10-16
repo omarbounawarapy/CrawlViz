@@ -32,7 +32,9 @@ function Plate({ seed, branches, compact = false, selective = true }) {
   const k = compact ? 0.55 : 1;
   return (
     <svg className="plate-svg" viewBox={`${plate.box.x} ${plate.box.y} ${plate.box.w} ${plate.box.h}`} role="img"
-      aria-label="Illustrative crawl graph. Darker discs are pages further along; vermilion rings mark links judged most relevant.">
+      aria-label={selective
+        ? "Illustrative crawl graph. Darker discs are pages further along; vermilion rings mark links judged most relevant; dashed squares are links dropped before fetching."
+        : "Illustrative crawl graph that follows every link: the frontier fans out by structure alone, with no relevance marks."}>
       <g className="plate-edges">
         {plate.edges.map(([a, b], i) => {
           const p = byId.get(a), c = byId.get(b);
@@ -217,7 +219,7 @@ export default function Landing({ onEnter, instant = false }) {
               <code> templates/wikiMD.json</code> and <code>templates/isi.json</code>. A six-step editor builds them for you.
             </p>
           </div>
-          <pre className="lp-code" aria-label="Excerpt of templates/wikiMD.json"><code>{`{
+          <pre className="lp-code" tabIndex={0} role="region" aria-label="Excerpt of templates/wikiMD.json"><code>{`{
   "target_topic": "Type 2 Diabetes",
   "seeds": [{ "url": "https://www.wikimd.org/wiki/Diabetes" }],
   "scoring": { "strategy": "TOPICAL" },
@@ -242,7 +244,7 @@ export default function Landing({ onEnter, instant = false }) {
           <p className="lp-run">Clone the repository, then run <code>make dev</code> and open <span className="num">localhost:5173</span>.</p>
           <div className="lp-actions">
             <a className="lp-btn lp-btn-solid" href="#/graph" onClick={open(false)}>Open the plate</a>
-            <a className="lp-btn" href={REPO} target="_blank" rel="noreferrer">Read the source</a>
+            <a className="lp-btn" href={REPO} target="_blank" rel="noreferrer">Read the source<span className="sr-only"> (opens GitHub in a new tab)</span></a>
           </div>
         </section>
       </main>
@@ -250,7 +252,7 @@ export default function Landing({ onEnter, instant = false }) {
       <footer className="lp-foot">
         <Logo />
         <span>Apache 2.0</span>
-        <a href={REPO} target="_blank" rel="noreferrer">GitHub</a>
+        <a href={REPO} target="_blank" rel="noreferrer">GitHub<span className="sr-only"> (opens in a new tab)</span></a>
       </footer>
     </div>
   );

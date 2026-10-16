@@ -66,7 +66,7 @@
 .sl-row { display: flex; justify-content: space-between; gap: 16px; margin-top: 9px; font: 400 13px/1.4 'Public Sans', system-ui, sans-serif; color: var(--sl-ink2); }
 .sl-tip { animation: sl-tip 0.5s ease-out both; min-height: 1.4em; }
 @keyframes sl-tip { from { opacity: 0; transform: translateY(3px); } }
-.sl-skip { font: 500 12px 'Public Sans', sans-serif; color: var(--sl-ink); background: none; border: 1px solid var(--sl-ink); border-radius: 3px; padding: 2px 10px; height: 26px; cursor: pointer; }
+.sl-skip { font: 500 12px 'Public Sans', sans-serif; color: var(--sl-ink); background: none; border: 1px solid var(--sl-ink); border-radius: 3px; padding: 2px 10px; min-height: 26px; cursor: pointer; }
 .sl-skip:hover { background: var(--sl-ink); color: var(--sl-paper); }
 .sl-skip:focus-visible { outline: 2px solid var(--sl-ink); outline-offset: 2px; }
 .sl-pct { font: 500 12px 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; color: var(--sl-ink); white-space: pre; }

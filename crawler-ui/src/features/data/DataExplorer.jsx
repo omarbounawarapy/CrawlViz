@@ -100,7 +100,9 @@ function Specimen({ row, fields, node, onOpenNode }) {
 
       {row.url && (
         <p style={{ marginTop: 4, fontFamily: theme.typography.fontMono, fontSize: 12, wordBreak: "break-all" }}>
-          <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: text.secondary }}>{row.url}</a>
+          <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: text.secondary }}>
+            {row.url}<span className="sr-only"> (opens in a new tab)</span>
+          </a>
         </p>
       )}
 
@@ -118,7 +120,7 @@ function Specimen({ row, fields, node, onOpenNode }) {
       </p>
 
       <div style={{ display: "flex", alignItems: "center", gap: 14, margin: "6px 0 12px" }}>
-        {node && <Button variant="outline" onClick={() => onOpenNode(node)}>Open in graph</Button>}
+        {node && <Button variant="outline" onClick={() => onOpenNode(node)} aria-label={`Open in graph: ${title}`}>Open in graph</Button>}
       </div>
 
       {fields.length > 0 && (

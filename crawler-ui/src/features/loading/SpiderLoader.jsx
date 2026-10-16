@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Spider from "./Spider";
 import "./loading.css";
 
@@ -61,15 +61,30 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
 
   const [tip, setTip] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const skipRef = useRef(null);
+  const rootRef = useRef(null);
 
+  // The overlay covers the page, so the page under it leaves the tab order and the
+  // accessibility tree while it shows (WCAG 2.4.3), and focus starts on Skip.
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    const self = rootRef.current;
+    const hidden = Array.from(self?.parentElement?.children ?? []).filter((el) => el !== self && !el.inert);
+    hidden.forEach((el) => { el.inert = true; });
+    const before = document.activeElement;
+    skipRef.current?.focus({ preventScroll: true });
+    return () => {
+      document.body.style.overflow = prev;
+      hidden.forEach((el) => { el.inert = false; });
+      if (before && before !== document.body && document.contains(before)) before.focus?.({ preventScroll: true });
+    };
   }, []);
 
+  // Escape skips. Enter and Space reach Skip as an ordinary button press, so they never
+  // activate a control hidden under the overlay.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape" || e.key === "Enter" || e.key === " ") onSkip?.(); };
+    const onKey = (e) => { if (e.key === "Escape") onSkip?.(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onSkip]);
@@ -90,6 +105,7 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
 
   return (
     <div
+      ref={rootRef}
       className={`sl${leaving ? " sl-leaving" : ""}${pct >= 100 ? " sl-caught" : ""}`}
       role="status"
       aria-live="polite"
@@ -127,7 +143,7 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
         </div>
         <div className="sl-row">
           <span className="sl-tip" key={tip} aria-hidden={pct < 100}>{pct >= 100 ? "Ready." : TIPS[tip]}</span>
-          <button type="button" className="sl-skip" onClick={(e) => { e.stopPropagation(); onSkip?.(); }}>Skip</button>
+          <button ref={skipRef} type="button" className="sl-skip" onClick={(e) => { e.stopPropagation(); onSkip?.(); }}>Skip</button>
         </div>
       </div>
     </div>
