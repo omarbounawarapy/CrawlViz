@@ -5,8 +5,20 @@ import { formatDuration } from "../../utils/formatters";
 import { Page, SectionTitle, Row } from "../common/Page";
 import { buttonPrimary, buttonOutline } from "../common/buttons";
 import RunOverrides from "./RunOverrides";
+import { useCrawlCost } from "../config/crawlCost";
+import { Explain } from "../config/Term";
 
 const theme = getTheme();
+
+function CostRow({ pages }) {
+  const estimate = useCrawlCost(pages);
+  if (!estimate) return <Row label="LLM calls (estimate)">{Number.isFinite(Number(pages)) ? "…" : "—"}</Row>;
+  return (
+    <Row label="LLM calls (estimate)" note={estimate.capped ? "Capped by the per-crawl call limit." : "From the example page, at the saved settings."}>
+      up to {Math.round(estimate.calls).toLocaleString("en-US")}
+    </Row>
+  );
+}
 
 function BlueprintPreview({ blueprint }) {
   if (!blueprint) return null;
@@ -23,8 +35,9 @@ function BlueprintPreview({ blueprint }) {
         {blueprint.target_topic || "No target topic set."}
       </p>
       {scoring.strategy && <Row label="Scoring strategy">{scoring.strategy}</Row>}
-      {stop.priority_strategy && <Row label="Priority strategy">{stop.priority_strategy}</Row>}
+      {stop.priority_strategy && <Row label={<Explain text="Priority strategy" />}>{stop.priority_strategy}</Row>}
       {stop.max_nodes && <Row label="Stops after">{stop.max_nodes.toLocaleString()} pages</Row>}
+      {stop.max_nodes && <CostRow pages={stop.max_nodes} />}
       {stop.max_depth != null && <Row label="Maximum depth">{stop.max_depth.toLocaleString()} links from a seed</Row>}
       <Row label="Seed domains">{seeds}</Row>
       <Row label="Extraction fields">{fields}</Row>
@@ -50,6 +63,7 @@ export default function RunPage({ onNavigate, state, metrics }) {
   const [selected, setSelected] = useState("");
   const [blueprint, setBlueprint] = useState(null);
   const [running, setRunning] = useState(false);
+  const [llmCalls, setLlmCalls] = useState(null);
   const [msg, setMsg] = useState(null); // { ok, text }
   const [loading, setLoading] = useState(false);
 
@@ -58,6 +72,7 @@ export default function RunPage({ onNavigate, state, metrics }) {
       try {
         const s = await crawlStatus();
         setRunning(s.running);
+        setLlmCalls(s.llm_calls ?? null);
       } catch (err) {
         console.warn("Status poll failed:", err);
       }
@@ -131,6 +146,14 @@ export default function RunPage({ onNavigate, state, metrics }) {
         ? "A crawl is running. Watch it on the graph, or stop it here."
         : "Pick a blueprint, then start. The graph fills in as pages are scored and fetched."}
     >
+      {isRunning && llmCalls && (
+        <p style={{ fontSize: 14, color: theme.colors.text.secondary, margin: "0 0 12px" }}>
+          {llmCalls.limit === null
+            ? `LLM calls so far: ${llmCalls.used}. No cap is set.`
+            : `LLM calls: ${llmCalls.used} of ${llmCalls.limit}.`}
+          {llmCalls.refused > 0 && ` ${llmCalls.refused} calls were refused once the cap was reached; those links were scored on NLP alone.`}
+        </p>
+      )}
       <label htmlFor="blueprint" style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 6, color: theme.colors.text.primary }}>
         Blueprint
       </label>

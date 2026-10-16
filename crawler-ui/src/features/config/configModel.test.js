@@ -58,6 +58,21 @@ describe("patching", () => {
   });
 });
 
+describe("effect hint", () => {
+  it("carries the plain-language effect line of a field", () => {
+    const tiny = {
+      type: "object",
+      properties: { embeddings: { type: "object", properties: {
+        flush_threshold: { type: "integer", ui_section: "Embeddings", ui_unit: "links", ui_effect: "Lower flushes sooner." },
+        model_name: { type: "string", ui_section: "Embeddings" },
+      } } },
+    };
+    const [threshold, model] = buildFields(tiny);
+    expect(threshold).toMatchObject({ effect: "Lower flushes sooner.", unit: "links" });
+    expect(model.effect).toBeUndefined();
+  });
+});
+
 describe("validation and search", () => {
   it("applies the schema bounds", () => {
     const w = byPath["pipelines.filtering.workers"];
@@ -74,5 +89,18 @@ describe("validation and search", () => {
     expect(sections).toEqual(expect.arrayContaining(["Fetch", "Pipelines", "Retries", "Scoring cascade", "LLM"]));
     expect(fields.filter((f) => matches(f, "user-agent")).map((f) => f.path)).toContain("fetch.user_agent");
     expect(fields.filter((f) => matches(f, "zzzz"))).toHaveLength(0);
+  });
+});
+
+describe("schemaGaps", () => {
+  it("is empty for a current schema", async () => {
+    const { schemaGaps } = await import("./configModel");
+    const current = { ...schema, ui_glossary: { backoff: "x" } };
+    const withEffect = fields.map((f) => (f.path === "fetch.min_delay" ? { ...f, effect: "x" } : f));
+    expect(schemaGaps(current, withEffect)).toEqual([]);
+  });
+  it("names what a stale server lacks", async () => {
+    const { schemaGaps } = await import("./configModel");
+    expect(schemaGaps(schema, fields)).toEqual(expect.arrayContaining(["the glossary"]));
   });
 });

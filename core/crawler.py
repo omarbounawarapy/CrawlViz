@@ -64,6 +64,7 @@ from events import (
     TransformationStartedEvent,
 )
 from infrastructure import KeyManager, LlmHandler, NetworkClient
+from infrastructure.call_budget import CallBudget
 from models import Storage
 from nlp import BufferManager, SpaceUpdater
 from pipelines import (
@@ -409,6 +410,8 @@ class Crawler:
             accept_encoding=fetch.accept_encoding,
             accept_language=fetch.accept_language,
         )
+        # One budget per crawl: every scoring worker draws from the same counter.
+        self.call_budget = CallBudget(self.config.llm.max_calls_per_crawl)
         p["scoring"] = ScoringPipeline(
             scoring_service,
             nlp_service,
@@ -427,6 +430,7 @@ class Crawler:
             llm_batch_size=cascade.llm_batch_size,
             max_concurrency=self.scoring_concurrency,
             rng=self._rng("scoring"),
+            call_budget=self.call_budget,
         )
         p["storage"] = StoragePipeline(
             self.storage,

@@ -82,7 +82,7 @@ function OverviewTab({ node, children, onSelectNode }) {
         label="Parent"
         value={node.parent_id ? (
           <button onClick={() => onSelectNode(node.parent_id)} style={linkBtnStyle}>{shortId(node.parent_id, 12)}</button>
-        ) : "— (seed)"}
+        ) : "None (seed page)"}
       />
       <Row label="Discovered" value={relativeAge(node.created_at)} />
       <Row label="Links found" value={node.links_accepted != null ? `${node.links_accepted} accepted / ${node.links_rejected ?? 0} rejected` : "—"} />
@@ -120,7 +120,7 @@ function ScoringTab({ detail }) {
       <div style={S.emptyState}>
         <div>No cascade scoring recorded for this node.</div>
         <div style={{ fontSize: theme.typography.size.xxs }}>
-          This is normal for a seed URL — seeds enter the graph directly, without going through the scoring cascade.
+          This is normal for a seed URL. Seeds enter the graph directly, without going through the scoring cascade.
         </div>
       </div>
     );
@@ -157,7 +157,7 @@ function ScoringTab({ detail }) {
         label="LLM score"
         value={detail.llm_score != null
           ? detail.llm_score
-          : <span style={{ color: theme.colors.state.label.TRUSTED }}>skipped — trusted on NLP alone</span>}
+          : <span style={{ color: theme.colors.state.label.TRUSTED }}>skipped, trusted on NLP alone</span>}
       />
       <Row label="Final priority" value={typeof detail.priority === "number" ? detail.priority.toFixed(3) : "—"} />
       <Row label="Strategy" value={detail.priority_strategy} />
@@ -178,7 +178,7 @@ function ActivityTab({ history, errors }) {
                 borderRadius: theme.radii.md, padding: 8,
               }}>
                 <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>
-                  {e.stage} — {e.error_type}
+                  {e.stage}: {e.error_type}
                 </div>
                 <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.secondary, marginTop: 2 }}>
                   {e.error_message}
@@ -202,7 +202,7 @@ function ActivityTab({ history, errors }) {
             <div key={i} style={{ ...S.nodeDetailRow, borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
               <div style={{ ...S.nodeDetailKey, minWidth: 90 }}>{h.stage}</div>
               <div style={{ ...S.nodeDetailVal, maxWidth: "none", flex: 1, color: h.phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary }}>
-                {h.phase}{h.detail ? ` — ${h.detail}` : ""}
+                {h.phase}{h.detail ? `: ${h.detail}` : ""}
               </div>
               <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, flexShrink: 0 }}>
                 {formatDuration(h.duration_ms)}

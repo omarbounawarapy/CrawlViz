@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
+import EmptyState from "../common/EmptyState";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "../../state/nodeStates";
 import { formatDuration } from "../../utils/formatters";
 
@@ -97,7 +98,7 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
           <div style={{ ...S.sectionCard, flex: 1, minWidth: 0 }}>
             <div style={S.sectionCardTitle}>Recent activity</div>
             {recentTicks.length === 0 ? (
-              <div style={S.emptyState}>No pipeline events yet.</div>
+              <EmptyState>No pipeline events yet.</EmptyState>
             ) : (
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {recentTicks.map((t, i) => (
@@ -118,12 +119,12 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
               Recent errors ({errors.length} total)
             </div>
             {recentErrors.length === 0 ? (
-              <div style={S.emptyState}>No errors recorded.</div>
+              <EmptyState>No errors recorded.</EmptyState>
             ) : (
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {recentErrors.map((e, i) => (
                   <div key={i} style={{ padding: "6px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-                    <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>{e.stage} — {e.error_type}</div>
+                    <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>{e.stage}: {e.error_type}</div>
                     <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.secondary, marginTop: 1 }}>{e.error_message}</div>
                   </div>
                 ))}

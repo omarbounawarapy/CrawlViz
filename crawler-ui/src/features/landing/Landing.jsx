@@ -165,11 +165,11 @@ export default function Landing({ onEnter, instant = false }) {
             </li>
             <li>
               <h3>Ask a language model, on a budget</h3>
-              <p>Only a strategy-dependent sample of the mid-confidence links is sent to an LLM. The budget keeps cost and latency from becoming the crawl’s bottleneck.</p>
+              <p>Only a strategy-dependent sample of the mid-confidence links is sent to an LLM. The budget stops LLM cost and latency from slowing the crawl.</p>
             </li>
             <li>
               <h3>Write down why</h3>
-              <p>Each score, its signals and the decision land in an event log. Select a page on the graph and read the reason as a one-sentence annotation.</p>
+              <p>Each score, its signals and the decision go into an event log. Select a page on the graph and read the reason as a one-sentence annotation.</p>
             </li>
           </ol>
         </section>
@@ -211,7 +211,7 @@ export default function Landing({ onEnter, instant = false }) {
 
         <section className="lp-sec" aria-labelledby="bp-h">
           <div className="lp-sec-head">
-            <h2 id="bp-h">A crawl is a blueprint you can read.</h2>
+            <h2 id="bp-h">Each crawl is set by a blueprint file you can read.</h2>
             <p>
               Sources, topic, extraction rules and limits live in a declarative JSON file. The repository ships two:
               <code> templates/wikiMD.json</code> and <code>templates/isi.json</code>. A six-step editor builds them for you.
@@ -232,13 +232,13 @@ export default function Landing({ onEnter, instant = false }) {
           </div>
           <ul className="lp-rows lp-limits">
             <li><h3>Single process</h3><p>One asyncio process with a local SQLite store. It is not distributed.</p></li>
-            <li><h3>Research scope</h3><p>Built to make scoring decisions traceable, not to crawl the web at scale.</p></li>
+            <li><h3>Research scope</h3><p>Each scoring decision can be traced. It is not built to crawl the web at scale.</p></li>
             <li><h3>Desktop first</h3><p>The graph workspace is designed for desktop screens.</p></li>
           </ul>
         </section>
 
         <section className="lp-cta" aria-labelledby="cta-h">
-          <h2 id="cta-h">See why it went where it went.</h2>
+          <h2 id="cta-h">Read why each page was followed or skipped.</h2>
           <p className="lp-run">Clone the repository, then run <code>make dev</code> and open <span className="num">localhost:5173</span>.</p>
           <div className="lp-actions">
             <a className="lp-btn lp-btn-solid" href="#/graph" onClick={open(false)}>Open the plate</a>

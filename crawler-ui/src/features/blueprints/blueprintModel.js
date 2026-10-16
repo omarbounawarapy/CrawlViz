@@ -81,11 +81,11 @@ export function validateBlueprint(bp) {
 
   if (!STRATEGIES.includes(bp.scoring?.strategy))
     add("bp-strategy", `Strategy must be one of: ${STRATEGIES.join(", ")}.`);
-  if (!bp.scoring?.params?.scoring_type?.trim())     add("bp-scoring-type", "Scoring backend is required.");
+  if (!bp.scoring?.params?.scoring_type?.trim())     add("bp-scoring-type", "Scoring provider is required.");
   if (!bp.scoring?.params?.model_information?.trim()) add("bp-scoring-model", "Scoring model is required.");
 
   if (!EXPANSION_STYLES.includes(bp.expansion?.style)) add("bp-expansion-style", "Expansion style must be rich or minimal.");
-  if (!(bp.expansion?.num_descriptions >= 1))          add("bp-num-descriptions", "Number of descriptions must be at least 1.");
+  if (!(bp.expansion?.num_descriptions >= 1))          add("bp-num-descriptions", "Descriptions per topic must be at least 1.");
   if (!bp.expansion?.llm_type?.trim())                 add("bp-llm-type", "LLM backend is required.");
   if (!bp.expansion?.llm_model?.trim())                add("bp-llm-model", "LLM model is required.");
 

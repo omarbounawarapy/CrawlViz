@@ -1,6 +1,7 @@
 import Spider from "../features/loading/Spider";
 import { useState } from "react";
 import { getTheme } from "../theme";
+import { Hint } from "../features/common/Hint";
 
 const theme = getTheme();
 const { shell, typography: type } = theme;
@@ -12,7 +13,7 @@ const SECTIONS = [
   { id: "graph",      label: "Graph",      question: "Why did the crawler traverse here?" },
   { id: "run",        label: "Run",        question: "What am I about to run, and what did the last run do?" },
   { id: "blueprints", label: "Blueprints", question: "What is this crawl configured to do?" },
-  { id: "data",       label: "Data",       question: "What did we actually extract?" },
+  { id: "data",       label: "Data",       question: "What did the crawler extract?" },
   { id: "config",     label: "Config",     question: "What assumptions is this crawl operating under?" },
   { id: "benchmark",  label: "Benchmark",  question: "Does the cascade beat the baselines, and at what cost?" },
 ];
@@ -137,14 +138,17 @@ export default function Shell({
           {summary && (
             <span className="num shell-detail" style={{ fontSize: 13, color: shell.textPrimary, whiteSpace: "nowrap" }}>{summary}</span>
           )}
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: shell.textBright, fontWeight: 500 }}
-                title={stopReason || undefined}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: shell.textBright, fontWeight: 500 }}>
             <StatusMark status={status} />
             {sample ? "Sample playback" : (STATUS_WORD[status] ?? String(status).toLowerCase())}
             {stopReason && <span style={{ color: shell.textMuted, fontWeight: 400 }}>· {String(stopReason).toLowerCase().replace(/_/g, " ")}</span>}
           </span>
-          <span className="shell-detail" style={{ fontSize: 12, color: shell.textMuted }} title="WebSocket connection to the crawler">
-            {sample ? "Simulated" : connected ? "Connected" : connectionStatus === "CONNECTING" ? "Connecting…" : "Disconnected"}
+          <span className="shell-detail" style={{ fontSize: 12, color: shell.textMuted }}>
+            <Hint text={connected || sample
+              ? "The live feed of crawl updates (WebSocket) is open."
+              : "No live feed of crawl updates. The graph and the run status stop updating. Settings pages still work."}>
+              {sample ? "Live feed: simulated" : connected ? "Live feed: connected" : connectionStatus === "CONNECTING" ? "Live feed: connecting…" : "Live feed: disconnected"}
+            </Hint>
           </span>
           {errorCount > 0 && onShowErrors && (
             <button onClick={onShowErrors} style={{ background: "none", border: "none", padding: 0, fontSize: 13, fontWeight: 600, color: theme.colors.accent.red, textDecoration: "underline" }}>

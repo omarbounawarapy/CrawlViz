@@ -27,3 +27,24 @@ export function rank(links, weights, nlpBias, llmBias) {
     .sort((a, b) => b.p - a.p || a.i - b.i)
     .map((x) => x.i);
 }
+
+/**
+ * What a strategy's top five look like on the example page: how many are off
+ * topic (`onTopic` is hand-labelled in sampleData.json) and their average depth.
+ */
+export function topFiveSummary(links, weights, nlpBias, llmBias) {
+  const top = rank(links, weights, nlpBias, llmBias).slice(0, 5).map((i) => links[i]);
+  const offTopic = top.filter((l) => l.onTopic === false).length;
+  const depth = top.length ? top.reduce((a, l) => a + l.depth, 0) / top.length : 0;
+  return {
+    count: top.length, offTopic, depth: Math.round(depth * 10) / 10,
+    labels: top.map((l) => l.label),
+  };
+}
+
+/** The weights' total without the depth penalty, which is subtracted rather than summed. */
+export function weightTotal(weights) {
+  return Object.entries(weights ?? {})
+    .filter(([key]) => key !== "depth_penalty")
+    .reduce((a, [, w]) => a + (Number(w) || 0), 0);
+}

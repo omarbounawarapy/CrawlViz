@@ -27,7 +27,7 @@ describe("PromptStudio", () => {
     fireEvent.click(screen.getByRole("button", { name: "Restore built-in System prompt" }));
     expect(onChange).toHaveBeenCalledWith("prompts.scoring_system", "SYS");
     fireEvent.click(screen.getByRole("tab", { name: "exploration" }));
-    expect(screen.getByLabelText("Wording for EXPLORATION").value).toBe("roam");
+    expect(screen.getByLabelText("Wording for the exploration focus").value).toBe("roam");
     await waitFor(() => expect(screen.getByText(/Parser reads this JSON shape/)).toBeTruthy());
   });
 });

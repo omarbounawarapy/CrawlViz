@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, Chip, TextInput } from "../common/Form";
+import { Button, Chip, Select, TextInput } from "../common/Form";
 import { fetchConfig, fetchConfigDefaults, fetchConfigSchema } from "../../api/client";
 import SettingsEditor from "../config/SettingsEditor";
-import { buildFields, buildPatch, isEmptyPatch, setIn } from "../config/configModel";
+import { buildFields, buildPatch, buildSections, sectionSlug, setIn } from "../config/configModel";
+import { presetChanges, shown } from "../config/presetModel";
 
 const theme = getTheme();
+const { text } = theme.colors;
 
 /**
  * Settings for one run only. Starts from the saved settings; whatever is
@@ -20,6 +22,7 @@ export default function RunOverrides({ onPatch, disabled }) {
   const [draft, setDraft] = useState(null);
   const [query, setQuery] = useState("");
   const [advanced, setAdvanced] = useState(false);
+  const [section, setSection] = useState("");
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -33,6 +36,9 @@ export default function RunOverrides({ onPatch, disabled }) {
   const patch = useMemo(() => (draft && saved ? buildPatch(fields, draft, saved) : {}), [fields, draft, saved]);
   useEffect(() => { onPatch(patch); }, [patch, onPatch]);
   const count = Object.keys(fields.length ? flat(patch) : {}).length;
+  // What "Clear overrides" will put back: every leaf the draft holds differently from the saved settings.
+  const overridden = useMemo(() => (draft && saved ? presetChanges(draft, saved) : []), [draft, saved]);
+  const sections = useMemo(() => (schema ? buildSections(schema).map((s) => s.name) : []), [schema]);
 
   return (
     <section aria-label="Settings for this run" style={{ marginTop: 20 }}>
@@ -47,16 +53,32 @@ export default function RunOverrides({ onPatch, disabled }) {
           {error && <p role="alert" style={{ color: theme.colors.accent.red, fontSize: 14 }}>{error}</p>}
           {draft && (
             <>
-              <div style={{ display: "flex", gap: 10, margin: "8px 0", alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 10, margin: "8px 0", alignItems: "center", flexWrap: "wrap" }}>
                 <TextInput aria-label="Search run settings" placeholder="Search settings" value={query}
                            onChange={(e) => setQuery(e.target.value)} style={{ width: 220 }} />
+                <Select aria-label="Section" value={section} onChange={(e) => setSection(e.target.value)} style={{ width: 200 }}>
+                  <option value="">All sections</option>
+                  {sections.map((name) => <option key={sectionSlug(name)} value={name}>{name}</option>)}
+                </Select>
                 <Chip pressed={advanced} onClick={() => setAdvanced((v) => !v)}>Advanced</Chip>
-                <Button variant="quiet" disabled={isEmptyPatch(patch)} onClick={() => setDraft(saved)}>Clear overrides</Button>
+                <Button variant="quiet" disabled={overridden.length === 0} onClick={() => setDraft(saved)}>Clear overrides</Button>
               </div>
+              {overridden.length > 0 && (
+                <div style={{ fontSize: 13, color: text.secondary, margin: "0 0 8px" }}>
+                  <div>{overridden.length} setting{overridden.length === 1 ? "" : "s"} overridden for this run. Clearing puts these back:</div>
+                  <ul style={{ margin: "4px 0 0", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 2 }}>
+                    {overridden.map((c) => (
+                      <li key={c.path} style={{ wordBreak: "break-word" }}>
+                        {c.label}: {shown(c.to)} → {shown(c.from)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <SettingsEditor
                 fields={fields} draft={draft} defaults={defaults} saved={saved}
                 onChange={(path, v) => setDraft((d) => setIn(d, path, v))}
-                query={query} showAdvanced={advanced}
+                query={query} showAdvanced={advanced} section={section || undefined} sectionOrder={sections}
               />
             </>
           )}

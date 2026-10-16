@@ -37,7 +37,7 @@ export function TopKExample({ k }) {
         );
       })}
       <p style={{ fontSize: 13, color: text.muted, margin: "6px 0 0" }}>
-        Darker rows count towards the average. A larger k rewards links that match several reference texts, not just one.
+        Darker rows count towards the average. A larger k rewards links that match several reference texts at once.
       </p>
     </ExplainerFrame>
   );

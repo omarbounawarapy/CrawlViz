@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { getTheme } from "../../../theme";
 import ExplainerFrame from "./ExplainerFrame";
 import { scenario, summary, timeline } from "./backoffModel";
@@ -6,7 +6,7 @@ import { Chip } from "../../common/Form";
 
 const theme = getTheme();
 const { text } = theme.colors;
-const W = 640, PAD = { l: 52, r: 12, t: 14, b: 8 }, PANEL_H = 100, GAP = 34, N = 60, LATENCY = 0.3;
+const W = 640, PAD = { l: 52, r: 12, t: 14, b: 8 }, PANEL_H = 100, GAP = 34, N = 60;
 
 const fmt = (v) => (Math.round(v * 10) / 10).toString();
 // Round tick values to 1, 2 or 5 times a power of ten so the axis reads cleanly.
@@ -16,7 +16,56 @@ function niceMax(v) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p;
 }
 
-function Panel({ top, points, field, max, tMax, label, unit }) {
+const STEP = 0.1, MAX_DELAY = 10;
+const roundStep = (v) => Number((Math.round(v / STEP) * STEP).toFixed(1));
+// Round up to a multiple of half a power of ten (20.2 becomes 25), so the axis top is not far off.
+const roundUp = (v) => {
+  const step = 10 ** Math.floor(Math.log10(Math.max(v, 1e-6))) / 2;
+  return Math.ceil(v / step) * step;
+};
+
+// The minimum delay drawn as a dashed line with a handle. It is a slider: drag it, or focus it
+// and use the arrow keys, and the draft's fetch.min_delay follows. A drag is relative to where it
+// started: the chart can move on the page while the value changes (the card above re-wraps), and
+// an absolute pointer position would then chase the handle.
+function DelayHandle({ top, max, value, onChange }) {
+  const drag = useRef(null);
+  const y = (v) => top + PAD.t + PANEL_H - (v / max) * PANEL_H;
+  const keys = {
+    ArrowUp: STEP, ArrowRight: STEP, ArrowDown: -STEP, ArrowLeft: -STEP, PageUp: 1, PageDown: -1,
+  };
+  return (
+    <g>
+      <line x1={PAD.l} x2={W - PAD.r} y1={y(value)} y2={y(value)} stroke={text.primary} strokeDasharray="4 3" />
+      <circle cx={W - PAD.r} cy={y(value)} r="8" fill={text.primary} stroke="#fff" strokeWidth="2"
+              role="slider" tabIndex={0} aria-label="Minimum delay between requests"
+              aria-valuemin={0} aria-valuemax={MAX_DELAY} aria-valuenow={value} aria-valuetext={`${fmt(value)} seconds`}
+              style={{ cursor: "ns-resize", touchAction: "none" }}
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                drag.current = { clientY: e.clientY, value };
+              }}
+              onPointerUp={() => { drag.current = null; }}
+              onPointerCancel={() => { drag.current = null; }}
+              onPointerMove={(e) => {
+                if (!drag.current || !e.currentTarget.hasPointerCapture(e.pointerId)) return;
+                // Screen pixels to chart units: the SVG's vertical scale, then the panel's value range.
+                const pxPerUnit = e.currentTarget.ownerSVGElement.getScreenCTM().d;
+                const delta = ((drag.current.clientY - e.clientY) / pxPerUnit) * (max / PANEL_H);
+                onChange(roundStep(Math.min(MAX_DELAY, Math.max(0, drag.current.value + delta))));
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Home") { e.preventDefault(); onChange(0); return; }
+                const d = keys[e.key];
+                if (d === undefined) return;
+                e.preventDefault();
+                onChange(roundStep(Math.min(MAX_DELAY, Math.max(0, value + d))));
+              }} />
+    </g>
+  );
+}
+
+function Panel({ top, points, field, max, tMax, label, handle }) {
   const inner = W - PAD.l - PAD.r;
   const x = (t) => PAD.l + (t / tMax) * inner;
   const y = (v) => top + PAD.t + PANEL_H - (v / max) * PANEL_H;
@@ -37,29 +86,32 @@ function Panel({ top, points, field, max, tMax, label, unit }) {
           <text x={PAD.l - 8} y={y(v) + 4} textAnchor="end" fontSize="12" fill={text.muted}>{fmt(v)}</text>
         </g>
       ))}
-      <text x="0" y={y(max / 2) + 4} fontSize="12" fill={text.muted}>{unit}</text>
       {xTicks.map((t) => (
         <text key={t} x={x(t)} y={y(0) + 16} textAnchor="middle" fontSize="12" fill={text.muted}>{Math.round(t)}</text>
       ))}
       <path d={d} fill="none" stroke={text.primary} strokeWidth="2" />
+      {handle && <DelayHandle top={top} max={max} value={handle.value} onChange={handle.onChange} />}
     </g>
   );
 }
 
 /**
  * 60 example requests with an optional burst of rate-limit (429) replies, drawn as two charts
- * on the same time axis. `cfg` is the draft's `fetch`.
+ * on the same time axis. `cfg` is the draft's `fetch`; `latency` is the assumed seconds per request.
  */
-export default function BackoffChart({ cfg }) {
+export default function BackoffChart({ cfg, latency = 0.3, onMinDelay }) {
   const [burst, setBurst] = useState(true);
   const points = useMemo(
-    () => (typeof cfg?.min_delay === "number" ? timeline(scenario(N, burst ? 8 : 0), cfg, LATENCY) : []),
-    [cfg, burst],
+    () => (typeof cfg?.min_delay === "number" ? timeline(scenario(N, burst ? 8 : 0), cfg, latency) : []),
+    [cfg, burst, latency],
   );
   if (points.length === 0) return null;
-  const s = summary(cfg, LATENCY);
+  const s = summary(cfg, latency);
   const tMax = Math.max(points[points.length - 1].t, 1);
-  const waitMax = niceMax(Math.max(...points.map((p) => p.wait)));
+  // The largest possible wait is the minimum delay, plus the backoff cap, plus jitter. The axis is
+  // built from those settings, not from the points, so it does not rescale while the handle is dragged.
+  const waitMax = roundUp(Math.max(cfg.min_delay, MAX_DELAY) + (cfg.backoff_max ?? 0) + (cfg.jitter_max ?? 0));
+  const handle = onMinDelay ? { value: cfg.min_delay, onChange: onMinDelay } : null;
   const rateMax = niceMax(Math.max(...points.map((p) => p.rate)));
   const panelH = PAD.t + PANEL_H + 24;
   const total = panelH * 2 + GAP + PAD.b + 20;
@@ -74,15 +126,17 @@ export default function BackoffChart({ cfg }) {
       </div>
       <svg viewBox={`0 0 ${W} ${total}`} width="100%" role="img"
            aria-label={`Example of ${N} requests over ${fmt(tMax)} seconds. The wait before a request peaks at ${fmt(Math.max(...points.map((p) => p.wait)))} seconds.`}>
-        <Panel top={0} points={points} field="wait" max={waitMax} tMax={tMax} label="Wait before each request" unit="s" />
-        <Panel top={panelH + GAP - 8} points={points} field="rate" max={rateMax} tMax={tMax} label="Requests per second" unit="req/s" />
+        <Panel top={0} points={points} field="wait" max={waitMax} tMax={tMax} label="Wait before each request (seconds)"
+               handle={handle} />
+        <Panel top={panelH + GAP - 8} points={points} field="rate" max={rateMax} tMax={tMax} label="Requests per second" />
         <text x={PAD.l + (W - PAD.l - PAD.r) / 2} y={total - 2} textAnchor="middle" fontSize="12" fill={text.secondary}>
           Time since the crawl started (seconds)
         </text>
       </svg>
       <p style={{ fontSize: 13, color: text.muted, margin: "6px 0 0" }}>
-        Shaded band: the 429 replies. Assumes each request takes {LATENCY} s and the jitter averages {fmt((cfg.jitter_max ?? 0) / 2)} s.
+        Shaded band: the 429 replies. Assumes each request takes {fmt(latency)} s and the jitter averages {fmt((cfg.jitter_max ?? 0) / 2)} s.
         Backoff is shared by every worker, so this is the pace of the crawl as a whole.
+        {handle && " Drag the dashed line, or focus it and use the arrow keys, to change the minimum delay. The change is a draft until you Save."}
       </p>
     </ExplainerFrame>
   );

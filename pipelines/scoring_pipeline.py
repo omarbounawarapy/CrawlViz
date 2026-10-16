@@ -19,6 +19,7 @@ from events import (
     ScoringStartedEvent,
 )
 
+from infrastructure.call_budget import CallBudget
 from traceability.trace_context import bind_node
 
 from .base_pipeline import BasePipeline
@@ -68,6 +69,7 @@ class ScoringPipeline(BasePipeline):
         max_llm_links=None,
         llm_batch_size=None,
         rng: random.Random | None = None,
+        call_budget: CallBudget | None = None,
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.rng = rng if rng is not None else random.Random()
@@ -79,6 +81,8 @@ class ScoringPipeline(BasePipeline):
         # When set, links bound for the LLM go out in calls of at most this
         # many, in link order, instead of one call per node.
         self.llm_batch_size = llm_batch_size
+        # Per-crawl cap shared by every scoring worker; None means no cap.
+        self.call_budget = call_budget
         self.event_broker = event_broker
         self.scoring_service = scoring_service
         self.nlp_service = nlp_service
@@ -181,6 +185,7 @@ class ScoringPipeline(BasePipeline):
                 )
 
                 sampled, llm_skip, drop = self.bucket_links(links)
+                sampled, llm_skip = self._take_llm_calls(sampled, llm_skip)
                 logger.debug(
                     "Node %s: %d sampled, %d high-confidence, %d dropped",
                     node.get_id(), len(sampled), len(llm_skip), len(drop),
@@ -258,6 +263,20 @@ class ScoringPipeline(BasePipeline):
                     error_message=str(e),
                 )
             )
+
+    def _take_llm_calls(self, sampled: list, llm_skip: list) -> tuple[list, list]:
+        """Keep only the LLM-bound links the call budget can pay for; the rest are
+        scored on NLP alone, best-ranked first, like the per-node cap does."""
+        if self.call_budget is None or not sampled:
+            return sampled, llm_skip
+        size = self.llm_batch_size or len(sampled)
+        needed = -(-len(sampled) // size)
+        granted = self.call_budget.take(needed)
+        keep = min(len(sampled), granted * size)
+        if keep == len(sampled):
+            return sampled, llm_skip
+        sampled = sorted(sampled, key=lambda link: link._nlp_score, reverse=True)
+        return sampled[:keep], llm_skip + sampled[keep:]
 
     def bucket_links(self, links: list) -> tuple[list, list, list]:
         """Split scored links into low/mid/high NLP-confidence buckets,

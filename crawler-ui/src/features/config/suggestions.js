@@ -13,7 +13,7 @@ const RULES = [
     id: "ignore-robots",
     section: "Fetch",
     when: (c) => c.fetch.respect_robots === false,
-    text: () => "robots.txt is ignored. Many sites block crawlers that do this, and it is often against their terms.",
+    text: () => "Many sites block crawlers that ignore robots.txt, and doing so often breaks their terms.",
     fix: { label: "Honor robots.txt", set: [["fetch.respect_robots", true]] },
   },
   {

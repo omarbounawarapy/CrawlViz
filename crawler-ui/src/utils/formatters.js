@@ -14,7 +14,7 @@ export function eventSummary(ev) {
     case "SNAPSHOT_FULL":      return `${ev.nodes?.length ?? 0} nodes`;
     case "CRAWL_STOPPED":      return ev.reason;
     // V2 additions
-    case "PIPELINE_EVENT":      return `${ev.stage} ${ev.phase}${ev.detail ? " — " + ev.detail : ""}`;
+    case "PIPELINE_EVENT":      return `${ev.stage} ${ev.phase}${ev.detail ? ": " + ev.detail : ""}`;
     case "CANDIDATE_EVALUATED": return `${ev.candidates?.length ?? 0} link${ev.candidates?.length === 1 ? "" : "s"} ${ev.decision === "dropped" ? "skipped as off-topic" : "followed without the LLM"}`;
     case "NODE_SCORED_DETAIL":  return `${ev.node_id?.slice(0, 6)}… priority ${fmtNum(ev.priority)}`;
     case "NODE_ERROR":          return `${ev.stage}: ${ev.error_message}`;

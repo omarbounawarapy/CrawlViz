@@ -36,10 +36,20 @@ describe("StrategyCards", () => {
 
   it("writes a changed weight back under the chosen strategy", () => {
     const onChange = vi.fn();
-    render(<StrategyCards priority={priority} defaults={priority} onChange={onChange} />);
-    fireEvent.click(screen.getByRole("radio", { name: /Aggressive/ }));
+    render(<StrategyCards priority={priority} defaults={priority} defaultStrategy="aggressive" onChange={onChange} />);
     fireEvent.change(screen.getByLabelText("aggressive target similarity"), { target: { value: "0.8" } });
     expect(onChange).toHaveBeenCalledWith("priority.aggressive_weights", expect.objectContaining({ target_similarity: 0.8 }));
+  });
+  it("makes the clicked card the default strategy", () => {
+    const onChange = vi.fn();
+    render(<StrategyCards priority={priority} defaults={priority} defaultStrategy="balanced" onChange={onChange} />);
+    expect(screen.getByRole("radio", { name: /Balanced/ }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("radio", { name: /Exploration/ }));
+    expect(onChange).toHaveBeenCalledWith("scoring_cascade.default_priority_strategy", "exploration");
+  });
+  it("states how the top five of each strategy look on the example page", () => {
+    render(<StrategyCards priority={priority} defaults={priority} defaultStrategy="balanced" onChange={() => {}} />);
+    expect(screen.getAllByText(/Top 5 of the example page: \d+ off topic, average depth/)).toHaveLength(3);
   });
   it("resets one strategy to its default weights", () => {
     const onChange = vi.fn();

@@ -13,6 +13,9 @@ import {
 import { getTheme } from "../../theme";
 import { Page, SectionTitle, Row } from "../common/Page";
 import { Field, TextInput, Select, Grid, Button, Tabs, TabPanel, Chip, Group, Status } from "../common/Form";
+import NumberField from "../config/NumberField";
+import { Explain } from "../config/Term";
+import { useCrawlCost } from "../config/crawlCost";
 import {
   STRATEGIES, TRANSFORMS_WITH_CONFIG, ALL_TRANSFORMS, EXPORT_TYPES, FIELD_TYPES, EXPANSION_STYLES,
   PROFILES, DEFAULT_BLUEPRINT, validateBlueprint, blueprintToForm, formToBlueprint,
@@ -220,7 +223,7 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
           {(a) => <Select {...a} value={form.scoringStrategy} onChange={(e) => set({ scoringStrategy: e.target.value })}>{STRATEGIES.map((s) => <option key={s} value={s}>{s}</option>)}</Select>}
         </Field>
         <Grid>
-          {field("Scoring backend", bpId("scoring-type"), (a, bad) => <TextInput {...a} invalid={bad} list="bp-backends" value={form.scoringType} onChange={(e) => set({ scoringType: e.target.value })} />)}
+          {field("Scoring provider", bpId("scoring-type"), (a, bad) => <TextInput {...a} invalid={bad} list="bp-backends" value={form.scoringType} onChange={(e) => set({ scoringType: e.target.value })} />, { hint: "The LLM service that scores links. Its endpoint is set under Providers." })}
           {field("Scoring model", bpId("scoring-model"), (a, bad) => <TextInput {...a} invalid={bad} value={form.modelInformation} placeholder="provider/model-name" onChange={(e) => set({ modelInformation: e.target.value })} />)}
         </Grid>
       </section>
@@ -233,7 +236,7 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
           <Field label="Style" id={bpId("expansion-style")} error={err(bpId("expansion-style"))}>
             {(a) => <Select {...a} value={form.expansionStyle} onChange={(e) => set({ expansionStyle: e.target.value })}>{EXPANSION_STYLES.map((s) => <option key={s} value={s}>{s}</option>)}</Select>}
           </Field>
-          {field("Number of descriptions", bpId("num-descriptions"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={1} value={form.numDescriptions} onChange={(e) => set({ numDescriptions: e.target.value })} />)}
+          {field("Descriptions per topic", bpId("num-descriptions"), (a, bad) => <NumberField {...a} integer min={1} invalid={bad} value={form.numDescriptions} onChange={(v) => set({ numDescriptions: String(v) })} />, { hint: "How many descriptions of the topic the LLM writes; links are compared against them." })}
         </Grid>
         <Grid>
           {field("LLM backend", bpId("llm-type"), (a, bad) => <TextInput {...a} invalid={bad} list="bp-backends" value={form.llmType} onChange={(e) => set({ llmType: e.target.value })} />)}
@@ -261,12 +264,12 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
       <section aria-labelledby="sec-stop">
         <SectionTitle id="sec-stop">Stop conditions</SectionTitle>
         <Grid>
-          {field("Max pages", bpId("max_nodes"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={1} value={form.maxNodes} onChange={(e) => set({ maxNodes: e.target.value })} />)}
-          {field("Max depth", bpId("max_depth"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={1} value={form.maxDepth} onChange={(e) => set({ maxDepth: e.target.value })} />, { hint: "Links followed from a starting page." })}
+          {field("Max pages", bpId("max_nodes"), (a, bad) => <NumberField {...a} integer min={1} invalid={bad} value={form.maxNodes} onChange={(v) => set({ maxNodes: String(v) })} />)}
+          {field("Max depth", bpId("max_depth"), (a, bad) => <NumberField {...a} integer min={1} invalid={bad} value={form.maxDepth} onChange={(v) => set({ maxDepth: String(v) })} />, { hint: "Links followed from a starting page." })}
         </Grid>
         <Grid>
-          {field("Max duration (ms)", bpId("max_duration"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={0} value={form.maxDuration} onChange={(e) => set({ maxDuration: e.target.value })} />)}
-          {field("No-progress timeout (ms)", bpId("no_progress_timeout"), (a, bad) => <TextInput {...a} invalid={bad} type="number" min={0} value={form.noProgressTimeout} onChange={(e) => set({ noProgressTimeout: e.target.value })} />, { hint: "Stops if no new page is found for this long." })}
+          {field("Max duration (ms)", bpId("max_duration"), (a, bad) => <NumberField {...a} integer min={0} invalid={bad} value={form.maxDuration} onChange={(v) => set({ maxDuration: String(v) })} />)}
+          {field("No-progress timeout (ms)", bpId("no_progress_timeout"), (a, bad) => <NumberField {...a} integer min={0} invalid={bad} value={form.noProgressTimeout} onChange={(v) => set({ noProgressTimeout: String(v) })} />, { hint: "Stops if no new page is found for this long." })}
         </Grid>
         <Field label="Stop URL (optional)" hint="Stop as soon as this page is reached. Leave empty to disable.">
           {(a) => <TextInput {...a} value={form.stopUrl} onChange={(e) => set({ stopUrl: e.target.value })} />}
@@ -280,6 +283,16 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
 // ─── page ────────────────────────────────────────────────────────────────────
 
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+function ReviewCost({ pages }) {
+  const estimate = useCrawlCost(pages);
+  if (!estimate) return <Row label="LLM calls (estimate)">…</Row>;
+  return (
+    <Row label="LLM calls (estimate)" note={estimate.capped ? "Capped by the per-crawl call limit." : "From the example page, at the saved settings."}>
+      up to {Math.round(estimate.calls).toLocaleString("en-US")}
+    </Row>
+  );
+}
 const pretty = (bp) => JSON.stringify(bp, null, 2);
 const nameOf = (n) => (n.endsWith(".json") ? n : `${n}.json`);
 
@@ -456,6 +469,7 @@ export default function BlueprintManager({ onNavigate }) {
       <Row label="Scored by">{reviewBp.scoring.params.scoring_type || "—"}</Row>
       <Row label="Extraction fields">{count(reviewBp.extraction.fields)}</Row>
       <Row label="Stops after">{Number(reviewBp.stop_conditions.max_nodes).toLocaleString()} pages</Row>
+      <ReviewCost pages={reviewBp.stop_conditions.max_nodes} />
       <Row label="Maximum depth">{Number(reviewBp.stop_conditions.max_depth).toLocaleString()} links from a start page</Row>
       {mode === "edit" && (
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>

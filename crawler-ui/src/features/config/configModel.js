@@ -53,13 +53,14 @@ export function buildFields(schema) {
       fields.push({
         path, key, topKey, group,
         title: humanize(key),
-        description: (raw.description ?? node.description ?? "").replace(/\s*--\s*/g, " — "),
+        description: (raw.description ?? node.description ?? "").replace(/\s*--\s*/g, ". "),
         type: node.type,
         nullable,
         widget: widgetFor(raw, node),
         minimum: node.minimum ?? node.exclusiveMinimum,
         maximum: node.maximum,
         unit: raw.ui_unit,
+        effect: raw.ui_effect,
         step: raw.ui_step,
         pair: raw.ui_pair,
         activeWhen: raw.ui_active_when,
@@ -149,6 +150,14 @@ export function livePatch(fields, patch) {
 
 export const isEmptyPatch = (patch) => Object.keys(patch).length === 0;
 
+/** The sections holding a changed field, in `order`: what the save bar says is unsaved, and where. */
+export function changedSections(fields, patch, order = []) {
+  const names = new Set();
+  fields.forEach((f) => { if (getIn(patch, f.path) !== undefined) names.add(f.section); });
+  const rank = (name) => { const i = order.indexOf(name); return i < 0 ? order.length : i; };
+  return [...names].sort((a, b) => rank(a) - rank(b));
+}
+
 /** Client-side bounds check mirroring the schema; the server stays authoritative. */
 export function validateField(field, value) {
   if (["number", "slider", "stepper", "limit", "range"].includes(field.widget)) {
@@ -181,3 +190,18 @@ export function clampPair({ low, high }, which, value, { min, max, step }) {
 }
 
 export const clampRange = (v, min, max) => Math.max(min, Math.min(max, v));
+
+/**
+ * The hints this page cannot draw without. An API server started before the
+ * schema grew them serves plain sliders and no glossary; name what is missing so
+ * the page can say so instead of quietly looking wrong.
+ */
+export function schemaGaps(schema, fields) {
+  const gaps = [];
+  if (!schema?.ui_glossary) gaps.push("the glossary");
+  const low = fields.find((f) => f.path === "scoring_cascade.low_threshold");
+  if (!low?.pair) gaps.push("range pairs");
+  const delay = fields.find((f) => f.path === "fetch.min_delay");
+  if (!delay?.effect) gaps.push("effect lines");
+  return gaps;
+}

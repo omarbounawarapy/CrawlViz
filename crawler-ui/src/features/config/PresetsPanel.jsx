@@ -3,16 +3,17 @@ import { getTheme } from "../../theme";
 import { Button, TextInput } from "../common/Form";
 import { SectionTitle } from "../common/Page";
 import {
-  applyPreset, deletePreset, exportConfig, fetchConfig, fetchPresets, replaceConfig, savePreset, validateConfig,
+  applyPreset, deletePreset, exportConfig, fetchConfig, fetchConfigDefaults, fetchPresets, replaceConfig, savePreset,
+  validateConfig,
 } from "../../api/client";
-import { presetChanges, shown } from "./presetModel";
+import { changesMarkdown, presetChanges } from "./presetModel";
 
 const theme = getTheme();
 
 /** Named presets plus JSON import/export of the stored settings. Applying a
  *  preset or an import replaces the stored settings; `onChanged` hands the
  *  new effective config back to the page. */
-export default function PresetsPanel({ onChanged, dirty }) {
+export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
   const [presets, setPresets] = useState({ builtin: {}, descriptions: {}, user: {} });
   const [current, setCurrent] = useState(null);
   const [open, setOpen] = useState(null);
@@ -71,6 +72,18 @@ export default function PresetsPanel({ onChanged, dirty }) {
     URL.revokeObjectURL(url);
   };
 
+  const downloadChanges = async () => {
+    const out = await guard(async () => {
+      const [effective, defaults] = await Promise.all([fetchConfig(), fetchConfigDefaults()]);
+      return changesMarkdown(effective, defaults, `Exported ${new Date().toISOString().slice(0, 10)}`, fields);
+    }, "Exported the changes from defaults.");
+    if (!out) return;
+    const url = URL.createObjectURL(new Blob([out], { type: "text/markdown" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = "crawlviz-settings-changes.md"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const upload = async (file) => {
     if (!file) return;
     let values;
@@ -86,6 +99,8 @@ export default function PresetsPanel({ onChanged, dirty }) {
     if (cfg) onChanged(cfg);
   };
 
+  // A built-in preset is listed under the name its goal card uses; a saved preset keeps its own.
+  const nameOf = (n) => presets.labels?.[n] ?? n;
   const row = { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "6px 0",
                 borderBottom: `1px solid ${theme.colors.rowBorder}` };
   const group = (title, list, deletable) => Object.keys(list).length > 0 && (
@@ -94,21 +109,21 @@ export default function PresetsPanel({ onChanged, dirty }) {
       {Object.keys(list).map((n) => (
         <div key={n} style={row}>
           <span style={{ flex: 1, fontSize: 14 }}>
-            {n}
+            {nameOf(n)}
             {presets.descriptions?.[n] && (
               <span style={{ display: "block", fontSize: 13, color: theme.colors.text.secondary }}>{presets.descriptions[n]}</span>
             )}
           </span>
           <Button variant="quiet" aria-expanded={open === n} onClick={() => setOpen(open === n ? null : n)}
-                  aria-label={`Show what preset ${n} changes`}>What changes</Button>
-          <Button onClick={() => apply(n)} aria-label={`Apply preset ${n}`}>Apply</Button>
-          {deletable && <Button variant="quiet" onClick={() => remove(n)} aria-label={`Delete preset ${n}`}>Delete</Button>}
+                  aria-label={`Show what preset ${nameOf(n)} changes`}>What changes</Button>
+          <Button onClick={() => apply(n)} aria-label={`Apply preset ${nameOf(n)}`}>Apply</Button>
+          {deletable && <Button variant="quiet" onClick={() => remove(n)} aria-label={`Delete preset ${nameOf(n)}`}>Delete</Button>}
           {open === n && (
-            <ul aria-label={`Changes made by ${n}`} style={{ flexBasis: "100%", margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
+            <ul aria-label={`Changes made by ${nameOf(n)}`} style={{ flexBasis: "100%", margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
               {(() => {
-                const changes = presetChanges(list[n], current);
+                const changes = presetChanges(list[n], current, fields);
                 if (changes.length === 0) return <li>Nothing: your settings already match this preset.</li>;
-                return changes.map((c) => <li key={c.path}>{c.label}: {shown(c.from)} → <strong>{shown(c.to)}</strong></li>);
+                return changes.map((c) => <li key={c.path}>{c.label}: {c.fromText} → <strong>{c.toText}</strong></li>);
               })()}
             </ul>
           )}
@@ -128,6 +143,7 @@ export default function PresetsPanel({ onChanged, dirty }) {
         <Button onClick={save} disabled={!name.trim()}>Save stored settings as preset</Button>
         <span style={{ flex: 1 }} />
         <Button onClick={download}>Export JSON</Button>
+        <Button onClick={downloadChanges}>Export changes from defaults (Markdown)</Button>
         <Button onClick={() => fileRef.current?.click()}>Import JSON</Button>
         <input ref={fileRef} type="file" accept="application/json,.json" hidden aria-label="Import settings file"
                onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />

@@ -4,7 +4,11 @@ import { SectionTitle } from "../common/Page";
 import { Button } from "../common/Form";
 import FieldControl from "./FieldControl";
 import RangeSlider from "./RangeSlider";
+import { Explain } from "./Term";
+import { Hint } from "../common/Hint";
+import EmptyState from "../common/EmptyState";
 import { badgeStyle, slug } from "./settingsStyle";
+import { stageName } from "./pipelineNames";
 import {
   getIn, groupBySection, isActive, matches, rangeOf, sameValue, validateField,
 } from "./configModel";
@@ -20,15 +24,21 @@ function SettingRow({ field, value, defaultValue, saved, onChange, error, active
                   padding: "11px 0", borderBottom: `1px solid ${theme.colors.rowBorder}`,
                   opacity: active ? 1 : 0.45 }}>
       <div style={{ minWidth: 0 }}>
-        <label htmlFor={id} style={{ fontSize: 14, color: theme.colors.text.primary }}>
-          {field.title}
-          {field.apply === "live" && <span style={badgeStyle} title="Can be changed while a crawl runs">live</span>}
+        {/* Badges sit beside the label, not in it: a button inside a label would become the label's control. */}
+        <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "0 8px" }}>
+          <label htmlFor={id} style={{ fontSize: 14, color: theme.colors.text.primary }}>{field.title}</label>
+          {field.apply === "live" && <Hint text="Can be changed while a crawl runs"><span style={badgeStyle}>live</span></Hint>}
           {field.advanced && <span style={badgeStyle}>advanced</span>}
           {changed && <span style={{ ...badgeStyle, color: theme.colors.text.primary }}>unsaved</span>}
-          {!changed && modified && <span style={badgeStyle} title="Differs from the built-in default">changed</span>}
-        </label>
+          {!changed && modified && <Hint text="Differs from the built-in default"><span style={badgeStyle}>changed</span></Hint>}
+        </div>
         {field.description && (
-          <div style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2, maxWidth: "58ch" }}>{field.description}</div>
+          <div style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2, maxWidth: "58ch" }}><Explain text={field.description} /></div>
+        )}
+        {field.effect && (
+          <div style={{ fontSize: 13, color: theme.colors.text.secondary, marginTop: 2, maxWidth: "58ch" }}>
+            <span style={{ color: theme.colors.text.muted }}>Effect: </span><Explain text={field.effect} />
+          </div>
         )}
         {error && <div role="alert" style={{ fontSize: 13, color: theme.colors.accent.red, marginTop: 4 }}>{error}</div>}
         {modified && (
@@ -111,6 +121,16 @@ function SplitRow({ nlp, llm, draft, defaults, saved, onChange, errors }) {
   );
 }
 
+// The heading of an intent group: what it is for, in one line.
+function GroupHeading({ group }) {
+  return (
+    <div style={{ marginTop: 16, paddingTop: 10, borderTop: `1px solid ${theme.colors.rowBorder}` }}>
+      <h3 style={{ fontSize: 15, fontWeight: 600, margin: "0 0 2px", color: theme.colors.text.primary }}>{group.title}</h3>
+      {group.hint && <p style={{ fontSize: 13, color: theme.colors.text.muted, margin: "0 0 6px" }}>{group.hint}</p>}
+    </div>
+  );
+}
+
 // One row per pipeline, one column per setting, instead of N identical rows.
 function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
   const rows = [];
@@ -129,7 +149,7 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
       <tbody>
         {rows.map((r) => (
           <tr key={r.name} style={{ borderTop: `1px solid ${theme.colors.rowBorder}` }}>
-            <td style={{ padding: "8px 8px 8px 0", fontSize: 14 }}>{r.name.replace(/_/g, " ")}</td>
+            <td style={{ padding: "8px 8px 8px 0", fontSize: 14 }}>{stageName(r.name)}</td>
             {cols.map((c) => {
               const f = r.cells[c];
               if (!f) return <td key={c} />;
@@ -137,7 +157,7 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
               const mod = !sameValue(v, getIn(defaults, f.path));
               return (
                 <td key={c} style={{ padding: "6px 8px 6px 0" }}>
-                  <FieldControl field={{ ...f, ariaLabel: `${r.name.replace(/_/g, " ")} ${f.title.toLowerCase()}` }} value={v}
+                  <FieldControl field={{ ...f, ariaLabel: `${stageName(r.name)} ${f.title.toLowerCase()}` }} value={v}
                                 onChange={(nv) => onChange(f.path, nv)} id={`${f.path}`} error={errors[f.path]} />
                   {mod && !sameValue(v, getIn(saved, f.path)) && <span style={badgeStyle}>unsaved</span>}
                 </td>
@@ -157,7 +177,22 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
 export default function SettingsEditor({
   fields, draft, defaults, saved, onChange, errors = {}, query = "", showAdvanced = false,
   onResetSection, sectionExtras = {}, fieldExtras = {}, hiddenPaths = [], section, sectionOrder = [], sectionHelp = {}, onOpenSection,
+  groups = {},
 }) {
+  // Rows in group order, each group's first row tagged with the group. Searching is a flat list.
+  function orderRows(list, name) {
+    const spec = query ? null : groups[name];
+    if (!spec) return list.map((f) => ({ f, group: null }));
+    const out = [];
+    const placed = new Set();
+    spec.forEach((g) => {
+      const rows = list.filter((f) => g.paths.includes(f.path));
+      rows.forEach((f, i) => { placed.add(f.path); out.push({ f, group: i === 0 ? g : null }); });
+    });
+    const rest = list.filter((f) => !placed.has(f.path));
+    rest.forEach((f, i) => out.push({ f, group: i === 0 ? { title: "Other settings", hint: null } : null }));
+    return out;
+  }
   const sections = useMemo(() => {
     // An explainer that edits a field itself hides its plain row, except while searching.
     const visible = fields.filter((f) => (showAdvanced || !f.advanced || query) && matches(f, query)
@@ -170,12 +205,68 @@ export default function SettingsEditor({
     return shown.length === 0 && sectionExtras[section] ? [[section, []]] : shown;
   }, [fields, query, showAdvanced, section, sectionOrder, hiddenPaths, sectionExtras]);
 
-  if (sections.length === 0) {
+  // The explainer's pictures go above the first plain row, after any range or split rows
+  // they read from (the NLP/LLM split sits above the strategy cards on Priority).
+  function rowsWithExtras(list, name) {
+    const extras = !query && sectionExtras[name] ? sectionExtras[name](draft) : null;
+    const ordered = orderRows(list, name);
+    const firstPlain = ordered.findIndex(({ f }) => rangeOf(f, list, "split") === undefined);
+    const rows = ordered.map(({ f, group }, i) => {
+      const row = renderRow(f, list);
+      return (
+        <Fragment key={`row-${f.path}`}>
+          {group && <GroupHeading group={group} />}
+          {i === firstPlain && extras}
+          {row}
+        </Fragment>
+      );
+    });
     return (
-      <p style={{ fontSize: 14, color: theme.colors.text.muted }}>
-        {query ? `No setting matches “${query}”.` : "Nothing to show in this section."}
-      </p>
+      <>
+        {rows}
+        {firstPlain === -1 && extras}
+      </>
     );
+  }
+
+  function renderRow(f, list) {
+    const split = rangeOf(f, list, "split");
+    if (split === null) return null;
+    if (split) {
+      return (
+        <SplitRow key={f.path} nlp={split.low} llm={split.high} draft={draft} defaults={defaults}
+                  saved={saved} onChange={onChange} errors={errors} />
+      );
+    }
+    const pair = rangeOf(f, list);
+    if (pair === null) return null;
+    if (pair) {
+      return (
+        <RangeRow key={f.path} low={pair.low} high={pair.high} draft={draft} defaults={defaults}
+                  saved={saved} onChange={onChange} errors={errors} />
+      );
+    }
+    return (
+      <Fragment key={f.path}>
+        <SettingRow
+          field={f} value={getIn(draft, f.path)} defaultValue={getIn(defaults, f.path)}
+          saved={getIn(saved, f.path)} onChange={(v) => onChange(f.path, v)}
+          error={errors[f.path] ?? validateField(f, getIn(draft, f.path))}
+          active={isActive(f, draft)}
+        />
+        {!query && fieldExtras[f.path]?.(draft)}
+      </Fragment>
+    );
+  }
+
+  if (sections.length === 0) {
+    // Only advanced rows left: say so, instead of an empty page.
+    const allAdvanced = !query && section && fields.some((f) => f.section === section && f.advanced)
+      && !fields.some((f) => f.section === section && !f.advanced);
+    const reason = query ? `No setting matches “${query}”.`
+      : allAdvanced ? `Every setting in ${section} is advanced. Turn on Advanced to see them.`
+      : "Nothing to show in this section.";
+    return <EmptyState>{reason}</EmptyState>;
   }
   return sections.map(([name, list]) => {
     const asTable = list.length > 0 && list.every((f) => f.group) && list.some((f) => f.topKey === "pipelines");
@@ -192,41 +283,19 @@ export default function SettingsEditor({
         </div>
         {!query && sectionHelp[name] && (
           <p style={{ fontSize: 14, color: theme.colors.text.secondary, maxWidth: "62ch", margin: "0 0 8px" }}>
-            {sectionHelp[name]}
+            <Explain text={sectionHelp[name]} />
           </p>
         )}
-        {!query && sectionExtras[name]?.(draft)}
         {asTable ? (
-          <PipelinesTable fields={list} draft={draft} defaults={defaults} saved={saved} onChange={onChange} errors={errors} />
-        ) : list.map((f) => {
-          const split = rangeOf(f, list, "split");
-          if (split === null) return null;
-          if (split) {
-            return (
-              <SplitRow key={f.path} nlp={split.low} llm={split.high} draft={draft} defaults={defaults}
-                        saved={saved} onChange={onChange} errors={errors} />
-            );
-          }
-          const pair = rangeOf(f, list);
-          if (pair === null) return null;
-          if (pair) {
-            return (
-              <RangeRow key={f.path} low={pair.low} high={pair.high} draft={draft} defaults={defaults}
-                        saved={saved} onChange={onChange} errors={errors} />
-            );
-          }
-          return (
-            <Fragment key={f.path}>
-              <SettingRow
-                field={f} value={getIn(draft, f.path)} defaultValue={getIn(defaults, f.path)}
-                saved={getIn(saved, f.path)} onChange={(v) => onChange(f.path, v)}
-                error={errors[f.path] ?? validateField(f, getIn(draft, f.path))}
-                active={isActive(f, draft)}
-              />
-              {!query && fieldExtras[f.path]?.(draft)}
-            </Fragment>
-          );
-        })}
+          <>
+            {!query && sectionExtras[name]?.(draft)}
+            <PipelinesTable fields={list} draft={draft} defaults={defaults} saved={saved} onChange={onChange} errors={errors} />
+          </>
+        ) : (
+          <>
+            {rowsWithExtras(list, name)}
+          </>
+        )}
       </section>
     );
   });

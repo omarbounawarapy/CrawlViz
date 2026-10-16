@@ -81,11 +81,12 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
                      builtin={defaults.scoring_system} note="Who the model is and what it must return. First thing it reads."
                      onChange={(v) => onChange("prompts.scoring_system", v)} />
       <div style={{ padding: "12px 0 0" }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>Scoring strategy wording</div>
-        <p style={{ fontSize: 13, color: text.secondary, margin: "2px 0 8px" }}>
-          One sentence per strategy that tilts how the model scores. The crawl uses the strategy chosen in its template.
+        <div style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>Scoring focus wording</div>
+        <p style={{ fontSize: 13, color: text.secondary, margin: "2px 0 8px", maxWidth: "62ch" }}>
+          One sentence per scoring focus that tilts how the model scores. These are the LLM's focuses, not the priority
+          strategies on the Priority page. Each blueprint picks one focus with its scoring strategy (scoring.strategy).
         </p>
-        <div role="tablist" aria-label="Scoring strategies" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div role="tablist" aria-label="Scoring focuses" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {strategies.map((s) => (
             <button key={s} role="tab" type="button" aria-selected={s === strategy} onClick={() => setStrategy(s)}
                     style={{
@@ -99,7 +100,7 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
           ))}
         </div>
         <div role="tabpanel">
-          <EditableBlock id="prompt-strategy" title={`Wording for ${strategy}`}
+          <EditableBlock id="prompt-strategy" title={`Wording for the ${strategy.replace(/_/g, " ").toLowerCase()} focus`}
                          note={STRATEGY_HELP[strategy] ?? "Soft bias added to the context block."}
                          value={contextValue} builtin={builtinContext}
                          onChange={(v) => onChange("prompts.strategy_contexts", { ...prompts.strategy_contexts, [strategy]: v })} />
@@ -115,7 +116,8 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
         <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0 }}>
           {fixed.map((b) => (
             <li key={b.id} style={{ fontSize: 13, color: text.secondary, padding: "3px 0" }}>
-              <strong style={{ color: text.primary }}>{b.kind === "locked" ? "🔒 " : ""}{b.title}</strong>: {b.note}
+              <strong style={{ color: text.primary }}>{b.title}</strong>
+              {b.kind === "locked" && <span style={{ fontSize: 12, color: text.muted }}> (locked)</span>}: {b.note}
             </li>
           ))}
         </ul>
@@ -125,7 +127,7 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
         <Button variant="quiet" aria-pressed={showFull} onClick={() => setShowFull((v) => !v)}>
           {showFull ? "Hide the full prompt" : "Show the full prompt"}
         </Button>
-        {tokens != null && <span style={{ fontSize: 12, color: text.muted, marginLeft: 8 }}>about {tokens} tokens for 3 sample links</span>}
+        {tokens != null && <>{" "}<span style={{ fontSize: 12, color: text.muted, marginLeft: 8 }}>about {tokens} tokens for 3 sample links</span></>}
         {showFull && view.blocks && (
           <div aria-label="Full prompt preview" style={{ marginTop: 8 }}>
             {view.blocks.map((b) => (

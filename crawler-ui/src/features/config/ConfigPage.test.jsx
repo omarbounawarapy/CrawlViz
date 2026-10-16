@@ -17,7 +17,10 @@ vi.mock("../../api/client", () => ({
   removeKey: vi.fn(() => Promise.resolve({ removed: "abc" })),
   crawlStatus: vi.fn(() => Promise.resolve({ running: true })),
   patchLiveConfig: vi.fn(() => Promise.resolve({})),
-  fetchPresets: vi.fn(() => Promise.resolve({ builtin: { polite: {} }, user: { mine: {} } })),
+  fetchPresets: vi.fn(() => Promise.resolve({
+    builtin: { polite: {} }, user: { mine: {} },
+    goals: { gentler: { label: "Gentler on a site", description: "Waits longer between requests.", values: { fetch: { min_delay: 2 } } } },
+  })),
   applyPreset: vi.fn(() => Promise.resolve({ ...defaults, fetch: { ...defaults.fetch, min_delay: 2 } })),
   savePreset: vi.fn(() => Promise.resolve({ saved: "x" })),
   deletePreset: vi.fn(() => Promise.resolve({ removed: "mine" })),
@@ -53,12 +56,12 @@ describe("ConfigPage", () => {
     at("pipelines");
     render(<ConfigPage />);
     const table = await screen.findByRole("table");
-    const workers = within(table).getByLabelText("filtering workers");
+    const workers = within(table).getByLabelText("Filter workers");
     expect(workers.getAttribute("aria-valuemin")).toBe("1");
     expect(workers.getAttribute("aria-valuemax")).toBe("64");
     fireEvent.keyDown(workers, { key: "Home" });
     expect(workers.getAttribute("aria-valuenow")).toBe("1");
-    expect(within(table).getByLabelText("Decrease filtering workers").disabled).toBe(true);
+    expect(within(table).getByLabelText("Decrease Filter workers").disabled).toBe(true);
     fireEvent.keyDown(workers, { key: "ArrowUp" });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { workers: 2 } } }));
@@ -68,7 +71,7 @@ describe("ConfigPage", () => {
     at("pipelines");
     render(<ConfigPage />);
     const table = await screen.findByRole("table");
-    const none = within(table).getByLabelText("filtering max queue size no limit");
+    const none = within(table).getByLabelText("Filter max queue size no limit");
     expect(none.checked).toBe(true);
     fireEvent.click(none);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -88,15 +91,16 @@ describe("ConfigPage", () => {
     expect(window.location.hash).toBe("#/config/prompts");
   });
 
-  it("opens on the first section in workflow order", async () => {
+  it("opens on Start here, then the sections in workflow order", async () => {
     render(<ConfigPage />);
-    expect(await screen.findByText(/Decides which links the cheap NLP score settles/)).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Gentler on a site" })).toBeTruthy();
     const nav = screen.getByRole("navigation", { name: "Configuration sections" });
     const names = within(nav).getAllByRole("link").map((a) => a.textContent);
-    expect(names.slice(0, 3)).toEqual(["Scoring cascade", "Fetch", "Priority"]);
+    expect(names.slice(0, 4)).toEqual(["Start here", "Scoring cascade", "Fetch", "Priority"]);
   });
 
   it("dims the cut-off pair that percentile mode is not using", async () => {
+    at("scoring-cascade");
     render(<ConfigPage />);
     const thresholds = await screen.findAllByRole("slider", { name: /threshold/i });
     expect(thresholds).toHaveLength(2);
@@ -109,6 +113,7 @@ describe("ConfigPage", () => {
   });
 
   it("filters settings by search across sections", async () => {
+    at("scoring-cascade");
     render(<ConfigPage />);
     await screen.findByText("Scoring cascade", { selector: "h2" });
     type(screen.getByLabelText("Search settings"), "user agent");

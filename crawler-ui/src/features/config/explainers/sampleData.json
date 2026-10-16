@@ -54,7 +54,8 @@
         "lexical_overlap": 0.6,
         "cluster_distance": 0.25,
         "semantic_delta": 0.15
-      }
+      },
+      "onTopic": true
     },
     {
       "label": "Banana varieties guide",
@@ -68,7 +69,8 @@
         "lexical_overlap": 0.75,
         "cluster_distance": 0.3,
         "semantic_delta": 0.2
-      }
+      },
+      "onTopic": true
     },
     {
       "label": "Shipping and returns",
@@ -82,7 +84,8 @@
         "lexical_overlap": 0.1,
         "cluster_distance": 0.65,
         "semantic_delta": 0.5
-      }
+      },
+      "onTopic": false
     },
     {
       "label": "Fruit shop opening hours",
@@ -96,7 +99,8 @@
         "lexical_overlap": 0.35,
         "cluster_distance": 0.7,
         "semantic_delta": 0.6
-      }
+      },
+      "onTopic": false
     },
     {
       "label": "Apple pie recipe",
@@ -110,7 +114,8 @@
         "lexical_overlap": 0.15,
         "cluster_distance": 0.85,
         "semantic_delta": 0.7
-      }
+      },
+      "onTopic": false
     },
     {
       "label": "How bananas ripen",
@@ -124,7 +129,8 @@
         "lexical_overlap": 0.65,
         "cluster_distance": 0.2,
         "semantic_delta": 0.1
-      }
+      },
+      "onTopic": true
     },
     {
       "label": "Contact the shop",
@@ -138,7 +144,8 @@
         "lexical_overlap": 0.2,
         "cluster_distance": 0.45,
         "semantic_delta": 0.35
-      }
+      },
+      "onTopic": false
     },
     {
       "label": "Plantain or banana?",
@@ -152,7 +159,8 @@
         "lexical_overlap": 0.45,
         "cluster_distance": 0.55,
         "semantic_delta": 0.4
-      }
+      },
+      "onTopic": true
     }
   ],
   "topK": {

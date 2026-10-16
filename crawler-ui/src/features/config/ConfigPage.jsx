@@ -12,25 +12,35 @@ import HeaderPresets from "./HeaderPresets";
 import PromptStudio from "./PromptStudio";
 import SuggestionsStrip from "./SuggestionsStrip";
 import { suggest } from "./suggestions";
-import BackoffChart from "./explainers/BackoffChart";
+import FetchExplainers from "./explainers/FetchExplainers";
+import ExploreLevers from "./explainers/ExploreLevers";
+import CostReadout from "./CostReadout";
+import ProviderTable from "./ProviderTable";
+import PipelineFlow from "./PipelineFlow";
+import { SECTION_GROUPS } from "./intentGroups";
+import GoalGuide from "./GoalGuide";
 import StrategyCards from "./explainers/StrategyCards";
 import { TopKExample, ClusterExample, ContextExample } from "./explainers/TopKExample";
 import SettingsEditor from "./SettingsEditor";
 import KeysPanel from "./KeysPanel";
 import { useRoute } from "../../hooks/useRoute";
 import {
-  buildFields, buildPatch, buildSections, getIn, groupBySection, isEmptyPatch, livePatch, sectionSlug,
-  setIn, validateField,
+  buildFields, buildPatch, buildSections, changedSections, getIn, groupBySection, isEmptyPatch, livePatch, schemaGaps,
+  sectionSlug, setIn, validateField,
 } from "./configModel";
+import { primeGlossary } from "./glossary";
 
 const theme = getTheme();
 
-// Edited inside StrategyCards instead of as three key/value tables.
+// Edited inside StrategyCards (or PromptStudio) instead of as plain rows: the default strategy is chosen
+// by its card, so a second dropdown for the same setting would be two controls for one value.
 const HIDDEN = [
   "priority.aggressive_weights", "priority.balanced_weights", "priority.exploration_weights",
+  "scoring_cascade.default_priority_strategy",
   "prompts.scoring_system", "prompts.scoring_rules", "prompts.strategy_contexts",
 ];
 
+const START = { name: "Start here", slug: "start" };
 const PRESETS = { name: "Presets and files", slug: "presets" };
 const KEYS = { name: "API keys", slug: "api-keys" };
 
@@ -63,6 +73,7 @@ export default function ConfigPage() {
     Promise.all([fetchConfigSchema(), fetchConfig(), fetchConfigDefaults()])
       .then(([schemaRes, valuesRes, defaultsRes]) => {
         if (cancelled) return;
+        primeGlossary(schemaRes.ui_glossary);
         setSchema(schemaRes);
         setSaved(valuesRes);
         setDraft(valuesRes);
@@ -73,8 +84,10 @@ export default function ConfigPage() {
   }, []);
 
   const fields = useMemo(() => (schema ? buildFields(schema) : []), [schema]);
+  const gaps = useMemo(() => (schema ? schemaGaps(schema, fields) : []), [schema, fields]);
   const patch = useMemo(() => (draft && saved ? buildPatch(fields, draft, saved) : {}), [fields, draft, saved]);
   const dirty = !isEmptyPatch(patch);
+  const unsavedIn = useMemo(() => changedSections(fields, patch, []), [fields, patch]);
   const clientErrors = useMemo(() => {
     const out = {};
     if (!draft) return out;
@@ -156,14 +169,25 @@ export default function ConfigPage() {
   const guide = useMemo(() => (schema ? buildSections(schema) : []), [schema]);
   const order = useMemo(() => guide.map((g) => g.name), [guide]);
   const help = useMemo(() => Object.fromEntries(guide.map((g) => [g.name, g.help])), [guide]);
+  // Every section with a setting is listed, so a section that is all advanced is named, with the reason
+  // it is empty, rather than missing from the nav.
   const sections = useMemo(() => groupBySection(fields, order).map(([s]) => s), [fields, order]);
   const entries = useMemo(
-    () => [...sections.map((name) => ({ name, slug: sectionSlug(name) })), PRESETS, KEYS],
+    () => [START, ...sections.map((name) => ({ name, slug: sectionSlug(name) })), PRESETS, KEYS],
     [sections],
   );
   const current = entries.find((e) => e.slug === wanted) ?? entries[0];
   const open = (entry) => navigate(`/config/${entry.slug}`);
   const openSection = (name) => { setQuery(""); navigate(`/config/${sectionSlug(name)}`); };
+
+  const sectionPicker = (
+    <select className="config-section-select" aria-label="Configuration section" value={current.slug}
+            onChange={(e) => { setQuery(""); navigate(`/config/${e.target.value}`); }}
+            style={{ height: 44, fontSize: 15, padding: "0 10px", marginBottom: 16, borderRadius: theme.radii.sm,
+                     border: `1px solid ${theme.colors.background.border}`, background: theme.colors.background.panel, color: theme.colors.text.primary }}>
+      {entries.map((entry) => <option key={entry.slug} value={entry.slug}>{entry.name}</option>)}
+    </select>
+  );
 
   const index = sections.length > 0 && (
     <nav aria-label="Configuration sections" style={{ width: 200, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
@@ -190,10 +214,30 @@ export default function ConfigPage() {
 
   // Explainers draw from the live draft; the ones that edit a field own its plain row.
   const extras = {
-    "Scoring cascade": (d) => <CascadeFunnel cfg={d.scoring_cascade} />,
-    Fetch: (d) => <BackoffChart cfg={d.fetch} />,
+    "Scoring cascade": (d) => (
+      <>
+        <CascadeFunnel cfg={d.scoring_cascade} />
+        <CostReadout cascade={d.scoring_cascade} nlp={d.nlp} llm={d.llm} prompts={d.prompts} />
+        <p style={{ fontSize: 13, color: theme.colors.text.secondary, margin: "0 0 12px", maxWidth: "62ch" }}>
+          Queue order when a blueprint picks no strategy: <strong style={{ color: theme.colors.text.primary }}>{d.scoring_cascade.default_priority_strategy}</strong>.
+          It is chosen with the cards on the Priority page.{" "}
+          <Button variant="quiet" style={{ padding: 0 }} onClick={() => openSection("Priority")}>Open Priority</Button>
+        </p>
+        <ExploreLevers onOpen={openSection} />
+      </>
+    ),
+    LLM: (d) => <CostReadout cascade={d.scoring_cascade} nlp={d.nlp} llm={d.llm} prompts={d.prompts} priced />,
+    Fetch: (d) => (
+      <FetchExplainers cfg={d.fetch} workers={d.pipelines.requests.workers} maxRetries={d.retries.max_request_retries}
+                       onChange={change} />
+    ),
+    Pipelines: (d) => <PipelineFlow pipelines={d.pipelines} batchSize={d.export.batch_size} />,
+    Providers: (d) => <ProviderTable endpoints={d.providers.endpoints} />,
     Prompts: (d) => <PromptStudio prompts={d.prompts} defaults={defaults?.prompts ?? d.prompts} onChange={change} />,
-    Priority: (d) => <StrategyCards priority={d.priority} defaults={defaults?.priority} onChange={change} />,
+    Priority: (d) => (
+      <StrategyCards priority={d.priority} defaults={defaults?.priority}
+                     defaultStrategy={d.scoring_cascade.default_priority_strategy} onChange={change} />
+    ),
   };
   const applyHeaders = (values) => Object.entries(values).forEach(([k, v]) => change(`fetch.${k}`, v));
   const fieldExtras = {
@@ -206,7 +250,7 @@ export default function ConfigPage() {
   return (
     <Page
       title="Configuration"
-      lead="Every tunable of the crawler. Changes are saved on the backend and apply from the next crawl; settings marked live can also be pushed to a crawl in progress."
+      lead="Every setting the crawler reads. Changes save to the backend and apply from the next crawl. Settings marked live can also change a crawl in progress."
       aside={index || null}
     >
       {error && (
@@ -218,8 +262,14 @@ export default function ConfigPage() {
         </div>
       )}
       {!error && !schema && <p style={{ fontSize: 14, color: theme.colors.text.muted }}>Loading configuration…</p>}
+      {gaps.length > 0 && (
+        <p role="alert" style={{ fontSize: 14, color: theme.colors.accent.red, maxWidth: "62ch", margin: "0 0 12px" }}>
+          The API server is older than this page and is missing {gaps.join(", ")}. Restart it (make dev-backend) and reload; until then some controls and explanations are missing.
+        </p>
+      )}
       {schema && draft && (
         <>
+          {sectionPicker}
           <div style={{ position: "sticky", top: 0, zIndex: 2, background: theme.colors.background.primary,
                         padding: "8px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
                         borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
@@ -227,10 +277,14 @@ export default function ConfigPage() {
                        onChange={(e) => setQuery(e.target.value)} style={{ width: 220 }} />
             <Chip pressed={showAdvanced} onClick={() => setShowAdvanced((v) => !v)}>Advanced</Chip>
             <span style={{ flex: 1 }} />
+            {dirty && (
+              <span style={{ fontSize: 13, color: theme.colors.text.secondary }}>
+                Unsaved in {unsavedIn.join(", ")}. Changes in every section are saved together.
+              </span>
+            )}
             <Button variant="quiet" disabled={!dirty} onClick={() => { setDraft(saved); setErrors({}); setStatus(null); }}>Revert</Button>
             {running && (
-              <Button disabled={!hasLive || blocked || saving} onClick={applyLive}
-                      title="Pushes the changed live settings to the crawl in progress, then saves">
+              <Button disabled={!hasLive || blocked || saving} onClick={applyLive}>
                 Apply live
               </Button>
             )}
@@ -238,6 +292,11 @@ export default function ConfigPage() {
               {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
             </Button>
           </div>
+          {running && (
+            <p style={{ fontSize: 13, color: theme.colors.text.secondary, margin: "8px 0 0", maxWidth: "62ch" }}>
+              A crawl is running. Settings marked live can be applied to it now with Apply live; the rest apply from the next crawl.
+            </p>
+          )}
           {status && (
             <p role="status" style={{ fontSize: 13, margin: "8px 0", color: status.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>
               {status.text}
@@ -250,17 +309,19 @@ export default function ConfigPage() {
               onDismiss={(id) => setDismissed((d) => [...d, id])}
             />
           )}
-          {(query || (current.slug !== PRESETS.slug && current.slug !== KEYS.slug)) && (
+          {current.slug === START.slug && !query && <GoalGuide draft={draft} fields={fields} onChange={change} />}
+          {(query || (current.slug !== START.slug && current.slug !== PRESETS.slug && current.slug !== KEYS.slug)) && (
           <SettingsEditor
             fields={fields} draft={draft} defaults={defaults} saved={saved} onChange={change}
-            errors={errors} query={query} showAdvanced={showAdvanced}
+            errors={errors} query={query} showAdvanced={showAdvanced} groups={SECTION_GROUPS}
             onResetSection={resetSection} sectionExtras={extras} fieldExtras={fieldExtras}
             hiddenPaths={HIDDEN}
             section={current.name} sectionOrder={order} sectionHelp={help} onOpenSection={openSection}
           />
           )}
           {!query && current.slug === PRESETS.slug && (
-            <PresetsPanel dirty={dirty} onChanged={(cfg) => { setSaved(cfg); setDraft(cfg); setErrors({}); }} />
+            <PresetsPanel dirty={dirty} fields={fields}
+                          onChanged={(cfg) => { setSaved(cfg); setDraft(cfg); setErrors({}); }} />
           )}
           {!query && current.slug === KEYS.slug && <KeysPanel />}
           {!query && current.slug === PRESETS.slug && (

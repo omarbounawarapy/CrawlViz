@@ -55,3 +55,21 @@ export function summary(cfg, latency = 0.3) {
     worstWait: cfg.min_delay + cfg.backoff_max + (cfg.jitter_max ?? 0),
   };
 }
+
+/**
+ * The fetch settings in plain numbers: the most requests per second the crawl can
+ * make, the most in flight at once, and how many times one page can be tried.
+ * The rate is the lower of the global pace (min_delay plus half the jitter, on
+ * average) and what the workers can sustain while each request takes `latency`.
+ */
+export function politeness(cfg, { workers, maxRetries }, latency = 0.3) {
+  const { steadyRate } = summary(cfg, latency);
+  const workerRate = workers / Math.max(latency, 0.001);
+  const limitedBy = steadyRate <= workerRate ? "min_delay" : "workers";
+  return {
+    requestsPerSecond: Math.min(steadyRate, workerRate),
+    inFlight: workers,
+    attempts: maxRetries + 1,
+    limitedBy,
+  };
+}

@@ -7,11 +7,23 @@ import { HEADER_PRESETS, activePreset } from "./headerPresets";
 afterEach(cleanup);
 
 describe("header sets", () => {
-  it("applies every header field of the chosen set", () => {
+  it("previews every header field the chosen set would change before applying it", () => {
     const onApply = vi.fn();
     render(<HeaderPresets fetch={{}} onApply={onApply} />);
     fireEvent.click(screen.getByRole("radio", { name: /Desktop Firefox/ }));
+    expect(onApply).not.toHaveBeenCalled();
+    const preview = screen.getByRole("region", { name: /Preview of Desktop Firefox/ });
+    expect(preview.textContent).toMatch(/changes \d+ fields?/);
+    fireEvent.click(screen.getByRole("button", { name: "Apply to draft" }));
     expect(onApply).toHaveBeenCalledWith(HEADER_PRESETS[2].values);
+  });
+  it("cancels a preview without touching the draft", () => {
+    const onApply = vi.fn();
+    render(<HeaderPresets fetch={{}} onApply={onApply} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Desktop Firefox/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("region", { name: /Preview/ })).toBeNull();
+    expect(onApply).not.toHaveBeenCalled();
   });
   it("marks the set the fields currently hold", () => {
     expect(activePreset(HEADER_PRESETS[1].values).name).toBe("Desktop Chrome");

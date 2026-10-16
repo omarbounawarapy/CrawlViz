@@ -2,33 +2,17 @@ import { useState } from "react";
 import { getTheme } from "../../theme";
 import { Button, TextInput, Select } from "../common/Form";
 import Stepper from "./Stepper";
+import NumberField from "./NumberField";
 
 const theme = getTheme();
 const { text } = theme.colors;
 
-const NUM_WIDTH = 110;
-
 function NumberInput({ field, value, onChange, id, invalid }) {
-  const [raw, setRaw] = useState(null); // text while typing, so "0." and "" survive
-  const shown = raw ?? (value === null || value === undefined ? "" : String(value));
-  const step = field.step ?? (field.type === "integer" ? 1 : "any");
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-      <TextInput
-        id={id} type="number" inputMode="decimal" step={step} min={field.minimum} max={field.maximum}
-        value={shown} invalid={invalid} aria-invalid={invalid || undefined}
-        aria-label={field.ariaLabel}
-        style={{ width: NUM_WIDTH, textAlign: "right" }}
-        onChange={(e) => {
-          const t = e.target.value;
-          setRaw(t);
-          if (t === "") onChange(field.nullable ? null : "");
-          else if (!Number.isNaN(Number(t))) onChange(Number(t));
-        }}
-        onBlur={() => setRaw(null)}
-      />
-      {field.unit && <span style={{ fontSize: 13, color: text.muted, minWidth: 18 }}>{field.unit}</span>}
-    </span>
+    <NumberField
+      id={id} value={value} onChange={onChange} nullable={Boolean(field.nullable)} unit={field.unit}
+      invalid={invalid} label={field.ariaLabel} integer={field.type === "integer"}
+    />
   );
 }
 
