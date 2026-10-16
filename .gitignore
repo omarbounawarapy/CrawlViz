@@ -17,6 +17,7 @@ dist/
 .claude/worktrees/
 .claude/agent-memory-local/
 .claude/skills/impeccable/
+.claude/agents/impeccable-*.md
 
 # Local notes
 handoff.md
