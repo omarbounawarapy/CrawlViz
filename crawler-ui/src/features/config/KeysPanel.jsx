@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, Select, TextInput } from "../common/Form";
+import { Button, ConfirmButton, Field, Select, TextInput } from "../common/Form";
 import { SectionTitle } from "../common/Page";
 import { addKey, fetchKeys, fetchProviders, removeKey } from "../../api/client";
 
@@ -64,30 +64,37 @@ export default function KeysPanel() {
       </p>
       {names.map((name) => (
         <div key={name} style={{ padding: "10px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-          <div style={{ fontSize: 14, fontWeight: 600 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>
             {name}{" "}
             <span style={{ fontWeight: 400, color: theme.colors.text.muted }}>
               {(keys[name] ?? []).length} key{(keys[name] ?? []).length === 1 ? "" : "s"}
               {providers[name].models.length > 0 && ` · used with ${providers[name].models.join(", ")}`}
             </span>
-          </div>
+          </h3>
           {(keys[name] ?? []).map((k) => (
             <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, marginTop: 4 }}>
-              <code>••••{k.last4}</code>
-              <Button variant="quiet" aria-label={`Remove key ending ${k.last4} from ${name}`} onClick={() => remove(name, k.id)}>
-                Remove
-              </Button>
+              <code><span aria-hidden="true">••••</span><span className="sr-only">Key ending </span>{k.last4}</code>
+              {/* A removed key cannot be shown again, so removing takes a second press (WCAG 3.3.4). */}
+              <ConfirmButton label="Remove" confirmLabel="Confirm remove" aria-label={`Remove key ending ${k.last4} from ${name}`}
+                             onConfirm={() => remove(name, k.id)} />
             </div>
           ))}
         </div>
       ))}
-      <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-        <Select aria-label="Provider" value={provider} onChange={(e) => setProvider(e.target.value)} style={{ width: 160 }}>
-          {names.map((n) => <option key={n} value={n}>{n}</option>)}
-        </Select>
-        <TextInput aria-label="API key" type="password" autoComplete="off" placeholder="Paste API key"
-                   value={secret} onChange={(e) => setSecret(e.target.value)} style={{ width: 320 }} />
-        <Button variant="primary" disabled={!secret.trim() || busy} onClick={add}>Add key</Button>
+      <div style={{ display: "flex", gap: "0 8px", marginTop: 14, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ width: "min(160px, 100%)" }}>
+          <Field label="Provider">
+            <Select value={provider} onChange={(e) => setProvider(e.target.value)}>
+              {names.map((n) => <option key={n} value={n}>{n}</option>)}
+            </Select>
+          </Field>
+        </div>
+        <div style={{ width: "min(320px, 100%)" }}>
+          <Field label="API key">
+            <TextInput type="password" autoComplete="off" placeholder="Paste the key" value={secret} onChange={(e) => setSecret(e.target.value)} />
+          </Field>
+        </div>
+        <Button variant="primary" disabled={!secret.trim() || busy} onClick={add} style={{ marginBottom: 14 }}>Add key</Button>
       </div>
       {msg && (
         <p role="status" style={{ fontSize: 13, marginTop: 8, color: msg.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>

@@ -54,9 +54,11 @@ export default function RunOverrides({ onPatch, disabled }) {
           {draft && (
             <>
               <div style={{ display: "flex", gap: 10, margin: "8px 0", alignItems: "center", flexWrap: "wrap" }}>
-                <TextInput aria-label="Search run settings" placeholder="Search settings" value={query}
-                           onChange={(e) => setQuery(e.target.value)} style={{ width: 220 }} />
-                <Select aria-label="Section" value={section} onChange={(e) => setSection(e.target.value)} style={{ width: 200 }}>
+                <label htmlFor="run-settings-search" style={{ fontSize: 13, fontWeight: 600 }}>Search run settings</label>
+                <TextInput id="run-settings-search" type="search" placeholder="e.g. workers" value={query}
+                           onChange={(e) => setQuery(e.target.value)} style={{ width: "min(220px, 100%)" }} />
+                <label htmlFor="run-settings-section" style={{ fontSize: 13, fontWeight: 600 }}>Section</label>
+                <Select id="run-settings-section" value={section} onChange={(e) => setSection(e.target.value)} style={{ width: "min(200px, 100%)" }}>
                   <option value="">All sections</option>
                   {sections.map((name) => <option key={sectionSlug(name)} value={name}>{name}</option>)}
                 </Select>

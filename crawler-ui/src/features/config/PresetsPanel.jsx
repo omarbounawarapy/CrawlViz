@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, TextInput } from "../common/Form";
+import { Button, ConfirmButton, Field, TextInput } from "../common/Form";
 import { SectionTitle } from "../common/Page";
 import {
   applyPreset, deletePreset, exportConfig, fetchConfig, fetchConfigDefaults, fetchPresets, replaceConfig, savePreset,
@@ -105,7 +105,7 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
                 borderBottom: `1px solid ${theme.colors.rowBorder}` };
   const group = (title, list, deletable) => Object.keys(list).length > 0 && (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 13, color: theme.colors.text.muted, marginBottom: 4 }}>{title}</div>
+      <h3 style={{ fontSize: 13, fontWeight: 400, color: theme.colors.text.muted, margin: "0 0 4px" }}>{title}</h3>
       {Object.keys(list).map((n) => (
         <div key={n} style={row}>
           <span style={{ flex: 1, fontSize: 14 }}>
@@ -114,10 +114,14 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
               <span style={{ display: "block", fontSize: 13, color: theme.colors.text.secondary }}>{presets.descriptions[n]}</span>
             )}
           </span>
+          {/* Names start with the visible words, so speech input can say what is on screen (WCAG 2.5.3). */}
           <Button variant="quiet" aria-expanded={open === n} onClick={() => setOpen(open === n ? null : n)}
-                  aria-label={`Show what preset ${nameOf(n)} changes`}>What changes</Button>
+                  aria-label={`What changes in preset ${nameOf(n)}`}>What changes</Button>
           <Button onClick={() => apply(n)} aria-label={`Apply preset ${nameOf(n)}`}>Apply</Button>
-          {deletable && <Button variant="quiet" onClick={() => remove(n)} aria-label={`Delete preset ${nameOf(n)}`}>Delete</Button>}
+          {deletable && (
+            <ConfirmButton label="Delete" confirmLabel="Confirm delete" aria-label={`Delete preset ${nameOf(n)}`}
+                           onConfirm={() => remove(n)} />
+          )}
           {open === n && (
             <ul aria-label={`Changes made by ${nameOf(n)}`} style={{ flexBasis: "100%", margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
               {(() => {
@@ -137,10 +141,13 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
       <SectionTitle id="cfg-presets">Presets and files</SectionTitle>
       {group("Built in", presets.builtin, false)}
       {group("Yours", presets.user, true)}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
-        <TextInput aria-label="New preset name" placeholder="Preset name" value={name}
-                   onChange={(e) => setName(e.target.value)} style={{ width: 200 }} />
-        <Button onClick={save} disabled={!name.trim()}>Save stored settings as preset</Button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end", marginTop: 8 }}>
+        <div style={{ width: "min(200px, 100%)" }}>
+          <Field label="New preset name">
+            <TextInput placeholder="e.g. polite-wiki" value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+        </div>
+        <Button onClick={save} disabled={!name.trim()} style={{ marginBottom: 14 }}>Save stored settings as preset</Button>
         <span style={{ flex: 1 }} />
         <Button onClick={download}>Export JSON</Button>
         <Button onClick={downloadChanges}>Export changes from defaults (Markdown)</Button>

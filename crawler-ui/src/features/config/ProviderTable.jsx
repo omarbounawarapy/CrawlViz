@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
 import { fetchProviders } from "../../api/client";
+import ScrollRegion from "../common/ScrollRegion";
 
 const theme = getTheme();
 const { text, background } = theme.colors;
@@ -25,7 +26,7 @@ export default function ProviderTable({ endpoints }) {
   const head = { ...cell, fontSize: 12, color: text.muted, fontWeight: 600 };
 
   return (
-    <div style={{ margin: "8px 0 16px", overflowX: "auto" }}>
+    <ScrollRegion label="Providers table" style={{ margin: "8px 0 16px" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: text.primary }}>
         <caption style={{ textAlign: "left", fontSize: 13, color: text.secondary, paddingBottom: 6 }}>
           Each provider, where its requests go, and what is stored for it.
@@ -57,6 +58,6 @@ export default function ProviderTable({ endpoints }) {
           })}
         </tbody>
       </table>
-    </div>
+    </ScrollRegion>
   );
 }

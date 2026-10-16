@@ -10,20 +10,24 @@ const { text, background, accent } = theme.colors;
 
 const boxStyle = {
   width: "100%", minHeight: 96, font: "13px/1.5 ui-monospace, monospace", padding: 10, resize: "vertical",
-  color: text.primary, background: background.primary, border: `1px solid ${background.border}`, borderRadius: theme.radii.md,
+  color: text.primary, background: background.primary, border: `1px solid ${theme.colors.control}`, borderRadius: theme.radii.md,
 };
+const readBox = { ...boxStyle, border: `1px solid ${background.border}` };   // read-only text: no control boundary
 
 function Diff({ before, after }) {
   const lines = lineDiff(before, after);
   if (lines.every((l) => l.kind === "same")) return <p style={{ fontSize: 13, color: text.muted }}>Same as the built-in wording.</p>;
   return (
-    <pre aria-label="Difference from the built-in wording" style={{ ...boxStyle, minHeight: 0, whiteSpace: "pre-wrap", margin: "6px 0 0" }}>
-      {lines.map((l, i) => (
-        <div key={i} style={{ color: l.kind === "add" ? accent.green : l.kind === "del" ? accent.red : text.secondary }}>
-          {l.kind === "add" ? "+ " : l.kind === "del" ? "- " : "  "}{l.text}
-        </div>
-      ))}
-    </pre>
+    <figure style={{ margin: "6px 0 0" }}>
+      <figcaption className="sr-only">Difference from the built-in wording. Added lines start with plus, removed lines with minus.</figcaption>
+      <pre style={{ ...readBox, minHeight: 0, whiteSpace: "pre-wrap", margin: 0 }}>
+        {lines.map((l, i) => (
+          <div key={i} style={{ color: l.kind === "add" ? accent.green : l.kind === "del" ? accent.red : text.secondary }}>
+            {l.kind === "add" ? "+ " : l.kind === "del" ? "- " : "  "}{l.text}
+          </div>
+        ))}
+      </pre>
+    </figure>
   );
 }
 
@@ -34,10 +38,11 @@ function EditableBlock({ id, title, note, value, builtin, onChange }) {
   return (
     <div style={{ padding: "12px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
       <label htmlFor={id} style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>{title}</label>
-      <p style={{ fontSize: 13, color: text.secondary, margin: "2px 0 6px" }}>{note}</p>
-      <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} style={boxStyle} />
+      <p id={`${id}-note`} style={{ fontSize: 13, color: text.secondary, margin: "2px 0 6px" }}>{note}</p>
+      <textarea id={id} value={value} onChange={(e) => onChange(e.target.value)} style={boxStyle}
+                aria-describedby={`${id}-note ${id}-size`} />
       <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: 4, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 12, color: text.muted }}>{value.length} characters, about {estimateTokens(value)} tokens</span>
+        <span id={`${id}-size`} style={{ fontSize: 12, color: text.muted }}>{value.length} characters, about {estimateTokens(value)} tokens</span>
         <span style={{ flex: 1 }} />
         <Button variant="quiet" disabled={!changed} onClick={() => setDiff((d) => !d)} aria-pressed={diff}>Show changes</Button>
         <Button variant="quiet" disabled={!changed} onClick={() => onChange(builtin)} aria-label={`Restore built-in ${title}`}>Restore built-in</Button>
@@ -83,7 +88,7 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
                      builtin={defaults.scoring_system} note="Who the model is and what it must return. First thing it reads."
                      onChange={(v) => onChange("prompts.scoring_system", v)} />
       <div style={{ padding: "12px 0 0" }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>Scoring focus wording</div>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: text.primary, margin: 0 }}>Scoring focus wording</h3>
         <p style={{ fontSize: 13, color: text.secondary, margin: "2px 0 8px", maxWidth: "62ch" }}>
           One sentence per scoring focus that tilts how the model scores. These are the LLM's focuses, not the priority
           strategies on the Priority page. Each blueprint picks one focus with its scoring strategy (scoring.strategy).
@@ -91,6 +96,7 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
         <div role="tablist" aria-label="Scoring focuses" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {strategies.map((s, i) => (
             <button key={s} role="tab" type="button" aria-selected={s === strategy} tabIndex={s === strategy ? 0 : -1}
+                    id={`prompt-focus-tab-${s}`} aria-controls={s === strategy ? "prompt-focus-panel" : undefined}
                     ref={(el) => { focusRefs.current[i] = el; }}
                     onKeyDown={(e) => {
                       const n = nextChoice(e, i, strategies.length);
@@ -102,14 +108,14 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
                     style={{
                       font: "inherit", fontSize: 13, padding: "4px 10px", cursor: "pointer", color: text.primary,
                       background: s === strategy ? "rgba(15,27,45,0.06)" : "transparent",
-                      border: `${s === strategy ? 2 : 1}px solid ${s === strategy ? text.primary : background.border}`,
+                      border: `${s === strategy ? 2 : 1}px solid ${s === strategy ? text.primary : theme.colors.control}`,
                       borderRadius: theme.radii.md,
                     }}>
               {s.replace(/_/g, " ").toLowerCase()}
             </button>
           ))}
         </div>
-        <div role="tabpanel">
+        <div role="tabpanel" id="prompt-focus-panel" aria-labelledby={`prompt-focus-tab-${strategy}`}>
           <EditableBlock id="prompt-strategy" title={`Wording for the ${strategy.replace(/_/g, " ").toLowerCase()} focus`}
                          note={STRATEGY_HELP[strategy] ?? "Soft bias added to the context block."}
                          value={contextValue} builtin={builtinContext}
@@ -121,7 +127,7 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
                      onChange={(v) => onChange("prompts.scoring_rules", v)} />
 
       <div style={{ padding: "12px 0" }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>Fixed parts</div>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: text.primary, margin: 0 }}>Fixed parts</h3>
         {view.state === "error" && <p role="alert" style={{ fontSize: 13, color: accent.red }}>Preview unavailable: {view.message}</p>}
         <ul style={{ listStyle: "none", margin: "6px 0 0", padding: 0 }}>
           {fixed.map((b) => (
@@ -139,9 +145,9 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
         </Button>
         {tokens != null && <>{" "}<span style={{ fontSize: 12, color: text.muted, marginLeft: 8 }}>about {tokens} tokens for 3 sample links</span></>}
         {showFull && view.blocks && (
-          <div aria-label="Full prompt preview" style={{ marginTop: 8 }}>
+          <div role="region" aria-label="Full prompt preview" style={{ marginTop: 8 }}>
             {view.blocks.map((b) => (
-              <pre key={b.id} style={{ ...boxStyle, minHeight: 0, whiteSpace: "pre-wrap", margin: "0 0 6px",
+              <pre key={b.id} style={{ ...readBox, minHeight: 0, whiteSpace: "pre-wrap", margin: "0 0 6px",
                                        background: b.kind === "editable" ? background.primary : "rgba(15,27,45,0.04)" }}>
                 {b.text}
               </pre>

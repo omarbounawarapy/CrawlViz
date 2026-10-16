@@ -71,7 +71,7 @@ describe("ConfigPage", () => {
     at("pipelines");
     render(<ConfigPage />);
     const table = await screen.findByRole("table");
-    const none = within(table).getByLabelText("Filter max queue size no limit");
+    const none = within(table).getByLabelText("Filter max queue size: No limit");
     expect(none.checked).toBe(true);
     fireEvent.click(none);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -99,17 +99,18 @@ describe("ConfigPage", () => {
     expect(names.slice(0, 4)).toEqual(["Start here", "Scoring cascade", "Fetch", "Priority"]);
   });
 
-  it("dims the cut-off pair that percentile mode is not using", async () => {
+  it("says which cut-off pair percentile mode is not using, without fading its text", async () => {
     at("scoring-cascade");
     render(<ConfigPage />);
     const thresholds = await screen.findAllByRole("slider", { name: /threshold/i });
     expect(thresholds).toHaveLength(2);
-    const opacity = () => thresholds[0].closest("div[style*='opacity']").style.opacity;
+    const row = () => thresholds[0].closest(".setting-row");
     const percentiles = screen.getByRole("radio", { name: "Per-page percentiles" });
     expect(percentiles.getAttribute("aria-checked")).toBe("true");
-    expect(opacity()).toBe("0.45");
+    expect(row().textContent).toMatch(/Not used with the current settings/);
+    expect(row().style.opacity).toBe("");
     fireEvent.click(screen.getByRole("radio", { name: "Fixed score cut-offs" }));
-    await waitFor(() => expect(opacity()).toBe("1"));
+    await waitFor(() => expect(row().textContent).not.toMatch(/Not used with the current settings/));
   });
 
   it("filters settings by search across sections", async () => {
@@ -124,7 +125,8 @@ describe("ConfigPage", () => {
   it("lists masked keys and adds one", async () => {
     at("api-keys");
     render(<ConfigPage />);
-    expect(await screen.findByText("••••1234")).toBeTruthy();
+    const masked = await screen.findByText(/Key ending/);
+    expect(masked.closest("code").textContent).toBe("••••Key ending 1234");
     type(screen.getByLabelText("API key"), "sk-new-key");
     fireEvent.click(screen.getByRole("button", { name: "Add key" }));
     await waitFor(() => expect(api.addKey).toHaveBeenCalledWith("groq", "sk-new-key"));
@@ -146,7 +148,12 @@ describe("ConfigPage", () => {
     render(<ConfigPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Apply preset polite" }));
     await waitFor(() => expect(api.applyPreset).toHaveBeenCalledWith("polite"));
-    fireEvent.click(await screen.findByRole("button", { name: "Delete preset mine" }));
+    // Deleting takes a second press; the first only arms the button.
+    const del = await screen.findByRole("button", { name: "Delete preset mine" });
+    fireEvent.click(del);
+    expect(api.deletePreset).not.toHaveBeenCalled();
+    expect(del.textContent).toBe("Confirm delete");
+    fireEvent.click(del);
     await waitFor(() => expect(api.deletePreset).toHaveBeenCalledWith("mine"));
   });
 
@@ -164,7 +171,7 @@ describe("ConfigPage", () => {
     at("presets");
     render(<ConfigPage />);
     expect(await screen.findByText("Slow and kind.")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Show what preset gentle changes" }));
+    fireEvent.click(screen.getByRole("button", { name: "What changes in preset gentle" }));
     const list = await screen.findByLabelText("Changes made by gentle");
     expect(list.textContent).toMatch(/Min delay.*→.*5/);
   });

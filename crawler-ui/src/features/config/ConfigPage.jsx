@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
 import { Page } from "../common/Page";
-import { Button, Chip, TextInput } from "../common/Form";
+import { Button, Chip, ConfirmButton, TextInput } from "../common/Form";
 import {
   fetchConfigSchema, fetchConfig, fetchConfigDefaults, saveConfig, resetConfig,
   crawlStatus, patchLiveConfig,
@@ -25,7 +25,7 @@ import SettingsEditor from "./SettingsEditor";
 import KeysPanel from "./KeysPanel";
 import { useRoute } from "../../hooks/useRoute";
 import {
-  buildFields, buildPatch, buildSections, changedSections, getIn, groupBySection, isEmptyPatch, livePatch, schemaGaps,
+  buildFields, buildPatch, buildSections, changedSections, getIn, groupBySection, isEmptyPatch, livePatch, matches, schemaGaps,
   sectionSlug, setIn, validateField,
 } from "./configModel";
 import { primeGlossary } from "./glossary";
@@ -103,6 +103,11 @@ export default function ConfigPage() {
     return out;
   }, [fields, draft]);
   const blocked = Object.keys(clientErrors).length > 0;
+  // How many rows a search finds, announced as it is typed (WCAG 4.1.3).
+  const searchCount = useMemo(
+    () => (query ? fields.filter((f) => matches(f, query) && (showAdvanced || !f.advanced || query)).length : 0),
+    [fields, query, showAdvanced],
+  );
 
   useEffect(() => {
     if (!dirty) return undefined;
@@ -185,13 +190,19 @@ export default function ConfigPage() {
   const open = (entry) => navigate(`/config/${entry.slug}`);
   const openSection = (name) => { setQuery(""); navigate(`/config/${sectionSlug(name)}`); };
 
+  // Narrow screens swap the side index for this select. Choosing opens the section, and the hint
+  // says so before the choice is made (WCAG 3.2.2).
   const sectionPicker = (
-    <select className="config-section-select" aria-label="Configuration section" value={current.slug}
-            onChange={(e) => { setQuery(""); navigate(`/config/${e.target.value}`); }}
-            style={{ height: 44, fontSize: 15, padding: "0 10px", marginBottom: 16, borderRadius: theme.radii.sm,
-                     border: `1px solid ${theme.colors.background.border}`, background: theme.colors.background.panel, color: theme.colors.text.primary }}>
-      {entries.map((entry) => <option key={entry.slug} value={entry.slug}>{entry.name}</option>)}
-    </select>
+    <div className="config-section-select" style={{ marginBottom: 16 }}>
+      <label htmlFor="config-section" style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Section</label>
+      <select id="config-section" aria-describedby="config-section-hint" value={current.slug}
+              onChange={(e) => { setQuery(""); navigate(`/config/${e.target.value}`); }}
+              style={{ minHeight: 44, width: "100%", fontSize: 15, padding: "0 10px", borderRadius: theme.radii.sm,
+                       border: `1px solid ${theme.colors.control}`, background: theme.colors.background.panel, color: theme.colors.text.primary }}>
+        {entries.map((entry) => <option key={entry.slug} value={entry.slug}>{entry.name}</option>)}
+      </select>
+      <div id="config-section-hint" style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 4 }}>Choosing a section opens it.</div>
+    </div>
   );
 
   const index = sections.length > 0 && (
@@ -204,7 +215,7 @@ export default function ConfigPage() {
               <a href={`#/config/${entry.slug}`} aria-current={active ? "page" : undefined}
                  onClick={(e) => { e.preventDefault(); setQuery(""); open(entry); }}
                  style={{
-                   display: "inline-block", fontSize: active ? 16 : 14, fontWeight: active ? 700 : 400,
+                   display: "inline-block", minHeight: 24, fontSize: active ? 16 : 14, fontWeight: active ? 700 : 400,
                    color: active ? theme.colors.text.primary : theme.colors.text.secondary, textDecoration: "none",
                    paddingBottom: 2, borderBottom: `2px solid ${active ? theme.colors.accent.blue : "transparent"}`,
                  }}>
@@ -278,8 +289,13 @@ export default function ConfigPage() {
           <div style={{ position: "sticky", top: 0, zIndex: 2, background: theme.colors.background.primary,
                         padding: "8px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
                         borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-            <TextInput aria-label="Search settings" placeholder="Search settings" value={query}
-                       onChange={(e) => setQuery(e.target.value)} style={{ width: 220 }} />
+            <label htmlFor="config-search" style={{ fontSize: 13, fontWeight: 600 }}>Search settings</label>
+            <TextInput id="config-search" type="search" placeholder="e.g. user agent" value={query}
+                       aria-describedby={query ? "config-search-count" : undefined}
+                       onChange={(e) => setQuery(e.target.value)} style={{ width: "min(220px, 100%)" }} />
+            <span id="config-search-count" role="status" className="sr-only">
+              {query ? `${searchCount} ${searchCount === 1 ? "setting matches" : "settings match"}` : ""}
+            </span>
             <Chip pressed={showAdvanced} onClick={() => setShowAdvanced((v) => !v)}>Advanced</Chip>
             <span style={{ flex: 1 }} />
             {dirty && (
@@ -331,7 +347,8 @@ export default function ConfigPage() {
           {!query && current.slug === KEYS.slug && <KeysPanel />}
           {!query && current.slug === PRESETS.slug && (
             <div style={{ marginTop: 40 }}>
-              <Button variant="danger" onClick={resetAll}>Reset every setting to defaults</Button>
+              <ConfirmButton label="Reset every setting to defaults" confirmLabel="Confirm: reset every setting"
+                             onConfirm={resetAll} />
             </div>
           )}
         </>

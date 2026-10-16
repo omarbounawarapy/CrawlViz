@@ -18,15 +18,19 @@ export default function HeaderPresets({ fetch, onApply }) {
   const current = activePreset(fetch);
   const chosen = HEADER_PRESETS.find((p) => p.name === pending) ?? null;
   const changes = chosen ? presetChanges({ fetch: chosen.values }, { fetch }) : [];
+  const checkedName = pending ?? current?.name ?? null;
+  // Custom headers match no set: the first one keeps the tab stop so the group stays reachable.
+  const anyOn = HEADER_PRESETS.some((p) => p.name === checkedName);
   return (
-    <div role="radiogroup" aria-label="Header sets" style={{ padding: "10px 0 14px", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-      <div style={{ fontSize: 14, color: text.primary, marginBottom: 6 }}>Header sets</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    <div style={{ padding: "10px 0 14px", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
+      <div id="header-sets-label" style={{ fontSize: 14, color: text.primary, marginBottom: 6 }}>Header sets</div>
+      {/* The radiogroup holds only the radios; the preview and its buttons follow it. */}
+      <div role="radiogroup" aria-labelledby="header-sets-label" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {HEADER_PRESETS.map((p) => {
-          const on = (pending ? pending === p.name : current?.name === p.name);
+          const on = p.name === checkedName;
           const i = HEADER_PRESETS.indexOf(p);
           return (
-            <button key={p.name} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
+            <button key={p.name} type="button" role="radio" aria-checked={on} tabIndex={on || (!anyOn && i === 0) ? 0 : -1}
                     ref={(el) => { headerRefs.current[i] = el; }}
                     onKeyDown={(e) => {
                       const n = nextChoice(e, i, HEADER_PRESETS.length);
@@ -36,9 +40,9 @@ export default function HeaderPresets({ fetch, onApply }) {
                     }}
                     onClick={() => setPending(p.name)}
                     style={{
-                      flex: "1 1 170px", textAlign: "left", padding: "8px 10px", cursor: "pointer", font: "inherit",
+                      flex: "1 1 170px", minWidth: 0, textAlign: "left", padding: "8px 10px", cursor: "pointer", font: "inherit",
                       background: on ? "rgba(15,27,45,0.06)" : "transparent", color: text.primary,
-                      border: `${on ? 2 : 1}px solid ${on ? text.primary : background.border}`, borderRadius: theme.radii.md,
+                      border: `${on ? 2 : 1}px solid ${on ? text.primary : theme.colors.control}`, borderRadius: theme.radii.md,
                     }}>
               <span style={{ display: "block", fontSize: 14, fontWeight: 600 }}>{p.name}</span>
               <span style={{ display: "block", fontSize: 13, color: text.secondary, marginTop: 2 }}>{p.about}</span>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
 import { Button } from "../common/Form";
+import { SectionTitle } from "../common/Page";
 import { fetchPresets } from "../../api/client";
 import { presetChanges } from "./presetModel";
 import { Explain } from "./Term";
@@ -27,6 +28,7 @@ export default function GoalGuide({ draft, fields = [], onChange }) {
 
   return (
     <div style={{ maxWidth: "66ch" }}>
+      <SectionTitle id="cfg-start">Start here</SectionTitle>
       <p style={{ fontSize: 14, color: text.secondary, margin: "0 0 14px" }}>
         Pick what you want the crawl to do. Each card lists the settings it changes against your draft. Nothing is saved until you press Save changes.
       </p>
