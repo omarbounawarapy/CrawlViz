@@ -62,15 +62,15 @@ def test_budget_keeps_the_best_ranked_links_and_trusts_the_rest():
     p = pipeline(CallBudget(1), batch=2)  # one call of two links
     sampled = [L(0.4, "low"), L(0.9, "best"), L(0.6, "mid")]
     kept, moved = p._take_llm_calls(sampled, [L(0.99, "trusted")])
-    assert [l.name for l in kept] == ["best", "mid"]
-    assert [l.name for l in moved] == ["trusted", "low"]
+    assert [link.name for link in kept] == ["best", "mid"]
+    assert [link.name for link in moved] == ["trusted", "low"]
 
 
 def test_budget_of_zero_calls_sends_nothing_to_the_llm():
     p = pipeline(CallBudget(0))
     kept, moved = p._take_llm_calls([L(0.5, "a")], [])
     assert kept == []
-    assert [l.name for l in moved] == ["a"]
+    assert [link.name for link in moved] == ["a"]
 
 
 @pytest.mark.parametrize("links,batch,calls", [(5, 2, 3), (4, 2, 2), (1, None, 1)])
