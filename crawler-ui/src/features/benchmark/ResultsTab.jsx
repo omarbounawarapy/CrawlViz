@@ -3,6 +3,7 @@ import { fetchBenchmarkCurves } from "../../api/client";
 import { getTheme } from "../../theme";
 import { SectionTitle } from "../common/Page";
 import { Tabs, TabPanel } from "../common/Form";
+import { Explain } from "../config/Term";
 import Loading from "./Loading";
 import {useLoad, POLICY_ORDER, num} from "./shared";
 import ScrollRegion from "../common/ScrollRegion";
@@ -67,6 +68,7 @@ function Chart({ series }) {
       ))}
       {xt.map((k) => <text key={k} x={x(k)} y={H - 12} textAnchor="middle" fontSize="11" fill={text.muted}>{k}</text>)}
       <text x={(M.l + W - M.r) / 2} y={H - 0} textAnchor="middle" fontSize="11" fill={text.muted}>pages fetched (k)</text>
+      <text transform={`translate(12 ${(M.t + H - M.b) / 2}) rotate(-90)`} textAnchor="middle" fontSize="11" fill={text.muted}>share relevant</text>
       {policies.map((p) => {
         const pts = series[p].points.filter((d) => d.mean != null);
         const s = STYLE[p] ?? STYLE.random;
@@ -131,7 +133,7 @@ function Body({ d }) {
     <>
       <SectionTitle>Harvest@k</SectionTitle>
       <p style={{ fontSize: 13, color: text.muted, marginBottom: 10 }}>
-        Share of the first k fetched pages that are relevant, mean over repeats (n in brackets). Band: cascade 95% CI.
+        <Explain text="Share of the first k fetched pages that are relevant, mean over repeats (n in brackets). Band: cascade 95% CI." />
         "Short" counts runs that stopped well under their budget; check them on the Runs tab before averaging.
       </p>
       <Chart series={d.series} />
