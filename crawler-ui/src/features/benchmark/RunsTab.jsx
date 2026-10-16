@@ -7,6 +7,7 @@ import { SectionTitle } from "../common/Page";
 import { Button, Chip, Field, Grid, Select, Status, TextInput } from "../common/Form";
 import Loading from "./Loading";
 import {LABEL, useLoad, num} from "./shared";
+import NumberField from "../config/NumberField";
 import ScrollRegion from "../common/ScrollRegion";
 
 const { text, background } = getTheme().colors;
@@ -81,7 +82,7 @@ function JobPanel() {
         <Field label="Budget (fetched pages)"><Select value={form.budget} onChange={set("budget")} disabled={running}>
           {[10, 50, 100, 200].map((b) => <option key={b}>{b}</option>)}
         </Select></Field>
-        <Field label="Repeats"><TextInput type="number" min="1" max="10" value={form.reps} onChange={set("reps")} disabled={running} /></Field>
+        <Field label="Repeats"><NumberField integer min={1} max={10} value={form.reps} disabled={running} onChange={(v) => setForm((f) => ({ ...f, reps: String(v) }))} /></Field>
         <Field label="LLM cache" hint="Replay and no_llm read it; keep it the same across the grid.">
           <TextInput value={form.llm_cache} onChange={set("llm_cache")} disabled={running} /></Field>
         <Field label="Recorded runs file"><TextInput value={form.runs_file} onChange={set("runs_file")} disabled={running} /></Field>
