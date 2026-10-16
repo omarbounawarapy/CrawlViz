@@ -24,7 +24,7 @@ function TransportButton({ label, icon, onClick, disabled, pressed }) {
     <button
       type="button" onClick={onClick} disabled={disabled} aria-label={label} title={label} aria-pressed={pressed}
       style={{
-        width: 30, height: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+        minWidth: 30, minHeight: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
         borderRadius: theme.radii.md, border: `1px solid ${disabled ? theme.colors.background.border : theme.colors.text.primary}`,
         background: pressed ? theme.colors.text.primary : "transparent",
         color: pressed ? theme.colors.background.panel : disabled ? theme.colors.text.muted : theme.colors.text.primary,
@@ -137,8 +137,8 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
       <div className="tl-bar" style={{ display: "flex", alignItems: "center", gap: 20, height: 56, padding: "0 20px" }}>
         <div className="tl-mode" style={{ width: 120, flexShrink: 0, display: "flex", alignItems: "center", gap: 10 }}>
           {isReplaying ? (
-            <button onClick={onExitReplay} style={{
-              height: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
+            <button type="button" onClick={onExitReplay} style={{
+              minHeight: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
               background: theme.colors.text.primary, color: theme.colors.background.panel, border: "none",
             }}>
               Return to live
@@ -159,30 +159,33 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
             aria-label={`Playback speed ${SPEEDS[speedIdx]} times, press to change`} title="Playback speed"
             className="num"
             style={{
-              height: 30, minWidth: 38, padding: "0 6px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
-              background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.background.border}`,
+              minHeight: 30, minWidth: 38, padding: "0 6px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
+              background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.control}`,
             }}
           >
             {SPEEDS[speedIdx]}×
           </button>
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="tl-scrub" style={{ flex: 1, minWidth: 0 }}>
           <Scrubber
             total={eventLog.length} position={position} types={types} describe={describe}
             disabled={none} onSeek={onSeek} onLive={goLive} onUserSeek={() => setPlaying(false)}
           />
         </div>
 
-        <output className="num tl-count" style={{ width: 170, textAlign: "right", fontSize: 13, color: theme.colors.text.secondary, flexShrink: 0 }}>
+        {/* A live count would read out every step of a replay; it stays quiet while playing. */}
+        <output aria-live={playing ? "off" : "polite"} className="num tl-count" style={{ width: 170, textAlign: "right", fontSize: 13, color: theme.colors.text.secondary, flexShrink: 0 }}>
           {eventLog.length === 0 ? "No events yet" : `Event ${position + 1} of ${eventLog.length}`}
         </output>
 
         <button
+          type="button"
           onClick={onToggleExpanded}
           aria-expanded={expanded}
+          aria-controls="timeline-events"
           style={{
-            height: 30, padding: "0 12px", fontSize: 13, fontWeight: 500, borderRadius: theme.radii.md,
+            minHeight: 30, padding: "0 12px", fontSize: 13, fontWeight: 500, borderRadius: theme.radii.md,
             background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
           }}
         >
@@ -191,19 +194,20 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
       </div>
 
       {expanded && (
-        <div style={{ borderTop: `1px solid ${theme.colors.background.border}`, display: "flex", flexDirection: "column", height: "min(260px, 32vh)" }}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "8px 20px", borderBottom: `1px solid ${theme.colors.background.border}` }}>
+        <div id="timeline-events" style={{ borderTop: `1px solid ${theme.colors.background.border}`, display: "flex", flexDirection: "column", height: "min(260px, 32vh)" }}>
+          <div role="group" aria-label="Event types shown" style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "8px 20px", borderBottom: `1px solid ${theme.colors.background.border}` }}>
             {FILTERABLE_TYPES.map(t => {
               const badge = TYPE_BADGE[t];
               const active = !hidden.has(t);
               return (
                 <button
                   key={t}
+                  type="button"
                   onClick={() => toggle(t)}
                   aria-pressed={active}
                   style={{
                     fontSize: 12, padding: "2px 8px", borderRadius: theme.radii.sm, fontWeight: 500,
-                    border: `1px solid ${active ? theme.colors.text.primary : theme.colors.background.border}`,
+                    border: `1px solid ${active ? theme.colors.text.primary : theme.colors.control}`,
                     background: active ? badge.bg : "transparent",
                     color: active ? badge.fg : theme.colors.text.muted,
                     textDecoration: active ? "none" : "line-through",
@@ -216,19 +220,28 @@ export default function TimelineDock({ eventLog, replayIndex, onSeek, onExitRepl
           </div>
 
           <div ref={listRef} style={{ ...styles.timelineList, flex: 1 }}>
+            {/* Each event is a button: pressing it replays the crawl up to that event. */}
+            <ol aria-label="Events" style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {visibleIndices.map((i) => {
               const ev = eventLog[i];
               const badge     = TYPE_BADGE[ev.type] || { bg: theme.colors.background.border, fg: theme.colors.text.secondary, label: "?" };
               const isCurrent = isReplaying && i === replayIndex;
               const isPast    = isReplaying && i < replayIndex;
               return (
-                <div key={i} onClick={() => onSeek(i)} style={styles.timelineEntry(isCurrent, isPast, isReplaying)}>
-                  <span style={styles.timelineTs}>{formatTs(ev._receivedAt)}</span>
-                  <span style={styles.timelineBadge(badge)}>{badge.label}</span>
-                  <span style={styles.timelineSummary(isPast, isReplaying)}>{eventSummary(ev)}</span>
-                </div>
+                <li key={i}>
+                  <button
+                    type="button" onClick={() => onSeek(i)} aria-current={isCurrent ? "step" : undefined}
+                    className="focus-box"
+                    style={{ ...styles.timelineEntry(isCurrent), width: "100%", border: "none", textAlign: "left", font: "inherit", color: "inherit" }}
+                  >
+                    <span style={styles.timelineTs}>{formatTs(ev._receivedAt)}</span>
+                    <span style={styles.timelineBadge(badge)}>{badge.label}</span>
+                    <span style={styles.timelineSummary(isPast, isReplaying)}>{eventSummary(ev)}</span>
+                  </button>
+                </li>
               );
             })}
+            </ol>
             {visibleIndices.length === 0 && (
               <div style={S.emptyState}>No events match the current filter.</div>
             )}

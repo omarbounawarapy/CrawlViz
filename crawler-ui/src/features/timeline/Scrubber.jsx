@@ -30,7 +30,7 @@ export default function Scrubber({ total, position, types, describe, onSeek, onL
     const el = ref.current;
     if (!el) return undefined;
     if (typeof ResizeObserver === "undefined") return undefined;
-    const ro = new ResizeObserver(() => setWidth(el.clientWidth || 600));
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -110,22 +110,28 @@ export default function Scrubber({ total, position, types, describe, onSeek, onL
       onKeyDown={onKeyDown}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
+      className="focus-box"
       style={{
         position: "relative", height: 40, cursor: disabled ? "default" : "pointer", touchAction: "none",
-        opacity: disabled ? 0.5 : 1, userSelect: "none", outline: "none",
+        opacity: disabled ? 0.5 : 1, userSelect: "none", borderRadius: theme.radii.md,
       }}
     >
       {/* the record as a band of bars */}
       <div aria-hidden="true" style={{
         position: "absolute", left: 8, right: 8, top: 9, height: H, display: "flex", alignItems: "flex-end", justifyContent: "space-between",
+        overflow: "hidden",
       }}>
         {slices.map((b, i) => {
           const played = total > 0 && b.from <= position;
+          // Unplayed bars keep 3:1 against the band (WCAG 1.4.11). An error slice is also
+          // capped with a notch, so it is not told apart by hue alone (1.4.1).
           return (
             <span key={i} style={{
-              width: BAR, height: `${Math.round(b.h * 100)}%`, flexShrink: 0, borderRadius: 1,
-              background: b.error ? C.accent.red : played ? C.text.primary : C.state.FETCHED,
-            }} />
+              position: "relative", width: BAR, height: `${Math.round(b.h * 100)}%`, flexShrink: 0, borderRadius: 1,
+              background: b.error ? C.accent.red : played ? C.text.primary : C.control,
+            }}>
+              {b.error && <span style={{ position: "absolute", left: -1, top: -5, width: BAR + 2, height: 3, background: C.accent.red }} />}
+            </span>
           );
         })}
       </div>
