@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Read(./keys.json)",
+      "Read(./keys.json.*)",
+      "Read(**/.env)",
+      "Edit(./benchmark/results/**)",
+      "Edit(**/SHA256SUMS)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(uv add:*)",
+      "Bash(npm install:*)",
+      "WebFetch"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH": "2"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/append_only.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
