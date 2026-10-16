@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { getTheme } from "../../../theme";
 import ExplainerFrame from "./ExplainerFrame";
 import useReducedMotion from "./useReducedMotion";
 import { FEATURES, priorityParts, rank, topFiveSummary, weightTotal } from "./strategyModel";
 import sample from "./sampleData.json";
 import { Button } from "../../common/Form";
+import { nextChoice } from "../../common/choiceKeys";
 
 const theme = getTheme();
 const { text, background } = theme.colors;
@@ -41,6 +42,7 @@ const FEATURE_HINT = {
  */
 export default function StrategyCards({ priority, defaults, defaultStrategy, onChange }) {
   const active = STRATEGIES.some((s) => s.key === defaultStrategy) ? defaultStrategy : "balanced";
+  const cardRefs = useRef([]);
   const reduced = useReducedMotion();
   const nlpBias = Number(priority?.nlp_bias ?? 60);
   const llmBias = Number(priority?.llm_bias ?? 40);
@@ -77,11 +79,18 @@ export default function StrategyCards({ priority, defaults, defaultStrategy, onC
   return (
     <ExplainerFrame title="Priority strategies" summary="Higher is crawled sooner. Bars add up the parts of each link's score.">
       <div role="radiogroup" aria-label="Priority strategy, which orders the queue" style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {STRATEGIES.map((s) => {
+        {STRATEGIES.map((s, i) => {
           const on = s.key === active;
           const top = summaries[s.key];
           return (
-            <button key={s.key} type="button" role="radio" aria-checked={on}
+            <button key={s.key} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
+                    ref={(el) => { cardRefs.current[i] = el; }}
+                    onKeyDown={(e) => {
+                      const n = nextChoice(e, i, STRATEGIES.length);
+                      if (n === null) return;
+                      onChange("scoring_cascade.default_priority_strategy", STRATEGIES[n].key);
+                      cardRefs.current[n]?.focus();
+                    }}
                     onClick={() => onChange("scoring_cascade.default_priority_strategy", s.key)}
                     style={{
                       flex: "1 1 180px", textAlign: "left", padding: "8px 10px", cursor: "pointer", font: "inherit",

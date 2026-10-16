@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getTheme } from "../../theme";
 import { Button } from "../common/Form";
 import { HEADER_PRESETS, activePreset } from "./headerPresets";
 import { presetChanges, shown } from "./presetModel";
+import { nextChoice } from "../common/choiceKeys";
 
 const theme = getTheme();
 const { text, background } = theme.colors;
@@ -13,6 +14,7 @@ const { text, background } = theme.colors;
  */
 export default function HeaderPresets({ fetch, onApply }) {
   const [pending, setPending] = useState(null);
+  const headerRefs = useRef([]);
   const current = activePreset(fetch);
   const chosen = HEADER_PRESETS.find((p) => p.name === pending) ?? null;
   const changes = chosen ? presetChanges({ fetch: chosen.values }, { fetch }) : [];
@@ -22,8 +24,17 @@ export default function HeaderPresets({ fetch, onApply }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {HEADER_PRESETS.map((p) => {
           const on = (pending ? pending === p.name : current?.name === p.name);
+          const i = HEADER_PRESETS.indexOf(p);
           return (
-            <button key={p.name} type="button" role="radio" aria-checked={on} onClick={() => setPending(p.name)}
+            <button key={p.name} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
+                    ref={(el) => { headerRefs.current[i] = el; }}
+                    onKeyDown={(e) => {
+                      const n = nextChoice(e, i, HEADER_PRESETS.length);
+                      if (n === null) return;
+                      setPending(HEADER_PRESETS[n].name);
+                      headerRefs.current[n]?.focus();
+                    }}
+                    onClick={() => setPending(p.name)}
                     style={{
                       flex: "1 1 170px", textAlign: "left", padding: "8px 10px", cursor: "pointer", font: "inherit",
                       background: on ? "rgba(15,27,45,0.06)" : "transparent", color: text.primary,

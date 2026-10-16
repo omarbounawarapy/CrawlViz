@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getTheme } from "../../theme";
 import { Button, TextInput, Select } from "../common/Form";
 import Stepper from "./Stepper";
 import NumberField from "./NumberField";
+import { nextChoice } from "../common/choiceKeys";
 
 const theme = getTheme();
 const { text } = theme.colors;
@@ -74,13 +75,21 @@ function LimitControl({ field, value, onChange, id }) {
 // Two named choices of a boolean (or any value), shown side by side.
 function Segmented({ field, value, onChange, id }) {
   const options = field.options ?? [];
+  const refs = useRef([]);
   return (
     <div id={id} role="radiogroup" aria-label={field.title}
          style={{ display: "inline-flex", border: `1px solid ${theme.colors.background.border}`, borderRadius: theme.radii.sm, overflow: "hidden" }}>
-      {options.map((o) => {
+      {options.map((o, i) => {
         const on = o.value === value;
         return (
-          <button key={String(o.value)} type="button" role="radio" aria-checked={on}
+          <button key={String(o.value)} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
+                  ref={(el) => { refs.current[i] = el; }}
+                  onKeyDown={(e) => {
+                    const n = nextChoice(e, i, options.length);
+                    if (n === null) return;
+                    onChange(options[n].value);
+                    refs.current[n]?.focus();
+                  }}
                   onClick={() => onChange(o.value)}
                   style={{ height: 32, padding: "0 14px", fontSize: 13, fontWeight: on ? 700 : 500, border: "none",
                            background: on ? text.primary : "transparent",

@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getTheme } from "../../theme";
 import { Button } from "../common/Form";
 import { previewPrompt } from "../../api/client";
 import { STRATEGY_HELP, estimateTokens, lineDiff } from "./promptModel";
+import { nextChoice } from "../common/choiceKeys";
 
 const theme = getTheme();
 const { text, background, accent } = theme.colors;
@@ -53,6 +54,7 @@ function EditableBlock({ id, title, note, value, builtin, onChange }) {
 export default function PromptStudio({ prompts, defaults, onChange, preview = previewPrompt, target = "bananas" }) {
   const strategies = Object.keys(prompts.strategy_contexts);
   const [strategy, setStrategy] = useState(strategies[0]);
+  const focusRefs = useRef([]);
   const [view, setView] = useState({ state: "loading" });
   const [showFull, setShowFull] = useState(false);
   const draftKey = JSON.stringify([prompts, strategy, target]);
@@ -87,8 +89,16 @@ export default function PromptStudio({ prompts, defaults, onChange, preview = pr
           strategies on the Priority page. Each blueprint picks one focus with its scoring strategy (scoring.strategy).
         </p>
         <div role="tablist" aria-label="Scoring focuses" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {strategies.map((s) => (
-            <button key={s} role="tab" type="button" aria-selected={s === strategy} onClick={() => setStrategy(s)}
+          {strategies.map((s, i) => (
+            <button key={s} role="tab" type="button" aria-selected={s === strategy} tabIndex={s === strategy ? 0 : -1}
+                    ref={(el) => { focusRefs.current[i] = el; }}
+                    onKeyDown={(e) => {
+                      const n = nextChoice(e, i, strategies.length);
+                      if (n === null) return;
+                      setStrategy(strategies[n]);
+                      focusRefs.current[n]?.focus();
+                    }}
+                    onClick={() => setStrategy(s)}
                     style={{
                       font: "inherit", fontSize: 13, padding: "4px 10px", cursor: "pointer", color: text.primary,
                       background: s === strategy ? "rgba(15,27,45,0.06)" : "transparent",

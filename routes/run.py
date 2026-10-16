@@ -92,8 +92,9 @@ async def stop_crawl():
 
 @router.get("/status")
 def crawl_status():
-    """Whether a crawl is running, and while one is, its LLM call budget: calls used so far, the cap
-    (null when none is set) and how many calls were refused, so the page can show the count live."""
+    """Whether a crawl is running and, while one is, its LLM call budget (calls used, the cap, calls refused)
+    and the items waiting in each pipeline queue, so the pages can show both live."""
     running = bool(_current_task and not _current_task.done())
     budget = getattr(_current_crawler, "call_budget", None) if running else None
-    return {"running": running, "llm_calls": budget.snapshot() if budget is not None else None}
+    queues = _current_crawler.queue_depths() if running and hasattr(_current_crawler, "queue_depths") else None
+    return {"running": running, "llm_calls": budget.snapshot() if budget is not None else None, "queues": queues}

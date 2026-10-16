@@ -221,6 +221,24 @@ class Crawler:
             "priority_strategy", self.config.scoring_cascade.default_priority_strategy
         )
 
+    # Pipeline key in _build_pipelines -> the Pipelines setting it is shown under.
+    _QUEUE_STAGES = {
+        "requests": "requests", "processing": "processing", "filtering": "filtering",
+        "transformation": "transformation", "scoring": "scoring", "priority": "priority",
+        "storage": "storage", "debug": "debugging", "retry": "retry",
+    }
+
+    def queue_depths(self) -> dict:
+        """Items waiting in each stage's queue right now, keyed by the Pipelines setting name."""
+        pipelines = getattr(self, "_pipelines", None) or {}
+        out = {}
+        for key, name in Crawler._QUEUE_STAGES.items():
+            queue = getattr(pipelines.get(key), "queue", None)
+            if queue is None:
+                continue
+            out[name] = {"size": queue.qsize(), "max": queue.maxsize or None}
+        return out
+
     def apply_live(self, patch: dict) -> RuntimeConfig:
         """Change live-flagged settings of the running crawl (see
         core/live_settings.py)."""

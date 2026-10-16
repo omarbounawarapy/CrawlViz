@@ -5,7 +5,7 @@ import { STAGE_NAMES } from "./pipelineNames";
 const theme = getTheme();
 const { text, background } = theme.colors;
 
-const W = 640, NODE_W = 112, NODE_H = 66, GAP = 18;
+const W = 640, NODE_W = 112, NODE_H = 80, GAP = 18;
 const ROWS = [0, 96, 192];
 const col = (i) => i * (NODE_W + GAP);
 
@@ -38,13 +38,17 @@ const edge = (a, b) => {
  * The pipeline stages as a picture: each box shows its workers and queue bound, which are edited
  * in the table below it. A bounded queue holds memory down and makes the stage before it wait.
  */
-export default function PipelineFlow({ pipelines, batchSize }) {
+export default function PipelineFlow({ pipelines, batchSize, queues = null }) {
   if (!pipelines) return null;
   const describe = (key) => {
     const s = pipelines[key];
     if (!s) return [];
-    return [`${s.workers} worker${s.workers === 1 ? "" : "s"}`,
+    const lines = [`${s.workers} worker${s.workers === 1 ? "" : "s"}`,
       s.max_queue_size ? `queue up to ${s.max_queue_size}` : "queue unbounded"];
+    // While a crawl runs, the live count replaces nothing: it is one more line under the settings.
+    const live = queues?.[key];
+    if (live) lines.push(`${live.size} waiting now`);
+    return lines;
   };
   const boxes = Object.keys(STAGES).map((key) => {
     const s = STAGES[key];
@@ -86,7 +90,7 @@ export default function PipelineFlow({ pipelines, batchSize }) {
       <p style={{ fontSize: 13, color: text.secondary, margin: "6px 0 0" }}>
         Workers set the speed: more workers drain a stage faster and hold more work in memory at once. A queue bound caps the
         memory of a stage: once it is full, the stage before it waits, so the crawl slows instead of memory growing.
-        Edit the workers and bounds in the table below. The names are the same as in the table.
+        Edit the workers and bounds in the table below. While a crawl runs, each box also shows the items waiting in its queue.
       </p>
     </ExplainerFrame>
   );

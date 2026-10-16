@@ -57,12 +57,17 @@ export default function ConfigPage() {
   const [query, setQuery] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [running, setRunning] = useState(false);
+  const [queues, setQueues] = useState(null);
   const { path, navigate } = useRoute();
   const wanted = path.split("/")[2];
 
   useEffect(() => {
     let cancelled = false;
-    const poll = () => crawlStatus().then((s) => !cancelled && setRunning(Boolean(s.running))).catch(() => {});
+    const poll = () => crawlStatus().then((s) => {
+      if (cancelled) return;
+      setRunning(Boolean(s.running));
+      setQueues(s.queues ?? null);
+    }).catch(() => {});
     poll();
     const t = setInterval(poll, 4000);
     return () => { cancelled = true; clearInterval(t); };
@@ -231,7 +236,7 @@ export default function ConfigPage() {
       <FetchExplainers cfg={d.fetch} workers={d.pipelines.requests.workers} maxRetries={d.retries.max_request_retries}
                        onChange={change} />
     ),
-    Pipelines: (d) => <PipelineFlow pipelines={d.pipelines} batchSize={d.export.batch_size} />,
+    Pipelines: (d) => <PipelineFlow pipelines={d.pipelines} batchSize={d.export.batch_size} queues={queues} />,
     Providers: (d) => <ProviderTable endpoints={d.providers.endpoints} />,
     Prompts: (d) => <PromptStudio prompts={d.prompts} defaults={defaults?.prompts ?? d.prompts} onChange={change} />,
     Priority: (d) => (
