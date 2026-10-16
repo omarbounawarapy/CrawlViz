@@ -38,8 +38,8 @@ export default function CostReadout({ cascade, nlp, llm, prompts, priced = false
       </p>
       {priced && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 8, fontSize: 13, color: text.secondary }}>
-          <span id="llm-token-price-label">Price per million input tokens (for this estimate only, not saved)</span>
-          <NumberField id="llm-token-price" label="Price per million input tokens" value={price} nullable width={90}
+          <label id="llm-token-price-label" htmlFor="llm-token-price">Price per million input tokens (for this estimate only, not saved)</label>
+          <NumberField id="llm-token-price" value={price} nullable width={90}
                        unit="$" onChange={(v) => setPrice(v === "" ? null : v)} />
         </div>
       )}

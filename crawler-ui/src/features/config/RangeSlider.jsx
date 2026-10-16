@@ -11,7 +11,7 @@ const { text, background } = theme.colors;
  */
 export default function RangeSlider({
   low, high, min = 0, max = 1, step = 0.01, onChange, format = String,
-  lowLabel = "Low", highLabel = "High", invalid,
+  lowLabel = "Low", highLabel = "High", invalid, labelledBy, describedBy,
 }) {
   const track = useRef(null);
   const bounds = { min, max, step };
@@ -56,7 +56,7 @@ export default function RangeSlider({
 
   const thumb = (which, value, lo, hi, label) => (
     <div
-      role="slider" tabIndex={0} data-thumb={which} aria-label={label}
+      role="slider" tabIndex={0} data-thumb={which} aria-label={label} aria-describedby={describedBy}
       aria-valuemin={lo} aria-valuemax={hi} aria-valuenow={value} aria-valuetext={format(value)}
       aria-orientation="horizontal" onKeyDown={onKeyDown(which)}
       style={{
@@ -68,14 +68,15 @@ export default function RangeSlider({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: 260 }}>
+    // One group, named by the row's label; each thumb is its own slider named by its end.
+    <div role="group" aria-labelledby={labelledBy} style={{ display: "flex", flexDirection: "column", gap: 4, width: "min(260px, 100%)" }}>
       <div
         ref={track} onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
         style={{ position: "relative", height: 28, cursor: "pointer", touchAction: "none" }}
       >
         <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 4, marginTop: -2, borderRadius: 2,
-                      background: theme.colors.rowBorder }} />
+                      background: theme.colors.control }} />
         <div style={{ position: "absolute", left: pct(low), width: `calc(${pct(high)} - ${pct(low)})`, top: "50%",
                       height: 4, marginTop: -2, borderRadius: 2, background: text.primary }} />
         {thumb("low", low, min, round(high - step), lowLabel)}

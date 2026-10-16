@@ -18,8 +18,8 @@ export default function FetchExplainers({ cfg, workers, maxRetries, onChange }) 
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 13, color: text.secondary, margin: "4px 0 0" }}>
-        <span id="assumed-latency-label">Assumed time per request (for the pictures only, not saved)</span>
-        <NumberField id="assumed-latency" label="Assumed time per request" value={latency} unit="s" width={80}
+        <label id="assumed-latency-label" htmlFor="assumed-latency">Assumed time per request (for the pictures only, not saved)</label>
+        <NumberField id="assumed-latency" value={latency} unit="s" width={80}
                      onChange={(v) => setLatency(v === "" || v === null ? DEFAULT_LATENCY : v)} />
       </div>
       <PolitenessCard cfg={cfg} workers={workers} maxRetries={maxRetries} latency={latency} />

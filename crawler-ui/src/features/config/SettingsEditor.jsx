@@ -12,43 +12,67 @@ import { stageName } from "./pipelineNames";
 import {
   getIn, groupBySection, isActive, matches, rangeOf, sameValue, validateField,
 } from "./configModel";
+import ScrollRegion from "../common/ScrollRegion";
 
 const theme = getTheme();
 
+// Widgets that are not a native form control: the row's label names them with aria-labelledby,
+// since <label for> can only point at an input, select or textarea.
+const NON_NATIVE = new Set(["segmented", "stepper", "headers", "stringmap", "weights", "limit"]);
+
 function SettingRow({ field, value, defaultValue, saved, onChange, error, active = true, control }) {
   const id = useId();
+  const labelId = `${id}-label`;
+  const descId = `${id}-desc`;
+  const native = !control && !NON_NATIVE.has(field.widget);
   const modified = !sameValue(value, defaultValue);
   const changed = !sameValue(value, saved);
+  const hasDesc = Boolean(field.description || field.effect || !active);
+  const errId = `${id}-err`;
+  // The error is read with the control, after its description.
+  const describedBy = [hasDesc && descId, error && errId].filter(Boolean).join(" ") || undefined;
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24,
-                  padding: "11px 0", borderBottom: `1px solid ${theme.colors.rowBorder}`,
-                  opacity: active ? 1 : 0.45 }}>
+    <div className="setting-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24,
+                  padding: "11px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
       <div style={{ minWidth: 0 }}>
         {/* Badges sit beside the label, not in it: a button inside a label would become the label's control. */}
         <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "0 8px" }}>
-          <label htmlFor={id} style={{ fontSize: 14, color: theme.colors.text.primary }}>{field.title}</label>
+          <label id={labelId} htmlFor={native ? id : undefined} style={{ fontSize: 14, color: theme.colors.text.primary }}>{field.title}</label>
           {field.apply === "live" && <Hint text="Can be changed while a crawl runs"><span style={badgeStyle}>live</span></Hint>}
           {field.advanced && <span style={badgeStyle}>advanced</span>}
           {changed && <span style={{ ...badgeStyle, color: theme.colors.text.primary }}>unsaved</span>}
           {!changed && modified && <Hint text="Differs from the built-in default"><span style={badgeStyle}>changed</span></Hint>}
         </div>
-        {field.description && (
-          <div style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2, maxWidth: "58ch" }}><Explain text={field.description} /></div>
-        )}
-        {field.effect && (
-          <div style={{ fontSize: 13, color: theme.colors.text.secondary, marginTop: 2, maxWidth: "58ch" }}>
-            <span style={{ color: theme.colors.text.muted }}>Effect: </span><Explain text={field.effect} />
+        {hasDesc && (
+          <div id={descId}>
+            {/* An inactive row keeps full-contrast text and says why it does nothing (no fading: WCAG 1.4.3). */}
+            {!active && (
+              <div style={{ fontSize: 13, fontWeight: 600, color: theme.colors.text.secondary, marginTop: 2 }}>
+                Not used with the current settings.
+              </div>
+            )}
+            {field.description && (
+              <div style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2, maxWidth: "58ch" }}><Explain text={field.description} /></div>
+            )}
+            {field.effect && (
+              <div style={{ fontSize: 13, color: theme.colors.text.secondary, marginTop: 2, maxWidth: "58ch" }}>
+                <span style={{ color: theme.colors.text.muted }}>Effect: </span><Explain text={field.effect} />
+              </div>
+            )}
           </div>
         )}
-        {error && <div role="alert" style={{ fontSize: 13, color: theme.colors.accent.red, marginTop: 4 }}>{error}</div>}
+        {error && <div id={errId} role="alert" style={{ fontSize: 13, color: theme.colors.accent.red, marginTop: 4 }}>{error}</div>}
         {modified && (
           <Button variant="quiet" style={{ marginTop: 2, padding: 0 }} onClick={() => onChange(defaultValue ?? null)}>
             Reset to default
           </Button>
         )}
       </div>
-      <div style={{ flexShrink: 0 }}>
-        {control ?? <FieldControl field={field} value={value} onChange={onChange} id={id} error={error} />}
+      <div className="setting-control" style={{ flexShrink: 0, maxWidth: "100%" }}>
+        {control
+          ? control(labelId, describedBy)
+          : <FieldControl field={field} value={value} onChange={onChange} id={id} error={error}
+                          labelledBy={labelId} describedBy={describedBy} />}
       </div>
     </div>
   );
@@ -74,14 +98,14 @@ function RangeRow({ low, high, draft, defaults, saved, onChange, errors }) {
       field={pair} value={[lv, hv]} defaultValue={[getIn(defaults, low.path), getIn(defaults, high.path)]}
       saved={[getIn(saved, low.path), getIn(saved, high.path)]} error={err} active={isActive(low, draft)}
       onChange={reset}
-      control={
+      control={(labelId, descId) => (
         <RangeSlider
           low={Number(lv)} high={Number(hv)} min={low.minimum ?? 0} max={high.maximum ?? 1}
           step={low.step ?? 0.01} format={format} invalid={Boolean(err)}
-          lowLabel={low.title} highLabel={high.title}
+          lowLabel={low.title} highLabel={high.title} labelledBy={labelId} describedBy={descId}
           onChange={(l, h) => { if (l !== lv) onChange(low.path, l); if (h !== hv) onChange(high.path, h); }}
         />
-      }
+      )}
     />
   );
 }
@@ -102,10 +126,10 @@ function SplitRow({ nlp, llm, draft, defaults, saved, onChange, errors }) {
       field={field} value={[a, b]} defaultValue={[getIn(defaults, nlp.path), getIn(defaults, llm.path)]}
       saved={[getIn(saved, nlp.path), getIn(saved, llm.path)]} error={err}
       onChange={() => { onChange(nlp.path, getIn(defaults, nlp.path)); onChange(llm.path, getIn(defaults, llm.path)); }}
-      control={
-        <div style={{ width: 300 }}>
+      control={(labelId, descId) => (
+        <div style={{ width: "min(300px, 100%)" }}>
           <input type="range" min={0} max={100} step={1} value={share} style={{ width: "100%" }}
-                 aria-label="Share of the LLM score in a link's priority, percent"
+                 aria-labelledby={labelId} aria-describedby={descId}
                  aria-valuetext={`${100 - share} percent NLP, ${share} percent LLM`}
                  onChange={(e) => set(Number(e.target.value))} />
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: theme.colors.text.secondary }}>
@@ -116,7 +140,7 @@ function SplitRow({ nlp, llm, draft, defaults, saved, onChange, errors }) {
             <span>Pure LLM</span>
           </div>
         </div>
-      }
+      )}
     />
   );
 }
@@ -142,14 +166,15 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
   const cols = [...new Set(fields.map((f) => f.key))];
   const th = { textAlign: "left", fontSize: 13, fontWeight: 600, padding: "6px 8px 6px 0", color: theme.colors.text.secondary };
   return (
+    <ScrollRegion label="Pipelines settings table">
     <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 8 }}>
       <thead>
-        <tr><th style={th}>Pipeline</th>{cols.map((c) => <th key={c} style={th}>{fields.find((f) => f.key === c).title}</th>)}</tr>
+        <tr><th scope="col" style={th}>Pipeline</th>{cols.map((c) => <th scope="col" key={c} style={th}>{fields.find((f) => f.key === c).title}</th>)}</tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.name} style={{ borderTop: `1px solid ${theme.colors.rowBorder}` }}>
-            <td style={{ padding: "8px 8px 8px 0", fontSize: 14 }}>{stageName(r.name)}</td>
+            <th scope="row" style={{ padding: "8px 8px 8px 0", fontSize: 14, fontWeight: 400, textAlign: "left" }}>{stageName(r.name)}</th>
             {cols.map((c) => {
               const f = r.cells[c];
               if (!f) return <td key={c} />;
@@ -167,6 +192,7 @@ function PipelinesTable({ fields, draft, defaults, saved, onChange, errors }) {
         ))}
       </tbody>
     </table>
+    </ScrollRegion>
   );
 }
 
@@ -272,7 +298,7 @@ export default function SettingsEditor({
     const asTable = list.length > 0 && list.every((f) => f.group) && list.some((f) => f.topKey === "pipelines");
     return (
       <section key={name} aria-labelledby={slug(name)}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "0 12px" }}>
           <SectionTitle id={slug(name)}>{name}</SectionTitle>
           {query && onOpenSection && (
             <Button variant="quiet" onClick={() => onOpenSection(name)}>Open section</Button>

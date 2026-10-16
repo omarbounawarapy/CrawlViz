@@ -8,63 +8,67 @@ import { nextChoice } from "../common/choiceKeys";
 const theme = getTheme();
 const { text } = theme.colors;
 
-function NumberInput({ field, value, onChange, id, invalid }) {
+function NumberInput({ field, value, onChange, id, invalid, describedBy }) {
   return (
     <NumberField
       id={id} value={value} onChange={onChange} nullable={Boolean(field.nullable)} unit={field.unit}
-      invalid={invalid} label={field.ariaLabel} integer={field.type === "integer"}
+      invalid={invalid} label={field.ariaLabel} integer={field.type === "integer"} describedBy={describedBy}
     />
   );
 }
 
 // A 0-1 fraction is shown and typed as a percentage; the stored value stays 0-1.
-function Slider({ field, value, onChange, id, invalid }) {
+function Slider({ field, value, onChange, id, invalid, describedBy }) {
   const min = field.minimum ?? 0;
   const max = field.maximum ?? 1;
   const fraction = min === 0 && max === 1 && !field.unit;
   if (fraction) {
     const pct = Math.round(Number(value ?? 0) * 100);
     return (
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap", maxWidth: "100%" }}>
         <input
           type="range" min={0} max={100} step={1} value={pct}
-          aria-label={`${field.title} (percent)`} onChange={(e) => onChange(Number(e.target.value) / 100)}
-          style={{ width: 150 }}
+          aria-label={`${field.title} (percent)`} aria-describedby={describedBy} aria-valuetext={`${pct} percent`}
+          onChange={(e) => onChange(Number(e.target.value) / 100)}
+          style={{ width: "min(150px, 100%)" }}
         />
         <NumberInput
           field={{ ...field, type: "integer", minimum: 0, maximum: 100, unit: "%", step: 1 }}
-          value={pct} id={id} invalid={invalid} onChange={(v) => onChange(v === "" ? "" : Number(v) / 100)}
+          value={pct} id={id} invalid={invalid} describedBy={describedBy} onChange={(v) => onChange(v === "" ? "" : Number(v) / 100)}
         />
       </span>
     );
   }
   const step = field.step ?? (field.type === "integer" || max > 10 ? 1 : 0.01);
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap", maxWidth: "100%" }}>
       <input
         type="range" min={min} max={max} step={step} value={Number(value ?? min)}
-        aria-label={field.title} onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: 150 }}
+        aria-label={field.title} aria-describedby={describedBy}
+        aria-valuetext={field.unit ? `${Number(value ?? min)} ${field.unit}` : undefined}
+        onChange={(e) => onChange(Number(e.target.value))}
+        style={{ width: "min(150px, 100%)" }}
       />
-      <NumberInput field={field} value={value} onChange={onChange} id={id} invalid={invalid} />
+      <NumberInput field={field} value={value} onChange={onChange} id={id} invalid={invalid} describedBy={describedBy} />
     </span>
   );
 }
 
 // "No limit" switch plus a stepper that appears while a limit is set.
-function LimitControl({ field, value, onChange, id }) {
+function LimitControl({ field, value, onChange, id, labelledBy, describedBy }) {
   const step = field.step ?? 100;
   const unlimited = value === null || value === undefined;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+    <span role="group" aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : field.ariaLabel ?? field.title} aria-describedby={describedBy}
+          style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14, cursor: "pointer" }}>
-        <input type="checkbox" checked={unlimited} aria-label={`${field.ariaLabel ?? field.title} no limit`}
+        <input type="checkbox" checked={unlimited} aria-label={`${field.ariaLabel ?? field.title}: No limit`}
                onChange={(e) => onChange(e.target.checked ? null : step)} />
         No limit
       </label>
       {!unlimited && (
         <Stepper
-          id={id} label={field.ariaLabel ?? field.title} value={Number(value)}
+          id={id} label={field.ariaLabel ?? field.title} labelledBy={field.ariaLabel ? undefined : labelledBy} value={Number(value)}
           min={Math.min(step, Number(value))} max={field.maximum ?? Infinity} step={step} onChange={onChange}
         />
       )}
@@ -73,16 +77,19 @@ function LimitControl({ field, value, onChange, id }) {
 }
 
 // Two named choices of a boolean (or any value), shown side by side.
-function Segmented({ field, value, onChange, id }) {
+function Segmented({ field, value, onChange, id, labelledBy, describedBy }) {
   const options = field.options ?? [];
   const refs = useRef([]);
+  // With nothing checked, the first choice keeps the tab stop, so the group stays reachable.
+  const anyOn = options.some((o) => o.value === value);
   return (
-    <div id={id} role="radiogroup" aria-label={field.title}
-         style={{ display: "inline-flex", border: `1px solid ${theme.colors.background.border}`, borderRadius: theme.radii.sm, overflow: "hidden" }}>
+    <div id={id} role="radiogroup" aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : field.title}
+         aria-describedby={describedBy}
+         style={{ display: "inline-flex", flexWrap: "wrap", border: `1px solid ${theme.colors.control}`, borderRadius: theme.radii.sm, overflow: "hidden" }}>
       {options.map((o, i) => {
         const on = o.value === value;
         return (
-          <button key={String(o.value)} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1}
+          <button key={String(o.value)} type="button" role="radio" aria-checked={on} tabIndex={on || (!anyOn && i === 0) ? 0 : -1}
                   ref={(el) => { refs.current[i] = el; }}
                   onKeyDown={(e) => {
                     const n = nextChoice(e, i, options.length);
@@ -91,7 +98,7 @@ function Segmented({ field, value, onChange, id }) {
                     refs.current[n]?.focus();
                   }}
                   onClick={() => onChange(o.value)}
-                  style={{ height: 32, padding: "0 14px", fontSize: 13, fontWeight: on ? 700 : 500, border: "none",
+                  style={{ minHeight: 32, padding: "0 14px", fontSize: 13, fontWeight: on ? 700 : 500, border: "none",
                            background: on ? text.primary : "transparent",
                            color: on ? theme.colors.background.panel : text.secondary }}>
             {o.label}
@@ -102,17 +109,19 @@ function Segmented({ field, value, onChange, id }) {
   );
 }
 
-function Toggle({ value, onChange, id }) {
+function Toggle({ value, onChange, id, labelledBy, describedBy }) {
+  // The row's label names the box; "On"/"Off" repeats its checked state for the eye only.
   return (
-    <label style={{ display: "inline-flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 14 }}>
-      <input id={id} type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(e.target.checked)} />
-      {value ? "On" : "Off"}
-    </label>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+      <input id={id} type="checkbox" checked={Boolean(value)} aria-labelledby={labelledBy} aria-describedby={describedBy}
+             onChange={(e) => onChange(e.target.checked)} />
+      <span aria-hidden="true">{value ? "On" : "Off"}</span>
+    </span>
   );
 }
 
 // Add/remove rows of name -> value; `numeric` coerces values to numbers.
-function KeyValueEditor({ value, onChange, numeric, keyLabel, valueLabel, id }) {
+function KeyValueEditor({ value, onChange, numeric, keyLabel, valueLabel, id, labelledBy, describedBy }) {
   const entries = Object.entries(value ?? {});
   const [draftKey, setDraftKey] = useState("");
   const [draftVal, setDraftVal] = useState("");
@@ -136,73 +145,89 @@ function KeyValueEditor({ value, onChange, numeric, keyLabel, valueLabel, id }) 
   };
   const sum = numeric ? entries.reduce((a, [, v]) => a + Number(v || 0), 0) : null;
   return (
-    <div id={id} style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", textAlign: "left" }}>
+    <div id={id} role="group" aria-labelledby={labelledBy} aria-describedby={describedBy}
+         style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end", textAlign: "left", maxWidth: "100%" }}>
       {entries.map(([k, v]) => (
-        <div key={k} style={{ display: "flex", gap: 6 }}>
-          <TextInput aria-label={`${keyLabel} ${k}`} defaultValue={k} style={{ width: 170 }}
+        <div key={k} style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "flex-end" }}>
+          <TextInput aria-label={`${keyLabel} ${k}`} defaultValue={k} style={{ width: "min(170px, 100%)" }}
                      onBlur={(e) => rename(k, e.target.value.trim())} />
           <TextInput aria-label={`${valueLabel} for ${k}`} value={v} type={numeric ? "number" : "text"}
-                     step={numeric ? "any" : undefined} style={{ width: numeric ? 90 : 220 }}
+                     step={numeric ? "any" : undefined} style={{ width: numeric ? 90 : "min(220px, 100%)" }}
                      onChange={(e) => set(k, e.target.value)} />
           <Button variant="quiet" aria-label={`Remove ${k}`} onClick={() => remove(k)}>Remove</Button>
         </div>
       ))}
-      <div style={{ display: "flex", gap: 6 }}>
-        <TextInput aria-label={`New ${keyLabel}`} placeholder={keyLabel} value={draftKey}
-                   style={{ width: 170 }} onChange={(e) => setDraftKey(e.target.value)} />
-        <TextInput aria-label={`New ${valueLabel}`} placeholder={valueLabel} value={draftVal}
-                   type={numeric ? "number" : "text"} step={numeric ? "any" : undefined}
-                   style={{ width: numeric ? 90 : 220 }} onChange={(e) => setDraftVal(e.target.value)} />
-        <Button onClick={add}>Add</Button>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "flex-end", alignItems: "flex-end" }}>
+        {/* Visible labels: a placeholder alone disappears as soon as you type (WCAG 3.3.2). */}
+        <label style={{ display: "flex", flexDirection: "column", fontSize: 12, color: text.secondary }}>
+          New {keyLabel.toLowerCase()}
+          <TextInput value={draftKey} style={{ width: "min(170px, 100%)" }} onChange={(e) => setDraftKey(e.target.value)} />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", fontSize: 12, color: text.secondary }}>
+          {valueLabel}
+          <TextInput value={draftVal} type={numeric ? "number" : "text"} step={numeric ? "any" : undefined}
+                     style={{ width: numeric ? 90 : "min(220px, 100%)" }} onChange={(e) => setDraftVal(e.target.value)} />
+        </label>
+        <Button onClick={add} aria-label={`Add ${keyLabel.toLowerCase()}`}>Add</Button>
       </div>
       {numeric && <span style={{ fontSize: 13, color: text.muted }}>Sum {Math.round(sum * 1000) / 1000}</span>}
     </div>
   );
 }
 
-/** One control chosen by the schema's ui_widget. */
-export default function FieldControl({ field, value, onChange, id, error }) {
+/**
+ * One control chosen by the schema's ui_widget. `labelledBy` and `describedBy` are ids from
+ * the row: native inputs are also named by the row's <label for>, the composite widgets
+ * (radiogroup, spinbutton, key/value group) are named by aria-labelledby.
+ */
+export default function FieldControl({ field, value, onChange, id, error, labelledBy, describedBy }) {
   const invalid = Boolean(error);
+  // In a table cell there is no row label: the field's ariaLabel names it instead.
+  const lb = field.ariaLabel ? undefined : labelledBy;
+  const shared = { describedBy };
   switch (field.widget) {
     case "slider":
-      return <Slider field={field} value={value} onChange={onChange} id={id} invalid={invalid} />;
+      return <Slider field={field} value={value} onChange={onChange} id={id} invalid={invalid} {...shared} />;
     case "stepper":
       return (
-        <Stepper id={id} label={field.ariaLabel ?? field.title} value={Number(value ?? field.minimum ?? 0)}
+        <Stepper id={id} label={field.ariaLabel ?? field.title} labelledBy={lb} value={Number(value ?? field.minimum ?? 0)}
                  min={field.minimum ?? 0} max={field.maximum ?? Infinity} step={field.step ?? 1}
-                 unit={field.unit} onChange={onChange} />
+                 unit={field.unit} onChange={onChange} {...shared} />
       );
     case "limit":
-      return <LimitControl field={field} value={value} onChange={onChange} id={id} />;
+      return <LimitControl field={field} value={value} onChange={onChange} id={id} labelledBy={lb} {...shared} />;
     case "segmented":
-      return <Segmented field={field} value={value} onChange={onChange} id={id} />;
+      return <Segmented field={field} value={value} onChange={onChange} id={id} labelledBy={lb} {...shared} />;
     case "toggle":
-      return <Toggle value={value} onChange={onChange} id={id} />;
+      return <Toggle value={value} onChange={onChange} id={id} labelledBy={lb} {...shared} />;
     case "select":
       return (
-        <Select id={id} value={value ?? ""} onChange={(e) => onChange(e.target.value)} style={{ width: 200 }}>
+        <Select id={id} value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-describedby={describedBy}
+                aria-label={field.ariaLabel} style={{ width: "min(200px, 100%)" }}>
           {(field.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
           {value && !(field.options ?? []).includes(value) && <option value={value}>{value}</option>}
         </Select>
       );
     case "headers":
-      return <KeyValueEditor id={id} value={value} onChange={onChange} keyLabel="Header" valueLabel="Value" />;
+      return <KeyValueEditor id={id} value={value} onChange={onChange} keyLabel="Header" valueLabel="Value" labelledBy={lb} {...shared} />;
     case "stringmap":
-      return <KeyValueEditor id={id} value={value} onChange={onChange} keyLabel="Name" valueLabel="Value" />;
+      return <KeyValueEditor id={id} value={value} onChange={onChange} keyLabel="Name" valueLabel="Value" labelledBy={lb} {...shared} />;
     case "textarea":
       return (
-        <textarea id={id} value={value ?? ""} rows={6} aria-invalid={invalid || undefined}
+        <textarea id={id} value={value ?? ""} rows={6} aria-invalid={invalid || undefined} aria-describedby={describedBy}
+                  aria-label={field.ariaLabel}
                   onChange={(e) => onChange(e.target.value)}
                   style={{ width: 420, maxWidth: "100%", font: "inherit", fontSize: 13, padding: 8,
-                           border: `1px solid ${invalid ? theme.colors.accent.red : theme.colors.rowBorder}`,
+                           border: `1px solid ${invalid ? theme.colors.accent.red : theme.colors.control}`,
                            borderRadius: 4, background: "transparent", color: text.primary, resize: "vertical" }} />
       );
     case "weights":
-      return <KeyValueEditor id={id} value={value} onChange={onChange} numeric keyLabel="Feature" valueLabel="Weight" />;
+      return <KeyValueEditor id={id} value={value} onChange={onChange} numeric keyLabel="Feature" valueLabel="Weight" labelledBy={lb} {...shared} />;
     case "text":
-      return <TextInput id={id} value={value ?? ""} invalid={invalid} style={{ width: 320 }}
+      return <TextInput id={id} value={value ?? ""} invalid={invalid} aria-invalid={invalid || undefined}
+                        aria-describedby={describedBy} aria-label={field.ariaLabel} style={{ width: "min(320px, 100%)" }}
                         onChange={(e) => onChange(e.target.value)} />;
     default:
-      return <NumberInput field={field} value={value} onChange={onChange} id={id} invalid={invalid} />;
+      return <NumberInput field={field} value={value} onChange={onChange} id={id} invalid={invalid} describedBy={describedBy} />;
   }
 }
