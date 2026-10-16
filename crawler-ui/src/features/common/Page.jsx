@@ -6,7 +6,7 @@ const theme = getTheme();
 // sentence of lead, then a left-aligned reading column. No cards.
 export function Page({ title, lead, width = 760, aside, children }) {
   return (
-    <div style={{ height: "100%", overflowY: "auto", background: theme.colors.background.primary }}>
+    <div className="page-scroll" style={{ height: "100%", overflowY: "auto", background: theme.colors.background.primary }}>
       {/* The aside column is always reserved, so every page's title starts at the same x. */}
       <div className="page-inner" style={{
         display: "grid", gridTemplateColumns: `200px minmax(0, ${width}px)`, columnGap: 56,
@@ -47,14 +47,14 @@ export function SectionTitle({ id, children }) {
 export function Row({ label, note, children }) {
   return (
     <div style={{
-      display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 24,
+      display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: "4px 24px",
       padding: "11px 0", borderBottom: `1px solid ${theme.colors.rowBorder}`,
     }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 14, color: theme.colors.text.primary }}>{label}</div>
         {note && <div style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 2, maxWidth: "60ch" }}>{note}</div>}
       </div>
-      <div className="num" style={{ fontSize: 14, fontWeight: 600, color: theme.colors.text.primary, textAlign: "right", flexShrink: 0 }}>
+      <div className="num" style={{ fontSize: 14, fontWeight: 600, color: theme.colors.text.primary, textAlign: "right", marginLeft: "auto", minWidth: 0, overflowWrap: "anywhere" }}>
         {children}
       </div>
     </div>

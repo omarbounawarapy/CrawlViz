@@ -40,15 +40,17 @@ export function Hint({ text: explanation, children }) {
   return (
     <span ref={ref} style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
           onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      {/* The explanation is always in the DOM (hidden while closed), so the button is described
+          by it on every focus, open or not; a tooltip trigger carries no expanded state. */}
       <button
-        type="button" aria-describedby={open ? id : undefined} aria-expanded={open}
+        type="button" aria-describedby={id}
         onClick={() => setOpen((v) => !v)} onFocus={() => setOpen(true)}
         onBlur={(e) => { if (!ref.current?.contains(e.relatedTarget)) setOpen(false); }}
         style={trigger}
       >
         {children}
       </button>
-      {open && <span role="tooltip" id={id} style={bubble}>{explanation}</span>}
+      <span role="tooltip" id={id} hidden={!open} style={bubble}>{explanation}</span>
     </span>
   );
 }

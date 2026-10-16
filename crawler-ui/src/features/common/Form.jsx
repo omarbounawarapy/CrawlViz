@@ -1,4 +1,4 @@
-import { useId, isValidElement, cloneElement } from "react";
+import { useEffect, useId, useRef, useState, isValidElement, cloneElement } from "react";
 import { getTheme } from "../../theme";
 
 const theme = getTheme();
@@ -7,28 +7,32 @@ const { text, background, accent } = theme.colors;
 // Shared form atoms for the plate pages. Same tokens as Page.jsx; every
 // control keeps the global focus ring (never set `outline: none` here).
 
+// The border is a control boundary, so it keeps 3:1 against the page (WCAG 1.4.11).
+// minHeight, not height: text spacing overrides must not clip the value (1.4.12).
 const control = {
-  width: "100%", height: 34, padding: "0 10px", fontSize: 14,
+  width: "100%", minHeight: 34, padding: "0 10px", fontSize: 14,
   background: background.panel, color: text.primary,
-  border: `1px solid ${background.border}`, borderRadius: theme.radii.sm,
+  border: `1px solid ${theme.colors.control}`, borderRadius: theme.radii.sm,
 };
 const invalidBorder = { border: `1px solid ${accent.red}` };
 
-/** A labelled field. Pass `error` to show the plum message under the control. */
+/** A labelled field. Pass `error` to show the plum message under the control. The hint
+ *  or the error is tied to the control with aria-describedby, so it is read with it. */
 export function Field({ label, hint, error, id, children }) {
   const auto = useId();
   const fieldId = id || auto;
+  const describedBy = error ? `${fieldId}-err` : hint ? `${fieldId}-hint` : undefined;
   return (
     <div style={{ marginBottom: 14, minWidth: 0 }}>
       <label htmlFor={fieldId} style={{ display: "block", fontSize: 13, fontWeight: 600, color: text.primary, marginBottom: 4 }}>
         {label}
       </label>
       {(() => {
-        const a = { id: fieldId, "aria-invalid": error ? true : undefined, "aria-describedby": error ? `${fieldId}-err` : undefined };
+        const a = { id: fieldId, "aria-invalid": error ? true : undefined, "aria-describedby": describedBy };
         if (typeof children === "function") return children(a);
         return isValidElement(children) ? cloneElement(children, a) : children;
       })()}
-      {hint && !error && <div style={{ fontSize: 13, color: text.muted, marginTop: 4 }}>{hint}</div>}
+      {hint && !error && <div id={`${fieldId}-hint`} style={{ fontSize: 13, color: text.muted, marginTop: 4 }}>{hint}</div>}
       {error && <div id={`${fieldId}-err`} style={{ fontSize: 13, color: accent.red, marginTop: 4 }}>{error}</div>}
     </div>
   );
@@ -48,7 +52,7 @@ export function Grid({ children }) {
 }
 
 const BTN = {
-  height: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
+  minHeight: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
   whiteSpace: "nowrap",
 };
 
@@ -65,11 +69,33 @@ export function Button({ variant = "outline", armed, style, ...rest }) {
   return <button type="button" {...rest} style={{ ...BTN, ...v, ...off, ...style }} />;
 }
 
+/**
+ * A destructive action that needs two presses: the first arms it and says what the second
+ * will do, the second runs it (WCAG 3.3.4). It stays armed until it is pressed, loses
+ * focus, or Escape is pressed; there is no timer to race (2.2.1).
+ */
+export function ConfirmButton({ label, confirmLabel, onConfirm, ...rest }) {
+  const [armed, setArmed] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => { if (armed) ref.current?.focus(); }, [armed]);
+  return (
+    <Button
+      {...rest} ref={ref} variant="danger" armed={armed}
+      aria-label={armed ? `${confirmLabel}. Press again to confirm, Escape to cancel` : rest["aria-label"]}
+      onClick={() => { if (!armed) { setArmed(true); return; } setArmed(false); onConfirm(); }}
+      onBlur={() => setArmed(false)}
+      onKeyDown={(e) => { if (e.key === "Escape" && armed) { e.preventDefault(); setArmed(false); } }}
+    >
+      {armed ? confirmLabel : label}
+    </Button>
+  );
+}
+
 /** Underline tabs: one idiom for view switches (Form / JSON, Profile / Manual). */
 export function Tabs({ id, label, value, options, onChange }) {
   return (
     <div
-      role="tablist" aria-label={label} style={{ display: "flex", gap: 4 }}
+      role="tablist" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}
       onKeyDown={(e) => {
         const i = options.findIndex(([optId]) => optId === value);
         const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -86,7 +112,7 @@ export function Tabs({ id, label, value, options, onChange }) {
           id={`${id}-tab-${optId}`} aria-controls={value === optId ? `${id}-panel-${optId}` : undefined}
           onClick={() => onChange(optId)}
           style={{
-            height: 34, padding: "0 10px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
+            minHeight: 34, padding: "0 10px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
             borderBottom: `2px solid ${value === optId ? text.primary : "transparent"}`,
             color: value === optId ? text.primary : text.secondary,
             fontSize: 14, fontWeight: value === optId ? 600 : 500,
@@ -105,10 +131,10 @@ export function Chip({ pressed, onClick, children }) {
     <button
       type="button" aria-pressed={pressed} onClick={onClick}
       style={{
-        height: 28, padding: "0 10px", fontSize: 13, fontWeight: 500, borderRadius: theme.radii.sm,
+        minHeight: 28, padding: "0 10px", fontSize: 13, fontWeight: 500, borderRadius: theme.radii.sm,
         background: pressed ? text.primary : "transparent",
         color: pressed ? background.panel : text.secondary,
-        border: `1px solid ${pressed ? text.primary : background.border}`,
+        border: `1px solid ${pressed ? text.primary : theme.colors.control}`,
       }}
     >
       {children}
@@ -129,10 +155,12 @@ export function Group({ title, onRemove, removeLabel = "Remove", children }) {
   );
 }
 
-/** Inline status: a mark + word. Shape carries state, not hue alone. */
-export function Status({ ok, children }) {
+/** Inline status: a mark + word. Shape carries state, not hue alone. `live` makes it a
+ *  status message that is announced when it changes; turn it off for a status shown in
+ *  a table row, where a live region per row would read the whole table out. */
+export function Status({ ok, live = true, children }) {
   return (
-    <span role="status" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: ok ? text.primary : accent.red }}>
+    <span role={live ? "status" : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: ok ? text.primary : accent.red }}>
       <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
         {ok ? <rect x="0.5" y="0.5" width="8" height="8" fill="currentColor" /> : <path d="M4.5 0.5 8.5 8.5H0.5Z" fill="currentColor" />}
       </svg>
