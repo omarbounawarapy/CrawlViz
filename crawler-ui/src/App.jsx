@@ -8,6 +8,7 @@ import { useBatchedDispatch } from "./hooks/useBatchedDispatch";
 import { useRoute } from "./hooks/useRoute";
 import { stopCrawl, API_STATUS_EVENT } from "./api/client";
 import { getTheme } from "./theme";
+import { pathOf } from "./utils/formatters";
 
 import Shell from "./app/Shell";
 import NodeInspector from "./features/inspector/NodeInspector";
@@ -29,6 +30,10 @@ const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
 // links still work: they land on the graph with the matching panel open.
 const PAGE_ROUTES = new Set(["graph", "run", "blueprints", "data", "config", "benchmark"]);
 const LEGACY_ROUTES = new Set(["overview", "pipeline", "timeline"]);
+const SECTION_TITLES = {
+  graph: "Graph", run: "Run a crawl", blueprints: "Blueprints", data: "Extracted data",
+  config: "Configuration", benchmark: "Benchmark",
+};
 
 function initialDemo() {
   try { return new URLSearchParams(window.location.search).has("demo"); } catch { return false; }
@@ -36,7 +41,7 @@ function initialDemo() {
 
 function EmptyCanvas({ onRun, onDemo }) {
   const btn = {
-    height: 36, padding: "0 16px", borderRadius: theme.radii.md, fontSize: 14, fontWeight: 600,
+    minHeight: 36, padding: "0 16px", borderRadius: theme.radii.md, fontSize: 14, fontWeight: 600,
     border: `1px solid ${theme.colors.text.primary}`,
   };
   return (
@@ -56,10 +61,10 @@ function EmptyCanvas({ onRun, onDemo }) {
           page to read why the crawler followed it. Vermilion marks the links it judged most promising.
         </p>
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={onRun} style={{ ...btn, background: theme.colors.text.primary, color: theme.colors.background.panel }}>
+          <button type="button" onClick={onRun} style={{ ...btn, background: theme.colors.text.primary, color: theme.colors.background.panel }}>
             Start a crawl
           </button>
-          <button onClick={onDemo} style={{ ...btn, background: "transparent", color: theme.colors.text.primary }}>
+          <button type="button" onClick={onDemo} style={{ ...btn, background: "transparent", color: theme.colors.text.primary }}>
             Load a synthetic sample
           </button>
         </div>
@@ -85,6 +90,21 @@ export default function App() {
   const selectedNode = selectedNodeId ? state.nodes.get(selectedNodeId) ?? null : null;
   const handleNodeClick = useCallback((node) => setSelectedNodeId(node.node_id), []);
   const handleClearSelection = useCallback(() => setSelectedNodeId(null), []);
+  // Closing the annotation panel hands focus back to the page it described, not to <body>.
+  const handleCloseInspector = useCallback(() => {
+    const id = selectedNodeId;
+    setSelectedNodeId(null);
+    requestAnimationFrame(() => {
+      const el = id && document.querySelector(`g.node-group[data-node-id="${CSS.escape(String(id))}"]`);
+      (el || document.getElementById("main"))?.focus();
+    });
+  }, [selectedNodeId]);
+
+  // Each section is its own page to the browser and to assistive tech (WCAG 2.4.2).
+  useEffect(() => {
+    const name = notFound ? "Page not found" : SECTION_TITLES[activeSection] ?? "Graph";
+    document.title = `${name} · CrawlViz`;
+  }, [activeSection, notFound]);
 
   const replayIndex = state._replayIndex ?? null;
 
@@ -117,7 +137,7 @@ export default function App() {
       errors={state.errors}
       eventLog={state.eventLog}
       onSelectNode={setSelectedNodeId}
-      onClose={handleClearSelection}
+      onClose={handleCloseInspector}
     />
   ) : null;
 
@@ -136,7 +156,7 @@ export default function App() {
         start it with <code>uvicorn main:app</code> from the repository root.
       </span>
       <button type="button" onClick={() => window.location.reload()} style={{
-        height: 26, padding: "0 10px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
+        minHeight: 26, padding: "0 10px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
         background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
       }}>Retry</button>
     </div>
@@ -179,6 +199,10 @@ export default function App() {
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
           <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
             <div style={{ flex: 1, minWidth: 0, position: "relative" }}>
+              {/* Selecting a page opens its annotation beside the plate; say so, focus stays on the page. */}
+              <p role="status" className="sr-only">
+                {selectedNode ? `Annotation shown for ${pathOf(selectedNode.url) || selectedNode.url}.` : ""}
+              </p>
               <GraphView
                 nodes={state.nodes}
                 edges={state.edges}
@@ -187,6 +211,8 @@ export default function App() {
                 onNodeClick={handleNodeClick}
                 onBackgroundClick={handleClearSelection}
                 selectedNodeId={selectedNodeId}
+                heading={state.nodes.size > 0 ? "Crawl graph" : undefined}
+                annotationId="inspector"
               />
               {state.nodes.size === 0 && replayIndex == null && (
                 <EmptyCanvas onRun={() => navigate("/run")} onDemo={() => setDemoMode(true)} />

@@ -65,7 +65,7 @@ function NavTab({ section, active, onClick, hasAlert }) {
       aria-current={active ? "page" : undefined}
       title={section.question}
       style={{
-        position: "relative", height: 48, padding: "0 14px", flexShrink: 0,
+        position: "relative", minHeight: 48, padding: "0 14px", flexShrink: 0,
         background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
         borderBottom: `2px solid ${active ? shell.textBright : "transparent"}`,
         color: active ? shell.textBright : shell.textPrimary,
@@ -102,10 +102,11 @@ export default function Shell({
   const live = activeSection === "graph" || activeSection === "run";
   const sample = connectionStatus === "SAMPLE";
   const connected = connectionStatus === "CONNECTED";
-  // Stopping a crawl is not undoable: the first click arms it, the second confirms.
+  // Stopping a crawl is not undoable: the first click arms it, the second confirms. It stays
+  // armed until pressed, blurred or cancelled with Escape: no timer to race (WCAG 2.2.1).
   const [armed, setArmed] = useState(false);
   const handleStop = () => {
-    if (!armed) { setArmed(true); setTimeout(() => setArmed(false), 4000); return; }
+    if (!armed) { setArmed(true); return; }
     setArmed(false);
     onStop();
   };
@@ -115,6 +116,9 @@ export default function Shell({
       display: "flex", flexDirection: "column", width: "100%", height: "100%",
       background: shell.background, fontFamily: type.fontMono, overflow: "hidden",
     }}>
+      <a className="skip-link" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }}>
+        Skip to content
+      </a>
       <header className="shell-header" style={{
         display: "flex", alignItems: "center", gap: 28, height: 48, flexShrink: 0,
         padding: "0 20px", background: shell.surface, borderBottom: `1px solid ${shell.border}`,
@@ -158,8 +162,11 @@ export default function Shell({
           {status === "RUNNING" && onStop && (
             <button
               onClick={handleStop}
+              onBlur={() => setArmed(false)}
+              onKeyDown={(e) => { if (e.key === "Escape" && armed) { e.preventDefault(); setArmed(false); } }}
+              aria-label={armed ? "Confirm stop. Press again to stop the crawl, Escape to cancel" : undefined}
               style={{
-                height: 30, padding: "0 12px", borderRadius: theme.radii.md, fontSize: 13, fontWeight: 600,
+                minHeight: 30, padding: "0 12px", borderRadius: theme.radii.md, fontSize: 13, fontWeight: 600,
                 background: armed ? theme.colors.accent.red : "transparent",
                 color: armed ? "#fff" : theme.colors.text.secondary,
                 border: `1px solid ${armed ? theme.colors.accent.red : theme.colors.text.muted}`,
@@ -173,7 +180,7 @@ export default function Shell({
               onClick={onToggleMeasures}
               aria-pressed={measuresOpen}
               style={{
-                height: 30, padding: "0 12px", borderRadius: theme.radii.md, fontSize: 13, fontWeight: 500,
+                minHeight: 30, padding: "0 12px", borderRadius: theme.radii.md, fontSize: 13, fontWeight: 500,
                 background: measuresOpen ? shell.textBright : "transparent",
                 color: measuresOpen ? shell.surface : shell.textBright,
                 border: `1px solid ${shell.textBright}`,
@@ -187,7 +194,7 @@ export default function Shell({
 
       {banner}
 
-      <main style={{ flex: 1, minHeight: 0, display: "flex", overflow: "hidden", position: "relative" }}>
+      <main id="main" tabIndex={-1} style={{ outline: "none", flex: 1, minHeight: 0, display: "flex", overflow: "hidden", position: "relative" }}>
         <div style={{ flex: 1, minWidth: 0, overflow: "hidden", position: "relative", background: shell.background }}>
           {children}
         </div>

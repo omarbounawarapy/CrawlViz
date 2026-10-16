@@ -59,6 +59,9 @@ export default function Root() {
     return () => { cancelled = true; };
   }, [loading]);
 
+  // The app sets a title per section; the landing page and the boot screen keep the plain name.
+  useEffect(() => { if (isLanding) document.title = "CrawlViz"; }, [isLanding]);
+
   const enter = useCallback((to) => { setReady(false); setPendingTo(to); setLoading("enter"); }, []);
 
   const onExit = useCallback(() => {
