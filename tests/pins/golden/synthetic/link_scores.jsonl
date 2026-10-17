@@ -1,0 +1,205 @@
+{"decision": "high_score_links", "nlp_score": 0.063514, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/p5"}
+{"decision": "high_score_links", "nlp_score": 0.063514, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/p138"}
+{"decision": "high_score_links", "nlp_score": 0.025, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/p63"}
+{"decision": "priority_calculated", "nlp_score": 0.063514, "node_id": 0, "priority": 0.304505, "score": 0, "seq": 4, "url": "https://frozen.test/p5"}
+{"decision": "priority_calculated", "nlp_score": 0.063514, "node_id": 0, "priority": 0.304505, "score": 0, "seq": 4, "url": "https://frozen.test/p138"}
+{"decision": "priority_calculated", "nlp_score": 0.025, "node_id": 0, "priority": 0.25, "score": 0, "seq": 4, "url": "https://frozen.test/p63"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.418, "score": 67, "seq": 5, "url": "https://frozen.test/p1"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.436, "score": 79, "seq": 5, "url": "https://frozen.test/p3"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.228, "score": 27, "seq": 5, "url": "https://frozen.test/p41"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.476, "score": 89, "seq": 5, "url": "https://frozen.test/p144"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.1835, "score": 14, "seq": 5, "url": "https://frozen.test/p47"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.37, "score": 55, "seq": 5, "url": "https://frozen.test/p95"}
+{"decision": "priority_calculated", "nlp_score": 0.0125, "node_id": 0, "priority": 0.175, "score": 10, "seq": 5, "url": "https://frozen.test/p87"}
+{"decision": "priority_calculated", "nlp_score": 0.01875, "node_id": 0, "priority": 0.4825, "score": 85, "seq": 5, "url": "https://frozen.test/p40"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.462, "score": 78, "seq": 5, "url": "https://frozen.test/p115"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.499, "score": 91, "seq": 5, "url": "https://frozen.test/p111"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.3025, "score": 40, "seq": 5, "url": "https://frozen.test/p92"}
+{"decision": "priority_calculated", "nlp_score": 0.0125, "node_id": 0, "priority": 0.411, "score": 69, "seq": 5, "url": "https://frozen.test/p104"}
+{"decision": "priority_calculated", "nlp_score": 0.120627, "node_id": 0, "priority": 0.232703, "score": 5, "seq": 5, "url": "https://frozen.test/p2"}
+{"decision": "high_score_links", "nlp_score": 0.049045, "node_id": 13, "score": null, "seq": 7, "url": "https://frozen.test/p178"}
+{"decision": "high_score_links", "nlp_score": 0.037796, "node_id": 13, "score": null, "seq": 7, "url": "https://frozen.test/p27"}
+{"decision": "high_score_links", "nlp_score": 0.037796, "node_id": 13, "score": null, "seq": 7, "url": "https://frozen.test/p100"}
+{"decision": "priority_calculated", "nlp_score": 0.049045, "node_id": 13, "priority": 0.249682, "score": 0, "seq": 9, "url": "https://frozen.test/p178"}
+{"decision": "priority_calculated", "nlp_score": 0.037796, "node_id": 13, "priority": 0.225593, "score": 0, "seq": 9, "url": "https://frozen.test/p27"}
+{"decision": "priority_calculated", "nlp_score": 0.037796, "node_id": 13, "priority": 0.225593, "score": 0, "seq": 9, "url": "https://frozen.test/p100"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.494036, "score": 97, "seq": 10, "url": "https://frozen.test/p184"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.318054, "score": 51, "seq": 10, "url": "https://frozen.test/p185"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.134, "score": 11, "seq": 10, "url": "https://frozen.test/p97"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.354054, "score": 60, "seq": 10, "url": "https://frozen.test/p25"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.490089, "score": 90, "seq": 10, "url": "https://frozen.test/p120"}
+{"decision": "priority_calculated", "nlp_score": 0.026726, "node_id": 13, "priority": 0.150071, "score": 7, "seq": 10, "url": "https://frozen.test/p158"}
+{"decision": "priority_calculated", "nlp_score": 0.026726, "node_id": 13, "priority": 0.282071, "score": 40, "seq": 10, "url": "https://frozen.test/p116"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.498036, "score": 98, "seq": 10, "url": "https://frozen.test/p30"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.374, "score": 71, "seq": 10, "url": "https://frozen.test/p36"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 13, "priority": 0.142054, "score": 7, "seq": 10, "url": "https://frozen.test/p130"}
+{"decision": "low_score_links", "nlp_score": 0.008839, "node_id": 27, "score": null, "seq": 13, "url": "https://frozen.test/p85"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 27, "score": null, "seq": 13, "url": "https://frozen.test/p91"}
+{"decision": "low_score_links", "nlp_score": 0.081192, "node_id": 27, "score": null, "seq": 13, "url": "https://frozen.test/p187"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 27, "score": null, "seq": 13, "url": "https://frozen.test/p141"}
+{"decision": "low_score_links", "nlp_score": 0.18384, "node_id": 27, "score": null, "seq": 13, "url": "https://frozen.test/p180"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 27, "score": null, "seq": 13, "url": "https://frozen.test/p149"}
+{"decision": "low_score_links", "nlp_score": 0.154393, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p52"}
+{"decision": "low_score_links", "nlp_score": 0.008333, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p24"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p31"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p53"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p58"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p99"}
+{"decision": "low_score_links", "nlp_score": 0.016667, "node_id": 20, "score": null, "seq": 16, "url": "https://frozen.test/p143"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 24, "score": null, "seq": 19, "url": "https://frozen.test/p175"}
+{"decision": "low_score_links", "nlp_score": 0.030317, "node_id": 24, "score": null, "seq": 19, "url": "https://frozen.test/p42"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 24, "score": null, "seq": 19, "url": "https://frozen.test/p7"}
+{"decision": "low_score_links", "nlp_score": 0.006063, "node_id": 24, "score": null, "seq": 19, "url": "https://frozen.test/p74"}
+{"decision": "low_score_links", "nlp_score": 0.006063, "node_id": 24, "score": null, "seq": 19, "url": "https://frozen.test/p129"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 24, "score": null, "seq": 19, "url": "https://frozen.test/p125"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 11, "score": null, "seq": 22, "url": "https://frozen.test/p94"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 11, "score": null, "seq": 22, "url": "https://frozen.test/p177"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 11, "score": null, "seq": 22, "url": "https://frozen.test/p191"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 11, "score": null, "seq": 22, "url": "https://frozen.test/p196"}
+{"decision": "low_score_links", "nlp_score": 0.027735, "node_id": 11, "score": null, "seq": 22, "url": "https://frozen.test/p102"}
+{"decision": "priority_calculated", "nlp_score": 0.490895, "node_id": 11, "priority": 0.508047, "score": 69, "seq": 23, "url": "https://frozen.test/p14"}
+{"decision": "high_score_links", "nlp_score": 0.512383, "node_id": 30, "score": null, "seq": 25, "url": "https://frozen.test/p56"}
+{"decision": "high_score_links", "nlp_score": 0.113305, "node_id": 30, "score": null, "seq": 25, "url": "https://frozen.test/p59"}
+{"decision": "high_score_links", "nlp_score": 0.104466, "node_id": 30, "score": null, "seq": 25, "url": "https://frozen.test/p39"}
+{"decision": "priority_calculated", "nlp_score": 0.512383, "node_id": 30, "priority": 0.37972, "score": 0, "seq": 27, "url": "https://frozen.test/p56"}
+{"decision": "priority_calculated", "nlp_score": 0.113305, "node_id": 30, "priority": 0.23986, "score": 0, "seq": 27, "url": "https://frozen.test/p59"}
+{"decision": "priority_calculated", "nlp_score": 0.104466, "node_id": 30, "priority": 0.222182, "score": 0, "seq": 27, "url": "https://frozen.test/p39"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 30, "priority": 0.089213, "score": 2, "seq": 28, "url": "https://frozen.test/p18"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 30, "priority": 0.426607, "score": 89, "seq": 28, "url": "https://frozen.test/p16"}
+{"decision": "priority_calculated", "nlp_score": 0.081192, "node_id": 30, "priority": 0.388613, "score": 63, "seq": 28, "url": "https://frozen.test/p151"}
+{"decision": "priority_calculated", "nlp_score": 0.017678, "node_id": 30, "priority": 0.201213, "score": 30, "seq": 28, "url": "https://frozen.test/p122"}
+{"decision": "priority_calculated", "nlp_score": 0.0125, "node_id": 30, "priority": 0.399, "score": 81, "seq": 28, "url": "https://frozen.test/p146"}
+{"decision": "priority_calculated", "nlp_score": 0.008839, "node_id": 30, "priority": 0.406607, "score": 84, "seq": 28, "url": "https://frozen.test/p90"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 30, "priority": 0.336, "score": 69, "seq": 28, "url": "https://frozen.test/p96"}
+{"decision": "priority_calculated", "nlp_score": 0.081192, "node_id": 30, "priority": 0.331916, "score": 47, "seq": 28, "url": "https://frozen.test/p126"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 30, "priority": 0.336, "score": 69, "seq": 28, "url": "https://frozen.test/p89"}
+{"decision": "priority_calculated", "nlp_score": 0.098836, "node_id": 30, "priority": 0.421022, "score": 70, "seq": 28, "url": "https://frozen.test/p157"}
+{"decision": "high_score_links", "nlp_score": 0.342047, "node_id": 7, "score": null, "seq": 30, "url": "https://frozen.test/p44"}
+{"decision": "high_score_links", "nlp_score": 0.273222, "node_id": 7, "score": null, "seq": 30, "url": "https://frozen.test/p154"}
+{"decision": "high_score_links", "nlp_score": 0.238514, "node_id": 7, "score": null, "seq": 30, "url": "https://frozen.test/p167"}
+{"decision": "priority_calculated", "nlp_score": 0.342047, "node_id": 7, "priority": 0.374821, "score": 0, "seq": 32, "url": "https://frozen.test/p44"}
+{"decision": "priority_calculated", "nlp_score": 0.273222, "node_id": 7, "priority": 0.259374, "score": 0, "seq": 32, "url": "https://frozen.test/p154"}
+{"decision": "priority_calculated", "nlp_score": 0.238514, "node_id": 7, "priority": 0.254505, "score": 0, "seq": 32, "url": "https://frozen.test/p167"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 7, "priority": 0.388606, "score": 71, "seq": 33, "url": "https://frozen.test/p179"}
+{"decision": "priority_calculated", "nlp_score": 0.119344, "node_id": 7, "priority": 0.373163, "score": 48, "seq": 33, "url": "https://frozen.test/p84"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 7, "priority": 0.194, "score": 26, "seq": 33, "url": "https://frozen.test/p13"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 7, "priority": 0.453795, "score": 88, "seq": 33, "url": "https://frozen.test/p73"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 7, "priority": 0.155487, "score": 14, "seq": 33, "url": "https://frozen.test/p64"}
+{"decision": "priority_calculated", "nlp_score": 0.022361, "node_id": 7, "priority": 0.440833, "score": 81, "seq": 33, "url": "https://frozen.test/p21"}
+{"decision": "priority_calculated", "nlp_score": 0.229405, "node_id": 7, "priority": 0.433635, "score": 70, "seq": 33, "url": "https://frozen.test/p93"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 7, "priority": 0.278461, "score": 40, "seq": 33, "url": "https://frozen.test/p140"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 7, "priority": 0.49958, "score": 94, "seq": 33, "url": "https://frozen.test/p174"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 55, "score": null, "seq": 36, "url": "https://frozen.test/p15"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 55, "score": null, "seq": 36, "url": "https://frozen.test/p105"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 55, "score": null, "seq": 36, "url": "https://frozen.test/p28"}
+{"decision": "priority_calculated", "nlp_score": 0.507179, "node_id": 55, "priority": 0.313587, "score": 23, "seq": 37, "url": "https://frozen.test/p148"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 12, "score": null, "seq": 40, "url": "https://frozen.test/p77"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 12, "score": null, "seq": 40, "url": "https://frozen.test/p33"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 12, "score": null, "seq": 40, "url": "https://frozen.test/p147"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 12, "score": null, "seq": 40, "url": "https://frozen.test/p186"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 12, "score": null, "seq": 40, "url": "https://frozen.test/p139"}
+{"decision": "low_score_links", "nlp_score": 0.007538, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p117"}
+{"decision": "low_score_links", "nlp_score": 0.064479, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p192"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p61"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p173"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p181"}
+{"decision": "low_score_links", "nlp_score": 0.030151, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p110"}
+{"decision": "low_score_links", "nlp_score": 0.063514, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p75"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 50, "score": null, "seq": 43, "url": "https://frozen.test/p163"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 52, "score": null, "seq": 46, "url": "https://frozen.test/p32"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 52, "score": null, "seq": 46, "url": "https://frozen.test/p170"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 52, "score": null, "seq": 46, "url": "https://frozen.test/p156"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 5, "score": null, "seq": 49, "url": "https://frozen.test/p4"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 5, "score": null, "seq": 49, "url": "https://frozen.test/p164"}
+{"decision": "low_score_links", "nlp_score": 0.007906, "node_id": 5, "score": null, "seq": 49, "url": "https://frozen.test/p101"}
+{"decision": "low_score_links", "nlp_score": 0.016667, "node_id": 53, "score": null, "seq": 52, "url": "https://frozen.test/p57"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 35, "score": null, "seq": 55, "url": "https://frozen.test/p35"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 35, "score": null, "seq": 55, "url": "https://frozen.test/p55"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 35, "score": null, "seq": 55, "url": "https://frozen.test/p123"}
+{"decision": "low_score_links", "nlp_score": 0.008333, "node_id": 35, "score": null, "seq": 55, "url": "https://frozen.test/p128"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 43, "score": null, "seq": 58, "url": "https://frozen.test/p10"}
+{"decision": "low_score_links", "nlp_score": 0.008839, "node_id": 43, "score": null, "seq": 58, "url": "https://frozen.test/p168"}
+{"decision": "low_score_links", "nlp_score": 0.008839, "node_id": 43, "score": null, "seq": 58, "url": "https://frozen.test/p161"}
+{"decision": "low_score_links", "nlp_score": 0.008839, "node_id": 43, "score": null, "seq": 58, "url": "https://frozen.test/p155"}
+{"decision": "priority_calculated", "nlp_score": 0.256192, "node_id": 43, "priority": 0.113916, "score": 0, "seq": 59, "url": "https://frozen.test/p38"}
+{"decision": "priority_calculated", "nlp_score": 0.220764, "node_id": 43, "priority": 0.437992, "score": 85, "seq": 59, "url": "https://frozen.test/p159"}
+{"decision": "low_score_links", "nlp_score": 0.075561, "node_id": 58, "score": null, "seq": 62, "url": "https://frozen.test/p43"}
+{"decision": "low_score_links", "nlp_score": 0.008839, "node_id": 58, "score": null, "seq": 62, "url": "https://frozen.test/p121"}
+{"decision": "high_score_links", "nlp_score": 0.112896, "node_id": 4, "score": null, "seq": 64, "url": "https://frozen.test/p51"}
+{"decision": "high_score_links", "nlp_score": 0.034669, "node_id": 4, "score": null, "seq": 64, "url": "https://frozen.test/p54"}
+{"decision": "high_score_links", "nlp_score": 0.027735, "node_id": 4, "score": null, "seq": 64, "url": "https://frozen.test/p194"}
+{"decision": "priority_calculated", "nlp_score": 0.112896, "node_id": 4, "priority": 0.199188, "score": 0, "seq": 66, "url": "https://frozen.test/p51"}
+{"decision": "priority_calculated", "nlp_score": 0.034669, "node_id": 4, "priority": 0.219338, "score": 0, "seq": 66, "url": "https://frozen.test/p54"}
+{"decision": "priority_calculated", "nlp_score": 0.027735, "node_id": 4, "priority": 0.20547, "score": 0, "seq": 66, "url": "https://frozen.test/p194"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 4, "priority": 0.427282, "score": 76, "seq": 67, "url": "https://frozen.test/p12"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 4, "priority": 0.266962, "score": 38, "seq": 67, "url": "https://frozen.test/p134"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 4, "priority": 0.322321, "score": 56, "seq": 67, "url": "https://frozen.test/p6"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 4, "priority": 0.185767, "score": 21, "seq": 67, "url": "https://frozen.test/p150"}
+{"decision": "priority_calculated", "nlp_score": 0.006934, "node_id": 4, "priority": 0.278321, "score": 45, "seq": 67, "url": "https://frozen.test/p190"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 4, "priority": 0.455282, "score": 83, "seq": 67, "url": "https://frozen.test/p193"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 4, "priority": 0.378, "score": 72, "seq": 67, "url": "https://frozen.test/p19"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 67, "score": null, "seq": 70, "url": "https://frozen.test/p62"}
+{"decision": "low_score_links", "nlp_score": 0.140196, "node_id": 67, "score": null, "seq": 70, "url": "https://frozen.test/p124"}
+{"decision": "low_score_links", "nlp_score": 0.051627, "node_id": 67, "score": null, "seq": 70, "url": "https://frozen.test/p182"}
+{"decision": "priority_calculated", "nlp_score": 0.217279, "node_id": 67, "priority": 0.149856, "score": 4, "seq": 71, "url": "https://frozen.test/p199"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 15, "score": null, "seq": 75, "url": "https://frozen.test/p71"}
+{"decision": "low_score_links", "nlp_score": 0.07212, "node_id": 39, "score": null, "seq": 78, "url": "https://frozen.test/p137"}
+{"decision": "low_score_links", "nlp_score": 0.051995, "node_id": 38, "score": null, "seq": 81, "url": "https://frozen.test/p72"}
+{"decision": "low_score_links", "nlp_score": 0.117119, "node_id": 38, "score": null, "seq": 81, "url": "https://frozen.test/p82"}
+{"decision": "low_score_links", "nlp_score": 0.061721, "node_id": 38, "score": null, "seq": 81, "url": "https://frozen.test/p65"}
+{"decision": "low_score_links", "nlp_score": 0.069764, "node_id": 36, "score": null, "seq": 84, "url": "https://frozen.test/p171"}
+{"decision": "low_score_links", "nlp_score": 0.050339, "node_id": 36, "score": null, "seq": 84, "url": "https://frozen.test/p81"}
+{"decision": "low_score_links", "nlp_score": 0.077389, "node_id": 36, "score": null, "seq": 84, "url": "https://frozen.test/p20"}
+{"decision": "low_score_links", "nlp_score": 0.0807, "node_id": 47, "score": null, "seq": 87, "url": "https://frozen.test/p133"}
+{"decision": "low_score_links", "nlp_score": 0.09246, "node_id": 47, "score": null, "seq": 87, "url": "https://frozen.test/p160"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 31, "score": null, "seq": 90, "url": "https://frozen.test/p197"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 31, "score": null, "seq": 90, "url": "https://frozen.test/p76"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 68, "score": null, "seq": 93, "url": "https://frozen.test/p83"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 68, "score": null, "seq": 93, "url": "https://frozen.test/p23"}
+{"decision": "low_score_links", "nlp_score": 0.071052, "node_id": 68, "score": null, "seq": 93, "url": "https://frozen.test/p86"}
+{"decision": "priority_calculated", "nlp_score": 0.209741, "node_id": 68, "priority": 0.26481, "score": 35, "seq": 94, "url": "https://frozen.test/p34"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 44, "score": null, "seq": 97, "url": "https://frozen.test/p49"}
+{"decision": "low_score_links", "nlp_score": 0.092888, "node_id": 44, "score": null, "seq": 97, "url": "https://frozen.test/p46"}
+{"decision": "low_score_links", "nlp_score": 0.080879, "node_id": 28, "score": null, "seq": 100, "url": "https://frozen.test/p153"}
+{"decision": "priority_calculated", "nlp_score": 0.388858, "node_id": 28, "priority": 0.4952, "score": 85, "seq": 101, "url": "https://frozen.test/p80"}
+{"decision": "low_score_links", "nlp_score": 0.194666, "node_id": 71, "score": null, "seq": 104, "url": "https://frozen.test/p109"}
+{"decision": "low_score_links", "nlp_score": 0.07157, "node_id": 71, "score": null, "seq": 104, "url": "https://frozen.test/p195"}
+{"decision": "priority_calculated", "nlp_score": 0.26986, "node_id": 71, "priority": 0.384044, "score": 66, "seq": 105, "url": "https://frozen.test/p113"}
+{"decision": "low_score_links", "nlp_score": 0.091615, "node_id": 72, "score": null, "seq": 108, "url": "https://frozen.test/p114"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 72, "score": null, "seq": 108, "url": "https://frozen.test/p119"}
+{"decision": "low_score_links", "nlp_score": 0.078252, "node_id": 72, "score": null, "seq": 108, "url": "https://frozen.test/p198"}
+{"decision": "low_score_links", "nlp_score": 0.040247, "node_id": 48, "score": null, "seq": 111, "url": "https://frozen.test/p145"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 48, "score": null, "seq": 111, "url": "https://frozen.test/p166"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 48, "score": null, "seq": 111, "url": "https://frozen.test/p188"}
+{"decision": "low_score_links", "nlp_score": 0.051995, "node_id": 9, "score": null, "seq": 114, "url": "https://frozen.test/p9"}
+{"decision": "low_score_links", "nlp_score": 0.0599, "node_id": 9, "score": null, "seq": 114, "url": "https://frozen.test/p183"}
+{"decision": "low_score_links", "nlp_score": 0.137683, "node_id": 9, "score": null, "seq": 114, "url": "https://frozen.test/p98"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 42, "score": null, "seq": 119, "url": "https://frozen.test/p162"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 42, "score": null, "seq": 119, "url": "https://frozen.test/p67"}
+{"decision": "priority_calculated", "nlp_score": 0.225544, "node_id": 42, "priority": 0.315172, "score": 58, "seq": 120, "url": "https://frozen.test/p107"}
+{"decision": "low_score_links", "nlp_score": 0.044089, "node_id": 41, "score": null, "seq": 123, "url": "https://frozen.test/p152"}
+{"decision": "priority_calculated", "nlp_score": 0.26646, "node_id": 41, "priority": 0.494518, "score": 90, "seq": 124, "url": "https://frozen.test/p26"}
+{"decision": "low_score_links", "nlp_score": 0.1016, "node_id": 74, "score": null, "seq": 127, "url": "https://frozen.test/p165"}
+{"decision": "low_score_links", "nlp_score": 0.076424, "node_id": 64, "score": null, "seq": 130, "url": "https://frozen.test/p48"}
+{"decision": "low_score_links", "nlp_score": 0.07303, "node_id": 64, "score": null, "seq": 130, "url": "https://frozen.test/p45"}
+{"decision": "low_score_links", "nlp_score": 0.003334, "node_id": 64, "score": null, "seq": 130, "url": "https://frozen.test/p70"}
+{"decision": "low_score_links", "nlp_score": 0.149822, "node_id": 73, "score": null, "seq": 134, "url": "https://frozen.test/p169"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 73, "score": null, "seq": 134, "url": "https://frozen.test/p50"}
+{"decision": "priority_calculated", "nlp_score": 0.225771, "node_id": 73, "priority": 0.392599, "score": 83, "seq": 135, "url": "https://frozen.test/p136"}
+{"decision": "priority_calculated", "nlp_score": 0.222401, "node_id": 75, "priority": 0.382002, "score": 83, "seq": 139, "url": "https://frozen.test/p60"}
+{"decision": "priority_calculated", "nlp_score": 0.281572, "node_id": 76, "priority": 0.08844, "score": 18, "seq": 143, "url": "https://frozen.test/p172"}
+{"decision": "priority_calculated", "nlp_score": 0.266399, "node_id": 56, "priority": 0.334087, "score": 54, "seq": 147, "url": "https://frozen.test/p118"}
+{"decision": "low_score_links", "nlp_score": 0.138491, "node_id": 78, "score": null, "seq": 150, "url": "https://frozen.test/p127"}
+{"decision": "priority_calculated", "nlp_score": 0.347808, "node_id": 78, "priority": 0.092644, "score": 7, "seq": 151, "url": "https://frozen.test/p17"}
+{"decision": "priority_calculated", "nlp_score": 0.29184, "node_id": 78, "priority": 0.10396, "score": 12, "seq": 151, "url": "https://frozen.test/p142"}
+{"decision": "priority_calculated", "nlp_score": 0.284623, "node_id": 1, "priority": 0.5253, "score": 97, "seq": 155, "url": "https://frozen.test/p68"}
+{"decision": "priority_calculated", "nlp_score": 0.211171, "node_id": 2, "priority": 0.367624, "score": 47, "seq": 160, "url": "https://frozen.test/p22"}
+{"decision": "low_score_links", "nlp_score": 0.110967, "node_id": 14, "score": null, "seq": 164, "url": "https://frozen.test/p106"}
+{"decision": "low_score_links", "nlp_score": 0.116562, "node_id": 66, "score": null, "seq": 169, "url": "https://frozen.test/p88"}
+{"decision": "priority_calculated", "nlp_score": 0.281762, "node_id": 66, "priority": 0.500668, "score": 91, "seq": 170, "url": "https://frozen.test/p108"}
+{"decision": "priority_calculated", "nlp_score": 0.233607, "node_id": 83, "priority": 0.305227, "score": 55, "seq": 174, "url": "https://frozen.test/p69"}
+{"decision": "priority_calculated", "nlp_score": 0.229735, "node_id": 83, "priority": 0.490733, "score": 90, "seq": 174, "url": "https://frozen.test/p11"}
+{"decision": "priority_calculated", "nlp_score": 0.305986, "node_id": 83, "priority": 0.207808, "score": 29, "seq": 174, "url": "https://frozen.test/p131"}
+{"decision": "priority_calculated", "nlp_score": 0.26131, "node_id": 63, "priority": 0.453907, "score": 82, "seq": 180, "url": "https://frozen.test/p66"}
+{"decision": "priority_calculated", "nlp_score": 0.27397, "node_id": 87, "priority": 0.195098, "score": 21, "seq": 184, "url": "https://frozen.test/p37"}
+{"decision": "priority_calculated", "nlp_score": 0.284623, "node_id": 87, "priority": 0.1413, "score": 16, "seq": 184, "url": "https://frozen.test/p78"}
