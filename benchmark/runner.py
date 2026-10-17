@@ -9,6 +9,7 @@ import asyncio
 import logging
 import random
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -386,9 +387,14 @@ def _thresholds(kwargs: dict, percentiles) -> dict:
 
 
 async def run_policy(
-    graph: FrozenGraph, policy: str, budget: int, seed: int = 0, lockstep: bool = True
+    graph: FrozenGraph, policy: str, budget: int, seed: int = 0, lockstep: bool = True,
+    extra_components: Sequence[object] = (),
 ) -> RunResult:
-    """Fetch up to `budget` pages (the seed counts) starting from graph.seed."""
+    """Fetch up to `budget` pages (the seed counts) starting from graph.seed.
+
+    ``extra_components`` are subscribed like pipelines, after the run's own
+    (see ``_run``); observers such as the behaviour pins use it.
+    """
     scoring_args = (
         _NoLlm(), POLICIES[policy](graph, seed),
         # Admit every link: a ranking baseline must not inherit the cascade's
@@ -403,7 +409,10 @@ async def run_policy(
         "percentile_bucketing": False,
         "max_llm_links": None,
     }
-    return await _run(graph, policy, budget, seed, scoring_args, scoring_kwargs, _passthrough, [], lockstep=lockstep)
+    return await _run(
+        graph, policy, budget, seed, scoring_args, scoring_kwargs, _passthrough,
+        list(extra_components), lockstep=lockstep,
+    )
 
 
 async def _run(
@@ -411,6 +420,9 @@ async def _run(
     extraction=EXTRACTION, retry_base_delay=0.01, idle_limit=0.5, lockstep=True,
     rate_limited=None, budget_gate=None, percentiles=(NLP_LOW_PERCENTILE, NLP_HIGH_PERCENTILE),
 ) -> RunResult:
+    """One lockstep run. Each component in ``extra`` has ``handlers`` (event
+    type to coroutine), ``start`` and ``put``, and is subscribed to the events
+    its ``handlers`` name, after the run's own pipelines."""
     fetcher = graph.fetcher()
     if budget_gate is not None:
         budget_gate.fetched = lambda: len(fetcher.fetched)
@@ -541,6 +553,7 @@ async def run_cascade(
     high: float | None = None,
     low_pct: float | None = None,
     high_pct: float | None = None,
+    extra_components: Sequence[object] = (),
 ) -> RunResult:
     """The real cascade (embedding model, topic expansion, LLM scoring,
     bucketing, priority strategy) on a frozen graph. `llm` is anything with
@@ -566,6 +579,9 @@ async def run_cascade(
     ``low`` / ``high`` replace the absolute bucketing thresholds. The
     percentile bucketing the cascade normally uses would make them inert for
     nodes with enough links, so giving either switches it off.
+
+    ``extra_components`` are subscribed like pipelines, after the run's own
+    (see ``_run``); observers such as the behaviour pins use it.
     """
     from config.runtime_config import default_runtime_config
     from nlp import BufferManager, SpaceUpdater
@@ -638,7 +654,7 @@ async def run_cascade(
         llm_service = _NoLlm()
     return await _run(
         graph, arm, budget, seed, (llm_service, nlp), kwargs,
-        get_strategy(c.default_priority_strategy), [], extraction,
+        get_strategy(c.default_priority_strategy), list(extra_components), extraction,
         retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
         rate_limited=lambda: bool(getattr(llm, "waiting", False)),
         budget_gate=gate, percentiles=percentiles,
