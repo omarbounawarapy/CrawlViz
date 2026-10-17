@@ -5,10 +5,12 @@ import numpy as np
 import pytest
 from golden_files import (
     FLOAT_DECIMALS,
+    GOLDEN_DIR,
     MAX_DIFF_LINES,
     VOLATILE_KEYS,
     VOLATILE_PLACEHOLDER,
     check_golden,
+    describe_rewritten,
     normalise,
     render_lines,
 )
@@ -94,3 +96,10 @@ def test_a_long_diff_is_cut_with_a_count_of_what_was_left_out(tmp_path: Path) ->
     assert "more diff lines" in str(failure.value)
     assert len(str(failure.value).splitlines()) <= MAX_DIFF_LINES + 3
 
+
+
+def test_rewritten_files_are_listed_once_each_relative_to_the_golden_folder() -> None:
+    isi = GOLDEN_DIR / "isi"
+    paths = [isi / "b.jsonl", isi / "a.jsonl", isi / "b.jsonl"]
+
+    assert describe_rewritten(paths) == ["isi/a.jsonl", "isi/b.jsonl"]
