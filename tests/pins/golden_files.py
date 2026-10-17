@@ -103,7 +103,6 @@ def check_golden(path: Path, records: Iterable[object], update: bool) -> bool:
     )
 
 
-
 def describe_rewritten(paths: Iterable[Path]) -> list[str]:
     """Terminal-summary lines naming the golden files a run rewrote, relative to the golden folder."""
     return [str(path.relative_to(GOLDEN_DIR)) for path in sorted(set(paths))]
