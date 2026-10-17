@@ -5,12 +5,14 @@ from typing import Any
 import pytest
 from golden_files import render_lines
 from pin_crawl import run_pin_crawl
+from synthetic_site import build_site
 
 from benchmark.graph import FrozenGraph
 
 TOPIC = "diabetes insulin"
 BRANCHES = 3
 PAGE_BUDGET = 5
+PASSIVITY_BUDGET = 10
 
 
 def tree_graph() -> FrozenGraph:
@@ -52,3 +54,18 @@ async def test_two_pin_crawls_give_byte_identical_golden_lines(
 
     for kind in ("fetch_order", "link_scores", "llm_requests", "wire_messages"):
         assert render_lines(getattr(first, kind)) == render_lines(getattr(second, kind)), kind
+
+
+async def test_the_observer_does_not_change_what_the_crawl_does(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    site = build_site()
+
+    observed = await run_pin_crawl(site, PASSIVITY_BUDGET, tmp_path / "observed", monkeypatch)
+    bare = await run_pin_crawl(
+        site, PASSIVITY_BUDGET, tmp_path / "bare", monkeypatch, observed=False
+    )
+
+    assert observed.wire_messages and not bare.wire_messages  # the bare run really had no observer
+    assert observed.fetch_order == bare.fetch_order
+    assert observed.llm_requests == bare.llm_requests

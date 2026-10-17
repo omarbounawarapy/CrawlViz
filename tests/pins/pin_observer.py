@@ -1,7 +1,9 @@
 """The runner component that hears a pin crawl's events.
 
 It records two things: the cascade's per-link decisions, and the UI messages
-the ``TelemetryBridge`` would broadcast for the same events.
+the ``TelemetryBridge`` would broadcast for the same events. It only listens:
+it never emits events or holds one up, so a crawl visits the same pages with it
+as without it (``test_pin_crawl.py`` checks this).
 
 Recording closes when the last page of the budget is requested. In lockstep
 everything before that is ordered by the event bus; what follows (the last

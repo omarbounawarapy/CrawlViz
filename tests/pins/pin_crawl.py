@@ -58,13 +58,19 @@ def _offline_config(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 async def run_pin_crawl(
-    graph: FrozenGraph, budget: int, work_dir: Path, monkeypatch: pytest.MonkeyPatch
+    graph: FrozenGraph,
+    budget: int,
+    work_dir: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    observed: bool = True,
 ) -> PinRun:
     """Fetch ``budget`` pages of ``graph`` and return what the pins compare.
 
     ``work_dir`` receives the LLM cache and the semantic-space store; give each
     crawl its own empty folder. The config patch lives only for this call, so one
-    test can run several crawls.
+    test can run several crawls. With ``observed=False`` the observer is not
+    attached, so ``link_scores`` and ``wire_messages`` come back empty; the
+    passivity test compares that run with an observed one.
     """
     observer = PinObserver(budget)
     llm = RecordingLlm(CachedLlm(ScriptedLlm(), work_dir / "llm_cache.jsonl", scope=PIN_SCOPE))
@@ -76,7 +82,7 @@ async def run_pin_crawl(
         result = await runner.run_cascade(
             graph, budget, PIN_RANDOM_SEED, llm, blueprint["extraction"], expansion,
             blueprint["scoring"]["strategy"], (PIN_PROVIDER, PIN_MODEL), work_dir / "space_store",
-            extra_components=[observer],
+            extra_components=[observer] if observed else [],
         )
 
     assert result.health.valid, result.health.problems
