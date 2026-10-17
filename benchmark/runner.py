@@ -136,8 +136,19 @@ class _ParkingScoring(ScoringPipeline):
     be fetched. Waiting for a fetch is not work in progress, so the lockstep
     gate must tell it apart from scoring."""
 
-    parked = False
     gate = None  # lockstep: callable, true when nothing else is in flight
+    _waiting_for = None  # the node whose fetch the worker waits for
+
+    @property
+    def parked(self) -> bool:
+        """True while the worker waits for a page that is not fetched yet.
+
+        It turns False when the node becomes ready, not when the worker
+        resumes. In between, the crawler looked quiet, so the next page was
+        taken from the frontier before this page's links were scored.
+        """
+        node = self._waiting_for
+        return node is not None and not node.ready.done()
 
     async def _worker_loop(self, worker_id: int) -> None:
         # The base loop, except that the worker picks its next node only once
@@ -164,11 +175,11 @@ class _ParkingScoring(ScoringPipeline):
     async def _await_ready(self, node):
         if node.ready.done():
             return await super()._await_ready(node)
-        self.parked = True
+        self._waiting_for = node
         try:
             return await super()._await_ready(node)
         finally:
-            self.parked = False
+            self._waiting_for = None
 
 
 class _Lockstep:
@@ -422,7 +433,8 @@ async def _run(
 ) -> RunResult:
     """One lockstep run. Each component in ``extra`` has ``handlers`` (event
     type to coroutine), ``start`` and ``put``, and is subscribed to the events
-    its ``handlers`` name, after the run's own pipelines."""
+    its ``handlers`` name, after the run's own pipelines. An extra component
+    is an observer: it does not change the pages the run visits."""
     fetcher = graph.fetcher()
     if budget_gate is not None:
         budget_gate.fetched = lambda: len(fetcher.fetched)
