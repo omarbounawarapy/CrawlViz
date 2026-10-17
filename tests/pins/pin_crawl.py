@@ -36,10 +36,6 @@ PIN_PROVIDER = "pin-provider"
 PIN_MODEL = "pin-model"
 BLUEPRINT_PATH = REPO_ROOT / "templates" / "isi.json"
 
-# Position of the `extra` components in run_cascade's call to the private runner
-# `_run`; the observer is slipped in there (see `_observe_runner`).
-RUN_EXTRA_ARGUMENT = 7
-
 
 @dataclass
 class PinRun:
@@ -61,31 +57,14 @@ def _offline_config(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(runtime_config, "default_runtime_config", hashing_config)
 
 
-def _observe_runner(monkeypatch: pytest.MonkeyPatch, observer: PinObserver) -> None:
-    """Make run_cascade hand ``observer`` to the runner as an extra component.
-
-    run_cascade does not expose the runner's ``extra`` list, so the runner's
-    private ``_run`` is wrapped once for the duration of the test.
-    """
-    real_run = runner._run
-
-    async def run_with_observer(*args: Any, **kwargs: Any) -> Any:
-        wired = list(args)
-        assert wired[RUN_EXTRA_ARGUMENT] == [], "run_cascade no longer passes `extra` here"
-        wired[RUN_EXTRA_ARGUMENT] = [observer]
-        return await real_run(*wired, **kwargs)
-
-    monkeypatch.setattr(runner, "_run", run_with_observer)
-
-
 async def run_pin_crawl(
     graph: FrozenGraph, budget: int, work_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> PinRun:
     """Fetch ``budget`` pages of ``graph`` and return what the pins compare.
 
     ``work_dir`` receives the LLM cache and the semantic-space store; give each
-    crawl its own empty folder. The patches live only for this call, so one test
-    can run several crawls.
+    crawl its own empty folder. The config patch lives only for this call, so one
+    test can run several crawls.
     """
     observer = PinObserver(budget)
     llm = RecordingLlm(CachedLlm(ScriptedLlm(), work_dir / "llm_cache.jsonl", scope=PIN_SCOPE))
@@ -94,10 +73,10 @@ async def run_pin_crawl(
 
     with monkeypatch.context() as patch:
         _offline_config(patch)
-        _observe_runner(patch, observer)
         result = await runner.run_cascade(
             graph, budget, PIN_RANDOM_SEED, llm, blueprint["extraction"], expansion,
             blueprint["scoring"]["strategy"], (PIN_PROVIDER, PIN_MODEL), work_dir / "space_store",
+            extra_components=[observer],
         )
 
     assert result.health.valid, result.health.problems
