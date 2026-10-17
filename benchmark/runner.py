@@ -403,8 +403,9 @@ async def run_policy(
 ) -> RunResult:
     """Fetch up to `budget` pages (the seed counts) starting from graph.seed.
 
-    ``extra_components`` are subscribed like pipelines, after the run's own
-    (see ``_run``); observers such as the behaviour pins use it.
+    ``extra_components`` are subscribed like pipelines, after the stage pipelines
+    and before the health monitor (see ``_run``); observers such as the behaviour
+    pins use it.
     """
     scoring_args = (
         _NoLlm(), POLICIES[policy](graph, seed),
@@ -433,7 +434,7 @@ async def _run(
 ) -> RunResult:
     """One lockstep run. Each component in ``extra`` has ``handlers`` (event
     type to coroutine), ``start`` and ``put``, and is subscribed to the events
-    its ``handlers`` name, after the run's own pipelines. An extra component
+    its ``handlers`` name, after the stage pipelines and before the health monitor. An extra component
     is an observer: it does not change the pages the run visits."""
     fetcher = graph.fetcher()
     if budget_gate is not None:
@@ -592,8 +593,9 @@ async def run_cascade(
     percentile bucketing the cascade normally uses would make them inert for
     nodes with enough links, so giving either switches it off.
 
-    ``extra_components`` are subscribed like pipelines, after the run's own
-    (see ``_run``); observers such as the behaviour pins use it.
+    ``extra_components`` are subscribed like pipelines, after the stage pipelines
+    and before the health monitor (see ``_run``); observers such as the behaviour
+    pins use it.
     """
     from config.runtime_config import default_runtime_config
     from nlp import BufferManager, SpaceUpdater
