@@ -2,14 +2,29 @@
 
 It records two things: the cascade's per-link decisions, and the UI messages
 the ``TelemetryBridge`` would broadcast for the same events.
+
+Recording closes when the last page of the budget is requested. In lockstep
+everything before that is ordered by the event bus; what follows (the last
+page's own events, its scoring, the stop) races with the runner stopping the
+crawl, so it is left out. Only the stop message is kept, reduced to the fields
+that do not depend on that race.
 """
 from collections.abc import Callable, Coroutine
 from typing import Any
 
 from pin_doubles import RecordingGateway
 
-from events import HighScoreLinksEvent, LowScoreLinksEvent, PriorityCalculatedEvent
+from events import (
+    HighScoreLinksEvent,
+    LowScoreLinksEvent,
+    PriorityCalculatedEvent,
+    RequestStartedEvent,
+    StopCrawlEvent,
+)
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge
+
+# What the CRAWL_STOPPED message keeps: its counts depend on when the stop landed.
+STOP_MESSAGE_KEYS = ("type", "reason")
 
 DecisionEvent = HighScoreLinksEvent | LowScoreLinksEvent | PriorityCalculatedEvent
 
@@ -17,7 +32,10 @@ DecisionEvent = HighScoreLinksEvent | LowScoreLinksEvent | PriorityCalculatedEve
 class PinObserver:
     """Subscribed like a pipeline: ``handlers`` names the events it receives."""
 
-    def __init__(self) -> None:
+    def __init__(self, budget: int) -> None:
+        self.budget = budget
+        self.requests_started = 0
+        self.closed = False
         self.gateway = RecordingGateway()
         self.bridge = TelemetryBridge(CrawlStateSnapshot(), self.gateway)
         self.bridge.register_handlers()
@@ -31,6 +49,11 @@ class PinObserver:
         pass
 
     async def put(self, event: object) -> None:
+        if isinstance(event, RequestStartedEvent):
+            self.requests_started += 1
+            self.closed = self.closed or self.requests_started >= self.budget
+        if self.closed and not isinstance(event, StopCrawlEvent):
+            return
         if isinstance(event, (HighScoreLinksEvent, LowScoreLinksEvent, PriorityCalculatedEvent)):
             self._record_decision(event)
         await self.bridge.put(event)
@@ -47,7 +70,11 @@ class PinObserver:
             }))
 
     def wire_messages(self) -> list[dict[str, Any]]:
-        return self.gateway.messages
+        return [
+            {key: message[key] for key in STOP_MESSAGE_KEYS}
+            if message["type"] == "CRAWL_STOPPED" else message
+            for message in self.gateway.messages
+        ]
 
     def link_scores(self) -> list[dict[str, Any]]:
         """Decisions in the order the broker emitted them (``seq``), not the order
