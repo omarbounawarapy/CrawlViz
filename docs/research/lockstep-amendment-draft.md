@@ -23,7 +23,7 @@ order: the cascade on `isi.json` diverged at fetch 9.
 The gate now counts the worker as parked only while the node it waits for is
 not ready (`_ParkingScoring.parked` in `benchmark/runner.py`). The next page
 is chosen only after the previous page's links are scored and admitted, and
-an added observer no longer changes the run (tests in `tests/test_benchmark.py`).
+an added observer no longer changes the run (tests in `tests/test_benchmark_lockstep.py`).
 The page sequence of best-first arms changes. `bfs` on `isi.json` at budget
 50 does not. No prompt, cache key, model, threshold, metric or statistic
 changes.
