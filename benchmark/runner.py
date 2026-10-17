@@ -10,12 +10,13 @@ import logging
 import random
 import time
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 from config import (
     MAX_LLM_LINKS_PER_NODE,
     NLP_HIGH_PERCENTILE,
-    NLP_PERCENTILE_BUCKETING,
     NLP_LOW_PERCENTILE,
+    NLP_PERCENTILE_BUCKETING,
     PERCENTILE_MIN_LINKS,
 )
 from core.event_broker import EventBroker
@@ -26,9 +27,9 @@ from events import (
     HighScoreLinksEvent,
     LinksScoredEvent,
     NodeAddedEvent,
-    PriorityCalculationFailedEvent,
     PageFetchedEvent,
     PriorityCalculatedEvent,
+    PriorityCalculationFailedEvent,
     RequestFailedEvent,
     ScoreRescheduledEvent,
     ScoringCompletedEvent,
@@ -48,7 +49,6 @@ from pipelines import (
     StoragePipeline,
     TransformationPipeline,
 )
-
 from pipelines.base_pipeline import SHUTDOWN
 from pipelines.frontier_queue import FrontierQueue
 
@@ -257,7 +257,7 @@ class HealthMonitor:
         measurement; reported next to it.
     """
 
-    EVENTS = [
+    EVENTS: ClassVar[list[type]] = [
         ScoringFailedEvent,
         EmptyScoreResultsEvent,
         ScoringCompletedEvent,
@@ -394,15 +394,15 @@ async def run_policy(
         # Admit every link: a ranking baseline must not inherit the cascade's
         # bucketing, which drops low-NLP links before they reach the frontier.
     )
-    scoring_kwargs = dict(
-        low_threshold=-1.0,
-        high_threshold=2.0,
-        high_score_llm_fraction=0.0,
-        low_score_sample_fraction=0.0,
-        high_score_random_fraction=0.0,
-        percentile_bucketing=False,
-        max_llm_links=None,
-    )
+    scoring_kwargs = {
+        "low_threshold": -1.0,
+        "high_threshold": 2.0,
+        "high_score_llm_fraction": 0.0,
+        "low_score_sample_fraction": 0.0,
+        "high_score_random_fraction": 0.0,
+        "percentile_bucketing": False,
+        "max_llm_links": None,
+    }
     return await _run(graph, policy, budget, seed, scoring_args, scoring_kwargs, _passthrough, [], lockstep=lockstep)
 
 
@@ -612,15 +612,15 @@ async def run_cascade(
     )
     if not 0 <= percentiles[0] < percentiles[1] <= 100:
         raise ValueError(f"low_pct ({percentiles[0]}) must be below high_pct ({percentiles[1]}), within 0..100")
-    kwargs = dict(
-        low_threshold=c.low_threshold if low is None else low,
-        high_threshold=c.high_threshold if high is None else high,
-        high_score_llm_fraction=c.high_score_llm_fraction,
-        low_score_sample_fraction=c.low_score_sample_fraction,
-        high_score_random_fraction=c.high_score_random_fraction,
-        percentile_bucketing=NLP_PERCENTILE_BUCKETING and low is None and high is None,
-        max_llm_links=MAX_LLM_LINKS_PER_NODE,
-    )
+    kwargs = {
+        "low_threshold": c.low_threshold if low is None else low,
+        "high_threshold": c.high_threshold if high is None else high,
+        "high_score_llm_fraction": c.high_score_llm_fraction,
+        "low_score_sample_fraction": c.low_score_sample_fraction,
+        "high_score_random_fraction": c.high_score_random_fraction,
+        "percentile_bucketing": NLP_PERCENTILE_BUCKETING and low is None and high is None,
+        "max_llm_links": MAX_LLM_LINKS_PER_NODE,
+    }
     if kwargs["low_threshold"] >= kwargs["high_threshold"]:
         raise ValueError(f"low ({kwargs['low_threshold']}) must be below high ({kwargs['high_threshold']})")
     if arm == "llm_all":
