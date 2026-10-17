@@ -12,7 +12,7 @@ from synthetic_site import (
     build_site,
 )
 
-from benchmark.runner import PERCENTILE_MIN_LINKS
+from config import PERCENTILE_MIN_LINKS
 
 
 def test_the_site_has_the_documented_size_and_shape() -> None:

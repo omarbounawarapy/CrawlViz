@@ -45,7 +45,7 @@ class PinRun:
     wire_messages: list[dict[str, Any]]
 
 
-def _offline_config(monkeypatch: pytest.MonkeyPatch) -> None:
+def use_hashing_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
     """The default runtime config, with the hashing embedding engine."""
     real = runtime_config.default_runtime_config
 
@@ -78,7 +78,7 @@ async def run_pin_crawl(
     expansion = {**blueprint["expansion"], "llm_type": PIN_PROVIDER, "llm_model": PIN_MODEL}
 
     with monkeypatch.context() as patch:
-        _offline_config(patch)
+        use_hashing_embeddings(patch)
         result = await runner.run_cascade(
             graph, budget, PIN_RANDOM_SEED, llm, blueprint["extraction"], expansion,
             blueprint["scoring"]["strategy"], (PIN_PROVIDER, PIN_MODEL), work_dir / "space_store",

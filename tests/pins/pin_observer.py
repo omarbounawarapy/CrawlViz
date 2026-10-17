@@ -56,7 +56,7 @@ class PinObserver:
             self.closed = self.closed or self.requests_started >= self.budget
         if self.closed and not isinstance(event, StopCrawlEvent):
             return
-        if isinstance(event, (HighScoreLinksEvent, LowScoreLinksEvent, PriorityCalculatedEvent)):
+        if isinstance(event, DecisionEvent):
             self._record_decision(event)
         await self.bridge.put(event)
 

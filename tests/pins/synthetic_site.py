@@ -68,6 +68,7 @@ def build_site(seed: str = SITE_SEED, page_count: int = PAGE_COUNT) -> FrozenGra
             if target != name and target not in targets[name]:
                 targets[name].append(target)
 
+    # Any: pages are the JSON a FrozenGraph loads.
     pages: dict[str, dict[str, Any]] = {}
     for name in names:
         is_topical = name in topical
