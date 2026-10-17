@@ -17,9 +17,12 @@ from pin_paths import PINS_DIR
 
 GOLDEN_DIR = PINS_DIR / "golden"
 
-# Keys whose value depends on the clock. The key stays in the record so a pin
-# still notices when a message loses or gains one.
-VOLATILE_KEYS = frozenset({"ts", "duration", "duration_ms"})
+# Keys whose value depends on the clock, or on which worker task won a race
+# (`worker_id`). The key stays in the record so a pin still notices when a
+# message loses or gains one.
+VOLATILE_KEYS = frozenset(
+    {"ts", "created_at", "start_time", "elapsed_seconds", "duration", "duration_ms", "worker_id"}
+)
 VOLATILE_PLACEHOLDER = "<volatile>"
 
 # Decimal places kept for floats: far below any score difference that matters,

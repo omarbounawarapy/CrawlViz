@@ -32,6 +32,12 @@ def test_every_key_in_the_volatile_set_is_replaced() -> None:
     assert normalise(record) == {key: VOLATILE_PLACEHOLDER for key in VOLATILE_KEYS}
 
 
+def test_the_ui_bridge_fields_that_vary_between_runs_are_volatile() -> None:
+    # Found by comparing two runs of the same crawl: clock fields in NODE_ADDED
+    # and CRAWL_STOPPED, and the worker that picked a node up in PIPELINE_EVENT.
+    assert {"ts", "created_at", "start_time", "elapsed_seconds", "worker_id"} <= VOLATILE_KEYS
+
+
 def test_floats_are_rounded_so_noise_does_not_reach_the_file() -> None:
     assert normalise(0.1 + 0.2) == round(0.3, FLOAT_DECIMALS)
     assert normalise({"a": 1.23456789}) == {"a": 1.234568}
