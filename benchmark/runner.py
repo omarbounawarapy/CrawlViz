@@ -434,8 +434,9 @@ async def _run(
 ) -> RunResult:
     """One lockstep run. Each component in ``extra`` has ``handlers`` (event
     type to coroutine), ``start`` and ``put``, and is subscribed to the events
-    its ``handlers`` name, after the stage pipelines and before the health monitor. An extra component
-    is an observer: it does not change the pages the run visits."""
+    its ``handlers`` name, after the stage pipelines and before the health
+    monitor. An extra component is an observer: it does not change the pages the
+    run visits."""
     fetcher = graph.fetcher()
     if budget_gate is not None:
         budget_gate.fetched = lambda: len(fetcher.fetched)
