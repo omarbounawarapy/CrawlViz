@@ -173,3 +173,5 @@ committers = [
 dependency_managers = ["platform-engineer"]
 # Agents that may use network tools (curl, wget). Live LLM runs still need Omar's go-ahead.
 network = ["lead", "research-scientist", "platform-engineer"]
+# Agents that may rewrite behaviour-pin goldens (pytest --update-pins). Sign-off still needed (TEST-2).
+pin_updaters = ["test-engineer"]

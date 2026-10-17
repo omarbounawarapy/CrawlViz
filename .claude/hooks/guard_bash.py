@@ -6,7 +6,8 @@ Rules come from the [bash] table in .claude/ownership.toml:
   - only committers commit, and every commit title passes commit_msg_check;
   - nobody reads keys.json or .env files;
   - read-only agents do not change files from the shell;
-  - only dependency managers add packages, only network agents call the network.
+  - only dependency managers add packages, only network agents call the network;
+  - only pin updaters run pytest with --update-pins.
 """
 
 from __future__ import annotations
@@ -39,6 +40,7 @@ NETWORK_TOOLS = re.compile(r"(^|[\s;|&(])(curl|wget|nc|ncat|ssh|scp|rsync|http|h
 DEPENDENCY_CHANGES = re.compile(
     r"\buv\s+(add|remove)\b|\bpip\s+install\b|\bnpm\s+(install|i|add|uninstall)\s+[^-\s]"
     r"|\bnpm\s+(update|upgrade)\b|\bnpx\s+npm-check-updates\b")
+UPDATE_PINS = re.compile(r"--update-pins\b")
 DESTRUCTIVE_RM = re.compile(r"\brm\s+(-[a-zA-Z]*[rf][a-zA-Z]*\s+)+(?P<targets>.+)")
 DANGEROUS_RM_TARGETS = {"/", "~", "..", ".", "*", ".git", "./", "../", "~/", "$HOME"}
 WRITE_COMMANDS = re.compile(
@@ -124,6 +126,9 @@ def main() -> None:
 
     if DEPENDENCY_CHANGES.search(command) and agent not in rules["dependency_managers"]:
         block("Dependency changes go through platform-engineer: raise a CHANGE-REQUEST.")
+
+    if UPDATE_PINS.search(command) and agent not in rules["pin_updaters"]:
+        block("Pin goldens change only through test-engineer, with research-scientist sign-off.")
 
     if NETWORK_TOOLS.search(command) and agent not in rules["network"]:
         block(f"{agent} has no network access. Use the offline doubles, or ask the lead.")

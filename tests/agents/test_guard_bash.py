@@ -23,6 +23,7 @@ from tests.agents.hook_runner import BLOCKED, bash
     "uv add requests",
     "npm install left-pad",
     "curl https://example.org",
+    "uv run pytest tests/pins --update-pins",
 ])
 def test_forbidden_shell_commands_are_blocked(command: str) -> None:
     assert bash("backend-engineer", command).returncode == BLOCKED
@@ -63,4 +64,10 @@ def test_bad_commit_titles_are_blocked(title: str) -> None:
 
 def test_commit_body_is_blocked() -> None:
     command = "git commit -m 'Fetch: rate limit holds per host' -m 'details'"
+    assert bash("backend-engineer", command).returncode == BLOCKED
+
+
+def test_only_test_engineer_updates_pins() -> None:
+    command = "uv run pytest -m pins --update-pins"
+    assert bash("test-engineer", command).returncode == 0
     assert bash("backend-engineer", command).returncode == BLOCKED
