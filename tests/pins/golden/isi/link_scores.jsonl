@@ -1,0 +1,607 @@
+{"decision": "high_score_links", "nlp_score": 0.186636, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Autorit%C3%A9_(sciences_de_l'information)"}
+{"decision": "high_score_links", "nlp_score": 0.162561, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Universit%C3%A9_virtuelle_de_Tunis"}
+{"decision": "high_score_links", "nlp_score": 0.159202, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Organisation_des_Nations_unies_pour_l'%C3%A9ducation,_la_science_et_la_culture"}
+{"decision": "high_score_links", "nlp_score": 0.155766, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Universit%C3%A9_Zitouna"}
+{"decision": "high_score_links", "nlp_score": 0.136389, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Kasserine"}
+{"decision": "high_score_links", "nlp_score": 0.10693, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Gab%C3%A8s"}
+{"decision": "high_score_links", "nlp_score": 0.105797, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Rad%C3%A8s"}
+{"decision": "high_score_links", "nlp_score": 0.101871, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Chaire_universitaire"}
+{"decision": "high_score_links", "nlp_score": 0.094521, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/2000"}
+{"decision": "high_score_links", "nlp_score": 0.092847, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Universit%C3%A9_de_Carthage"}
+{"decision": "high_score_links", "nlp_score": 0.092847, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Universit%C3%A9_de_Monastir"}
+{"decision": "high_score_links", "nlp_score": 0.092847, "node_id": 0, "score": null, "seq": 2, "url": "https://frozen.test/Universit%C3%A9_de_Sousse"}
+{"decision": "priority_calculated", "nlp_score": 0.186636, "node_id": 0, "priority": 0.245404, "score": 0, "seq": 4, "url": "https://frozen.test/Autorit%C3%A9_(sciences_de_l'information)"}
+{"decision": "priority_calculated", "nlp_score": 0.162561, "node_id": 0, "priority": 0.238407, "score": 0, "seq": 4, "url": "https://frozen.test/Universit%C3%A9_virtuelle_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.159202, "node_id": 0, "priority": 0.242117, "score": 0, "seq": 4, "url": "https://frozen.test/Organisation_des_Nations_unies_pour_l'%C3%A9ducation,_la_science_et_la_culture"}
+{"decision": "priority_calculated", "nlp_score": 0.155766, "node_id": 0, "priority": 0.224816, "score": 0, "seq": 4, "url": "https://frozen.test/Universit%C3%A9_Zitouna"}
+{"decision": "priority_calculated", "nlp_score": 0.136389, "node_id": 0, "priority": 0.22619, "score": 0, "seq": 4, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Kasserine"}
+{"decision": "priority_calculated", "nlp_score": 0.10693, "node_id": 0, "priority": 0.221894, "score": 0, "seq": 4, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Gab%C3%A8s"}
+{"decision": "priority_calculated", "nlp_score": 0.105797, "node_id": 0, "priority": 0.219629, "score": 0, "seq": 4, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Rad%C3%A8s"}
+{"decision": "priority_calculated", "nlp_score": 0.101871, "node_id": 0, "priority": 0.221156, "score": 0, "seq": 4, "url": "https://frozen.test/Chaire_universitaire"}
+{"decision": "priority_calculated", "nlp_score": 0.094521, "node_id": 0, "priority": 0.232684, "score": 0, "seq": 4, "url": "https://frozen.test/2000"}
+{"decision": "priority_calculated", "nlp_score": 0.092847, "node_id": 0, "priority": 0.21774, "score": 0, "seq": 4, "url": "https://frozen.test/Universit%C3%A9_de_Carthage"}
+{"decision": "priority_calculated", "nlp_score": 0.092847, "node_id": 0, "priority": 0.21774, "score": 0, "seq": 4, "url": "https://frozen.test/Universit%C3%A9_de_Monastir"}
+{"decision": "priority_calculated", "nlp_score": 0.092847, "node_id": 0, "priority": 0.21774, "score": 0, "seq": 4, "url": "https://frozen.test/Universit%C3%A9_de_Sousse"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.231688, "score": 22, "seq": 5, "url": "https://frozen.test/Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.143456, "score": 3, "seq": 5, "url": "https://frozen.test/1987"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.447099, "score": 74, "seq": 5, "url": "https://frozen.test/Universit%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.06031, "node_id": 0, "priority": 0.412374, "score": 64, "seq": 5, "url": "https://frozen.test/Agence_universitaire_de_la_Francophonie"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.160203, "score": 4, "seq": 5, "url": "https://frozen.test/Conseil_international_des_sciences"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.249032, "score": 29, "seq": 5, "url": "https://frozen.test/Tunisie"}
+{"decision": "priority_calculated", "nlp_score": 0.087725, "node_id": 0, "priority": 0.219456, "score": 22, "seq": 5, "url": "https://frozen.test/Arabe"}
+{"decision": "priority_calculated", "nlp_score": 0.08261, "node_id": 0, "priority": 0.499008, "score": 92, "seq": 5, "url": "https://frozen.test/Facult%C3%A9_(%C3%A9ducation)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.484708, "score": 82, "seq": 5, "url": "https://frozen.test/Facult%C3%A9_de_droit_et_des_sciences_politiques_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.086593, "node_id": 0, "priority": 0.298097, "score": 42, "seq": 5, "url": "https://frozen.test/1960"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.519637, "score": 91, "seq": 5, "url": "https://frozen.test/Facult%C3%A9_des_sciences_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.296097, "score": 36, "seq": 5, "url": "https://frozen.test/Facult%C3%A9_de_m%C3%A9decine_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.073535, "node_id": 0, "priority": 0.348954, "score": 55, "seq": 5, "url": "https://frozen.test/1964"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.347699, "score": 50, "seq": 5, "url": "https://frozen.test/%C3%89cole_nationale_d'ing%C3%A9nieurs_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.088858, "node_id": 0, "priority": 0.164815, "score": 8, "seq": 5, "url": "https://frozen.test/1968"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.219479, "score": 13, "seq": 5, "url": "https://frozen.test/%C3%89cole_sup%C3%A9rieure_des_sciences_et_techniques_de_la_sant%C3%A9_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.086593, "node_id": 0, "priority": 0.450097, "score": 80, "seq": 5, "url": "https://frozen.test/1989"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.200483, "score": 10, "seq": 5, "url": "https://frozen.test/Institut_Pasteur_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.042933, "node_id": 0, "priority": 0.265157, "score": 28, "seq": 5, "url": "https://frozen.test/Institut_pr%C3%A9paratoire_aux_%C3%A9tudes_d'ing%C3%A9nieurs_d'El_Manar"}
+{"decision": "priority_calculated", "nlp_score": 0.035582, "node_id": 0, "priority": 0.522919, "score": 91, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_sciences_infirmi%C3%A8res_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.076876, "node_id": 0, "priority": 0.176963, "score": 11, "seq": 5, "url": "https://frozen.test/%C3%89conomie_(discipline)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.169425, "score": 9, "seq": 5, "url": "https://frozen.test/U.S._News_&_World_Report"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.453302, "score": 77, "seq": 5, "url": "https://frozen.test/Classement_acad%C3%A9mique_des_universit%C3%A9s_mondiales_par_l'universit%C3%A9_Jiao_Tong_de_Shanghai"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.358097, "score": 57, "seq": 5, "url": "https://frozen.test/Maghreb"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.371268, "score": 57, "seq": 5, "url": "https://frozen.test/M%C3%A9decine_clinique"}
+{"decision": "priority_calculated", "nlp_score": 0.087725, "node_id": 0, "priority": 0.147456, "score": 4, "seq": 5, "url": "https://frozen.test/Biotechnologie"}
+{"decision": "priority_calculated", "nlp_score": 0.083887, "node_id": 0, "priority": 0.234929, "score": 18, "seq": 5, "url": "https://frozen.test/Journal_officiel_de_la_R%C3%A9publique_tunisienne"}
+{"decision": "priority_calculated", "nlp_score": 0.086593, "node_id": 0, "priority": 0.330097, "score": 50, "seq": 5, "url": "https://frozen.test/International_Standard_Serial_Number"}
+{"decision": "priority_calculated", "nlp_score": 0.084327, "node_id": 0, "priority": 0.259379, "score": 33, "seq": 5, "url": "https://frozen.test/Kapitalis"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.295847, "score": 40, "seq": 5, "url": "https://frozen.test/Enseignement_sup%C3%A9rieur_en_Tunisie"}
+{"decision": "priority_calculated", "nlp_score": 0.013077, "node_id": 0, "priority": 0.458276, "score": 76, "seq": 5, "url": "https://frozen.test/Liste_des_universit%C3%A9s_en_Tunisie"}
+{"decision": "priority_calculated", "nlp_score": 0.084327, "node_id": 0, "priority": 0.211379, "score": 21, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_Jendouba"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.289649, "score": 40, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_Kairouan"}
+{"decision": "priority_calculated", "nlp_score": 0.081477, "node_id": 0, "priority": 0.257649, "score": 32, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_Sfax"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.463377, "score": 79, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.0758, "node_id": 0, "priority": 0.343672, "score": 53, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques"}
+{"decision": "priority_calculated", "nlp_score": 0.059791, "node_id": 0, "priority": 0.354492, "score": 57, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_B%C3%A9ja"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.346016, "score": 53, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_en_communications_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.253551, "score": 28, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_K%C3%A9libia"}
+{"decision": "priority_calculated", "nlp_score": 0.071663, "node_id": 0, "priority": 0.532071, "score": 99, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Ksar_Hellal"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.175595, "score": 12, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Nabeul"}
+{"decision": "priority_calculated", "nlp_score": 0.073535, "node_id": 0, "priority": 0.264954, "score": 34, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Sousse"}
+{"decision": "priority_calculated", "nlp_score": 0.057288, "node_id": 0, "priority": 0.35678, "score": 53, "seq": 5, "url": "https://frozen.test/Bouebdelli_University"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.522801, "score": 98, "seq": 5, "url": "https://frozen.test/%C3%89cole_pluridisciplinaire_internationale"}
+{"decision": "priority_calculated", "nlp_score": 0.05435, "node_id": 0, "priority": 0.207444, "score": 13, "seq": 5, "url": "https://frozen.test/South_Mediterranean_University"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.218268, "score": 20, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_centrale_(Tunis)"}
+{"decision": "priority_calculated", "nlp_score": 0.01365, "node_id": 0, "priority": 0.495847, "score": 87, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_Ibn_Khaldoun"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.359615, "score": 51, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_internationale_de_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.049011, "node_id": 0, "priority": 0.531276, "score": 94, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_Paris-Dauphine_Tunis"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.447648, "score": 74, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_priv%C3%A9e_de_Sousse"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.49696, "score": 87, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_priv%C3%A9e_Mahmoud_El_Materi"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 0, "priority": 0.443654, "score": 75, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_priv%C3%A9e_Tunis_Carthage"}
+{"decision": "priority_calculated", "nlp_score": 0.138621, "node_id": 0, "priority": 0.351909, "score": 54, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_Gab%C3%A8s"}
+{"decision": "priority_calculated", "nlp_score": 0.264063, "node_id": 0, "priority": 0.493815, "score": 83, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_La_Manouba"}
+{"decision": "priority_calculated", "nlp_score": 0.239071, "node_id": 0, "priority": 0.523598, "score": 90, "seq": 5, "url": "https://frozen.test/Universit%C3%A9_de_Gafsa"}
+{"decision": "priority_calculated", "nlp_score": 0.197647, "node_id": 0, "priority": 0.193964, "score": 9, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_d'informatique_(Tunisie)"}
+{"decision": "priority_calculated", "nlp_score": 0.192446, "node_id": 0, "priority": 0.489347, "score": 84, "seq": 5, "url": "https://frozen.test/Institut_sup%C3%A9rieur_des_%C3%A9tudes_technologiques_de_Gafsa"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 52, "score": null, "seq": 8, "url": "https://frozen.test/Premier_cycle_universitaire"}
+{"decision": "low_score_links", "nlp_score": 0.174983, "node_id": 61, "score": null, "seq": 11, "url": "https://frozen.test/5_octobre"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 61, "score": null, "seq": 11, "url": "https://frozen.test/Fran%C3%A7ais"}
+{"decision": "low_score_links", "nlp_score": 0.071049, "node_id": 61, "score": null, "seq": 11, "url": "https://frozen.test/Math%C3%A9matiques"}
+{"decision": "low_score_links", "nlp_score": 0.091206, "node_id": 61, "score": null, "seq": 11, "url": "https://frozen.test/2018"}
+{"decision": "low_score_links", "nlp_score": 0.094679, "node_id": 32, "score": null, "seq": 15, "url": "https://frozen.test/Biblioth%C3%A8que"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 56, "score": null, "seq": 18, "url": "https://frozen.test/Anglais"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 56, "score": null, "seq": 18, "url": "https://frozen.test/Comptabilit%C3%A9"}
+{"decision": "low_score_links", "nlp_score": 0.099018, "node_id": 23, "score": null, "seq": 21, "url": "https://frozen.test/FST"}
+{"decision": "low_score_links", "nlp_score": 0.113743, "node_id": 23, "score": null, "seq": 21, "url": "https://frozen.test/Rue_de_Rome_(Tunis)"}
+{"decision": "low_score_links", "nlp_score": 0.086776, "node_id": 23, "score": null, "seq": 21, "url": "https://frozen.test/1974"}
+{"decision": "low_score_links", "nlp_score": 0.098178, "node_id": 23, "score": null, "seq": 21, "url": "https://frozen.test/Physique"}
+{"decision": "low_score_links", "nlp_score": 0.187697, "node_id": 23, "score": null, "seq": 21, "url": "https://frozen.test/Ann%C3%A9es_1960"}
+{"decision": "priority_calculated", "nlp_score": 0.21694, "node_id": 23, "priority": 0.249792, "score": 26, "seq": 22, "url": "https://frozen.test/Informatique"}
+{"decision": "high_score_links", "nlp_score": 0.181865, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Facult%C3%A9"}
+{"decision": "high_score_links", "nlp_score": 0.175717, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Recteur_d'universit%C3%A9"}
+{"decision": "high_score_links", "nlp_score": 0.170016, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/N%C3%A9erlandais"}
+{"decision": "high_score_links", "nlp_score": 0.161256, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Loi_Faure"}
+{"decision": "high_score_links", "nlp_score": 0.137848, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Genevi%C3%A8ve_Fioraso"}
+{"decision": "high_score_links", "nlp_score": 0.136861, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Universit%C3%A9_libre_de_Bruxelles"}
+{"decision": "high_score_links", "nlp_score": 0.134375, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Universit%C3%A9_catholique_de_Louvain_(depuis_1968)"}
+{"decision": "high_score_links", "nlp_score": 0.124627, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Universit%C3%A9_de_Li%C3%A8ge"}
+{"decision": "high_score_links", "nlp_score": 0.097243, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Loi_(France)"}
+{"decision": "high_score_links", "nlp_score": 0.090582, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Trivium_(%C3%A9ducation)"}
+{"decision": "high_score_links", "nlp_score": 0.088277, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Quadrivium"}
+{"decision": "high_score_links", "nlp_score": 0.086302, "node_id": 20, "score": null, "seq": 24, "url": "https://frozen.test/Droit"}
+{"decision": "priority_calculated", "nlp_score": 0.181865, "node_id": 20, "priority": 0.200323, "score": 0, "seq": 26, "url": "https://frozen.test/Facult%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.175717, "node_id": 20, "priority": 0.199427, "score": 0, "seq": 26, "url": "https://frozen.test/Recteur_d'universit%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.170016, "node_id": 20, "priority": 0.176625, "score": 0, "seq": 26, "url": "https://frozen.test/N%C3%A9erlandais"}
+{"decision": "priority_calculated", "nlp_score": 0.161256, "node_id": 20, "priority": 0.194658, "score": 0, "seq": 26, "url": "https://frozen.test/Loi_Faure"}
+{"decision": "priority_calculated", "nlp_score": 0.137848, "node_id": 20, "priority": 0.173765, "score": 0, "seq": 26, "url": "https://frozen.test/Genevi%C3%A8ve_Fioraso"}
+{"decision": "priority_calculated", "nlp_score": 0.136861, "node_id": 20, "priority": 0.17179, "score": 0, "seq": 26, "url": "https://frozen.test/Universit%C3%A9_libre_de_Bruxelles"}
+{"decision": "priority_calculated", "nlp_score": 0.134375, "node_id": 20, "priority": 0.175089, "score": 0, "seq": 26, "url": "https://frozen.test/Universit%C3%A9_catholique_de_Louvain_(depuis_1968)"}
+{"decision": "priority_calculated", "nlp_score": 0.124627, "node_id": 20, "priority": 0.173667, "score": 0, "seq": 26, "url": "https://frozen.test/Universit%C3%A9_de_Li%C3%A8ge"}
+{"decision": "priority_calculated", "nlp_score": 0.097243, "node_id": 20, "priority": 0.169674, "score": 0, "seq": 26, "url": "https://frozen.test/Loi_(France)"}
+{"decision": "priority_calculated", "nlp_score": 0.090582, "node_id": 20, "priority": 0.16321, "score": 0, "seq": 26, "url": "https://frozen.test/Trivium_(%C3%A9ducation)"}
+{"decision": "priority_calculated", "nlp_score": 0.088277, "node_id": 20, "priority": 0.170197, "score": 0, "seq": 26, "url": "https://frozen.test/Quadrivium"}
+{"decision": "priority_calculated", "nlp_score": 0.086302, "node_id": 20, "priority": 0.166248, "score": 0, "seq": 26, "url": "https://frozen.test/Droit"}
+{"decision": "priority_calculated", "nlp_score": 0.069499, "node_id": 20, "priority": 0.384245, "score": 64, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_de_Bordeaux"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.338564, "score": 60, "seq": 27, "url": "https://frozen.test/Enseignement"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.464541, "score": 90, "seq": 27, "url": "https://frozen.test/Recherche_scientifique"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.33615, "score": 55, "seq": 27, "url": "https://frozen.test/Discipline_scientifique"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.497408, "score": 98, "seq": 27, "url": "https://frozen.test/D%C3%A9partement_(homonymie)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.211966, "score": 26, "seq": 27, "url": "https://frozen.test/%C3%89tats-Unis"}
+{"decision": "priority_calculated", "nlp_score": 0.033575, "node_id": 20, "priority": 0.457256, "score": 82, "seq": 27, "url": "https://frozen.test/Massachusetts_Institute_of_Technology"}
+{"decision": "priority_calculated", "nlp_score": 0.074232, "node_id": 20, "priority": 0.327791, "score": 57, "seq": 27, "url": "https://frozen.test/Belgique"}
+{"decision": "priority_calculated", "nlp_score": 0.020435, "node_id": 20, "priority": 0.489685, "score": 91, "seq": 27, "url": "https://frozen.test/%C3%89cole_polytechnique_de_Louvain"}
+{"decision": "priority_calculated", "nlp_score": 0.081635, "node_id": 20, "priority": 0.440137, "score": 79, "seq": 27, "url": "https://frozen.test/Louvain_School_of_Management"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.261469, "score": 35, "seq": 27, "url": "https://frozen.test/%C3%89cole_polytechnique_de_Bruxelles"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.476128, "score": 93, "seq": 27, "url": "https://frozen.test/Gembloux_Agro-Bio_Tech"}
+{"decision": "priority_calculated", "nlp_score": 0.00212, "node_id": 20, "priority": 0.371532, "score": 63, "seq": 27, "url": "https://frozen.test/Institut_sup%C3%A9rieur_de_philosophie"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.476147, "score": 91, "seq": 27, "url": "https://frozen.test/KU_Leuven"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.476541, "score": 93, "seq": 27, "url": "https://frozen.test/Doctorat"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.249126, "score": 35, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_Saint-Louis_-_Bruxelles"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.450466, "score": 85, "seq": 27, "url": "https://frozen.test/Ville_de_Bruxelles"}
+{"decision": "priority_calculated", "nlp_score": 0.051245, "node_id": 20, "priority": 0.422751, "score": 74, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_de_Namur"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.281228, "score": 43, "seq": 27, "url": "https://frozen.test/Namur"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.366821, "score": 62, "seq": 27, "url": "https://frozen.test/UCLouvain_FUCaM_Mons"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.508055, "score": 96, "seq": 27, "url": "https://frozen.test/Facult%C3%A9_de_m%C3%A9decine_v%C3%A9t%C3%A9rinaire_de_l'universit%C3%A9_de_Li%C3%A8ge"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.429968, "score": 77, "seq": 27, "url": "https://frozen.test/Facult%C3%A9_polytechnique_de_Mons"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.198291, "score": 20, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_de_Mons"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.509087, "score": 98, "seq": 27, "url": "https://frozen.test/Facult%C3%A9_universitaire_de_th%C3%A9ologie_protestante"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.461228, "score": 88, "seq": 27, "url": "https://frozen.test/Bruxelles"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.244885, "score": 31, "seq": 27, "url": "https://frozen.test/Facult%C3%A9_de_th%C3%A9ologie_%C3%A9vang%C3%A9lique_de_Louvain"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.45507, "score": 85, "seq": 27, "url": "https://frozen.test/Louvain"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.251709, "score": 37, "seq": 27, "url": "https://frozen.test/Communaut%C3%A9_fran%C3%A7aise_de_Belgique"}
+{"decision": "priority_calculated", "nlp_score": 0.01582, "node_id": 20, "priority": 0.410535, "score": 72, "seq": 27, "url": "https://frozen.test/Communaut%C3%A9_flamande"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.287695, "score": 40, "seq": 27, "url": "https://frozen.test/Histoire_des_universit%C3%A9s_fran%C3%A7aises"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.449939, "score": 81, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_en_France"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.133795, "score": 4, "seq": 27, "url": "https://frozen.test/Facult%C3%A9_libre_en_France"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.302046, "score": 47, "seq": 27, "url": "https://frozen.test/Enseignement_sup%C3%A9rieur_priv%C3%A9_en_France"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.329637, "score": 53, "seq": 27, "url": "https://frozen.test/Docteur_(titre)"}
+{"decision": "priority_calculated", "nlp_score": 0.045706, "node_id": 20, "priority": 0.436895, "score": 78, "seq": 27, "url": "https://frozen.test/Professeur_des_universit%C3%A9s"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.454413, "score": 84, "seq": 27, "url": "https://frozen.test/Code_de_l'%C3%A9ducation"}
+{"decision": "priority_calculated", "nlp_score": 0.083401, "node_id": 20, "priority": 0.233958, "score": 33, "seq": 27, "url": "https://frozen.test/Arts_lib%C3%A9raux"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.227057, "score": 30, "seq": 27, "url": "https://frozen.test/Th%C3%A9ologie_catholique"}
+{"decision": "priority_calculated", "nlp_score": 0.06349, "node_id": 20, "priority": 0.487165, "score": 94, "seq": 27, "url": "https://frozen.test/Droit_romain"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.164252, "score": 13, "seq": 27, "url": "https://frozen.test/%C3%89tudes_de_m%C3%A9decine"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.329578, "score": 54, "seq": 27, "url": "https://frozen.test/Napol%C3%A9on_Ier"}
+{"decision": "priority_calculated", "nlp_score": 0.085315, "node_id": 20, "priority": 0.138564, "score": 10, "seq": 27, "url": "https://frozen.test/Scientisme"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.230439, "score": 32, "seq": 27, "url": "https://frozen.test/R%C3%A9gime_concordataire"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.214421, "score": 28, "seq": 27, "url": "https://frozen.test/Personnalit%C3%A9_juridique"}
+{"decision": "priority_calculated", "nlp_score": 0.084443, "node_id": 20, "priority": 0.104496, "score": 1, "seq": 27, "url": "https://frozen.test/Mai_1968_(France)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.364515, "score": 63, "seq": 27, "url": "https://frozen.test/Sorbonne_Universit%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 20, "priority": 0.378245, "score": 65, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_Paris-Cit%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.085599, "node_id": 20, "priority": 0.281884, "score": 45, "seq": 27, "url": "https://frozen.test/Universit%C3%A9_de_Pau_et_des_pays_de_l'Adour"}
+{"decision": "priority_calculated", "nlp_score": 0.054289, "node_id": 20, "priority": 0.405698, "score": 77, "seq": 27, "url": "https://frozen.test/Jean-Claude_Marcourt"}
+{"decision": "priority_calculated", "nlp_score": 0.126183, "node_id": 20, "priority": 0.210478, "score": 26, "seq": 27, "url": "https://frozen.test/%C3%89cole_centrale_(R%C3%A9volution_fran%C3%A7aise)"}
+{"decision": "priority_calculated", "nlp_score": 0.304404, "node_id": 20, "priority": 0.217734, "score": 25, "seq": 27, "url": "https://frozen.test/Bordeaux"}
+{"decision": "priority_calculated", "nlp_score": 0.23318, "node_id": 20, "priority": 0.38151, "score": 67, "seq": 27, "url": "https://frozen.test/Moniteur_belge"}
+{"decision": "priority_calculated", "nlp_score": 0.231774, "node_id": 20, "priority": 0.442164, "score": 82, "seq": 27, "url": "https://frozen.test/Droit_canonique"}
+{"decision": "priority_calculated", "nlp_score": 0.198122, "node_id": 20, "priority": 0.212828, "score": 25, "seq": 27, "url": "https://frozen.test/Doyen_(universit%C3%A9)"}
+{"decision": "high_score_links", "nlp_score": 0.173456, "node_id": 103, "score": null, "seq": 30, "url": "https://frozen.test/Pays-Bas"}
+{"decision": "high_score_links", "nlp_score": 0.132698, "node_id": 103, "score": null, "seq": 30, "url": "https://frozen.test/Universit%C3%A9_de_Bologne"}
+{"decision": "high_score_links", "nlp_score": 0.097421, "node_id": 103, "score": null, "seq": 30, "url": "https://frozen.test/Lituanie"}
+{"decision": "high_score_links", "nlp_score": 0.093056, "node_id": 103, "score": null, "seq": 30, "url": "https://frozen.test/Italie"}
+{"decision": "priority_calculated", "nlp_score": 0.173456, "node_id": 103, "priority": 0.137885, "score": 0, "seq": 32, "url": "https://frozen.test/Pays-Bas"}
+{"decision": "priority_calculated", "nlp_score": 0.132698, "node_id": 103, "priority": 0.175698, "score": 0, "seq": 32, "url": "https://frozen.test/Universit%C3%A9_de_Bologne"}
+{"decision": "priority_calculated", "nlp_score": 0.097421, "node_id": 103, "priority": 0.138485, "score": 0, "seq": 32, "url": "https://frozen.test/Lituanie"}
+{"decision": "priority_calculated", "nlp_score": 0.093056, "node_id": 103, "priority": 0.129756, "score": 0, "seq": 32, "url": "https://frozen.test/Italie"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.220482, "score": 37, "seq": 33, "url": "https://frozen.test/Commission_europ%C3%A9enne"}
+{"decision": "priority_calculated", "nlp_score": 0.087819, "node_id": 103, "priority": 0.251569, "score": 45, "seq": 33, "url": "https://frozen.test/Kinshasa"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.414754, "score": 80, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Lubumbashi"}
+{"decision": "priority_calculated", "nlp_score": 0.086946, "node_id": 103, "priority": 0.114521, "score": 11, "seq": 33, "url": "https://frozen.test/Allemagne"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.455636, "score": 91, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Leipzig"}
+{"decision": "priority_calculated", "nlp_score": 0.086946, "node_id": 103, "priority": 0.094521, "score": 6, "seq": 33, "url": "https://frozen.test/France"}
+{"decision": "priority_calculated", "nlp_score": 0.087819, "node_id": 103, "priority": 0.131569, "score": 15, "seq": 33, "url": "https://frozen.test/Suisse"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.255413, "score": 43, "seq": 33, "url": "https://frozen.test/Royaume-Uni"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.371636, "score": 70, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Cambridge"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.147851, "score": 12, "seq": 33, "url": "https://frozen.test/Pologne"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.192616, "score": 30, "seq": 33, "url": "https://frozen.test/Lublin"}
+{"decision": "priority_calculated", "nlp_score": 0.086073, "node_id": 103, "priority": 0.205474, "score": 34, "seq": 33, "url": "https://frozen.test/Varsovie"}
+{"decision": "priority_calculated", "nlp_score": 0.086946, "node_id": 103, "priority": 0.186521, "score": 29, "seq": 33, "url": "https://frozen.test/Espagne"}
+{"decision": "priority_calculated", "nlp_score": 0.022835, "node_id": 103, "priority": 0.260291, "score": 40, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Saragosse"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.449217, "score": 90, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Padoue"}
+{"decision": "priority_calculated", "nlp_score": 0.0042, "node_id": 103, "priority": 0.284904, "score": 46, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_P%C3%A9rouse"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.383636, "score": 73, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Pise"}
+{"decision": "priority_calculated", "nlp_score": 0.072143, "node_id": 103, "priority": 0.451284, "score": 96, "seq": 33, "url": "https://frozen.test/Portugal"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.096846, "score": 1, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_de_Coimbra"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 103, "priority": 0.20895, "score": 32, "seq": 33, "url": "https://frozen.test/Universit%C3%A9_d'%C3%89vora"}
+{"decision": "priority_calculated", "nlp_score": 0.306908, "node_id": 103, "priority": 0.378739, "score": 72, "seq": 33, "url": "https://frozen.test/Europe"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 87, "score": null, "seq": 36, "url": "https://frozen.test/Biblioth%C3%A8que_nationale_de_France"}
+{"decision": "low_score_links", "nlp_score": 0.075827, "node_id": 63, "score": null, "seq": 39, "url": "https://frozen.test/Calligraphie"}
+{"decision": "low_score_links", "nlp_score": 0.06561, "node_id": 59, "score": null, "seq": 42, "url": "https://frozen.test/Ibn_Khaldoun"}
+{"decision": "high_score_links", "nlp_score": 0.168472, "node_id": 91, "score": null, "seq": 45, "url": "https://frozen.test/%C3%89cole_normale_sup%C3%A9rieure_(France)"}
+{"decision": "high_score_links", "nlp_score": 0.099196, "node_id": 91, "score": null, "seq": 45, "url": "https://frozen.test/Paris"}
+{"decision": "high_score_links", "nlp_score": 0.088216, "node_id": 91, "score": null, "seq": 45, "url": "https://frozen.test/Beaux-Arts_de_Paris"}
+{"decision": "priority_calculated", "nlp_score": 0.168472, "node_id": 91, "priority": 0.132527, "score": 0, "seq": 47, "url": "https://frozen.test/%C3%89cole_normale_sup%C3%A9rieure_(France)"}
+{"decision": "priority_calculated", "nlp_score": 0.099196, "node_id": 91, "priority": 0.142035, "score": 0, "seq": 47, "url": "https://frozen.test/Paris"}
+{"decision": "priority_calculated", "nlp_score": 0.088216, "node_id": 91, "priority": 0.114588, "score": 0, "seq": 47, "url": "https://frozen.test/Beaux-Arts_de_Paris"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 91, "priority": 0.451662, "score": 95, "seq": 48, "url": "https://frozen.test/Universit%C3%A9_Lovanium"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 91, "priority": 0.463548, "score": 96, "seq": 48, "url": "https://frozen.test/Universit%C3%A9_imp%C3%A9riale_%C3%A0_Bruxelles"}
+{"decision": "priority_calculated", "nlp_score": 0.014806, "node_id": 91, "priority": 0.475108, "score": 96, "seq": 48, "url": "https://frozen.test/Universit%C3%A9_de_Louvain_(1425-1797)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 91, "priority": 0.273934, "score": 48, "seq": 48, "url": "https://frozen.test/Martin_V"}
+{"decision": "priority_calculated", "nlp_score": 0.088045, "node_id": 91, "priority": 0.359839, "score": 72, "seq": 48, "url": "https://frozen.test/Conservatoire_national_des_arts_et_m%C3%A9tiers"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 91, "priority": 0.193182, "score": 29, "seq": 48, "url": "https://frozen.test/%C3%89cole_polytechnique_(France)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 91, "priority": 0.180278, "score": 24, "seq": 48, "url": "https://frozen.test/Polytechnique_Montr%C3%A9al"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 69, "score": null, "seq": 51, "url": "https://frozen.test/1993"}
+{"decision": "high_score_links", "nlp_score": 0.163523, "node_id": 121, "score": null, "seq": 53, "url": "https://frozen.test/Gr%C3%A8ce_antique"}
+{"decision": "high_score_links", "nlp_score": 0.148739, "node_id": 121, "score": null, "seq": 53, "url": "https://frozen.test/Droit_priv%C3%A9"}
+{"decision": "high_score_links", "nlp_score": 0.135505, "node_id": 121, "score": null, "seq": 53, "url": "https://frozen.test/Ath%C3%A8nes"}
+{"decision": "high_score_links", "nlp_score": 0.102393, "node_id": 121, "score": null, "seq": 53, "url": "https://frozen.test/%C3%89thiopie"}
+{"decision": "high_score_links", "nlp_score": 0.100276, "node_id": 121, "score": null, "seq": 53, "url": "https://frozen.test/International_Standard_Book_Number"}
+{"decision": "priority_calculated", "nlp_score": 0.163523, "node_id": 121, "priority": 0.133301, "score": 0, "seq": 55, "url": "https://frozen.test/Gr%C3%A8ce_antique"}
+{"decision": "priority_calculated", "nlp_score": 0.148739, "node_id": 121, "priority": 0.138236, "score": 0, "seq": 55, "url": "https://frozen.test/Droit_priv%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.135505, "node_id": 121, "priority": 0.136474, "score": 0, "seq": 55, "url": "https://frozen.test/Ath%C3%A8nes"}
+{"decision": "priority_calculated", "nlp_score": 0.102393, "node_id": 121, "priority": 0.129974, "score": 0, "seq": 55, "url": "https://frozen.test/%C3%89thiopie"}
+{"decision": "priority_calculated", "nlp_score": 0.100276, "node_id": 121, "priority": 0.117966, "score": 0, "seq": 55, "url": "https://frozen.test/International_Standard_Book_Number"}
+{"decision": "priority_calculated", "nlp_score": 0.091338, "node_id": 121, "priority": 0.091792, "score": 4, "seq": 56, "url": "https://frozen.test/Droit_civil"}
+{"decision": "priority_calculated", "nlp_score": 0.055996, "node_id": 121, "priority": 0.309911, "score": 56, "seq": 56, "url": "https://frozen.test/Am%C3%A9rique_latine"}
+{"decision": "priority_calculated", "nlp_score": 0.082213, "node_id": 121, "priority": 0.123299, "score": 12, "seq": 56, "url": "https://frozen.test/Afrique_du_Sud"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.472998, "score": 98, "seq": 56, "url": "https://frozen.test/Latin"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.099347, "score": 4, "seq": 56, "url": "https://frozen.test/-367"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.205658, "score": 33, "seq": 56, "url": "https://frozen.test/XVIIIe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.087933, "node_id": 121, "priority": 0.071705, "score": 0, "seq": 56, "url": "https://frozen.test/Scolastique"}
+{"decision": "priority_calculated", "nlp_score": 0.088834, "node_id": 121, "priority": 0.376787, "score": 76, "seq": 56, "url": "https://frozen.test/Grec_ancien"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.223805, "score": 35, "seq": 56, "url": "https://frozen.test/Moyen_%C3%82ge"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.142205, "score": 17, "seq": 56, "url": "https://frozen.test/XVIe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.451705, "score": 95, "seq": 56, "url": "https://frozen.test/Angleterre"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.17038, "score": 25, "seq": 56, "url": "https://frozen.test/XIXe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.193615, "score": 31, "seq": 56, "url": "https://frozen.test/XVIIe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.143265, "score": 14, "seq": 56, "url": "https://frozen.test/New_York"}
+{"decision": "priority_calculated", "nlp_score": 0.093341, "node_id": 121, "priority": 0.434195, "score": 89, "seq": 56, "url": "https://frozen.test/Constantinople"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.416943, "score": 86, "seq": 56, "url": "https://frozen.test/Digital_Object_Identifier"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 121, "priority": 0.433172, "score": 89, "seq": 56, "url": "https://frozen.test/Oxford_University_Press"}
+{"decision": "priority_calculated", "nlp_score": 0.087933, "node_id": 121, "priority": 0.447705, "score": 94, "seq": 56, "url": "https://frozen.test/1962"}
+{"decision": "priority_calculated", "nlp_score": 0.092385, "node_id": 121, "priority": 0.314089, "score": 61, "seq": 56, "url": "https://frozen.test/Num%C3%A9ration_romaine"}
+{"decision": "priority_calculated", "nlp_score": 0.099375, "node_id": 121, "priority": 0.161698, "score": 23, "seq": 56, "url": "https://frozen.test/Calendrier_romain"}
+{"decision": "priority_calculated", "nlp_score": 0.304318, "node_id": 121, "priority": 0.395631, "score": 77, "seq": 56, "url": "https://frozen.test/Platon"}
+{"decision": "priority_calculated", "nlp_score": 0.304318, "node_id": 121, "priority": 0.483631, "score": 99, "seq": 56, "url": "https://frozen.test/Bologne"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 21, "score": null, "seq": 59, "url": "https://frozen.test/Criminologie"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 21, "score": null, "seq": 59, "url": "https://frozen.test/Droit_public"}
+{"decision": "low_score_links", "nlp_score": 0.092622, "node_id": 21, "score": null, "seq": 59, "url": "https://frozen.test/Science_politique"}
+{"decision": "priority_calculated", "nlp_score": 0.214729, "node_id": 21, "priority": 0.377139, "score": 66, "seq": 60, "url": "https://frozen.test/1958"}
+{"decision": "high_score_links", "nlp_score": 0.228149, "node_id": 97, "score": null, "seq": 63, "url": "https://frozen.test/Pharmacie"}
+{"decision": "high_score_links", "nlp_score": 0.133652, "node_id": 97, "score": null, "seq": 63, "url": "https://frozen.test/Dipl%C3%B4me"}
+{"decision": "high_score_links", "nlp_score": 0.107817, "node_id": 97, "score": null, "seq": 63, "url": "https://frozen.test/R%C3%A9volution_fran%C3%A7aise"}
+{"decision": "priority_calculated", "nlp_score": 0.228149, "node_id": 97, "priority": 0.165405, "score": 0, "seq": 65, "url": "https://frozen.test/Pharmacie"}
+{"decision": "priority_calculated", "nlp_score": 0.133652, "node_id": 97, "priority": 0.146996, "score": 0, "seq": 65, "url": "https://frozen.test/Dipl%C3%B4me"}
+{"decision": "priority_calculated", "nlp_score": 0.107817, "node_id": 97, "priority": 0.117414, "score": 0, "seq": 65, "url": "https://frozen.test/R%C3%A9volution_fran%C3%A7aise"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 97, "priority": 0.246019, "score": 43, "seq": 66, "url": "https://frozen.test/Chercheur_universitaire"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 97, "priority": 0.324851, "score": 63, "seq": 66, "url": "https://frozen.test/Th%C3%A9ologie"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 97, "priority": 0.333399, "score": 65, "seq": 66, "url": "https://frozen.test/M%C3%A9decine"}
+{"decision": "priority_calculated", "nlp_score": 0.087064, "node_id": 97, "priority": 0.074662, "score": 1, "seq": 66, "url": "https://frozen.test/Philosophie"}
+{"decision": "priority_calculated", "nlp_score": 0.084327, "node_id": 97, "priority": 0.335379, "score": 67, "seq": 66, "url": "https://frozen.test/Renaissance"}
+{"decision": "priority_calculated", "nlp_score": 0.026732, "node_id": 97, "priority": 0.245872, "score": 41, "seq": 66, "url": "https://frozen.test/Universit%C3%A9_Humboldt_de_Berlin"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 97, "priority": 0.201341, "score": 28, "seq": 66, "url": "https://frozen.test/Universit%C3%A9_Yale"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 97, "priority": 0.162801, "score": 23, "seq": 66, "url": "https://frozen.test/Universit%C3%A9_Harvard"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 97, "priority": 0.353631, "score": 70, "seq": 66, "url": "https://frozen.test/Universit%C3%A9_d'Oxford"}
+{"decision": "priority_calculated", "nlp_score": 0.097017, "node_id": 97, "priority": 0.435533, "score": 91, "seq": 66, "url": "https://frozen.test/Professeur_(titre)"}
+{"decision": "priority_calculated", "nlp_score": 0.306153, "node_id": 97, "priority": 0.385833, "score": 74, "seq": 66, "url": "https://frozen.test/Canada"}
+{"decision": "high_score_links", "nlp_score": 0.434769, "node_id": 96, "score": null, "seq": 68, "url": "https://frozen.test/Universit%C3%A9_de_Salamanque"}
+{"decision": "high_score_links", "nlp_score": 0.413683, "node_id": 96, "score": null, "seq": 68, "url": "https://frozen.test/Universit%C3%A9_de_Lund"}
+{"decision": "high_score_links", "nlp_score": 0.370697, "node_id": 96, "score": null, "seq": 68, "url": "https://frozen.test/Universit%C3%A9_de_Leyde"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 96, "score": null, "seq": 69, "url": "https://frozen.test/Universit%C3%A9_de_Cologne"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 96, "score": null, "seq": 69, "url": "https://frozen.test/Universit%C3%A9_de_Montpellier"}
+{"decision": "low_score_links", "nlp_score": 0.05292, "node_id": 96, "score": null, "seq": 69, "url": "https://frozen.test/Universit%C3%A9_de_Groningue"}
+{"decision": "priority_calculated", "nlp_score": 0.434769, "node_id": 96, "priority": 0.214861, "score": 0, "seq": 70, "url": "https://frozen.test/Universit%C3%A9_de_Salamanque"}
+{"decision": "priority_calculated", "nlp_score": 0.413683, "node_id": 96, "priority": 0.233509, "score": 0, "seq": 70, "url": "https://frozen.test/Universit%C3%A9_de_Lund"}
+{"decision": "priority_calculated", "nlp_score": 0.370697, "node_id": 96, "priority": 0.2167, "score": 0, "seq": 70, "url": "https://frozen.test/Universit%C3%A9_de_Leyde"}
+{"decision": "priority_calculated", "nlp_score": 0.202043, "node_id": 96, "priority": 0.132473, "score": 7, "seq": 71, "url": "https://frozen.test/1972"}
+{"decision": "priority_calculated", "nlp_score": 0.260822, "node_id": 96, "priority": 0.485651, "score": 83, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_de_Heidelberg"}
+{"decision": "priority_calculated", "nlp_score": 0.350298, "node_id": 96, "priority": 0.387895, "score": 67, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_de_Poitiers"}
+{"decision": "priority_calculated", "nlp_score": 0.087864, "node_id": 96, "priority": 0.316625, "score": 49, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_Jagellonne"}
+{"decision": "priority_calculated", "nlp_score": 0.12307, "node_id": 96, "priority": 0.156258, "score": 6, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_Charles"}
+{"decision": "priority_calculated", "nlp_score": 0.283632, "node_id": 96, "priority": 0.164093, "score": 13, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_d'Uppsala"}
+{"decision": "priority_calculated", "nlp_score": 0.370297, "node_id": 96, "priority": 0.388371, "score": 67, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_de_Gen%C3%A8ve"}
+{"decision": "priority_calculated", "nlp_score": 0.170068, "node_id": 96, "priority": 0.19844, "score": 24, "seq": 71, "url": "https://frozen.test/Turquie"}
+{"decision": "priority_calculated", "nlp_score": 0.068354, "node_id": 96, "priority": 0.394183, "score": 66, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_de_Strasbourg"}
+{"decision": "priority_calculated", "nlp_score": 0.539092, "node_id": 96, "priority": 0.326915, "score": 39, "seq": 71, "url": "https://frozen.test/Universit%C3%A9_en_Belgique"}
+{"decision": "high_score_links", "nlp_score": 0.509117, "node_id": 218, "score": null, "seq": 73, "url": "https://frozen.test/Universit%C3%A9_de_B%C3%A2le"}
+{"decision": "high_score_links", "nlp_score": 0.443777, "node_id": 218, "score": null, "seq": 73, "url": "https://frozen.test/Inde"}
+{"decision": "high_score_links", "nlp_score": 0.324549, "node_id": 218, "score": null, "seq": 73, "url": "https://frozen.test/Science"}
+{"decision": "low_score_links", "nlp_score": 0.187071, "node_id": 218, "score": null, "seq": 74, "url": "https://frozen.test/Ancienne_universit%C3%A9_de_Paris"}
+{"decision": "low_score_links", "nlp_score": 0.051129, "node_id": 218, "score": null, "seq": 74, "url": "https://frozen.test/Universit%C3%A9_de_Wittemberg"}
+{"decision": "low_score_links", "nlp_score": 0.027075, "node_id": 218, "score": null, "seq": 74, "url": "https://frozen.test/N%C3%A9pal"}
+{"decision": "priority_calculated", "nlp_score": 0.509117, "node_id": 218, "priority": 0.174745, "score": 0, "seq": 75, "url": "https://frozen.test/Universit%C3%A9_de_B%C3%A2le"}
+{"decision": "priority_calculated", "nlp_score": 0.443777, "node_id": 218, "priority": 0.21343, "score": 0, "seq": 75, "url": "https://frozen.test/Inde"}
+{"decision": "priority_calculated", "nlp_score": 0.324549, "node_id": 218, "priority": 0.136891, "score": 0, "seq": 75, "url": "https://frozen.test/Science"}
+{"decision": "priority_calculated", "nlp_score": 0.260635, "node_id": 218, "priority": 0.363171, "score": 71, "seq": 76, "url": "https://frozen.test/R%C3%A9forme_protestante"}
+{"decision": "priority_calculated", "nlp_score": 0.225686, "node_id": 218, "priority": 0.21097, "score": 27, "seq": 76, "url": "https://frozen.test/Prix_Nobel_de_litt%C3%A9rature"}
+{"decision": "priority_calculated", "nlp_score": 0.204322, "node_id": 218, "priority": 0.391604, "score": 81, "seq": 76, "url": "https://frozen.test/Martin_Luther"}
+{"decision": "priority_calculated", "nlp_score": 0.274211, "node_id": 218, "priority": 0.465705, "score": 94, "seq": 76, "url": "https://frozen.test/Langues_romanes"}
+{"decision": "priority_calculated", "nlp_score": 0.238036, "node_id": 218, "priority": 0.243122, "score": 40, "seq": 76, "url": "https://frozen.test/Organisation_non_gouvernementale"}
+{"decision": "priority_calculated", "nlp_score": 0.294806, "node_id": 218, "priority": 0.370679, "score": 64, "seq": 76, "url": "https://frozen.test/Universit%C3%A9_m%C3%A9di%C3%A9vale"}
+{"decision": "priority_calculated", "nlp_score": 0.244525, "node_id": 94, "priority": 0.334817, "score": 57, "seq": 80, "url": "https://frozen.test/Organisation_des_Nations_unies"}
+{"decision": "high_score_links", "nlp_score": 0.306095, "node_id": 167, "score": null, "seq": 82, "url": "https://frozen.test/Pape"}
+{"decision": "high_score_links", "nlp_score": 0.258542, "node_id": 167, "score": null, "seq": 82, "url": "https://frozen.test/Eug%C3%A8ne_IV"}
+{"decision": "high_score_links", "nlp_score": 0.218965, "node_id": 167, "score": null, "seq": 82, "url": "https://frozen.test/Latin_m%C3%A9di%C3%A9val"}
+{"decision": "priority_calculated", "nlp_score": 0.306095, "node_id": 167, "priority": 0.156955, "score": 0, "seq": 84, "url": "https://frozen.test/Pape"}
+{"decision": "priority_calculated", "nlp_score": 0.258542, "node_id": 167, "priority": 0.127177, "score": 0, "seq": 84, "url": "https://frozen.test/Eug%C3%A8ne_IV"}
+{"decision": "priority_calculated", "nlp_score": 0.218965, "node_id": 167, "priority": 0.173485, "score": 0, "seq": 84, "url": "https://frozen.test/Latin_m%C3%A9di%C3%A9val"}
+{"decision": "priority_calculated", "nlp_score": 0.096501, "node_id": 167, "priority": 0.293195, "score": 51, "seq": 85, "url": "https://frozen.test/XVe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 167, "priority": 0.397928, "score": 82, "seq": 85, "url": "https://frozen.test/%C3%89rasme"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 167, "priority": 0.343519, "score": 66, "seq": 85, "url": "https://frozen.test/Aristote"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 167, "priority": 0.088963, "score": 6, "seq": 85, "url": "https://frozen.test/Convention_nationale"}
+{"decision": "priority_calculated", "nlp_score": 0.063099, "node_id": 167, "priority": 0.270366, "score": 45, "seq": 85, "url": "https://frozen.test/Universit%C3%A9_de_Douai"}
+{"decision": "priority_calculated", "nlp_score": 0.187325, "node_id": 167, "priority": 0.165474, "score": 25, "seq": 85, "url": "https://frozen.test/Philologie"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 167, "priority": 0.240704, "score": 42, "seq": 85, "url": "https://frozen.test/Philosophe"}
+{"decision": "priority_calculated", "nlp_score": 0.199952, "node_id": 167, "priority": 0.36418, "score": 62, "seq": 85, "url": "https://frozen.test/1er_septembre"}
+{"decision": "high_score_links", "nlp_score": 0.378269, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/%C3%89tiquette_d'identification_de_langues_IETF"}
+{"decision": "high_score_links", "nlp_score": 0.337537, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/Alphabet_phon%C3%A9tique_international"}
+{"decision": "high_score_links", "nlp_score": 0.334492, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/Italien"}
+{"decision": "high_score_links", "nlp_score": 0.306247, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/Occitan"}
+{"decision": "high_score_links", "nlp_score": 0.266981, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/Alphabet_latin"}
+{"decision": "high_score_links", "nlp_score": 0.266277, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/Italie_centrale"}
+{"decision": "high_score_links", "nlp_score": 0.243964, "node_id": 180, "score": null, "seq": 87, "url": "https://frozen.test/Espagnol"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Typologie_linguistique"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Langue_accusative"}
+{"decision": "low_score_links", "nlp_score": 0.003156, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Observatoire_linguistique"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Glottolog"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Catalan"}
+{"decision": "low_score_links", "nlp_score": 0.009708, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Langue_vernaculaire"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 180, "score": null, "seq": 88, "url": "https://frozen.test/Langue_liturgique"}
+{"decision": "priority_calculated", "nlp_score": 0.378269, "node_id": 180, "priority": 0.174014, "score": 0, "seq": 89, "url": "https://frozen.test/%C3%89tiquette_d'identification_de_langues_IETF"}
+{"decision": "priority_calculated", "nlp_score": 0.337537, "node_id": 180, "priority": 0.159778, "score": 0, "seq": 89, "url": "https://frozen.test/Alphabet_phon%C3%A9tique_international"}
+{"decision": "priority_calculated", "nlp_score": 0.334492, "node_id": 180, "priority": 0.170363, "score": 0, "seq": 89, "url": "https://frozen.test/Italien"}
+{"decision": "priority_calculated", "nlp_score": 0.306247, "node_id": 180, "priority": 0.157257, "score": 0, "seq": 89, "url": "https://frozen.test/Occitan"}
+{"decision": "priority_calculated", "nlp_score": 0.266981, "node_id": 180, "priority": 0.195505, "score": 0, "seq": 89, "url": "https://frozen.test/Alphabet_latin"}
+{"decision": "priority_calculated", "nlp_score": 0.266277, "node_id": 180, "priority": 0.147525, "score": 0, "seq": 89, "url": "https://frozen.test/Italie_centrale"}
+{"decision": "priority_calculated", "nlp_score": 0.243964, "node_id": 180, "priority": 0.135363, "score": 0, "seq": 89, "url": "https://frozen.test/Espagnol"}
+{"decision": "priority_calculated", "nlp_score": 0.240761, "node_id": 180, "priority": 0.467096, "score": 97, "seq": 90, "url": "https://frozen.test/Langue_flexionnelle"}
+{"decision": "priority_calculated", "nlp_score": 0.103032, "node_id": 180, "priority": 0.221673, "score": 33, "seq": 90, "url": "https://frozen.test/Syst%C3%A8me_d'%C3%A9criture"}
+{"decision": "priority_calculated", "nlp_score": 0.209638, "node_id": 180, "priority": 0.309504, "score": 51, "seq": 90, "url": "https://frozen.test/Latin_classique"}
+{"decision": "priority_calculated", "nlp_score": 0.093772, "node_id": 180, "priority": 0.088876, "score": 0, "seq": 90, "url": "https://frozen.test/Langue_officielle"}
+{"decision": "priority_calculated", "nlp_score": 0.216595, "node_id": 180, "priority": 0.210548, "score": 26, "seq": 90, "url": "https://frozen.test/ISO_639-1"}
+{"decision": "priority_calculated", "nlp_score": 0.112453, "node_id": 180, "priority": 0.258265, "score": 44, "seq": 90, "url": "https://frozen.test/ISO_639-2"}
+{"decision": "priority_calculated", "nlp_score": 0.111908, "node_id": 180, "priority": 0.267343, "score": 46, "seq": 90, "url": "https://frozen.test/ISO_639-3"}
+{"decision": "priority_calculated", "nlp_score": 0.105758, "node_id": 180, "priority": 0.419853, "score": 84, "seq": 90, "url": "https://frozen.test/%C3%89glise_catholique"}
+{"decision": "priority_calculated", "nlp_score": 0.101099, "node_id": 180, "priority": 0.238028, "score": 39, "seq": 90, "url": "https://frozen.test/Langue_v%C3%A9hiculaire"}
+{"decision": "priority_calculated", "nlp_score": 0.210819, "node_id": 180, "priority": 0.388734, "score": 80, "seq": 90, "url": "https://frozen.test/Portugais"}
+{"decision": "priority_calculated", "nlp_score": 0.1583, "node_id": 180, "priority": 0.114319, "score": 14, "seq": 90, "url": "https://frozen.test/Lexique"}
+{"decision": "priority_calculated", "nlp_score": 0.155438, "node_id": 180, "priority": 0.346864, "score": 63, "seq": 90, "url": "https://frozen.test/XIIIe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.152186, "node_id": 180, "priority": 0.217156, "score": 31, "seq": 90, "url": "https://frozen.test/XXe_si%C3%A8cle"}
+{"decision": "priority_calculated", "nlp_score": 0.011899, "node_id": 180, "priority": 0.424754, "score": 88, "seq": 90, "url": "https://frozen.test/Le_Monde"}
+{"decision": "priority_calculated", "nlp_score": 0.058076, "node_id": 180, "priority": 0.400214, "score": 73, "seq": 90, "url": "https://frozen.test/Quantit%C3%A9_vocalique"}
+{"decision": "priority_calculated", "nlp_score": 0.182772, "node_id": 180, "priority": 0.352978, "score": 63, "seq": 90, "url": "https://frozen.test/Accent_tonique"}
+{"decision": "priority_calculated", "nlp_score": 0.243096, "node_id": 180, "priority": 0.130012, "score": 14, "seq": 90, "url": "https://frozen.test/Emprunt_lexical"}
+{"decision": "priority_calculated", "nlp_score": 0.046222, "node_id": 180, "priority": 0.106029, "score": 5, "seq": 90, "url": "https://frozen.test/Doublet_lexical"}
+{"decision": "priority_calculated", "nlp_score": 0.199532, "node_id": 180, "priority": 0.45146, "score": 95, "seq": 90, "url": "https://frozen.test/Wiktionnaire"}
+{"decision": "priority_calculated", "nlp_score": 0.505936, "node_id": 180, "priority": 0.395035, "score": 67, "seq": 90, "url": "https://frozen.test/Morphologie_(linguistique)"}
+{"decision": "priority_calculated", "nlp_score": 0.408558, "node_id": 180, "priority": 0.320944, "score": 51, "seq": 90, "url": "https://frozen.test/Occident"}
+{"decision": "high_score_links", "nlp_score": 0.445966, "node_id": 255, "score": null, "seq": 92, "url": "https://frozen.test/Stylistique"}
+{"decision": "high_score_links", "nlp_score": 0.374668, "node_id": 255, "score": null, "seq": 92, "url": "https://frozen.test/Langues_cr%C3%A9oles"}
+{"decision": "high_score_links", "nlp_score": 0.371451, "node_id": 255, "score": null, "seq": 92, "url": "https://frozen.test/Albanais"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 255, "score": null, "seq": 93, "url": "https://frozen.test/Turc"}
+{"decision": "low_score_links", "nlp_score": 0.041739, "node_id": 255, "score": null, "seq": 93, "url": "https://frozen.test/Mandarin_(langue)"}
+{"decision": "low_score_links", "nlp_score": 0.025204, "node_id": 255, "score": null, "seq": 93, "url": "https://frozen.test/Arabe_standard_moderne"}
+{"decision": "priority_calculated", "nlp_score": 0.445966, "node_id": 255, "priority": 0.167808, "score": 0, "seq": 94, "url": "https://frozen.test/Stylistique"}
+{"decision": "priority_calculated", "nlp_score": 0.374668, "node_id": 255, "priority": 0.1237, "score": 0, "seq": 94, "url": "https://frozen.test/Langues_cr%C3%A9oles"}
+{"decision": "priority_calculated", "nlp_score": 0.371451, "node_id": 255, "priority": 0.102237, "score": 0, "seq": 94, "url": "https://frozen.test/Albanais"}
+{"decision": "priority_calculated", "nlp_score": 0.201523, "node_id": 255, "priority": 0.202883, "score": 34, "seq": 95, "url": "https://frozen.test/Wilhelm_von_Humboldt"}
+{"decision": "priority_calculated", "nlp_score": 0.10697, "node_id": 255, "priority": 0.209126, "score": 38, "seq": 95, "url": "https://frozen.test/Langues_s%C3%A9mitiques"}
+{"decision": "priority_calculated", "nlp_score": 0.222891, "node_id": 255, "priority": 0.365632, "score": 81, "seq": 95, "url": "https://frozen.test/Hindi"}
+{"decision": "priority_calculated", "nlp_score": 0.117195, "node_id": 255, "priority": 0.268799, "score": 52, "seq": 95, "url": "https://frozen.test/Arabe_dialectal"}
+{"decision": "priority_calculated", "nlp_score": 0.317551, "node_id": 255, "priority": 0.080795, "score": 6, "seq": 95, "url": "https://frozen.test/Langue_VSO"}
+{"decision": "priority_calculated", "nlp_score": 0.227839, "node_id": 255, "priority": 0.129241, "score": 20, "seq": 95, "url": "https://frozen.test/Langue_centrifuge"}
+{"decision": "priority_calculated", "nlp_score": 0.30088, "node_id": 255, "priority": 0.162146, "score": 26, "seq": 95, "url": "https://frozen.test/S%C3%A9mantique"}
+{"decision": "high_score_links", "nlp_score": 0.43364, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Catalogne"}
+{"decision": "high_score_links", "nlp_score": 0.43364, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Somalie"}
+{"decision": "high_score_links", "nlp_score": 0.396723, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/R%C3%A9publique_du_Congo"}
+{"decision": "high_score_links", "nlp_score": 0.384271, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Philippines"}
+{"decision": "high_score_links", "nlp_score": 0.373236, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Tchad"}
+{"decision": "high_score_links", "nlp_score": 0.365738, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Diglossie"}
+{"decision": "high_score_links", "nlp_score": 0.350461, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/%C3%89quateur_(pays)"}
+{"decision": "high_score_links", "nlp_score": 0.325619, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Honduras"}
+{"decision": "high_score_links", "nlp_score": 0.318304, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Ethnologue,_Languages_of_the_World"}
+{"decision": "high_score_links", "nlp_score": 0.315437, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Galice"}
+{"decision": "high_score_links", "nlp_score": 0.314504, "node_id": 233, "score": null, "seq": 97, "url": "https://frozen.test/Isra%C3%ABl"}
+{"decision": "priority_calculated", "nlp_score": 0.43364, "node_id": 233, "priority": 0.142026, "score": 0, "seq": 99, "url": "https://frozen.test/Catalogne"}
+{"decision": "priority_calculated", "nlp_score": 0.43364, "node_id": 233, "priority": 0.142026, "score": 0, "seq": 99, "url": "https://frozen.test/Somalie"}
+{"decision": "priority_calculated", "nlp_score": 0.396723, "node_id": 233, "priority": 0.13161, "score": 0, "seq": 99, "url": "https://frozen.test/R%C3%A9publique_du_Congo"}
+{"decision": "priority_calculated", "nlp_score": 0.384271, "node_id": 233, "priority": 0.139788, "score": 0, "seq": 99, "url": "https://frozen.test/Philippines"}
+{"decision": "priority_calculated", "nlp_score": 0.373236, "node_id": 233, "priority": 0.105807, "score": 0, "seq": 99, "url": "https://frozen.test/Tchad"}
+{"decision": "priority_calculated", "nlp_score": 0.365738, "node_id": 233, "priority": 0.126525, "score": 0, "seq": 99, "url": "https://frozen.test/Diglossie"}
+{"decision": "priority_calculated", "nlp_score": 0.350461, "node_id": 233, "priority": 0.120842, "score": 0, "seq": 99, "url": "https://frozen.test/%C3%89quateur_(pays)"}
+{"decision": "priority_calculated", "nlp_score": 0.325619, "node_id": 233, "priority": 0.127289, "score": 0, "seq": 99, "url": "https://frozen.test/Honduras"}
+{"decision": "priority_calculated", "nlp_score": 0.318304, "node_id": 233, "priority": 0.124706, "score": 0, "seq": 99, "url": "https://frozen.test/Ethnologue,_Languages_of_the_World"}
+{"decision": "priority_calculated", "nlp_score": 0.315437, "node_id": 233, "priority": 0.112093, "score": 0, "seq": 99, "url": "https://frozen.test/Galice"}
+{"decision": "priority_calculated", "nlp_score": 0.314504, "node_id": 233, "priority": 0.102745, "score": 0, "seq": 99, "url": "https://frozen.test/Isra%C3%ABl"}
+{"decision": "priority_calculated", "nlp_score": 0.186552, "node_id": 233, "priority": 0.351107, "score": 79, "seq": 100, "url": "https://frozen.test/Voyelle"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.309824, "score": 67, "seq": 100, "url": "https://frozen.test/Consonne"}
+{"decision": "priority_calculated", "nlp_score": 0.286686, "node_id": 233, "priority": 0.242636, "score": 46, "seq": 100, "url": "https://frozen.test/Jud%C3%A9o-espagnol"}
+{"decision": "priority_calculated", "nlp_score": 0.069815, "node_id": 233, "priority": 0.417495, "score": 87, "seq": 100, "url": "https://frozen.test/Sicilien"}
+{"decision": "priority_calculated", "nlp_score": 0.144988, "node_id": 233, "priority": 0.179612, "score": 26, "seq": 100, "url": "https://frozen.test/B%C3%A9nin"}
+{"decision": "priority_calculated", "nlp_score": 0.031704, "node_id": 233, "priority": 0.390111, "score": 82, "seq": 100, "url": "https://frozen.test/Burkina_Faso"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.389579, "score": 85, "seq": 100, "url": "https://frozen.test/Cameroun"}
+{"decision": "priority_calculated", "nlp_score": 0.082996, "node_id": 233, "priority": 0.126003, "score": 20, "seq": 100, "url": "https://frozen.test/R%C3%A9publique_centrafricaine"}
+{"decision": "priority_calculated", "nlp_score": 0.308453, "node_id": 233, "priority": 0.386914, "score": 81, "seq": 100, "url": "https://frozen.test/Comores_(pays)"}
+{"decision": "priority_calculated", "nlp_score": 0.228906, "node_id": 233, "priority": 0.287888, "score": 60, "seq": 100, "url": "https://frozen.test/C%C3%B4te_d'Ivoire"}
+{"decision": "priority_calculated", "nlp_score": 0.165754, "node_id": 233, "priority": 0.113263, "score": 19, "seq": 100, "url": "https://frozen.test/Gabon"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.084144, "score": 12, "seq": 100, "url": "https://frozen.test/Mali"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.206502, "score": 35, "seq": 100, "url": "https://frozen.test/Niger"}
+{"decision": "priority_calculated", "nlp_score": 0.214761, "node_id": 233, "priority": 0.385032, "score": 77, "seq": 100, "url": "https://frozen.test/S%C3%A9n%C3%A9gal"}
+{"decision": "priority_calculated", "nlp_score": 0.069815, "node_id": 233, "priority": 0.441495, "score": 93, "seq": 100, "url": "https://frozen.test/Togo"}
+{"decision": "priority_calculated", "nlp_score": 0.111199, "node_id": 233, "priority": 0.258815, "score": 48, "seq": 100, "url": "https://frozen.test/P%C3%A9ninsule_Ib%C3%A9rique"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.36941, "score": 77, "seq": 100, "url": "https://frozen.test/Br%C3%A9sil"}
+{"decision": "priority_calculated", "nlp_score": 0.194419, "node_id": 233, "priority": 0.08235, "score": 10, "seq": 100, "url": "https://frozen.test/Cap-Vert"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.092906, "score": 14, "seq": 100, "url": "https://frozen.test/Florence"}
+{"decision": "priority_calculated", "nlp_score": 0.157357, "node_id": 233, "priority": 0.307187, "score": 70, "seq": 100, "url": "https://frozen.test/Naples"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.104974, "score": 16, "seq": 100, "url": "https://frozen.test/Sicile"}
+{"decision": "priority_calculated", "nlp_score": 0.229518, "node_id": 233, "priority": 0.374161, "score": 70, "seq": 100, "url": "https://frozen.test/Superstrat"}
+{"decision": "priority_calculated", "nlp_score": 0.186552, "node_id": 233, "priority": 0.335107, "score": 75, "seq": 100, "url": "https://frozen.test/Phonologie"}
+{"decision": "priority_calculated", "nlp_score": 0.114852, "node_id": 233, "priority": 0.397476, "score": 85, "seq": 100, "url": "https://frozen.test/Article_d%C3%A9fini"}
+{"decision": "priority_calculated", "nlp_score": 0.073544, "node_id": 233, "priority": 0.156653, "score": 19, "seq": 100, "url": "https://frozen.test/Substrat_(linguistique)"}
+{"decision": "priority_calculated", "nlp_score": 0.246352, "node_id": 233, "priority": 0.076901, "score": 6, "seq": 100, "url": "https://frozen.test/Langue_internationale"}
+{"decision": "priority_calculated", "nlp_score": 0.252932, "node_id": 233, "priority": 0.243024, "score": 48, "seq": 100, "url": "https://frozen.test/Malais_(langue)"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.127666, "score": 24, "seq": 100, "url": "https://frozen.test/Swahili"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.268144, "score": 58, "seq": 100, "url": "https://frozen.test/Mexique"}
+{"decision": "priority_calculated", "nlp_score": 0.055929, "node_id": 233, "priority": 0.376958, "score": 79, "seq": 100, "url": "https://frozen.test/Argentine"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.113263, "score": 19, "seq": 100, "url": "https://frozen.test/Bolivie"}
+{"decision": "priority_calculated", "nlp_score": 0.250509, "node_id": 233, "priority": 0.326575, "score": 68, "seq": 100, "url": "https://frozen.test/Chili"}
+{"decision": "priority_calculated", "nlp_score": 0.185305, "node_id": 233, "priority": 0.404708, "score": 86, "seq": 100, "url": "https://frozen.test/Costa_Rica"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.344307, "score": 79, "seq": 100, "url": "https://frozen.test/Cuba"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.080307, "score": 13, "seq": 100, "url": "https://frozen.test/Nicaragua"}
+{"decision": "priority_calculated", "nlp_score": 0.084975, "node_id": 233, "priority": 0.420378, "score": 93, "seq": 100, "url": "https://frozen.test/R%C3%A9publique_dominicaine"}
+{"decision": "priority_calculated", "nlp_score": 0.159223, "node_id": 233, "priority": 0.417426, "score": 97, "seq": 100, "url": "https://frozen.test/Salvador"}
+{"decision": "priority_calculated", "nlp_score": 0.229518, "node_id": 233, "priority": 0.174161, "score": 20, "seq": 100, "url": "https://frozen.test/Uruguay"}
+{"decision": "priority_calculated", "nlp_score": 0.162022, "node_id": 233, "priority": 0.088785, "score": 14, "seq": 100, "url": "https://frozen.test/Venezuela"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.201521, "score": 42, "seq": 100, "url": "https://frozen.test/Buenos_Aires"}
+{"decision": "priority_calculated", "nlp_score": 0.086753, "node_id": 233, "priority": 0.189413, "score": 32, "seq": 100, "url": "https://frozen.test/%C3%89rythr%C3%A9e"}
+{"decision": "priority_calculated", "nlp_score": 0.194805, "node_id": 233, "priority": 0.267787, "score": 58, "seq": 100, "url": "https://frozen.test/Libye"}
+{"decision": "priority_calculated", "nlp_score": 0.162022, "node_id": 233, "priority": 0.360785, "score": 82, "seq": 100, "url": "https://frozen.test/Malte"}
+{"decision": "priority_calculated", "nlp_score": 0.118016, "node_id": 233, "priority": 0.471689, "score": 99, "seq": 100, "url": "https://frozen.test/Maroc"}
+{"decision": "priority_calculated", "nlp_score": 0.0, "node_id": 233, "priority": 0.186626, "score": 37, "seq": 100, "url": "https://frozen.test/Henri_VI_d'Angleterre"}
+{"decision": "priority_calculated", "nlp_score": 0.056046, "node_id": 233, "priority": 0.190261, "score": 37, "seq": 100, "url": "https://frozen.test/Alain_Rey"}
+{"decision": "priority_calculated", "nlp_score": 0.443776, "node_id": 233, "priority": 0.462057, "score": 91, "seq": 100, "url": "https://frozen.test/Guatemala"}
+{"decision": "priority_calculated", "nlp_score": 0.476559, "node_id": 233, "priority": 0.34021, "score": 66, "seq": 100, "url": "https://frozen.test/Djibouti"}
+{"decision": "priority_calculated", "nlp_score": 0.476559, "node_id": 233, "priority": 0.24821, "score": 43, "seq": 100, "url": "https://frozen.test/Madagascar"}
+{"decision": "priority_calculated", "nlp_score": 0.469892, "node_id": 233, "priority": 0.201757, "score": 30, "seq": 100, "url": "https://frozen.test/R%C3%A9publique_d%C3%A9mocratique_du_Congo"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 85, "score": null, "seq": 104, "url": "https://frozen.test/Connaissance"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 85, "score": null, "seq": 104, "url": "https://frozen.test/Recherche_fondamentale"}
+{"decision": "low_score_links", "nlp_score": 0.105631, "node_id": 85, "score": null, "seq": 104, "url": "https://frozen.test/Royal_Society"}
+{"decision": "low_score_links", "nlp_score": 0.034588, "node_id": 85, "score": null, "seq": 104, "url": "https://frozen.test/Seconde_Guerre_mondiale"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 85, "score": null, "seq": 104, "url": "https://frozen.test/Entreprise"}
+{"decision": "low_score_links", "nlp_score": 0.079754, "node_id": 85, "score": null, "seq": 104, "url": "https://frozen.test/Presses_universitaires_de_France"}
+{"decision": "priority_calculated", "nlp_score": 0.307571, "node_id": 85, "priority": 0.22791, "score": 19, "seq": 105, "url": "https://frozen.test/Recherche_et_d%C3%A9veloppement"}
+{"decision": "priority_calculated", "nlp_score": 0.226862, "node_id": 85, "priority": 0.531399, "score": 98, "seq": 105, "url": "https://frozen.test/Enseignement_sup%C3%A9rieur"}
+{"decision": "priority_calculated", "nlp_score": 0.297527, "node_id": 85, "priority": 0.513989, "score": 98, "seq": 105, "url": "https://frozen.test/Groupe_Bayard"}
+{"decision": "high_score_links", "nlp_score": 0.342768, "node_id": 348, "score": null, "seq": 107, "url": "https://frozen.test/Cambodge"}
+{"decision": "high_score_links", "nlp_score": 0.299115, "node_id": 348, "score": null, "seq": 107, "url": "https://frozen.test/Pacte_international_relatif_aux_droits_%C3%A9conomiques,_sociaux_et_culturels"}
+{"decision": "high_score_links", "nlp_score": 0.287811, "node_id": 348, "score": null, "seq": 107, "url": "https://frozen.test/Yaound%C3%A9"}
+{"decision": "low_score_links", "nlp_score": 0.073879, "node_id": 348, "score": null, "seq": 108, "url": "https://frozen.test/Institut"}
+{"decision": "low_score_links", "nlp_score": 0.090146, "node_id": 348, "score": null, "seq": 108, "url": "https://frozen.test/XXIe_si%C3%A8cle"}
+{"decision": "low_score_links", "nlp_score": 0.099724, "node_id": 348, "score": null, "seq": 108, "url": "https://frozen.test/Jacques_Attali"}
+{"decision": "priority_calculated", "nlp_score": 0.342768, "node_id": 348, "priority": 0.169022, "score": 0, "seq": 109, "url": "https://frozen.test/Cambodge"}
+{"decision": "priority_calculated", "nlp_score": 0.299115, "node_id": 348, "priority": 0.179586, "score": 0, "seq": 109, "url": "https://frozen.test/Pacte_international_relatif_aux_droits_%C3%A9conomiques,_sociaux_et_culturels"}
+{"decision": "priority_calculated", "nlp_score": 0.287811, "node_id": 348, "priority": 0.135451, "score": 0, "seq": 109, "url": "https://frozen.test/Yaound%C3%A9"}
+{"decision": "priority_calculated", "nlp_score": 0.272535, "node_id": 348, "priority": 0.136643, "score": 14, "seq": 110, "url": "https://frozen.test/Enseignement_secondaire"}
+{"decision": "priority_calculated", "nlp_score": 0.259763, "node_id": 348, "priority": 0.298152, "score": 48, "seq": 110, "url": "https://frozen.test/Universit%C3%A9_de_Californie_%C3%A0_Berkeley"}
+{"decision": "priority_calculated", "nlp_score": 0.102317, "node_id": 348, "priority": 0.387882, "score": 77, "seq": 110, "url": "https://frozen.test/Grande_%C3%A9cole"}
+{"decision": "priority_calculated", "nlp_score": 0.256673, "node_id": 348, "priority": 0.213733, "score": 28, "seq": 110, "url": "https://frozen.test/Ann%C3%A9es_1970"}
+{"decision": "priority_calculated", "nlp_score": 0.276543, "node_id": 348, "priority": 0.459056, "score": 89, "seq": 110, "url": "https://frozen.test/Universit%C3%A9_du_Qu%C3%A9bec"}
+{"decision": "priority_calculated", "nlp_score": 0.233306, "node_id": 348, "priority": 0.45965, "score": 96, "seq": 110, "url": "https://frozen.test/Norodom_Sihanouk"}
+{"decision": "priority_calculated", "nlp_score": 0.206257, "node_id": 348, "priority": 0.078246, "score": 0, "seq": 110, "url": "https://frozen.test/Iran"}
+{"decision": "priority_calculated", "nlp_score": 0.124417, "node_id": 348, "priority": 0.348337, "score": 65, "seq": 110, "url": "https://frozen.test/Alma_mater"}
+{"decision": "priority_calculated", "nlp_score": 0.143363, "node_id": 348, "priority": 0.12195, "score": 3, "seq": 110, "url": "https://frozen.test/Institut_catholique"}
+{"decision": "priority_calculated", "nlp_score": 0.416997, "node_id": 348, "priority": 0.470683, "score": 93, "seq": 110, "url": "https://frozen.test/Organisation_de_coop%C3%A9ration_et_de_d%C3%A9veloppement_%C3%A9conomiques"}
+{"decision": "low_score_links", "nlp_score": 0.061144, "node_id": 349, "score": null, "seq": 113, "url": "https://frozen.test/1988"}
+{"decision": "high_score_links", "nlp_score": 0.397975, "node_id": 107, "score": null, "seq": 119, "url": "https://frozen.test/Syrie"}
+{"decision": "high_score_links", "nlp_score": 0.383879, "node_id": 107, "score": null, "seq": 119, "url": "https://frozen.test/Congo_belge"}
+{"decision": "high_score_links", "nlp_score": 0.370114, "node_id": 107, "score": null, "seq": 119, "url": "https://frozen.test/Milan"}
+{"decision": "low_score_links", "nlp_score": 0.059648, "node_id": 107, "score": null, "seq": 120, "url": "https://frozen.test/Bourgogne-Franche-Comt%C3%A9"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 107, "score": null, "seq": 120, "url": "https://frozen.test/Islam"}
+{"decision": "low_score_links", "nlp_score": 0.096503, "node_id": 107, "score": null, "seq": 120, "url": "https://frozen.test/Ancien_R%C3%A9gime"}
+{"decision": "priority_calculated", "nlp_score": 0.397975, "node_id": 107, "priority": 0.234928, "score": 0, "seq": 121, "url": "https://frozen.test/Syrie"}
+{"decision": "priority_calculated", "nlp_score": 0.383879, "node_id": 107, "priority": 0.228517, "score": 0, "seq": 121, "url": "https://frozen.test/Congo_belge"}
+{"decision": "priority_calculated", "nlp_score": 0.370114, "node_id": 107, "priority": 0.232015, "score": 0, "seq": 121, "url": "https://frozen.test/Milan"}
+{"decision": "priority_calculated", "nlp_score": 0.290813, "node_id": 107, "priority": 0.160771, "score": 11, "seq": 122, "url": "https://frozen.test/Premier_Empire"}
+{"decision": "priority_calculated", "nlp_score": 0.313786, "node_id": 107, "priority": 0.490936, "score": 94, "seq": 122, "url": "https://frozen.test/20_ao%C3%BBt"}
+{"decision": "priority_calculated", "nlp_score": 0.224506, "node_id": 107, "priority": 0.325554, "score": 56, "seq": 122, "url": "https://frozen.test/17_mai"}
+{"decision": "priority_calculated", "nlp_score": 0.23036, "node_id": 107, "priority": 0.446403, "score": 87, "seq": 122, "url": "https://frozen.test/Alg%C3%A9rie"}
+{"decision": "priority_calculated", "nlp_score": 0.204376, "node_id": 107, "priority": 0.189988, "score": 21, "seq": 122, "url": "https://frozen.test/Chine"}
+{"decision": "priority_calculated", "nlp_score": 0.099872, "node_id": 107, "priority": 0.215145, "score": 24, "seq": 122, "url": "https://frozen.test/Louis_XI_de_France"}
+{"decision": "priority_calculated", "nlp_score": 0.13407, "node_id": 107, "priority": 0.387768, "score": 68, "seq": 122, "url": "https://frozen.test/Alphonse_V_d'Aragon"}
+{"decision": "priority_calculated", "nlp_score": 0.191487, "node_id": 107, "priority": 0.447681, "score": 77, "seq": 122, "url": "https://frozen.test/Si%C3%A8cle_des_Lumi%C3%A8res"}
+{"decision": "priority_calculated", "nlp_score": 0.224819, "node_id": 107, "priority": 0.271714, "score": 31, "seq": 122, "url": "https://frozen.test/Universit%C3%A9_Laval"}
+{"decision": "priority_calculated", "nlp_score": 0.595997, "node_id": 107, "priority": 0.386273, "score": 55, "seq": 122, "url": "https://frozen.test/La_Haye"}
+{"decision": "high_score_links", "nlp_score": 0.443635, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/1961"}
+{"decision": "high_score_links", "nlp_score": 0.403928, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Pr%C3%A9sident_des_%C3%89tats-Unis"}
+{"decision": "high_score_links", "nlp_score": 0.403707, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Union_des_r%C3%A9publiques_socialistes_sovi%C3%A9tiques"}
+{"decision": "high_score_links", "nlp_score": 0.399205, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Tha%C3%AFlande"}
+{"decision": "high_score_links", "nlp_score": 0.396836, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/16_juin"}
+{"decision": "high_score_links", "nlp_score": 0.364672, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Ann%C3%A9es_1990"}
+{"decision": "high_score_links", "nlp_score": 0.345669, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/20_juin"}
+{"decision": "high_score_links", "nlp_score": 0.344836, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Assembl%C3%A9e_g%C3%A9n%C3%A9rale_des_Nations_unies"}
+{"decision": "high_score_links", "nlp_score": 0.33764, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Ann%C3%A9es_1980"}
+{"decision": "high_score_links", "nlp_score": 0.334091, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Plon"}
+{"decision": "high_score_links", "nlp_score": 0.327254, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/14_juin"}
+{"decision": "high_score_links", "nlp_score": 0.314155, "node_id": 358, "score": null, "seq": 125, "url": "https://frozen.test/Indon%C3%A9sie"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/7_octobre"}
+{"decision": "low_score_links", "nlp_score": 0.047316, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Juin_1960"}
+{"decision": "low_score_links", "nlp_score": 0.027499, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Pho_Proeung"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/19_avril"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/7_juillet"}
+{"decision": "low_score_links", "nlp_score": 0.101651, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/%C3%89gypte"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Marxisme"}
+{"decision": "low_score_links", "nlp_score": 0.13149, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Ann%C3%A9es_1950"}
+{"decision": "low_score_links", "nlp_score": 0.091363, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/John_Fitzgerald_Kennedy"}
+{"decision": "low_score_links", "nlp_score": 0.131268, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/2_septembre"}
+{"decision": "low_score_links", "nlp_score": 0.059567, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Alger"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Soudan"}
+{"decision": "low_score_links", "nlp_score": 0.072356, "node_id": 358, "score": null, "seq": 126, "url": "https://frozen.test/Mauritanie"}
+{"decision": "priority_calculated", "nlp_score": 0.443635, "node_id": 358, "priority": 0.160453, "score": 0, "seq": 127, "url": "https://frozen.test/1961"}
+{"decision": "priority_calculated", "nlp_score": 0.403928, "node_id": 358, "priority": 0.122669, "score": 0, "seq": 127, "url": "https://frozen.test/Pr%C3%A9sident_des_%C3%89tats-Unis"}
+{"decision": "priority_calculated", "nlp_score": 0.403707, "node_id": 358, "priority": 0.129052, "score": 0, "seq": 127, "url": "https://frozen.test/Union_des_r%C3%A9publiques_socialistes_sovi%C3%A9tiques"}
+{"decision": "priority_calculated", "nlp_score": 0.399205, "node_id": 358, "priority": 0.138299, "score": 0, "seq": 127, "url": "https://frozen.test/Tha%C3%AFlande"}
+{"decision": "priority_calculated", "nlp_score": 0.396836, "node_id": 358, "priority": 0.109686, "score": 0, "seq": 127, "url": "https://frozen.test/16_juin"}
+{"decision": "priority_calculated", "nlp_score": 0.364672, "node_id": 358, "priority": 0.123428, "score": 0, "seq": 127, "url": "https://frozen.test/Ann%C3%A9es_1990"}
+{"decision": "priority_calculated", "nlp_score": 0.345669, "node_id": 358, "priority": 0.118641, "score": 0, "seq": 127, "url": "https://frozen.test/20_juin"}
+{"decision": "priority_calculated", "nlp_score": 0.344836, "node_id": 358, "priority": 0.129533, "score": 0, "seq": 127, "url": "https://frozen.test/Assembl%C3%A9e_g%C3%A9n%C3%A9rale_des_Nations_unies"}
+{"decision": "priority_calculated", "nlp_score": 0.33764, "node_id": 358, "priority": 0.10458, "score": 0, "seq": 127, "url": "https://frozen.test/Ann%C3%A9es_1980"}
+{"decision": "priority_calculated", "nlp_score": 0.334091, "node_id": 358, "priority": 0.118319, "score": 0, "seq": 127, "url": "https://frozen.test/Plon"}
+{"decision": "priority_calculated", "nlp_score": 0.327254, "node_id": 358, "priority": 0.096421, "score": 0, "seq": 127, "url": "https://frozen.test/14_juin"}
+{"decision": "priority_calculated", "nlp_score": 0.314155, "node_id": 358, "priority": 0.103752, "score": 0, "seq": 127, "url": "https://frozen.test/Indon%C3%A9sie"}
+{"decision": "priority_calculated", "nlp_score": 0.28696, "node_id": 358, "priority": 0.193094, "score": 34, "seq": 128, "url": "https://frozen.test/5_mai"}
+{"decision": "priority_calculated", "nlp_score": 0.308874, "node_id": 358, "priority": 0.421664, "score": 89, "seq": 128, "url": "https://frozen.test/Avril_1960"}
+{"decision": "priority_calculated", "nlp_score": 0.298065, "node_id": 358, "priority": 0.176541, "score": 22, "seq": 128, "url": "https://frozen.test/1957"}
+{"decision": "priority_calculated", "nlp_score": 0.28696, "node_id": 358, "priority": 0.217094, "score": 40, "seq": 128, "url": "https://frozen.test/5_janvier"}
+{"decision": "priority_calculated", "nlp_score": 0.19012, "node_id": 358, "priority": 0.332391, "score": 74, "seq": 128, "url": "https://frozen.test/24_janvier"}
+{"decision": "priority_calculated", "nlp_score": 0.247276, "node_id": 358, "priority": 0.172413, "score": 30, "seq": 128, "url": "https://frozen.test/Premiers_ministres_du_Cambodge"}
+{"decision": "priority_calculated", "nlp_score": 0.299193, "node_id": 358, "priority": 0.356843, "score": 74, "seq": 128, "url": "https://frozen.test/Hamani_Diori"}
+{"decision": "priority_calculated", "nlp_score": 0.207255, "node_id": 358, "priority": 0.307264, "score": 68, "seq": 128, "url": "https://frozen.test/Laos"}
+{"decision": "priority_calculated", "nlp_score": 0.270253, "node_id": 358, "priority": 0.453745, "score": 92, "seq": 128, "url": "https://frozen.test/Arabie_saoudite"}
+{"decision": "priority_calculated", "nlp_score": 0.195691, "node_id": 358, "priority": 0.339567, "score": 76, "seq": 128, "url": "https://frozen.test/Japon"}
+{"decision": "priority_calculated", "nlp_score": 0.19103, "node_id": 358, "priority": 0.365482, "score": 82, "seq": 128, "url": "https://frozen.test/Dwight_David_Eisenhower"}
+{"decision": "priority_calculated", "nlp_score": 0.193872, "node_id": 358, "priority": 0.389384, "score": 89, "seq": 128, "url": "https://frozen.test/Soekarno"}
+{"decision": "priority_calculated", "nlp_score": 0.165368, "node_id": 358, "priority": 0.412801, "score": 89, "seq": 128, "url": "https://frozen.test/R%C3%A9publique_du_Vi%C3%AAt_Nam"}
+{"decision": "priority_calculated", "nlp_score": 0.30077, "node_id": 358, "priority": 0.458099, "score": 95, "seq": 128, "url": "https://frozen.test/Ng%C3%B4_%C4%90%C3%ACnh_Di%E1%BB%87m"}
+{"decision": "priority_calculated", "nlp_score": 0.160664, "node_id": 358, "priority": 0.281564, "score": 56, "seq": 128, "url": "https://frozen.test/Liu_Shaoqi"}
+{"decision": "priority_calculated", "nlp_score": 0.262742, "node_id": 358, "priority": 0.140144, "score": 17, "seq": 128, "url": "https://frozen.test/Conseil_de_s%C3%A9curit%C3%A9_des_Nations_unies"}
+{"decision": "priority_calculated", "nlp_score": 0.132628, "node_id": 358, "priority": 0.140149, "score": 19, "seq": 128, "url": "https://frozen.test/Cour_internationale_de_justice"}
+{"decision": "priority_calculated", "nlp_score": 0.140011, "node_id": 358, "priority": 0.142777, "score": 19, "seq": 128, "url": "https://frozen.test/Guerre_du_Vi%C3%AAt_Nam"}
+{"decision": "priority_calculated", "nlp_score": 0.180457, "node_id": 358, "priority": 0.294372, "score": 55, "seq": 128, "url": "https://frozen.test/9_d%C3%A9cembre"}
+{"decision": "priority_calculated", "nlp_score": 0.135259, "node_id": 358, "priority": 0.112383, "score": 11, "seq": 128, "url": "https://frozen.test/Front_national_de_lib%C3%A9ration_du_Sud_Vi%C3%AAt_Nam"}
+{"decision": "priority_calculated", "nlp_score": 0.289116, "node_id": 358, "priority": 0.105744, "score": 6, "seq": 128, "url": "https://frozen.test/R%C3%A9publique_d%C3%A9mocratique_du_Vi%C3%AAt_Nam"}
+{"decision": "priority_calculated", "nlp_score": 0.272348, "node_id": 358, "priority": 0.081124, "score": 4, "seq": 128, "url": "https://frozen.test/Deng_Xiaoping"}
+{"decision": "priority_calculated", "nlp_score": 0.187806, "node_id": 358, "priority": 0.169931, "score": 24, "seq": 128, "url": "https://frozen.test/Noam_Chomsky"}
+{"decision": "priority_calculated", "nlp_score": 0.30334, "node_id": 358, "priority": 0.128453, "score": 16, "seq": 128, "url": "https://frozen.test/Courrier_international"}
+{"decision": "priority_calculated", "nlp_score": 0.164633, "node_id": 358, "priority": 0.345352, "score": 78, "seq": 128, "url": "https://frozen.test/Euronews"}
+{"decision": "priority_calculated", "nlp_score": 0.2985, "node_id": 358, "priority": 0.261467, "score": 50, "seq": 128, "url": "https://frozen.test/R%C3%A9volution_cubaine"}
+{"decision": "priority_calculated", "nlp_score": 0.132962, "node_id": 358, "priority": 0.314539, "score": 64, "seq": 128, "url": "https://frozen.test/Grand_Bond_en_avant"}
+{"decision": "priority_calculated", "nlp_score": 0.181205, "node_id": 358, "priority": 0.150666, "score": 29, "seq": 128, "url": "https://frozen.test/Crise_congolaise"}
+{"decision": "priority_calculated", "nlp_score": 0.13894, "node_id": 358, "priority": 0.120887, "score": 18, "seq": 128, "url": "https://frozen.test/Rupture_sino-sovi%C3%A9tique"}
+{"decision": "priority_calculated", "nlp_score": 0.187432, "node_id": 358, "priority": 0.370456, "score": 74, "seq": 128, "url": "https://frozen.test/Incident_de_l'U-2"}
+{"decision": "priority_calculated", "nlp_score": 0.265912, "node_id": 358, "priority": 0.296476, "score": 60, "seq": 128, "url": "https://frozen.test/Nikita_Khrouchtchev"}
+{"decision": "priority_calculated", "nlp_score": 0.147231, "node_id": 358, "priority": 0.116185, "score": 9, "seq": 128, "url": "https://frozen.test/Patrice_Lumumba"}
+{"decision": "priority_calculated", "nlp_score": 0.30048, "node_id": 358, "priority": 0.170318, "score": 26, "seq": 128, "url": "https://frozen.test/Che_Guevara"}
+{"decision": "priority_calculated", "nlp_score": 0.227682, "node_id": 358, "priority": 0.287945, "score": 61, "seq": 128, "url": "https://frozen.test/Fidel_Castro"}
+{"decision": "priority_calculated", "nlp_score": 0.327254, "node_id": 358, "priority": 0.405853, "score": 87, "seq": 128, "url": "https://frozen.test/14_octobre"}
+{"decision": "priority_calculated", "nlp_score": 0.499144, "node_id": 358, "priority": 0.397844, "score": 79, "seq": 128, "url": "https://frozen.test/13_ao%C3%BBt"}
+{"decision": "priority_calculated", "nlp_score": 0.480684, "node_id": 358, "priority": 0.375663, "score": 75, "seq": 128, "url": "https://frozen.test/13_f%C3%A9vrier"}
+{"decision": "priority_calculated", "nlp_score": 0.47475, "node_id": 358, "priority": 0.190606, "score": 27, "seq": 128, "url": "https://frozen.test/Ann%C3%A9es_1940"}
+{"decision": "low_score_links", "nlp_score": 0.140437, "node_id": 357, "score": null, "seq": 131, "url": "https://frozen.test/Universit%C3%A9_Bishop's"}
+{"decision": "low_score_links", "nlp_score": 0.126526, "node_id": 357, "score": null, "seq": 131, "url": "https://frozen.test/Universit%C3%A9_de_Montr%C3%A9al"}
+{"decision": "priority_calculated", "nlp_score": 0.297324, "node_id": 357, "priority": 0.122531, "score": 15, "seq": 132, "url": "https://frozen.test/Jean_Lesage"}
+{"decision": "priority_calculated", "nlp_score": 0.40937, "node_id": 357, "priority": 0.282758, "score": 51, "seq": 132, "url": "https://frozen.test/Universit%C3%A9_d'Ottawa"}
+{"decision": "priority_calculated", "nlp_score": 0.316172, "node_id": 357, "priority": 0.131843, "score": 20, "seq": 132, "url": "https://frozen.test/Universit%C3%A9_de_Toronto"}
+{"decision": "priority_calculated", "nlp_score": 0.394302, "node_id": 357, "priority": 0.150719, "score": 18, "seq": 132, "url": "https://frozen.test/Universit%C3%A9_McGill"}
+{"decision": "priority_calculated", "nlp_score": 0.42876, "node_id": 357, "priority": 0.435139, "score": 88, "seq": 132, "url": "https://frozen.test/Universit%C3%A9_de_Sherbrooke"}
+{"decision": "priority_calculated", "nlp_score": 0.47271, "node_id": 357, "priority": 0.088353, "score": 0, "seq": 132, "url": "https://frozen.test/Universit%C3%A9_de_Moncton"}
+{"decision": "low_score_links", "nlp_score": 0.062351, "node_id": 43, "score": null, "seq": 135, "url": "https://frozen.test/Kairouan"}
+{"decision": "low_score_links", "nlp_score": 0.157357, "node_id": 43, "score": null, "seq": 135, "url": "https://frozen.test/Avicenne"}
+{"decision": "priority_calculated", "nlp_score": 0.378125, "node_id": 43, "priority": 0.402936, "score": 51, "seq": 136, "url": "https://frozen.test/Liste_des_universit%C3%A9s_en_Afrique"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 401, "score": null, "seq": 139, "url": "https://frozen.test/1963"}
+{"decision": "priority_calculated", "nlp_score": 0.526907, "node_id": 401, "priority": 0.276304, "score": 54, "seq": 140, "url": "https://frozen.test/26_octobre"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 89, "score": null, "seq": 143, "url": "https://frozen.test/Internet"}
+{"decision": "low_score_links", "nlp_score": 0.095107, "node_id": 89, "score": null, "seq": 143, "url": "https://frozen.test/Universit%C3%A9_de_Pennsylvanie"}
+{"decision": "priority_calculated", "nlp_score": 0.206729, "node_id": 89, "priority": 0.364812, "score": 64, "seq": 144, "url": "https://frozen.test/Massachusetts"}
+{"decision": "priority_calculated", "nlp_score": 0.27239, "node_id": 89, "priority": 0.452379, "score": 84, "seq": 144, "url": "https://frozen.test/Jean_Tirole"}
+{"decision": "priority_calculated", "nlp_score": 0.359361, "node_id": 145, "priority": 0.233462, "score": 26, "seq": 148, "url": "https://frozen.test/Universit%C3%A9_de_Vilnius"}
+{"decision": "low_score_links", "nlp_score": 0.186391, "node_id": 118, "score": null, "seq": 152, "url": "https://frozen.test/Loi_du_18_mars_1880_relative_%C3%A0_la_libert%C3%A9_de_l'enseignement_sup%C3%A9rieur"}
+{"decision": "low_score_links", "nlp_score": 0.145652, "node_id": 118, "score": null, "seq": 152, "url": "https://frozen.test/P%C3%A9dagogie"}
+{"decision": "low_score_links", "nlp_score": 0.076231, "node_id": 35, "score": null, "seq": 156, "url": "https://frozen.test/Ivy_League"}
+{"decision": "low_score_links", "nlp_score": 0.194098, "node_id": 35, "score": null, "seq": 156, "url": "https://frozen.test/Universit%C3%A9_Stanford"}
+{"decision": "low_score_links", "nlp_score": 0.165769, "node_id": 35, "score": null, "seq": 156, "url": "https://frozen.test/Am%C3%A9rique_du_Nord"}
+{"decision": "priority_calculated", "nlp_score": 0.277533, "node_id": 35, "priority": 0.461682, "score": 68, "seq": 157, "url": "https://frozen.test/Universit%C3%A9_de_Princeton"}
+{"decision": "priority_calculated", "nlp_score": 0.200141, "node_id": 35, "priority": 0.163846, "score": 1, "seq": 157, "url": "https://frozen.test/Universit%C3%A9_Columbia"}
+{"decision": "priority_calculated", "nlp_score": 0.213823, "node_id": 35, "priority": 0.498586, "score": 84, "seq": 157, "url": "https://frozen.test/Universit%C3%A9_Cornell"}
+{"decision": "priority_calculated", "nlp_score": 0.300412, "node_id": 35, "priority": 0.429668, "score": 72, "seq": 157, "url": "https://frozen.test/Universit%C3%A9_de_Nankin"}
+{"decision": "low_score_links", "nlp_score": 0.058763, "node_id": 437, "score": null, "seq": 161, "url": "https://frozen.test/2021"}
+{"decision": "low_score_links", "nlp_score": 0.032177, "node_id": 437, "score": null, "seq": 161, "url": "https://frozen.test/Presbyt%C3%A9rianisme"}
+{"decision": "low_score_links", "nlp_score": 0.0, "node_id": 437, "score": null, "seq": 161, "url": "https://frozen.test/Californie"}
+{"decision": "low_score_links", "nlp_score": 0.166724, "node_id": 437, "score": null, "seq": 161, "url": "https://frozen.test/Dartmouth_College"}
+{"decision": "priority_calculated", "nlp_score": 0.252474, "node_id": 437, "priority": 0.409089, "score": 61, "seq": 162, "url": "https://frozen.test/Universit%C3%A9_aux_%C3%89tats-Unis"}
+{"decision": "priority_calculated", "nlp_score": 0.248652, "node_id": 437, "priority": 0.302614, "score": 39, "seq": 162, "url": "https://frozen.test/Universit%C3%A9_Brown"}
