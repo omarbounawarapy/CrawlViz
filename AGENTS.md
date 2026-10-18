@@ -34,9 +34,10 @@ domain has moved, its files stay where the table says.
 | `make check-changed` | ruff, ESLint and the tests that cover the files your branch changed |
 | `make check` | lint, all tests, hook tests and the UI build: what CI runs |
 | `make hook-test` | the agent guard hook tests |
+| `PYTHONPATH=. pytest -m pins` | the behaviour pins (`tests/pins/README.md`); goldens change only with `--update-pins` |
 | `python3 .claude/hooks/commit_msg_check.py --range main..HEAD` | commit titles in a range |
 
-Planned in phase A and not available yet: `pytest -m pins`, `CRAWLVIZ_OFFLINE=1`,
+Planned in phase A and not available yet: `CRAWLVIZ_OFFLINE=1`,
 `make typecheck`, `make e2e`, `make model`. Do not document or rely on them until they exist.
 
 ## How we work
