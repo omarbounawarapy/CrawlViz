@@ -9,13 +9,15 @@ import asyncio
 import logging
 import random
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import ClassVar
 
 from config import (
     MAX_LLM_LINKS_PER_NODE,
     NLP_HIGH_PERCENTILE,
-    NLP_PERCENTILE_BUCKETING,
     NLP_LOW_PERCENTILE,
+    NLP_PERCENTILE_BUCKETING,
     PERCENTILE_MIN_LINKS,
 )
 from core.event_broker import EventBroker
@@ -26,9 +28,9 @@ from events import (
     HighScoreLinksEvent,
     LinksScoredEvent,
     NodeAddedEvent,
-    PriorityCalculationFailedEvent,
     PageFetchedEvent,
     PriorityCalculatedEvent,
+    PriorityCalculationFailedEvent,
     RequestFailedEvent,
     ScoreRescheduledEvent,
     ScoringCompletedEvent,
@@ -48,7 +50,6 @@ from pipelines import (
     StoragePipeline,
     TransformationPipeline,
 )
-
 from pipelines.base_pipeline import SHUTDOWN
 from pipelines.frontier_queue import FrontierQueue
 
@@ -135,8 +136,19 @@ class _ParkingScoring(ScoringPipeline):
     be fetched. Waiting for a fetch is not work in progress, so the lockstep
     gate must tell it apart from scoring."""
 
-    parked = False
     gate = None  # lockstep: callable, true when nothing else is in flight
+    _waiting_for = None  # the node whose fetch the worker waits for
+
+    @property
+    def parked(self) -> bool:
+        """True while the worker waits for a page that is not fetched yet.
+
+        It turns False when the node becomes ready, not when the worker
+        resumes. In between, the crawler looked quiet, so the next page was
+        taken from the frontier before this page's links were scored.
+        """
+        node = self._waiting_for
+        return node is not None and not node.ready.done()
 
     async def _worker_loop(self, worker_id: int) -> None:
         # The base loop, except that the worker picks its next node only once
@@ -163,11 +175,11 @@ class _ParkingScoring(ScoringPipeline):
     async def _await_ready(self, node):
         if node.ready.done():
             return await super()._await_ready(node)
-        self.parked = True
+        self._waiting_for = node
         try:
             return await super()._await_ready(node)
         finally:
-            self.parked = False
+            self._waiting_for = None
 
 
 class _Lockstep:
@@ -257,7 +269,7 @@ class HealthMonitor:
         measurement; reported next to it.
     """
 
-    EVENTS = [
+    EVENTS: ClassVar[list[type]] = [
         ScoringFailedEvent,
         EmptyScoreResultsEvent,
         ScoringCompletedEvent,
@@ -386,24 +398,33 @@ def _thresholds(kwargs: dict, percentiles) -> dict:
 
 
 async def run_policy(
-    graph: FrozenGraph, policy: str, budget: int, seed: int = 0, lockstep: bool = True
+    graph: FrozenGraph, policy: str, budget: int, seed: int = 0, lockstep: bool = True,
+    extra_components: Sequence[object] = (),
 ) -> RunResult:
-    """Fetch up to `budget` pages (the seed counts) starting from graph.seed."""
+    """Fetch up to `budget` pages (the seed counts) starting from graph.seed.
+
+    ``extra_components`` are subscribed like pipelines, after the stage pipelines
+    and before the health monitor (see ``_run``); observers such as the behaviour
+    pins use it.
+    """
     scoring_args = (
         _NoLlm(), POLICIES[policy](graph, seed),
         # Admit every link: a ranking baseline must not inherit the cascade's
         # bucketing, which drops low-NLP links before they reach the frontier.
     )
-    scoring_kwargs = dict(
-        low_threshold=-1.0,
-        high_threshold=2.0,
-        high_score_llm_fraction=0.0,
-        low_score_sample_fraction=0.0,
-        high_score_random_fraction=0.0,
-        percentile_bucketing=False,
-        max_llm_links=None,
+    scoring_kwargs = {
+        "low_threshold": -1.0,
+        "high_threshold": 2.0,
+        "high_score_llm_fraction": 0.0,
+        "low_score_sample_fraction": 0.0,
+        "high_score_random_fraction": 0.0,
+        "percentile_bucketing": False,
+        "max_llm_links": None,
+    }
+    return await _run(
+        graph, policy, budget, seed, scoring_args, scoring_kwargs, _passthrough,
+        list(extra_components), lockstep=lockstep,
     )
-    return await _run(graph, policy, budget, seed, scoring_args, scoring_kwargs, _passthrough, [], lockstep=lockstep)
 
 
 async def _run(
@@ -411,6 +432,11 @@ async def _run(
     extraction=EXTRACTION, retry_base_delay=0.01, idle_limit=0.5, lockstep=True,
     rate_limited=None, budget_gate=None, percentiles=(NLP_LOW_PERCENTILE, NLP_HIGH_PERCENTILE),
 ) -> RunResult:
+    """One lockstep run. Each component in ``extra`` has ``handlers`` (event
+    type to coroutine), ``start`` and ``put``, and is subscribed to the events
+    its ``handlers`` name, after the stage pipelines and before the health
+    monitor. An extra component is an observer: it does not change the pages the
+    run visits."""
     fetcher = graph.fetcher()
     if budget_gate is not None:
         budget_gate.fetched = lambda: len(fetcher.fetched)
@@ -541,6 +567,7 @@ async def run_cascade(
     high: float | None = None,
     low_pct: float | None = None,
     high_pct: float | None = None,
+    extra_components: Sequence[object] = (),
 ) -> RunResult:
     """The real cascade (embedding model, topic expansion, LLM scoring,
     bucketing, priority strategy) on a frozen graph. `llm` is anything with
@@ -566,6 +593,10 @@ async def run_cascade(
     ``low`` / ``high`` replace the absolute bucketing thresholds. The
     percentile bucketing the cascade normally uses would make them inert for
     nodes with enough links, so giving either switches it off.
+
+    ``extra_components`` are subscribed like pipelines, after the stage pipelines
+    and before the health monitor (see ``_run``); observers such as the behaviour
+    pins use it.
     """
     from config.runtime_config import default_runtime_config
     from nlp import BufferManager, SpaceUpdater
@@ -612,15 +643,15 @@ async def run_cascade(
     )
     if not 0 <= percentiles[0] < percentiles[1] <= 100:
         raise ValueError(f"low_pct ({percentiles[0]}) must be below high_pct ({percentiles[1]}), within 0..100")
-    kwargs = dict(
-        low_threshold=c.low_threshold if low is None else low,
-        high_threshold=c.high_threshold if high is None else high,
-        high_score_llm_fraction=c.high_score_llm_fraction,
-        low_score_sample_fraction=c.low_score_sample_fraction,
-        high_score_random_fraction=c.high_score_random_fraction,
-        percentile_bucketing=NLP_PERCENTILE_BUCKETING and low is None and high is None,
-        max_llm_links=MAX_LLM_LINKS_PER_NODE,
-    )
+    kwargs = {
+        "low_threshold": c.low_threshold if low is None else low,
+        "high_threshold": c.high_threshold if high is None else high,
+        "high_score_llm_fraction": c.high_score_llm_fraction,
+        "low_score_sample_fraction": c.low_score_sample_fraction,
+        "high_score_random_fraction": c.high_score_random_fraction,
+        "percentile_bucketing": NLP_PERCENTILE_BUCKETING and low is None and high is None,
+        "max_llm_links": MAX_LLM_LINKS_PER_NODE,
+    }
     if kwargs["low_threshold"] >= kwargs["high_threshold"]:
         raise ValueError(f"low ({kwargs['low_threshold']}) must be below high ({kwargs['high_threshold']})")
     if arm == "llm_all":
@@ -638,7 +669,7 @@ async def run_cascade(
         llm_service = _NoLlm()
     return await _run(
         graph, arm, budget, seed, (llm_service, nlp), kwargs,
-        get_strategy(c.default_priority_strategy), [], extraction,
+        get_strategy(c.default_priority_strategy), list(extra_components), extraction,
         retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
         rate_limited=lambda: bool(getattr(llm, "waiting", False)),
         budget_gate=gate, percentiles=percentiles,
