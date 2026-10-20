@@ -27,26 +27,39 @@ requested (what follows races with the stop). See `golden_files.py` and
 
 The golden file and the run are read back as JSON and compared value by value.
 Everything must be equal, including types (`36` is not `36.0`), key sets, list
-lengths and the order of the lines, except floats: two floats match when they
+lengths and the order of the lines. The one exception is the computed scores:
+the floats under `priority`, `nlp_score` and `nlp_breakdown` match when they
 differ by at most 1.5e-6, one rounding step plus half a step (`FLOAT_TOLERANCE`).
+The tolerance is absolute and meant for values in [0, 1]. Any other float, such
+as a temperature, must be equal.
 
-Why: numpy and BLAS sum in another order on another CPU or Python build, which
-moves a score by about 1e-9. A value near a rounding boundary then rounds to the
-neighbouring digit, so the same crawl wrote `0.534523` where the golden has
-`0.534522`. CI run 39410825053 (Python 3.12) failed on seven such values in
-`nlp_breakdown`, with the same pages, order, priorities and LLM requests. The
-goldens stay as they are; `fixtures/ci_run_39410825053_wire_messages.json` holds
-those seven lines and `test_golden_comparison.py` checks they pass.
+Why: the hashing embeddings are float32 (`nlp/embedding_engine.py`), and another
+numpy or BLAS build can move a score by one float32 ulp, about 6e-8. A value next
+to a rounding boundary then rounds to the neighbouring digit. For example
+`boilerplate_score` = sqrt(2/7) is 0.53452247 in float32, which rounds to
+`0.534522`; the next float32 up, 0.53452253, rounds to `0.534523`. CI run
+39410825053 (Python 3.12) failed on seven such values in `nlp_breakdown`, with
+the same pages, order, priorities and LLM requests. The goldens stay as they
+are; `fixtures/ci_run_39410825053_wire_messages.json` holds those seven lines and
+`test_golden_comparison.py` checks they pass.
 
 The tolerance cannot hide a change of crawl order:
 
 - Fetch order, node ids, page URLs, LLM prompts and the sequence of wire messages
   hold no floats or are strings, so they are compared exactly.
-- The floats that decide the order (`priority` and `nlp_score`) may drift within
-  the tolerance, but their order may not. Sorted by golden value they must still
-  be strictly increasing: values that were apart do not swap or merge, and values
-  that were equal do not split. A drift that would change the order fails with
-  `order changed, priority: ...` even when each value moved by one step.
+- The floats that decide the order may drift within the tolerance, but only
+  without a strict inversion: if the golden has `a < b` and the run has `a > b`,
+  the pin fails. Rounding is monotone, so a drift that keeps the true order can
+  make two values equal (a merge) or split two equal ones, but never invert them.
+  Priorities are compared across the whole file, because the queue compares any
+  two. `nlp_score` is compared only among the links of one parent page, which is
+  how the cascade uses it; a score that names no parent is not compared.
+  A failure reads `order changed, priority: ...`.
+
+If `order changed` fires while `fetch_order.jsonl`, `llm_requests.jsonl` and all
+the link decisions match, two near-equal values flipped between machines. Do not
+widen the tolerance and do not re-record the goldens on one machine; bring it to
+the research-scientist.
 
 A failure lists the changed values by line and path, for example
 `line 69: record.nlp_breakdown.boilerplate_score: 0.534522 became 0.5346`,

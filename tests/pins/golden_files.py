@@ -8,11 +8,18 @@ placeholder before anything is written or compared, and floats are rounded, so
 a golden file is byte-identical across runs and across processes.
 
 Comparing is structural: the golden file and the run are read back as JSON, and
-everything must be equal except floats, which may differ by one rounding step
-(see ``FLOAT_TOLERANCE``). A numpy or BLAS build that sums in another order moves
-a value by about 1e-9, which lands on the other side of a rounding boundary now
-and then. The order of every priority and NLP score must stay the same, so that
-the tolerance cannot turn into a different crawl order.
+everything must be equal except the computed scores (``COMPUTED_SCORE_KEYS``),
+which may differ by one rounding step (``FLOAT_TOLERANCE``). Another numpy or
+BLAS build can move a float32 score by one ulp (about 6e-8, from the hashing
+embeddings in ``nlp/embedding_engine.py``); a value next to a rounding boundary
+then rounds to the neighbouring digit. For example boilerplate_score = sqrt(2/7)
+is 0.53452247 in float32, which rounds to 0.534522, and the next float32 up,
+0.53452253, rounds to 0.534523.
+
+The tolerance must not turn into a different crawl order. Rounding is monotone,
+so a drift that keeps the true order of two values can make them equal but never
+invert them. A strict inversion of two priorities, or of two NLP scores of one
+parent page, therefore fails as "order changed" even when each moved by one step.
 """
 import difflib
 import json
@@ -40,7 +47,8 @@ FLOAT_DECIMALS = 6
 
 # Largest difference between a golden float and the same float now that still
 # counts as equal: one rounding step, plus half a step so that the float error of
-# subtracting two rounded values never decides. Two steps apart fails.
+# subtracting two rounded values never decides. Two steps apart fails. Absolute,
+# not relative: meant for scores in [0, 1], not for large values.
 FLOAT_TOLERANCE = 1.5 * 10**-FLOAT_DECIMALS
 
 # Keys whose floats decide the crawl order. Their values may drift within the
