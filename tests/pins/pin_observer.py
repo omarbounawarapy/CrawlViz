@@ -64,7 +64,8 @@ class PinObserver:
         if isinstance(event, PriorityCalculatedEvent):
             kind, node = "priority_calculated", event.parent
         else:
-            kind = "high_score_links" if isinstance(event, HighScoreLinksEvent) else "low_score_links"
+            is_high = isinstance(event, HighScoreLinksEvent)
+            kind = "high_score_links" if is_high else "low_score_links"
             node = event.node
         for record in event.records:
             self.decisions.append((event.seq, {
