@@ -1,4 +1,4 @@
-.PHONY: install dev dev-backend dev-frontend lint test check check-changed hook-test clean
+.PHONY: install dev dev-backend dev-frontend lint typecheck test check check-changed hook-test clean
 
 install:
 	uv sync --extra dev
@@ -23,12 +23,16 @@ lint:
 	uv run ruff check .
 	cd crawler-ui && npm run lint
 
+# Strict mypy; modules still on the legacy list in pyproject.toml are skipped.
+typecheck:
+	uv run mypy
+
 test:
 	uv run pytest -q
 	cd crawler-ui && npm run test
 
 # Everything CI runs. Agents and humans run this before asking for review.
-check: lint test hook-test
+check: lint typecheck test hook-test
 	cd crawler-ui && npm run build
 
 # Lint and tests for the files this branch changed (see tools/check_changed.py).
