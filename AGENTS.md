@@ -14,7 +14,7 @@ this file holds how the work is organised and done.
 | `services/`, `nlp/`, `priority/`, `models/` | Scoring, embeddings and the semantic space, ranking, domain models and prompts |
 | `infrastructure/` | HTTP client, LLM handler and provider translators, keys, call budget |
 | `config/` | `RuntimeConfig`, settings store, paths |
-| `benchmark/` | Frozen-graph benchmark, judges, audit, analysis, `PROTOCOL.md` |
+| `benchmark/` | Frozen-graph benchmark, judges, audit, analysis |
 | `crawler-ui/` | React app (Vite, d3, vitest) |
 | `tests/` | pytest suite; `tests/agents/` checks the agent guard hooks |
 | `docs/` | Architecture and developer docs; `docs/adr/` decisions; `docs/ux/` requirements |
@@ -59,8 +59,10 @@ Planned in phase A and not available yet: `CRAWLVIZ_OFFLINE=1`,
    action does not carry over to the next.
 7. **Write plainly.** No em dashes, no AI-sounding prose; run the no-ai-slop skill on docs,
    PR text and commit titles. PEP 8. Follow the conventions of the code you edit.
-8. **Respect the protocol.** Never change cache keys, prompts or models in the middle of an
-   experiment. A change to the method needs a PROTOCOL.md amendment that Omar approves.
+8. **Respect the method.** There is no study protocol until Phase G writes one; the October
+   pilot was a trial and is not used. Until then a change to the method needs research-scientist
+   sign-off and a reviewed pin update. Once the protocol exists, never change cache keys,
+   prompts or models during an experiment, and method changes need an amendment Omar approves.
 9. **Keep `.left-undone.json` current**: unfinished goals, unverified assumptions and deferred
    architecture, marked done when done.
 
@@ -69,11 +71,11 @@ Planned in phase A and not available yet: `CRAWLVIZ_OFFLINE=1`,
 ### Hierarchy
 
 ```
-Omar: owner. Approves public actions, protocol amendments, releases and priorities.
+Omar: owner. Approves public actions, method changes, releases and priorities.
 └── lead: orchestrator. The only agent that spawns others and merges.
     ├── Authorities: decide in their domain, mostly read-only
     │   ├── architect            technical design, ADRs, cross-area conflicts
-    │   ├── research-scientist   scoring and benchmark method, pin sign-off, amendments
+    │   ├── research-scientist   scoring and benchmark method, pin sign-off, the study protocol
     │   └── ux-researcher        user needs, requirements, acceptance, usability measurement
     ├── Builders: write code in their own area only
     │   ├── contracts-steward    schemas, migrations, generated OpenAPI and wire types
@@ -135,7 +137,7 @@ Every agent shares these guardrails, enforced by hooks:
 - only the platform-engineer changes dependencies
 - only listed agents use the network
 - read-only agents cannot change files from the shell
-- `benchmark/PROTOCOL.md` and `docs/usability-log.md` are append-only
+- `docs/usability-log.md` and, once written, `benchmark/PROTOCOL.md` are append-only
 - builders cannot finish while `make check-changed` fails
 
 ## Workflow for a task
@@ -236,10 +238,9 @@ the shared empty state`.
   `tests/test_wire_protocol.py`. Change it only through the contracts-steward.
 - **Scoring output format.** The scoring prompt's JSON output format is locked
   (`models/prompts.py`). Prompt edits are method changes.
-- **Benchmark records.** `benchmark/PROTOCOL.md` is append-only. Results, analysis and
-  `SHA256SUMS` are never edited by hand.
-- **Experiments in progress.** LLM cache keys, prompts and model ids do not change while an
-  experiment is running.
+- **Study records (from Phase G).** The study protocol is append-only. Results, analysis and
+  `SHA256SUMS` are never edited by hand, and LLM cache keys, prompts and model ids do not
+  change while an experiment is running.
 - **Single-worker sinks.** The crawl log and document archive sinks run with one worker,
   because they write one file in order.
 - **Offline doubles.** These exist for tests and agents, so no keys or network are needed:
@@ -257,7 +258,7 @@ phases it depends on have passed their gates.
 |---|---|---|
 | A. Setup and safety net | Agent organisation, snapshot tag, behaviour pins, tooling, offline mode, quality baseline | none |
 | B. Consumer and design discovery | Context of use, tasks, baseline usability, ranked requirements, ADRs, method review, threat model | A |
-| C. Correctness fixes | Security, data loss, politeness, UI and config bugs, then method fixes with approved amendments | B |
+| C. Correctness fixes | Security, data loss, politeness, UI and config bugs, then method fixes with research-scientist sign-off | B |
 | D. Contracts and backend architecture | Import cycles, packages, pipeline naming, versioned contracts, god objects, DRY | C |
 | E. Backend capabilities | LLM layer, performance, observability, configurability, feature APIs; ends with API v2 frozen | D |
 | F. Frontend | Design system, structure and strict TypeScript, splits, features on API v2, quality pass | E |
