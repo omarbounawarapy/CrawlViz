@@ -97,23 +97,90 @@ def test_a_long_list_of_changed_values_is_cut_with_a_count(tmp_path: Path) -> No
     assert failure.count("became") == MAX_CHANGED_VALUES
 
 
-@pytest.mark.parametrize("key", ["priority", "nlp_score"])
-def test_two_ordering_values_that_swap_within_the_step_fail(tmp_path: Path, key: str) -> None:
-    golden = [{key: 0.5}, {key: 0.5 + ROUNDING_STEP}]
-    now = [{key: 0.5 + ROUNDING_STEP}, {key: 0.5}]
+def link(parent: int, nlp_score: float) -> dict[str, object]:
+    """A `link_scores` record: the cascade's decision for a link found on page ``parent``."""
+    return {"decision": "high_score_links", "node_id": parent, "nlp_score": nlp_score}
+
+
+def candidates(parent: str, *scores: float) -> dict[str, object]:
+    """A `CANDIDATE_EVALUATED` wire message: the scored links of one parent page."""
+    return {
+        "type": "CANDIDATE_EVALUATED",
+        "parent_id": parent,
+        "candidates": [{"nlp_score": score} for score in scores],
+    }
+
+
+LOW, HIGH = 0.5, 0.5 + ROUNDING_STEP
+
+
+def test_two_priorities_that_swap_within_the_step_fail(tmp_path: Path) -> None:
+    golden, now = [{"priority": LOW}, {"priority": HIGH}], [{"priority": HIGH}, {"priority": LOW}]
 
     failure = failure_for(tmp_path, golden, now)
 
-    assert failure is not None and f"order changed, {key}" in failure
-    assert '+{"' + key + '": 0.500001}' in failure
+    assert failure is not None and "order changed, priority" in failure
+    assert '+{"priority": 0.500001}' in failure
 
 
-def test_ordering_values_that_were_equal_or_apart_stay_so_or_fail(tmp_path: Path) -> None:
-    equal = [{"priority": 0.5}, {"priority": 0.5}]
-    apart = [{"priority": 0.5}, {"priority": 0.5 + ROUNDING_STEP}]
+def test_priorities_are_compared_across_parents(tmp_path: Path) -> None:
+    golden = [{"parent_id": "1", "priority": LOW}, {"parent_id": "2", "priority": HIGH}]
+    now = [{"parent_id": "1", "priority": HIGH}, {"parent_id": "2", "priority": LOW}]
 
-    assert failure_for(tmp_path, equal, [{"priority": 0.5}, {"priority": 0.5 + ROUNDING_STEP}])
-    assert failure_for(tmp_path, apart, [{"priority": 0.5}, {"priority": 0.5}])
+    assert failure_for(tmp_path, golden, now) is not None
+
+
+def test_two_scores_of_one_parent_that_swap_within_the_step_fail(tmp_path: Path) -> None:
+    on_disk = failure_for(tmp_path, [link(7, LOW), link(7, HIGH)], [link(7, HIGH), link(7, LOW)])
+    on_wire = failure_for(tmp_path, [candidates("7", LOW, HIGH)], [candidates("7", HIGH, LOW)])
+
+    assert on_disk is not None and "order changed, nlp_score of parent 7" in on_disk
+    assert on_wire is not None and "order changed, nlp_score of parent 7" in on_wire
+
+
+def test_scores_of_different_parents_are_never_compared(tmp_path: Path) -> None:
+    on_disk = failure_for(tmp_path, [link(7, LOW), link(8, HIGH)], [link(7, HIGH), link(8, LOW)])
+    golden = [candidates("7", LOW), candidates("8", HIGH)]
+    on_wire = failure_for(tmp_path, golden, [candidates("7", HIGH), candidates("8", LOW)])
+
+    assert on_disk is None and on_wire is None
+
+
+def test_a_score_with_no_parent_is_not_compared(tmp_path: Path) -> None:
+    # NODE_SCORED_DETAIL names the scored node, not the page it was found on; the same
+    # score is compared where its parent is named.
+    golden = [{"node_id": "24", "nlp_score": LOW}, {"node_id": "25", "nlp_score": HIGH}]
+    now = [{"node_id": "24", "nlp_score": HIGH}, {"node_id": "25", "nlp_score": LOW}]
+
+    assert failure_for(tmp_path, golden, now) is None
+
+
+def test_two_priorities_that_merge_on_one_rounded_value_pass(tmp_path: Path) -> None:
+    # isi link_scores, seq 121 and 5: 0.234928 and 0.234929 are one float32 step apart.
+    golden = [{"priority": 0.234928}, {"priority": 0.234929}]
+
+    assert failure_for(tmp_path, golden, [{"priority": 0.234929}, {"priority": 0.234929}]) is None
+    assert failure_for(tmp_path, golden, [{"priority": 0.234928}, {"priority": 0.234928}]) is None
+
+
+def test_two_equal_priorities_that_split_by_a_step_pass(tmp_path: Path) -> None:
+    golden, now = [{"priority": LOW}, {"priority": LOW}], [{"priority": LOW}, {"priority": HIGH}]
+
+    assert failure_for(tmp_path, golden, now) is None
+
+
+def test_a_long_list_of_order_violations_is_cut_with_a_count(tmp_path: Path) -> None:
+    golden: list[object] = []
+    now: list[object] = []
+    for index in range(MAX_CHANGED_VALUES + 2):
+        low = 0.1 + index * 1e-3
+        golden += [{"priority": low}, {"priority": low + ROUNDING_STEP}]
+        now += [{"priority": low + ROUNDING_STEP}, {"priority": low}]
+
+    failure = failure_for(tmp_path, golden, now)
+
+    assert failure is not None and "... 2 more order violations" in failure
+    assert failure.count("order changed") == MAX_CHANGED_VALUES
 
 
 def test_ordering_values_that_all_move_together_within_the_step_pass(tmp_path: Path) -> None:

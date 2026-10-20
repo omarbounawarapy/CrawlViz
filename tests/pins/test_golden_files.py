@@ -101,7 +101,7 @@ def test_a_long_diff_is_cut_with_a_count_of_what_was_left_out(tmp_path: Path) ->
         check_golden(path, [{"n": -n} for n in range(200)], update=False)
 
     assert "more diff lines" in str(failure.value)
-    assert len(str(failure.value).splitlines()) <= MAX_DIFF_LINES + MAX_CHANGED_VALUES + 3
+    assert len(str(failure.value).splitlines()) <= MAX_DIFF_LINES + 2 * MAX_CHANGED_VALUES + 4
 
 
 

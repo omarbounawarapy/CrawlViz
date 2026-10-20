@@ -43,9 +43,11 @@ FLOAT_DECIMALS = 6
 # subtracting two rounded values never decides. Two steps apart fails.
 FLOAT_TOLERANCE = 1.5 * 10**-FLOAT_DECIMALS
 
-# Keys whose floats decide the crawl order (NLP score, then the queue priority).
-# Their values may drift within the tolerance, but their order may not.
-ORDERING_KEYS = frozenset({"priority", "nlp_score"})
+# Keys whose floats decide the crawl order. Their values may drift within the
+# tolerance, but their order may not. The queue compares any two priorities; the
+# cascade compares NLP scores only among the links found on one parent page.
+GLOBAL_ORDERING_KEYS = frozenset({"priority"})
+PER_PARENT_ORDERING_KEYS = frozenset({"nlp_score"})
 
 # Changed values listed in a failure message before "and N more".
 MAX_CHANGED_VALUES = 10
@@ -155,44 +157,74 @@ def changed_values(expected: object, actual: object, path: str) -> Iterator[str]
         yield f"{path}: {expected!r} became {actual!r}"
 
 
+def parent_page_of(record: dict[str, object]) -> object:
+    """The page whose links ``record`` is about, or None when it does not say.
+
+    A `link_scores` record (it has a `decision`) names it as `node_id`; a wire
+    message names it as `parent_id` (None for the seed page).
+    """
+    if "decision" in record:
+        return record.get("node_id")
+    return record.get("parent_id")
+
+
 def collect_ordering_pairs(
-    expected: object, actual: object, found: dict[str, list[tuple[float, float]]]
+    expected: object,
+    actual: object,
+    found: dict[str, list[tuple[float, float]]],
+    parent: object = None,
 ) -> None:
-    """Add ``(golden, now)`` for every float under an ``ORDERING_KEYS`` key."""
+    """Add ``(golden, now)`` for every float under an ordering key.
+
+    Priorities go under "priority". An `nlp_score` goes under its parent page,
+    the page it was found on, which a record or an enclosing record names; one that
+    names no parent is not compared.
+    """
     if isinstance(expected, dict) and isinstance(actual, dict):
+        named = parent_page_of(expected)
+        if named is not None:
+            parent = named
         for key in expected.keys() & actual.keys():
             old, new = expected[key], actual[key]
-            if key in ORDERING_KEYS and isinstance(old, float) and isinstance(new, float):
+            both_floats = isinstance(old, float) and isinstance(new, float)
+            if both_floats and key in GLOBAL_ORDERING_KEYS:
                 found.setdefault(key, []).append((old, new))
+            elif both_floats and key in PER_PARENT_ORDERING_KEYS:
+                if parent is not None:
+                    found.setdefault(f"{key} of parent {parent}", []).append((old, new))
             else:
-                collect_ordering_pairs(old, new, found)
+                collect_ordering_pairs(old, new, found, parent)
     elif isinstance(expected, list) and isinstance(actual, list):
         for old, new in zip(expected, actual, strict=False):
-            collect_ordering_pairs(old, new, found)
+            collect_ordering_pairs(old, new, found, parent)
 
 
 def ranking_violations(found: dict[str, list[tuple[float, float]]]) -> list[str]:
-    """Where the order of the ordering values changed, even by less than the tolerance.
+    """Where two values that were apart are now the other way round.
 
-    Sorted by golden value, the values now must be strictly increasing too: two
-    values that were apart must not swap or merge, and two that were equal must
-    not split.
+    Rounding is monotone: values that keep their true order can end up equal
+    after rounding (a merge) or equal values can end up apart (a split), but never
+    inverted. So only a strict inversion, golden ``a < b`` and now ``a > b``, is a
+    different order. Comparing neighbours in golden order is enough to find one.
     """
     problems = []
-    for key, pairs in sorted(found.items()):
-        now_by_golden: dict[float, set[float]] = {}
+    for label, pairs in sorted(found.items()):
+        now_by_golden: dict[float, list[float]] = {}
         for golden, now in pairs:
-            now_by_golden.setdefault(golden, set()).add(now)
-        ordered = sorted(now_by_golden.items())
-        for golden, values in ordered:
-            if len(values) > 1:
-                problems.append(f"{key}: golden {golden!r} is now {sorted(values)!r}")
-        for (low, low_now), (high, high_now) in pairwise(ordered):
-            if max(low_now) >= min(high_now):
+            now_by_golden.setdefault(golden, []).append(now)
+        for (low, low_now), (high, high_now) in pairwise(sorted(now_by_golden.items())):
+            if max(low_now) > min(high_now):
                 problems.append(
-                    f"{key}: golden {low!r} < {high!r}, now {max(low_now)!r} >= {min(high_now)!r}"
+                    f"{label}: golden {low!r} < {high!r}, now {max(low_now)!r} > {min(high_now)!r}"
                 )
     return problems
+
+
+def cut_list(items: list[str], limit: int, what: str) -> list[str]:
+    """The first ``limit`` items, then "... N more <what>" if there were more."""
+    if len(items) <= limit:
+        return items
+    return [*items[:limit], f"... {len(items) - limit} more {what}"]
 
 
 def compare_lines(expected: list[str], lines: list[str]) -> tuple[list[str], list[str], list[str]]:
@@ -230,20 +262,18 @@ def explain_difference(name: str, expected: list[str], lines: list[str]) -> str 
         if not changed and not violations:
             return None
         shown = lines if violations else kept
-        if len(changed) > MAX_CHANGED_VALUES:
-            extra = len(changed) - MAX_CHANGED_VALUES
-            changed[MAX_CHANGED_VALUES:] = [f"... {extra} more values"]
-        details = changed + [f"order changed, {problem}" for problem in violations]
+        order_lines = [f"order changed, {problem}" for problem in violations]
+        details = [
+            *cut_list(changed, MAX_CHANGED_VALUES, "values"),
+            *cut_list(order_lines, MAX_CHANGED_VALUES, "order violations"),
+        ]
     diff = list(
         difflib.unified_diff(
             expected, shown, fromfile=f"golden {name}", tofile="this run", lineterm="", n=1
         )
     )
-    cut = diff[:MAX_DIFF_LINES]
-    if len(diff) > MAX_DIFF_LINES:
-        cut.append(f"... {len(diff) - MAX_DIFF_LINES} more diff lines")
     header = f"{name} changed ({len(expected)} golden lines, {len(lines)} now):"
-    return "\n".join([header, *details, *cut])
+    return "\n".join([header, *details, *cut_list(diff, MAX_DIFF_LINES, "diff lines")])
 
 
 def describe_rewritten(paths: Iterable[Path]) -> list[str]:
