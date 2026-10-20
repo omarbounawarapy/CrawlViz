@@ -551,3 +551,13 @@ class TestMain:
         assert self.run_main(monkeypatch) == 0
         assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
         assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+
+    def test_changed_ownership_map_selects_the_whole_python_side(
+        self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        git(repo, "commit", "--allow-empty", "-m", "Base")
+        write(repo, ".claude/ownership.toml")
+
+        assert self.run_main(monkeypatch) == 0
+        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
+        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]

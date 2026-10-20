@@ -23,6 +23,7 @@ PYTEST_NO_TESTS_COLLECTED = 5
 # Python side is checked instead of only the changed files.
 PYTHON_TOOLING_FILES = {
     "pyproject.toml", "pytest.ini", "uv.lock", "Makefile", ".github/workflows/ci.yml",
+    ".claude/ownership.toml",  # decides which files count as method files
 }
 # The same glob matcher the guard hooks use, so the method file list has one source:
 # [shared].method_files in .claude/ownership.toml.
