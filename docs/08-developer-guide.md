@@ -111,7 +111,7 @@ make check-baselines  # the mypy legacy list and ruff baseline did not grow
 
 `pyproject.toml` targets `py312` and uses `ruff` at 100-char line length, with the rule sets E, W, F, I, UP, B, SIM, N, RUF, C90 (complexity 10) and PL. mypy runs in strict mode. Violations that existed when a rule was switched on are listed in `[tool.ruff.lint.per-file-ignores]` and in the legacy module list under `[[tool.mypy.overrides]]`. Those lists may only shrink, and a listed file hides new violations of the same kind, so clean a file and remove its entry when you touch it.
 
-pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), rejects unregistered markers (`slow`, `pins`, `e2e`, `method_guard`) and fails a test after 300 seconds. `make check-changed` skips tests marked `slow`, and runs the pins and method guards when a method file changed. The full pins take about five minutes.
+pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), rejects unregistered markers (`slow`, `pins`, `e2e`, `method_guard`) and fails a test after 300 seconds. `make check-changed` skips tests marked `slow`, and runs the pins and method guards when a method file changed. The 36 pins took 43 seconds on a quiet machine, and several minutes when other jobs shared it.
 
 ### CI
 

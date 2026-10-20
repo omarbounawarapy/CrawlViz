@@ -38,7 +38,7 @@ cd crawler-ui && npm run test && npm run build
 
 pytest runs from the repo root with no `PYTHONPATH`. Markers are strict (`slow`, `pins`, `e2e`, `method_guard`), and a test that runs longer than 300 seconds fails.
 
-CI runs the same checks on every PR: ruff, mypy, the tests without the pins, the pins once, a check that the pin goldens did not change, the baseline guard, and the frontend lint, tests and build. A PR that fails any of them won't be mergeable.
+On every PR, CI runs ruff, mypy, the tests without the pins, the pins once, a check that the pin goldens did not change, the baseline guard, and the frontend lint, tests and build. CI fails if any of them fails.
 
 Do not run `make format` on files you did not change. The repo is not formatted with `ruff format` yet, and a formatting pass belongs in its own commit.
 
