@@ -2,7 +2,8 @@
 
 CLAUDE.md lists the codes in one line each. This page says where each code comes from, gives
 an example, and says how it is checked. "Planned" means the automatic check arrives in a later
-phase. Until then a reviewer checks it by hand.
+phase. Until then a reviewer checks it by hand. Checks named without "planned" run in `make check`
+and CI.
 
 Sources:
 - Clean-code principles: DRY, KISS, YAGNI, SRP, Boy Scout.
@@ -20,7 +21,7 @@ Sources:
 |---|---|---|
 | ARCH-1 | `crawler-ui/src/features/graph/hooks/useZoomBehavior.ts`, not `src/hooks/useZoomBehavior.js` | review; folder layout in ADR 1 |
 | ARCH-2 | `import { GraphView } from "../graph"`, not `"../graph/GraphView"` | ESLint `no-restricted-imports` (planned) |
-| ARCH-3 | `GraphView.jsx` (990 lines) becomes hooks, pure modules and small components | ESLint `max-lines`, ruff C901/PLR0915 (planned); review |
+| ARCH-3 | `GraphView.jsx` (990 lines) becomes hooks, pure modules and small components | ESLint `max-lines` (planned); ruff C901 (complexity 10) and PLR0915 (50 statements) in `make lint` and CI; review |
 | ARCH-4 | `useBlueprints()` fetches; `BlueprintList` renders props | lint rule: no `api` imports under `components/` (planned) |
 | ARCH-5 | `core/boot_strapper.py` must not import `routes` | import-linter in CI (planned) |
 | ARCH-6 | A new priority strategy registers through an entry point and shows up in the schema and UI without editing `crawler.py` | review; registry tests |
@@ -39,8 +40,8 @@ Sources:
 
 | Code | Example | Checked by |
 |---|---|---|
-| NAME-1 | `def _on_page_fetched(self, event, writer)`, not `def _x(self, e, w)` | ESLint `id-length`, ruff N (planned), review |
-| NAME-2 | `DENSITY_RADIUS_DEFAULT = 0.3` in the owning module, not `0.3` in five files | ESLint `no-magic-numbers`, ruff PLR2004 (planned) |
+| NAME-1 | `def _on_page_fetched(self, event, writer)`, not `def _x(self, e, w)` | ESLint `id-length` (planned); ruff N (pep8-naming) in `make lint` and CI; review |
+| NAME-2 | `DENSITY_RADIUS_DEFAULT = 0.3` in the owning module, not `0.3` in five files | ESLint `no-magic-numbers` (planned); ruff PLR2004 in `make lint` and CI (not applied under `tests/`) |
 | NAME-3 | `fetchCrawlStatus()` for a GET, `scoreAudit()` for the POST that was named `fetchAuditScore` | review |
 | NAME-4 | The UI says "blueprint" and so do the API, the errors and the glossary | review against `docs/glossary.md` |
 | NAME-5 | `RequestsPipeline` becomes `FetchStage`, with config key `fetch`, wire stage `fetch` and UI label "Fetch" | review; registry test |
@@ -49,7 +50,7 @@ Sources:
 
 | Code | Example | Checked by |
 |---|---|---|
-| PY-1 | `def score_links(self, links: list[Link]) -> list[ScoredLink]:` | ruff, mypy `--strict`, ratcheted per module (planned) |
+| PY-1 | `def score_links(self, links: list[Link]) -> list[ScoredLink]:` | `make lint` (ruff) and `make typecheck` (mypy `--strict`) in CI; modules on the mypy legacy list and files in the ruff baseline may only shrink, which `make check-baselines` enforces |
 | TS-1 | `interface GraphControlsProps { query: string; onQueryChange(next: string): void }` | `tsc --noEmit`, typescript-eslint strict (planned) |
 
 ## Markup and styling
@@ -76,7 +77,7 @@ Sources:
 | Code | Example | Checked by |
 |---|---|---|
 | TEST-1 | The rate-limit race fix lands with a test that fails on the old code | review |
-| TEST-2 | A refactor commit leaves `tests/pins/` golden files byte-identical | `pytest -m pins` (planned) |
+| TEST-2 | A refactor commit leaves `tests/pins/` golden files byte-identical | `uv run pytest -m pins`, run in CI with a check that the goldens did not change |
 | TEST-3 | New hooks and models get unit tests; "start a crawl" has an E2E test | coverage ratchet in CI (planned) |
 
 ## Security and ethics
