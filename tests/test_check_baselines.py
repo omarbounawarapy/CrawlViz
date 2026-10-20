@@ -292,6 +292,29 @@ class TestRenamesFromGit:
         assert guard.read_renames("HEAD~1") == {}
 
 
+class TestMypyWithoutBaseline:
+    def test_temporary_config_lives_outside_the_repo_and_is_removed(
+        self, repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        (repo / "pyproject.toml").write_text("[tool.mypy]\nstrict = true\n")
+        seen: list[Path] = []
+
+        def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+            config = Path(command[command.index("--config-file") + 1])
+            seen.append(config)
+            assert config.exists()
+            return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+
+        guard.collect_mypy_modules_without_baseline()
+
+        (config,) = seen
+        assert repo not in config.parents
+        assert not config.exists()
+        assert sorted(path.name for path in repo.iterdir()) == [".git", "pyproject.toml"]
+
+
 class TestMain:
     @staticmethod
     def run_main(monkeypatch: pytest.MonkeyPatch) -> int:

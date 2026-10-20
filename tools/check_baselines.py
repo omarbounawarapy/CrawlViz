@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import subprocess
 import sys
@@ -157,17 +156,16 @@ def collect_ruff_violations(globs: dict[str, frozenset[str]]) -> set[tuple[str, 
 def collect_mypy_modules_without_baseline() -> set[str]:
     """Modules with mypy errors when the legacy list is not applied."""
     text = (ROOT / PYPROJECT).read_text(encoding="utf-8")
-    config_fd, config_name = tempfile.mkstemp(dir=ROOT, suffix=".toml", prefix=".mypy-baseline-")
-    try:
-        with os.fdopen(config_fd, "w", encoding="utf-8") as handle:
-            handle.write(text.replace("ignore_errors = true", "ignore_errors = false"))
-        with tempfile.TemporaryDirectory() as cache_dir:
-            result = subprocess.run(
-                ["uv", "run", "mypy", "--config-file", config_name, "--cache-dir", cache_dir],
-                cwd=ROOT, capture_output=True, text=True, check=False,
-            )
-    finally:
-        Path(config_name).unlink(missing_ok=True)
+    # Config and cache live outside the repo; mypy resolves `files` and `mypy_path` against cwd.
+    with tempfile.TemporaryDirectory() as scratch:
+        config = Path(scratch) / "mypy-without-baseline.toml"
+        config.write_text(text.replace("ignore_errors = true", "ignore_errors = false"),
+                          encoding="utf-8")
+        result = subprocess.run(
+            ["uv", "run", "mypy", "--config-file", str(config),
+             "--cache-dir", str(Path(scratch) / "cache")],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
     if result.returncode not in SUCCESS_OR_FINDINGS:
         raise SystemExit(f"mypy failed: {result.stdout}{result.stderr}")
     return parse_mypy_modules(result.stdout)
