@@ -154,8 +154,12 @@ Every agent shares these guardrails, enforced by hooks:
    - architect: for contracts or cross-area changes
 4. **Integrate.** The lead merges the worktree branch into the phase branch, runs `make check`
    and the pins, checks the commit titles and updates `.left-undone.json`.
-5. **Publish.** Omar approves each push or PR. The lead runs `.claude/templates/pr-checklist.md`
-   first.
+5. **Publish.** `main` on GitHub is protected: changes reach it only through a pull request
+   whose `backend` and `frontend` CI checks pass on a branch that is up to date with `main`.
+   This applies to admins too, and force pushes are blocked. The lead runs
+   `.claude/templates/pr-checklist.md`, then asks Omar to approve pushing the branch and
+   opening the PR, and merges only after CI is green. A direct `git push origin main` is
+   rejected.
 
 ### Asking another area
 
