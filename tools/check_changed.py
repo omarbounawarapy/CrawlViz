@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -23,6 +24,10 @@ PYTEST_NO_TESTS_COLLECTED = 5
 PYTHON_TOOLING_FILES = {
     "pyproject.toml", "pytest.ini", "uv.lock", "Makefile", ".github/workflows/ci.yml",
 }
+# The same glob matcher the guard hooks use, so the method file list has one source:
+# [shared].method_files in .claude/ownership.toml.
+HOOKS_COMMON = ROOT / ".claude" / "hooks" / "_common.py"
+METHOD_EXTRA_FILES = {"core/crawler.py", "core/event_broker.py"}
 UI_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
 
@@ -119,6 +124,39 @@ def run(command: list[str], cwd: Path, accepted: tuple[int, ...] = (0,)) -> bool
     return subprocess.run(command, cwd=cwd, check=False).returncode in accepted
 
 
+def touches_method(files: list[Path]) -> bool:
+    """True when a changed file can alter scores or visit order (the method files)."""
+    spec = importlib.util.spec_from_file_location("guard_common", HOOKS_COMMON)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load {HOOKS_COMMON}")
+    common = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(common)
+    relative = [path.relative_to(ROOT).as_posix() for path in files]
+    return any(name in METHOD_EXTRA_FILES or common.is_method_file(name) for name in relative)
+
+
+def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
+    relative = [str(path.relative_to(ROOT)) for path in python_files]
+    ok = run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
+    # mypy follows imports, so a change anywhere can break another module: always whole.
+    ok &= run(["uv", "run", "mypy"], ROOT)
+    tests = [] if tooling_changed else python_tests_for(python_files)
+    if tests or tooling_changed:
+        # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
+        # Exit code 5 means every selected test was slow, which is not a failure.
+        selected = [str(t.relative_to(ROOT)) for t in tests]
+        ok &= run(["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
+                  ROOT, accepted=(0, PYTEST_NO_TESTS_COLLECTED))
+    return ok
+
+
+def check_ui(ui_files: list[Path]) -> bool:
+    relative = [str(path.relative_to(UI_DIR)) for path in ui_files]
+    ok = run(["npx", "eslint", *relative], UI_DIR)
+    ok &= run(["npx", "vitest", "related", "--run", "--passWithNoTests", *relative], UI_DIR)
+    return ok
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", default=BASE_BRANCH)
@@ -131,27 +169,20 @@ def main() -> int:
                 and "node_modules" not in path.parts]
     tooling_changed = any(path.relative_to(ROOT).as_posix() in PYTHON_TOOLING_FILES
                           for path in files)
-    if not python_files and not ui_files and not tooling_changed:
+    method_changed = touches_method(files)
+    if not (python_files or ui_files or tooling_changed or method_changed):
         print("check-changed: no Python or UI source changes")
         return 0
 
     ok = True
     if python_files or tooling_changed:
-        relative = [str(path.relative_to(ROOT)) for path in python_files]
-        ok &= run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
-        # mypy follows imports, so a change anywhere can break another module: always whole.
-        ok &= run(["uv", "run", "mypy"], ROOT)
-        tests = [] if tooling_changed else python_tests_for(python_files)
-        if tests or tooling_changed:
-            # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
-            # Exit code 5 means every selected test was slow, which is not a failure.
-            selected = [str(t.relative_to(ROOT)) for t in tests]
-            ok &= run(["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
-                      ROOT, accepted=(0, PYTEST_NO_TESTS_COLLECTED))
+        ok &= check_python(python_files, tooling_changed)
+    if method_changed:
+        # The method guards must hold even when slow: no `not slow` filter here.
+        ok &= run(["uv", "run", "pytest", "-q", "-m", "pins or method_guard"], ROOT,
+                  accepted=(0, PYTEST_NO_TESTS_COLLECTED))
     if ui_files:
-        relative = [str(path.relative_to(UI_DIR)) for path in ui_files]
-        ok &= run(["npx", "eslint", *relative], UI_DIR)
-        ok &= run(["npx", "vitest", "related", "--run", "--passWithNoTests", *relative], UI_DIR)
+        ok &= check_ui(ui_files)
     return 0 if ok else 1
 
 
