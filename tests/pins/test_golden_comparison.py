@@ -124,9 +124,11 @@ def link(parent: int, nlp_score: float) -> dict[str, object]:
 
 
 def candidates(parent: str, *scores: float) -> dict[str, object]:
-    """A `CANDIDATE_EVALUATED` wire message: the scored links of one parent page."""
+    """A `CANDIDATE_EVALUATED` wire message as the bridge sends it: it has a `decision`
+    and the parent page as `parent_id`, and no `node_id`."""
     return {
         "type": "CANDIDATE_EVALUATED",
+        "decision": "trusted_no_llm",
         "parent_id": parent,
         "candidates": [{"nlp_score": score} for score in scores],
     }
@@ -157,6 +159,15 @@ def test_two_scores_of_one_parent_that_swap_within_the_step_fail(tmp_path: Path)
 
     assert on_disk is not None and "order changed, nlp_score of parent 7" in on_disk
     assert on_wire is not None and "order changed, nlp_score of parent 7" in on_wire
+
+
+def test_candidate_scores_are_order_checked_under_their_parent_page(tmp_path: Path) -> None:
+    golden = [candidates("0", 0.4, 0.400001)]
+    now = [candidates("0", 0.400001, 0.4)]
+
+    failure = failure_for(tmp_path, golden, now)
+
+    assert failure is not None and "order changed, nlp_score of parent 0" in failure
 
 
 def test_scores_of_different_parents_are_never_compared(tmp_path: Path) -> None:

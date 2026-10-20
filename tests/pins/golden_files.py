@@ -177,12 +177,15 @@ def changed_values(
 def parent_page_of(record: dict[str, object]) -> object:
     """The page whose links ``record`` is about, or None when it does not say.
 
-    A `link_scores` record (it has a `decision`) names it as `node_id`; a wire
-    message names it as `parent_id` (None for the seed page).
+    A record names it as `parent_id` (a `CANDIDATE_EVALUATED` wire message does,
+    and it has a `decision` too). A `link_scores` record has a `decision` and
+    names it as `node_id`.
     """
+    if "parent_id" in record:
+        return record["parent_id"]
     if "decision" in record:
         return record.get("node_id")
-    return record.get("parent_id")
+    return None
 
 
 def collect_ordering_pairs(

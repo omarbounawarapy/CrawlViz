@@ -53,7 +53,9 @@ The tolerance cannot hide a change of fetch order:
   make two values equal (a merge) or split two equal ones, but never invert them.
   Priorities are compared across the whole file, because the queue compares any
   two. `nlp_score` is compared only among the links of one parent page, which is
-  how the cascade uses it; a score that names no parent is not compared.
+  how the cascade uses it; the parent is `parent_id` in a wire message and
+  `node_id` in `link_scores.jsonl`, and a score that names no parent is not
+  compared.
   A failure reads `order changed, priority: ...`.
 - A merge or a split can still reorder the queue. The strategy rounds a priority
   to 6 places (`priority/strategy.py`, `_score`), and pages with equal priorities
