@@ -50,3 +50,7 @@ paper_results.md
 benchmark/data/audit.html
 benchmark/data/audit_second.html
 benchmark/data/exp_runs.json
+
+# Lead task briefs and agent memory stay local
+.claude/briefs/
+.claude/agent-memory/
