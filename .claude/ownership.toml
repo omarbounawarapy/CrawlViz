@@ -34,7 +34,9 @@ write = [".claude/**", "AGENTS.md", "CLAUDE.md", ".left-undone.json", ".gitignor
 write = ["docs/adr/**"]
 
 [agents.research-scientist]
-write = ["benchmark/**", "docs/research/**", "tools/nlp_eval.py"]
+write = [
+  "benchmark/**", "docs/research/**", "tools/nlp_eval.py", "tests/test_benchmark*.py",
+]
 exclude = ["benchmark/results/**", "benchmark/analysis/**", "**/SHA256SUMS"]
 
 [agents.ux-researcher]
@@ -125,6 +127,7 @@ write = [
   "crawler-ui/tsconfig*.json", "crawler-ui/.env.example", "crawler-ui/.nvmrc",
   "lefthook.yml", "Dockerfile", "compose.yml", ".dockerignore", ".python-version",
   ".env.example", ".git-blame-ignore-revs", "tools/check_changed.py",
+  "tools/check_baselines.py",
 ]
 
 [agents.test-engineer]
