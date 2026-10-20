@@ -1,4 +1,4 @@
-.PHONY: install dev dev-backend dev-frontend lint typecheck test check check-changed hook-test clean
+.PHONY: install dev dev-backend dev-frontend lint format typecheck test check check-changed hook-test clean
 
 install:
 	uv sync --extra dev
@@ -22,6 +22,11 @@ dev-frontend:
 lint:
 	uv run ruff check .
 	cd crawler-ui && npm run lint
+
+# Formats Python with ruff. The repo is not formatted yet: apply it in its own commit
+# and list that commit in .git-blame-ignore-revs.
+format:
+	uv run ruff format .
 
 # Strict mypy; modules still on the legacy list in pyproject.toml are skipped.
 typecheck:
