@@ -92,6 +92,9 @@ exclude = [
   "tests/llm/**", "tests/agents/**",
   "tests/test_wire_protocol.py", "tests/test_explainer_fixtures.py",
   "tests/test_llm_providers.py", "tests/test_call_budget.py", "tests/test_benchmark*.py",
+  # The check tools and their tests belong to platform-engineer.
+  "tools/check_changed.py", "tools/check_baselines.py",
+  "tests/test_check_changed.py", "tests/test_check_baselines.py",
   # Owned by llm-engineer until the package move puts them under src/crawlviz/score/llm/.
   "infrastructure/*_translator.py", "infrastructure/llm_handler.py",
   "infrastructure/key_manager.py", "infrastructure/call_budget.py",
@@ -130,6 +133,7 @@ write = [
   "lefthook.yml", "Dockerfile", "compose.yml", ".dockerignore", ".python-version",
   ".env.example", ".git-blame-ignore-revs", "tools/check_changed.py",
   "tools/check_baselines.py",
+  "tests/test_check_changed.py", "tests/test_check_baselines.py",
 ]
 
 [agents.test-engineer]
