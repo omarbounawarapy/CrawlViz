@@ -1,5 +1,6 @@
 """How a run is compared with a golden file: floats within a rounding step, the rest exact."""
 import json
+import math
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -214,8 +215,37 @@ def test_ordering_values_that_all_move_together_within_the_step_pass(tmp_path: P
     assert failure_for(tmp_path, golden, now) is None
 
 
-def test_the_same_run_fails_nothing_when_a_value_is_nan(tmp_path: Path) -> None:
+def test_a_nan_matches_a_nan(tmp_path: Path) -> None:
     assert failure_for(tmp_path, [{"x": float("nan")}], [{"x": float("nan")}]) is None
+    assert failure_for(tmp_path, [{"priority": math.nan}], [{"priority": math.nan}]) is None
+
+
+def test_a_nan_does_not_match_a_number(tmp_path: Path) -> None:
+    assert failure_for(tmp_path, [{"priority": math.nan}], [{"priority": 0.0}]) is not None
+    assert failure_for(tmp_path, [{"priority": 0.0}], [{"priority": math.nan}]) is not None
+
+
+def test_a_nan_priority_does_not_disturb_the_order_check(tmp_path: Path) -> None:
+    # Sorting a list with a NaN in it leaves it unsorted, which read as an inversion.
+    priorities = [0.3, 0.1, math.nan, 0.5, 0.7]
+    drifting = {"nlp_breakdown": {"boilerplate_score": 0.534522}}
+    golden = [drifting, *({"priority": value} for value in priorities)]
+    now = [{"nlp_breakdown": {"boilerplate_score": 0.534523}}, *golden[1:]]
+
+    assert failure_for(tmp_path, golden, now) is None
+
+
+def test_negative_zero_matches_zero(tmp_path: Path) -> None:
+    assert failure_for(tmp_path, [{"priority": 0.0}], [{"priority": -0.0}]) is None
+    assert failure_for(tmp_path, [{"x": -0.0}], [{"x": 0.0}]) is None
+
+
+def test_an_int_inside_nested_lists_is_not_a_float_and_the_failure_has_its_path(
+    tmp_path: Path,
+) -> None:
+    failure = failure_for(tmp_path, [{"a": [[1, 2]]}], [{"a": [[1, 2.0]]}])
+
+    assert failure is not None and "line 1: record.a[0][1]: 2 became 2.0" in failure
 
 
 def test_the_float_drift_seen_on_ci_passes(tmp_path: Path) -> None:

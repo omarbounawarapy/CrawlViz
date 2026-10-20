@@ -195,7 +195,13 @@ def collect_ordering_pairs(
             parent = named
         for key in expected.keys() & actual.keys():
             old, new = expected[key], actual[key]
-            both_floats = isinstance(old, float) and isinstance(new, float)
+            # A NaN has no place in an order; changed_values already fails one that changes.
+            both_floats = (
+                isinstance(old, float)
+                and isinstance(new, float)
+                and not math.isnan(old)
+                and not math.isnan(new)
+            )
             if both_floats and key in GLOBAL_ORDERING_KEYS:
                 found.setdefault(key, []).append((old, new))
             elif both_floats and key in PER_PARENT_ORDERING_KEYS:
