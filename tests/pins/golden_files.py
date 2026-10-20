@@ -6,10 +6,19 @@ unified diff of lines: which fetch, which link, which message changed.
 Values that change from run to run (timestamps, durations) are replaced by a
 placeholder before anything is written or compared, and floats are rounded, so
 a golden file is byte-identical across runs and across processes.
+
+Comparing is structural: the golden file and the run are read back as JSON, and
+everything must be equal except floats, which may differ by one rounding step
+(see ``FLOAT_TOLERANCE``). A numpy or BLAS build that sums in another order moves
+a value by about 1e-9, which lands on the other side of a rounding boundary now
+and then. The order of every priority and NLP score must stay the same, so that
+the tolerance cannot turn into a different crawl order.
 """
 import difflib
 import json
-from collections.abc import Iterable
+import math
+from collections.abc import Iterable, Iterator
+from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +37,18 @@ VOLATILE_PLACEHOLDER = "<volatile>"
 # Decimal places kept for floats: far below any score difference that matters,
 # far above float noise between numpy builds.
 FLOAT_DECIMALS = 6
+
+# Largest difference between a golden float and the same float now that still
+# counts as equal: one rounding step, plus half a step so that the float error of
+# subtracting two rounded values never decides. Two steps apart fails.
+FLOAT_TOLERANCE = 1.5 * 10**-FLOAT_DECIMALS
+
+# Keys whose floats decide the crawl order (NLP score, then the queue priority).
+# Their values may drift within the tolerance, but their order may not.
+ORDERING_KEYS = frozenset({"priority", "nlp_score"})
+
+# Changed values listed in a failure message before "and N more".
+MAX_CHANGED_VALUES = 10
 
 # Lines of diff shown in a failure message; the full diff would drown the
 # runner's output when a whole pin changes.
@@ -87,20 +108,142 @@ def check_golden(path: Path, records: Iterable[object], update: bool) -> bool:
             f"no golden file at {path}; create it deliberately with pytest -m pins --update-pins"
         )
     expected = path.read_text(encoding="utf-8").splitlines()
+    failure = explain_difference(path.name, expected, lines)
+    if failure is not None:
+        raise AssertionError(failure)
+    return False
+
+
+def floats_match(expected: float, actual: float) -> bool:
+    return (
+        expected == actual
+        or abs(expected - actual) <= FLOAT_TOLERANCE
+        or (math.isnan(expected) and math.isnan(actual))
+    )
+
+
+def changed_keys(
+    expected: dict[str, object], actual: dict[str, object], path: str
+) -> Iterator[str]:
+    for key in sorted(expected.keys() | actual.keys()):
+        child = f"{path}.{key}"
+        if key not in actual:
+            yield f"{child}: key removed"
+        elif key not in expected:
+            yield f"{child}: key added"
+        else:
+            yield from changed_values(expected[key], actual[key], child)
+
+
+def changed_values(expected: object, actual: object, path: str) -> Iterator[str]:
+    """One line per value that differs, named by its path (``path`` is the record's root).
+
+    Floats within ``FLOAT_TOLERANCE`` match. Everything else must be equal, and
+    of the same type: ``36`` is not ``36.0``.
+    """
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        yield from changed_keys(expected, actual, path)
+    elif isinstance(expected, list) and isinstance(actual, list):
+        if len(expected) != len(actual):
+            yield f"{path}: {len(expected)} items became {len(actual)}"
+        for index, (old, new) in enumerate(zip(expected, actual, strict=False)):
+            yield from changed_values(old, new, f"{path}[{index}]")
+    elif isinstance(expected, float) and isinstance(actual, float):
+        if not floats_match(expected, actual):
+            yield f"{path}: {expected!r} became {actual!r}"
+    elif type(expected) is not type(actual) or expected != actual:
+        yield f"{path}: {expected!r} became {actual!r}"
+
+
+def collect_ordering_pairs(
+    expected: object, actual: object, found: dict[str, list[tuple[float, float]]]
+) -> None:
+    """Add ``(golden, now)`` for every float under an ``ORDERING_KEYS`` key."""
+    if isinstance(expected, dict) and isinstance(actual, dict):
+        for key in expected.keys() & actual.keys():
+            old, new = expected[key], actual[key]
+            if key in ORDERING_KEYS and isinstance(old, float) and isinstance(new, float):
+                found.setdefault(key, []).append((old, new))
+            else:
+                collect_ordering_pairs(old, new, found)
+    elif isinstance(expected, list) and isinstance(actual, list):
+        for old, new in zip(expected, actual, strict=False):
+            collect_ordering_pairs(old, new, found)
+
+
+def ranking_violations(found: dict[str, list[tuple[float, float]]]) -> list[str]:
+    """Where the order of the ordering values changed, even by less than the tolerance.
+
+    Sorted by golden value, the values now must be strictly increasing too: two
+    values that were apart must not swap or merge, and two that were equal must
+    not split.
+    """
+    problems = []
+    for key, pairs in sorted(found.items()):
+        now_by_golden: dict[float, set[float]] = {}
+        for golden, now in pairs:
+            now_by_golden.setdefault(golden, set()).add(now)
+        ordered = sorted(now_by_golden.items())
+        for golden, values in ordered:
+            if len(values) > 1:
+                problems.append(f"{key}: golden {golden!r} is now {sorted(values)!r}")
+        for (low, low_now), (high, high_now) in pairwise(ordered):
+            if max(low_now) >= min(high_now):
+                problems.append(
+                    f"{key}: golden {low!r} < {high!r}, now {max(low_now)!r} >= {min(high_now)!r}"
+                )
+    return problems
+
+
+def compare_lines(expected: list[str], lines: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """Compare equally long golden and current lines.
+
+    Returns the changed values (one text each), the ordering violations, and the
+    current lines with only the really changed ones kept: the rest are replaced
+    by their golden line, so a diff of the two shows nothing else.
+    """
+    found: dict[str, list[tuple[float, float]]] = {}
+    changed: list[str] = []
+    kept = list(expected)
+    for number, (old, new) in enumerate(zip(expected, lines, strict=True), start=1):
+        old_record, new_record = json.loads(old), json.loads(new)
+        collect_ordering_pairs(old_record, new_record, found)
+        changes = [f"line {number}: {c}" for c in changed_values(old_record, new_record, "record")]
+        if changes:
+            kept[number - 1] = new
+        changed += changes
+    return changed, ranking_violations(found), kept
+
+
+def explain_difference(name: str, expected: list[str], lines: list[str]) -> str | None:
+    """None when ``lines`` match the golden ``expected`` lines, else the failure message.
+
+    Lines that match only within the float tolerance are left out of the diff, so
+    what it shows is what really changed (unless their order changed, then all show).
+    """
     if expected == lines:
-        return False
+        return None
+    details: list[str] = []
+    shown = lines
+    if len(expected) == len(lines):
+        changed, violations, kept = compare_lines(expected, lines)
+        if not changed and not violations:
+            return None
+        shown = lines if violations else kept
+        if len(changed) > MAX_CHANGED_VALUES:
+            extra = len(changed) - MAX_CHANGED_VALUES
+            changed[MAX_CHANGED_VALUES:] = [f"... {extra} more values"]
+        details = changed + [f"order changed, {problem}" for problem in violations]
     diff = list(
         difflib.unified_diff(
-            expected, lines, fromfile=f"golden {path.name}", tofile="this run", lineterm="", n=1
+            expected, shown, fromfile=f"golden {name}", tofile="this run", lineterm="", n=1
         )
     )
-    shown = diff[:MAX_DIFF_LINES]
+    cut = diff[:MAX_DIFF_LINES]
     if len(diff) > MAX_DIFF_LINES:
-        shown.append(f"... {len(diff) - MAX_DIFF_LINES} more diff lines")
-    raise AssertionError(
-        f"{path.name} changed ({len(expected)} golden lines, {len(lines)} now):\n"
-        + "\n".join(shown)
-    )
+        cut.append(f"... {len(diff) - MAX_DIFF_LINES} more diff lines")
+    header = f"{name} changed ({len(expected)} golden lines, {len(lines)} now):"
+    return "\n".join([header, *details, *cut])
 
 
 def describe_rewritten(paths: Iterable[Path]) -> list[str]:
