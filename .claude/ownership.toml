@@ -13,6 +13,8 @@ temp_roots = ["/tmp/claude-*", "/tmp/pytest-*"]
 # Files that change scores, ordering or prompts. Writable by their owner, but every
 # change needs research-scientist review (AGENTS.md, workflow step 3).
 method_files = [
+  "core/crawler.py",
+  "core/event_broker.py",
   "pipelines/scoring_pipeline.py",
   "pipelines/priority_pipeline.py",
   "priority/**",
