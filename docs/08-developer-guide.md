@@ -102,10 +102,20 @@ Scoring thresholds (`LOW`/`HIGH` bucket cutoffs), the embedding model name, and 
 ## Development workflow
 
 ```bash
-make lint   # ruff (backend) + eslint (frontend)
+make check-changed    # lint, mypy and the fast tests for the files your branch changed
+make check            # what CI runs, plus the hook tests
+make lint             # ruff (backend) + eslint (frontend)
+make typecheck        # mypy --strict
+make check-baselines  # the mypy legacy list and ruff baseline did not grow
 ```
 
-`pyproject.toml` targets `py312` and uses `ruff` at 100-char line length. There's no CI configuration in the repository as reviewed. Linting and testing are developer-invoked, not automated on push.
+`pyproject.toml` targets `py312` and uses `ruff` at 100-char line length, with the rule sets E, W, F, I, UP, B, SIM, N, RUF, C90 (complexity 10) and PL. mypy runs in strict mode. Violations that existed when a rule was switched on are listed in `[tool.ruff.lint.per-file-ignores]` and in the legacy module list under `[[tool.mypy.overrides]]`. Those lists may only shrink, and a listed file hides new violations of the same kind, so clean a file and remove its entry when you touch it.
+
+pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), rejects unregistered markers (`slow`, `pins`, `e2e`, `method_guard`) and fails a test after 300 seconds. `make check-changed` skips tests marked `slow`, and runs the pins and method guards when a method file changed. The full pins take about five minutes.
+
+### CI
+
+`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests. The backend job installs with `uv sync --locked --extra dev` (it fails if `uv.lock` is out of date), then runs ruff, mypy, `pytest -m "not pins"`, `pytest -m pins`, and a check that `tests/pins` is unchanged after the run. On pull requests it also runs `tools/check_baselines.py --base origin/main`. The frontend job runs `npm ci`, lint, tests and the build.
 
 ## Project layout
 

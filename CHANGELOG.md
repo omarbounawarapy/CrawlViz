@@ -12,8 +12,9 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - `RuntimeConfig` Pydantic schema exposed read-only via `/config` and `/config/schema` for UI introspection of tunable scoring/priority constants.
 - Pydantic schema validation for assembled blueprints (`routes/blueprint_schema.py`), with translator-level tests.
 - Vitest frontend test suite (reducer replay-checkpoint coverage, cross-section smoke tests) and an expanded backend `pytest` suite (248 tests).
-- `.github/workflows/ci.yml` running backend (`ruff`, `pytest`) and frontend (`eslint`, `vitest`, `vite build`) checks on every push/PR.
+- `.github/workflows/ci.yml` running backend (`ruff`, `mypy`, `pytest`, the behaviour pins) and frontend (`eslint`, `vitest`, `vite build`) checks on every push/PR.
 - `CONTRIBUTING.md`, `SECURITY.md`.
+- `make typecheck` (mypy strict), `make check-baselines` (the mypy legacy list and ruff per-file baseline may only shrink), `make format`, a wider ruff rule set, and a pytest timeout and strict markers. `make install` now installs the dev extra.
 
 ### Stabilization (2026-10-01)
 Runtime defects were fixed before any crawl-policy comparison. Full list with commit hashes: [`docs/10-stabilization.md`](docs/10-stabilization.md).

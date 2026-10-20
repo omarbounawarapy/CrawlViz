@@ -19,22 +19,32 @@ make dev                         # backend on :8000, frontend on :5173
 ## Running checks before opening a PR
 
 ```bash
-# Backend
-uv run ruff check .
-uv run pytest
-
-# Frontend
-cd crawler-ui
-npm run lint
-npm run test
-npm run build
+make check-changed   # fast: lint, mypy and the fast tests for the files your branch changed
+make check           # what CI runs: lint, mypy, baseline guard, all tests, hook tests, UI build
 ```
 
-All four (`ruff`, `pytest`, `eslint`, the frontend test suite) run in CI on every PR; a build that fails any of them won't be mergeable.
+`make check-changed` picks the tests by following imports from the changed files and skips tests marked `slow`. If you change `pyproject.toml`, `pytest.ini`, `uv.lock`, the `Makefile` or the CI workflow, it checks the whole Python side. If you change a file that decides crawl order or scoring, it also runs the behaviour pins and the method guards. Run `make check` before you ask for review.
+
+The pieces, if you want to run one alone:
+
+```bash
+make lint                            # ruff check and eslint
+make typecheck                       # mypy --strict
+make check-baselines                 # the mypy legacy list and ruff baseline did not grow
+uv run pytest -m "not pins"          # backend tests
+uv run pytest -m pins                # behaviour pins (tests/pins/README.md)
+cd crawler-ui && npm run test && npm run build
+```
+
+pytest runs from the repo root with no `PYTHONPATH`. Markers are strict (`slow`, `pins`, `e2e`, `method_guard`), and a test that runs longer than 300 seconds fails.
+
+CI runs the same checks on every PR: ruff, mypy, the tests without the pins, the pins once, a check that the pin goldens did not change, the baseline guard, and the frontend lint, tests and build. A PR that fails any of them won't be mergeable.
+
+Do not run `make format` on files you did not change. The repo is not formatted with `ruff format` yet, and a formatting pass belongs in its own commit.
 
 ## Code conventions
 
-- Backend: Python 3.12, type-hinted, formatted per `ruff` (`pyproject.toml`'s `[tool.ruff]`).
+- Backend: Python 3.12, type-hinted, checked by `ruff` and `mypy --strict` (`[tool.ruff]` and `[tool.mypy]` in `pyproject.toml`). Modules on the mypy legacy list and files in the ruff per-file baseline may only get cleaner: remove an entry when its file is clean, never add one.
 - Frontend: plain JS (no TypeScript), see `crawler-ui/README.md` for the folder layout and the `src/theme/` design-token system new UI code should build on.
 - New backend pipelines follow the `BasePipeline` pattern (`pipelines/base_pipeline.py`) and communicate only through the `EventBroker`. Read [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md) before adding a pipeline or event type.
 
