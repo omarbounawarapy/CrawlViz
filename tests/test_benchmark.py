@@ -4,6 +4,7 @@ import pytest
 from benchmark import POLICIES, run_policy, synthetic_graph
 
 
+@pytest.mark.slow
 async def test_every_policy_fills_the_budget_on_a_connected_graph():
     graph = synthetic_graph(n_pages=200, seed=1)
     for name in POLICIES:
@@ -12,6 +13,7 @@ async def test_every_policy_fills_the_budget_on_a_connected_graph():
         assert len(set(result.visited)) == 40, name
 
 
+@pytest.mark.slow
 async def test_same_seed_gives_the_same_visit_order():
     graph = synthetic_graph(n_pages=200, seed=2)
     first = await run_policy(graph, "random", 40, seed=5)
@@ -19,6 +21,7 @@ async def test_same_seed_gives_the_same_visit_order():
     assert first.visited == second.visited
 
 
+@pytest.mark.slow
 async def test_oracle_beats_bfs_and_lexical_beats_random():
     # Summed over several graphs: one graph's gap can be inside the noise.
     found = dict.fromkeys(POLICIES, 0)
@@ -118,6 +121,7 @@ def test_unscoped_cache_key_is_the_original_one(tmp_path):
 
 
 
+@pytest.mark.slow
 async def test_visit_order_does_not_depend_on_scoring_latency():
     # Lockstep: a page is fetched only after the previous page's scoring has landed.
     import asyncio
@@ -242,6 +246,7 @@ async def test_replay_only_never_calls_the_model_and_fails_loudly(tmp_path):
     assert Inner.calls == 1 and len(replay.replay_misses) == 1
 
 
+@pytest.mark.slow
 async def test_visit_order_survives_irregular_scoring_latency():
     import asyncio
     import random
@@ -392,6 +397,7 @@ async def test_llm_cache_counts_tokens_for_live_and_replayed_answers(tmp_path):
     assert (replay.input_tokens, replay.output_tokens) == (100, 20)
 
 
+@pytest.mark.slow
 async def test_every_run_leaves_a_result_file_and_a_sequence_entry(tmp_path):
     from benchmark.results import ResultSink, RunRecord, load_records
 
@@ -452,6 +458,7 @@ def test_latex_tables_name_every_policy():
     assert r"anchor\_lexical" in wilcoxon_table_tex(wilcoxon(groups, 10), 10)
 
 
+@pytest.mark.slow
 async def test_waiting_on_a_rate_limit_does_not_count_as_a_stall():
     import asyncio
 
@@ -518,6 +525,7 @@ async def test_paced_llm_reports_waiting_while_it_backs_off(monkeypatch):
     assert not paced.waiting and paced.rate_limit_seconds == 15 and paced.rate_limit_waits == 1
 
 
+@pytest.mark.slow
 async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monkeypatch):
     # Live run with a jittery fake LLM, then a replay-only run on the same
     # cache: same pages, same calls, nothing unrecorded. The last page's
@@ -635,6 +643,7 @@ async def _arm(tmp_path, arm, llm, **kw):
     return result, cached
 
 
+@pytest.mark.slow
 async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, monkeypatch):
     from config import MAX_LLM_LINKS_PER_NODE
 
@@ -656,6 +665,7 @@ async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, 
     assert absolute.thresholds["mode"] == "absolute" and absolute.thresholds["low"] == 0.3
 
 
+@pytest.mark.slow
 async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(tmp_path, monkeypatch):
     from benchmark.llm_cache import CachedLlm
 
@@ -1044,6 +1054,7 @@ def test_audit_sample_refuses_a_graph_without_judge_labels(tmp_path):
         audit.sample(path, tmp_path / "o.tsv", tmp_path / "k.json", total=None, seed=0, exclude_files=[])
 
 
+@pytest.mark.slow  # child process imports the whole crawler: 2 s warm, over 15 s cold
 def test_cli_refuses_an_ungraded_graph_before_running_anything(tmp_path):
     import subprocess
     import sys
