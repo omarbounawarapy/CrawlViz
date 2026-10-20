@@ -35,15 +35,27 @@ def _git(*args: str) -> list[str]:
     return [line for line in result.stdout.splitlines() if line.strip()]
 
 
+def _changed_names(*diff_args: str) -> set[str]:
+    """Paths in a diff, including deleted files and the old side of renames."""
+    names: set[str] = set()
+    for line in _git("diff", "-M", "--name-status", *diff_args):
+        _status, *paths = line.split("\t")
+        names.update(paths)
+    return names
+
+
 def changed_files(base: str) -> list[Path]:
+    """Changed paths. Deleted and renamed-away Python files stay in, so their importers run."""
     merge_base = _git("merge-base", "HEAD", base)
     names: set[str] = set()
     if merge_base:
-        names.update(_git("diff", "--name-only", merge_base[0]))
-    names.update(_git("diff", "--name-only"))
-    names.update(_git("diff", "--name-only", "--cached"))
+        names.update(_changed_names(merge_base[0]))
+    names.update(_changed_names())
+    names.update(_changed_names("--cached"))
     names.update(_git("ls-files", "--others", "--exclude-standard"))
-    return sorted(ROOT / name for name in names if (ROOT / name).is_file())
+    kept = {name for name in names
+            if (ROOT / name).is_file() or (name.endswith(".py") and not (ROOT / name).exists())}
+    return sorted(ROOT / name for name in kept)
 
 
 def python_modules() -> dict[str, Path]:
@@ -75,21 +87,31 @@ def _import_candidates(node: ast.AST, directory: tuple[str, ...]) -> set[str]:
     return {*names, *(f"{'.'.join(directory)}.{name}" for name in names)}
 
 
-def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
-    """Repo files that `path` imports. Importing a.b.c also runs the package files a and a.b."""
+def import_names_of(path: Path) -> set[str]:
+    """Dotted names `path` may import. Importing a.b.c also runs a and a.b, so those count."""
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (SyntaxError, UnicodeDecodeError):
         return set()
     directory = path.relative_to(ROOT).parent.parts
-    found: set[Path] = set()
+    names: set[str] = set()
     for node in ast.walk(tree):
         for dotted in _import_candidates(node, directory):
             parts = dotted.split(".")
-            prefixes = (".".join(parts[:end]) for end in range(1, len(parts) + 1))
-            found.update(modules[prefix] for prefix in prefixes if prefix in modules)
+            names.update(".".join(parts[:end]) for end in range(1, len(parts) + 1))
+    return names
+
+
+def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
+    """Repo files that `path` imports."""
+    found = {modules[name] for name in import_names_of(path) if name in modules}
     found.discard(path)
     return found
+
+
+def dotted_name(path: Path) -> str:
+    return path.relative_to(ROOT).with_suffix("").as_posix().replace("/", ".").removesuffix(
+        ".__init__")
 
 
 def python_tests_for(sources: list[Path]) -> list[Path]:
@@ -105,6 +127,11 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
             importers.setdefault(imported, set()).add(path)
     reached: set[Path] = set()
     pending = list(sources)
+    # A deleted or renamed-away file is in no module index: find its importers by name.
+    removed = {dotted_name(source) for source in sources
+               if source.suffix == ".py" and not source.exists()}
+    if removed:
+        pending.extend(path for path in modules.values() if removed & import_names_of(path))
     while pending:
         current = pending.pop()
         if current not in reached:
@@ -135,8 +162,11 @@ def touches_method(files: list[Path]) -> bool:
 
 
 def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
-    relative = [str(path.relative_to(ROOT)) for path in python_files]
-    ok = run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
+    # Deleted files have nothing to lint, but they still trigger mypy and their importers.
+    relative = [str(path.relative_to(ROOT)) for path in python_files if path.exists()]
+    ok = True
+    if relative or tooling_changed:
+        ok = run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
     # mypy follows imports, so a change anywhere can break another module: always whole.
     ok &= run(["uv", "run", "mypy"], ROOT)
     tests = [] if tooling_changed else python_tests_for(python_files)

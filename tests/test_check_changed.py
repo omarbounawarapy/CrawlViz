@@ -193,6 +193,29 @@ class TestPythonTestsFor:
         assert selected_tests(repo, "a/__init__.py") == ["tests/test_deep.py"]
         assert selected_tests(repo, "a/b/__init__.py") == ["tests/test_deep.py"]
 
+    def test_a_deleted_module_selects_tests_that_still_import_it(self, repo: Path) -> None:
+        write(repo, "utils/__init__.py")
+        write(repo, "utils/foo.py")
+        write(repo, "tests/test_foo.py", "from utils.foo import thing\n")
+        write(repo, "tests/test_bar.py", "import utils\n")
+        write(repo, "tests/test_other.py")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-m", "Base")
+        git(repo, "rm", "utils/foo.py")
+
+        assert selected_tests(repo, "utils/foo.py") == ["tests/test_foo.py"]
+
+    def test_a_deleted_package_init_selects_tests_that_import_the_package(
+        self, repo: Path
+    ) -> None:
+        write(repo, "pkg/__init__.py")
+        write(repo, "tests/test_pkg.py", "import pkg.sub\n")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-m", "Base")
+        git(repo, "rm", "pkg/__init__.py")
+
+        assert selected_tests(repo, "pkg/__init__.py") == ["tests/test_pkg.py"]
+
     def test_changed_conftest_selects_every_test_beneath_its_directory(self, repo: Path) -> None:
         write(repo, "tests/pins/conftest.py")
         write(repo, "tests/pins/test_a.py")
@@ -272,16 +295,16 @@ class TestChangedFiles:
             "committed.py", "edited.py", "staged.py", "untracked.py",
         ]
 
-    def test_a_deleted_file_is_not_reported(self, repo: Path) -> None:
+    def test_a_deleted_file_is_reported(self, repo: Path) -> None:
         write(repo, "gone.py")
         self.commit_all(repo, "Base")
         git(repo, "checkout", "-b", "feature")
         git(repo, "rm", "gone.py")
         self.commit_all(repo, "Delete file")
 
-        assert tool.changed_files("main") == []
+        assert names(repo, tool.changed_files("main")) == ["gone.py"]
 
-    def test_git_mv_reports_the_new_path_only(self, repo: Path) -> None:
+    def test_git_mv_reports_the_old_and_the_new_path(self, repo: Path) -> None:
         write(repo, "old/crawler.py", "\n".join(f"line {number}" for number in range(30)))
         self.commit_all(repo, "Base")
         git(repo, "checkout", "-b", "feature")
@@ -289,7 +312,7 @@ class TestChangedFiles:
         git(repo, "mv", "old/crawler.py", "new/crawler.py")
         self.commit_all(repo, "Move crawler")
 
-        assert names(repo, tool.changed_files("main")) == ["new/crawler.py"]
+        assert names(repo, tool.changed_files("main")) == ["new/crawler.py", "old/crawler.py"]
 
     def test_unknown_base_still_reports_uncommitted_work(self, repo: Path) -> None:
         write(repo, "base.py")
@@ -441,6 +464,20 @@ class TestMain:
     def run_main(monkeypatch: pytest.MonkeyPatch) -> int:
         monkeypatch.setattr("sys.argv", ["check_changed"])
         return tool.main()
+
+    def test_a_deletion_only_change_still_runs_mypy_and_the_tests_that_imported_it(
+        self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        write(repo, "utils/foo.py")
+        write(repo, "tests/test_foo.py", "import utils.foo\n")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-m", "Base")
+        git(repo, "rm", "utils/foo.py")
+
+        assert self.run_main(monkeypatch) == 0
+
+        assert runs.tools_run() == ["mypy", "pytest"]
+        assert runs.command_for("pytest")[-1] == "tests/test_foo.py"
 
     def test_no_changes_run_nothing(
         self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch,
