@@ -43,7 +43,7 @@ the same pages, order, priorities and LLM requests. The goldens stay as they
 are; `fixtures/ci_run_39410825053_wire_messages.json` holds those seven lines and
 `test_golden_comparison.py` checks they pass.
 
-The tolerance cannot hide a change of crawl order:
+The tolerance cannot hide a change of fetch order:
 
 - Fetch order, node ids, page URLs, LLM prompts and the sequence of wire messages
   hold no floats or are strings, so they are compared exactly.
@@ -55,6 +55,12 @@ The tolerance cannot hide a change of crawl order:
   two. `nlp_score` is compared only among the links of one parent page, which is
   how the cascade uses it; a score that names no parent is not compared.
   A failure reads `order changed, priority: ...`.
+- A merge or a split can still reorder the queue. The strategy rounds a priority
+  to 6 places (`priority/strategy.py`, `_score`), and pages with equal priorities
+  leave the queue in the order they went in (`pipelines/frontier_queue.py`). The
+  inversion guard does not look at this. `fetch_order.jsonl` does: it is compared
+  exactly, so it fails whenever a merge or split changes which page is fetched
+  next.
 
 If `order changed` fires while `fetch_order.jsonl`, `llm_requests.jsonl` and all
 the link decisions match, two near-equal values flipped between machines. Do not

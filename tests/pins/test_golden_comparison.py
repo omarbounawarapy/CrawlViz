@@ -177,7 +177,7 @@ def test_a_score_with_no_parent_is_not_compared(tmp_path: Path) -> None:
 
 
 def test_two_priorities_that_merge_on_one_rounded_value_pass(tmp_path: Path) -> None:
-    # isi link_scores, seq 121 and 5: 0.234928 and 0.234929 are one float32 step apart.
+    # isi link_scores, seq 121 and 5: 0.234928 and 0.234929 are one rounding step apart.
     golden = [{"priority": 0.234928}, {"priority": 0.234929}]
 
     assert failure_for(tmp_path, golden, [{"priority": 0.234929}, {"priority": 0.234929}]) is None
