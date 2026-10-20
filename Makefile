@@ -1,7 +1,7 @@
 .PHONY: install dev dev-backend dev-frontend lint test check check-changed hook-test clean
 
 install:
-	uv sync
+	uv sync --extra dev
 	cd crawler-ui && npm install
 
 # Runs the FastAPI API (:8000), the crawl WebSocket gateway (:8765,
