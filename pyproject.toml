@@ -23,11 +23,121 @@ dev = [
     "ruff>=0.4",
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
+    "pytest-timeout>=2.4.0",
+    "hypothesis>=6.170.5",
+    "mypy>=2.4.0",
 ]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I isort, UP pyupgrade, B bugbear, SIM simplify, N pep8-naming,
+# RUF ruff-specific, C90 complexity (ARCH-3), PL pylint (lazy imports, magic values, argument
+# and statement counts). Existing violations are listed in per-file-ignores below; the
+# list may only shrink.
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "N", "RUF", "C90", "PL"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+# Baseline of violations that existed when the rules were enabled. Remove a code when
+# its file is clean; never add one. A listed code also hides new violations in that file.
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PLR2004"]
+".claude/hooks/append_only.py" = ["RUF100"]
+".claude/hooks/guard_bash.py" = ["RUF100"]
+".claude/hooks/guard_paths.py" = ["I001", "RUF100"]
+"benchmark/__init__.py" = ["RUF022"]
+"benchmark/__main__.py" = ["B905", "C901", "E501", "PLC0415", "PLR0915"]
+"benchmark/analyze.py" = ["B006", "B905", "C901", "E501", "PLC0415", "PLR2004", "RUF005"]
+"benchmark/audit.py" = ["B905", "E501", "I001", "PLC0415", "PLR0124", "PLR0913", "RUF005"]
+"benchmark/graph.py" = ["E501", "PLR0913", "PLR2004", "PLW2901", "SIM905"]
+"benchmark/graph_stats.py" = ["E501", "PLR2004", "RUF005"]
+"benchmark/label.py" = ["B905", "E501", "PLR2004"]
+"benchmark/label_graph.py" = ["E501", "I001", "PLR2004"]
+"benchmark/llm_cache.py" = ["E501", "N818", "PLR0913", "PLR2004"]
+"benchmark/pilot.py" = ["E501"]
+"benchmark/provenance.py" = ["PLC0415", "PLR0913"]
+"benchmark/record.py" = ["B905", "E501", "PLR2004"]
+"benchmark/record_ball.py" = ["C901", "E501", "PLR2004", "UP041"]
+"benchmark/results.py" = ["E501"]
+"benchmark/runner.py" = ["C901", "E501", "PLC0415", "PLR0913", "PLR0915", "PLR2004"]
+"benchmark/seed_probe.py" = ["E501", "PLR2004"]
+"config/__init__.py" = ["I001", "RUF022"]
+"config/runtime_config.py" = ["E501", "PLR0913", "UP037"]
+"core/boot_strapper.py" = ["UP015"]
+"core/crawler.py" = ["I001", "PLC0415", "PLR0913", "RUF012"]
+"events/__init__.py" = ["I001", "RUF022"]
+"infrastructure/key_manager.py" = ["PLR2004"]
+"infrastructure/llm_handler.py" = ["RUF012"]
+"infrastructure/log_writer.py" = ["UP017"]
+"main.py" = ["I001"]
+"models/links_extractor.py" = ["SIM108"]
+"models/node.py" = ["PLR0913"]
+"models/prompts.py" = ["RUF001"]
+"models/storage.py" = ["I001"]
+"nlp/embedding_engine.py" = ["E501", "PLC0415"]
+"nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
+"nlp/space_updater.py" = ["SIM105", "UP041"]
+"nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
+"pipelines/base_pipeline.py" = ["RUF006"]
+"pipelines/debugging_pipeline.py" = ["I001", "PLR0913", "RUF010"]
+"pipelines/exporting_pipeline.py" = ["PLR0911", "PLR0913", "PLW2901", "RUF006", "SIM105"]
+"pipelines/priority_pipeline.py" = ["PLR0913"]
+"pipelines/processing_pipeline.py" = ["I001"]
+"pipelines/requests_pipeline.py" = ["I001", "PLR0913", "PLR2004", "RUF006"]
+"pipelines/retry_processor.py" = ["PLR0913"]
+"pipelines/scoring_pipeline.py" = ["I001", "PLR0913"]
+"priority/__init__.py" = ["RUF022"]
+"priority/strategy.py" = ["PLR0913"]
+"routes/benchmark.py" = ["B904", "E501", "I001", "PLC0415", "PLR2004", "PLW0603", "RUF006", "SIM300"]
+"routes/blueprint_schema.py" = ["I001"]
+"routes/blueprint_translator.py" = ["C901", "I001", "RUF100"]
+"routes/config.py" = ["B904", "E501", "I001", "PLC0415"]
+"routes/run.py" = ["B904", "E501", "N815", "PLW0602", "PLW0603"]
+"routes/templates.py" = ["B904", "I001"]
+"routes/validation.py" = ["B904", "RUF001"]
+"services/nlp_service.py" = ["I001", "PLR0913", "PLR2004"]
+"services/scoring_service.py" = ["PLR0913", "PLR2004"]
+"tests/agents/test_commit_msg_check.py" = ["E501", "RUF100"]
+"tests/agents/test_guard_bash.py" = ["E501"]
+"tests/agents/test_guard_paths.py" = ["I001"]
+"tests/test_benchmark.py" = ["B905", "E501", "I001", "PLC0415", "PLR0913", "PLW1510", "RUF012"]
+"tests/test_benchmark_routes.py" = ["E501", "PLC0415"]
+"tests/test_blueprint_schema.py" = ["B017"]
+"tests/test_blueprint_translator.py" = ["E501", "PLC0415", "SIM300"]
+"tests/test_document_text.py" = ["PLR0402"]
+"tests/test_event_wiring.py" = ["E501", "PLC0415", "RUF059"]
+"tests/test_frontier_queue.py" = ["I001"]
+"tests/test_item_extractor.py" = ["E501"]
+"tests/test_live_settings.py" = ["I001", "PLC0415"]
+"tests/test_llm_providers.py" = ["E501", "I001"]
+"tests/test_nlp_service.py" = ["E501", "PLC0415"]
+"tests/test_preset_text.py" = ["E501", "PLC0415"]
+"tests/test_priority_strategy.py" = ["E501", "PLC0415"]
+"tests/test_queue_depths.py" = ["PLC0415"]
+"tests/test_results_mapper.py" = ["E501", "I001", "PLC0415"]
+"tests/test_run_isolation.py" = ["E501"]
+"tests/test_runtime_invariants.py" = ["I001", "PLC0415"]
+"tests/test_schema_content.py" = ["E501", "PLC0415"]
+"tests/test_settings_wiring.py" = ["B017", "E501", "I001", "PLC0415", "RUF012", "RUF015", "RUF059"]
+"tests/test_url_identity.py" = ["PLC0415"]
+"tools/gen_explainer_fixtures.py" = ["E501", "PLC0415"]
+"tools/nlp_eval.py" = ["B905", "E501", "N806", "PLC0415", "RUF100"]
+"traceability/__init__.py" = ["RUF022"]
+"traceability/emitter.py" = ["SIM102"]
+"traceability/expansion_trace_events.py" = ["N801"]
+"traceability/llm_trace_events.py" = ["N801"]
+"traceability/network_trace_events.py" = ["N801"]
+"traceability/nlp_trace_events.py" = ["N801"]
+"ui_bridge/__init__.py" = ["I001", "RUF022"]
+"ui_bridge/crawl_state_snapshot.py" = ["I001", "PLR0913", "UP006", "UP035", "UP045"]
+"ui_bridge/event_recorder.py" = ["PLW1510", "SIM115"]
+"ui_bridge/telemetry_bridge.py" = ["E501", "PLC0415", "PLR0913", "UP006", "UP035", "UP045"]
+"ui_bridge/ui_websocket_gateway.py" = ["B904", "UP006", "UP035"]
+"utils/html_utils.py" = ["PLW0603"]
 
 [build-system]
 requires = ["hatchling"]
@@ -38,3 +148,164 @@ build-backend = "hatchling.build"
 # to package as a wheel. Declaring one package keeps `hatchling` (and
 # therefore `uv sync`) happy without trying to guess a layout.
 packages = ["config"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+explicit_package_bases = true
+# tests/pins is also on sys.path under pytest (no __init__.py), so its modules import each other by bare name.
+mypy_path = [".", "tests/pins"]
+files = [
+    "main.py",
+    "benchmark",
+    "config",
+    "core",
+    "events",
+    "infrastructure",
+    "models",
+    "nlp",
+    "pipelines",
+    "priority",
+    "routes",
+    "services",
+    "tests",
+    "tools",
+    "traceability",
+    "ui_bridge",
+    "utils",
+]
+
+# Libraries that ship no stubs or py.typed marker. Listed one by one so a new
+# untyped import still fails.
+[[tool.mypy.overrides]]
+module = ["aiofiles.*", "lxml.*", "scipy.*", "sklearn.*"]
+ignore_missing_imports = true
+
+# Legacy modules that do not pass strict yet. Remove a line when its module is clean;
+# never add one. A listed module hides ALL its type errors, including new ones.
+[[tool.mypy.overrides]]
+module = [
+    "benchmark.__main__",
+    "benchmark.analyze",
+    "benchmark.audit",
+    "benchmark.graph",
+    "benchmark.graph_stats",
+    "benchmark.label",
+    "benchmark.llm_cache",
+    "benchmark.pilot",
+    "benchmark.policies",
+    "benchmark.provenance",
+    "benchmark.record",
+    "benchmark.record_ball",
+    "benchmark.results",
+    "benchmark.runner",
+    "benchmark.seed_probe",
+    "config.paths",
+    "config.runtime_config",
+    "config.settings_store",
+    "core.boot_strapper",
+    "core.crawler",
+    "core.event_broker",
+    "core.event_registry",
+    "core.live_settings",
+    "infrastructure.anthropic_translator",
+    "infrastructure.call_budget",
+    "infrastructure.gemini_translator",
+    "infrastructure.groq_translator",
+    "infrastructure.key_manager",
+    "infrastructure.llm_handler",
+    "infrastructure.log_writer",
+    "infrastructure.network_client",
+    "infrastructure.nvidia_translator",
+    "infrastructure.open_router_translator",
+    "infrastructure.openai_translator",
+    "models.item_extractor",
+    "models.link",
+    "models.node",
+    "models.storage",
+    "nlp.buffer_manager",
+    "nlp.embedding_engine",
+    "nlp.expansion_prompt_builder",
+    "nlp.space_store",
+    "nlp.space_updater",
+    "nlp.vector_space",
+    "pipelines.base_pipeline",
+    "pipelines.canonicalization_pipeline",
+    "pipelines.contracts",
+    "pipelines.debugging_pipeline",
+    "pipelines.exporting_pipeline",
+    "pipelines.filtering_pipeline",
+    "pipelines.frontier_queue",
+    "pipelines.logging_pipeline",
+    "pipelines.priority_pipeline",
+    "pipelines.processing_pipeline",
+    "pipelines.requests_pipeline",
+    "pipelines.retry_processor",
+    "pipelines.robots",
+    "pipelines.scoring_pipeline",
+    "pipelines.stopping_pipeline",
+    "pipelines.storage_pipeline",
+    "pipelines.transformation_pipeline",
+    "priority.strategy",
+    "routes.benchmark",
+    "routes.blueprint_translator",
+    "routes.config",
+    "routes.run",
+    "routes.templates",
+    "routes.validation",
+    "routes.validation_db",
+    "services.llm_contracts",
+    "services.nlp_service",
+    "services.results_mapper",
+    "services.scoring_service",
+    "tests.agents.hook_runner",
+    "tests.agents.test_commit_msg_check",
+    "tests.test_base_pipeline",
+    "tests.test_benchmark",
+    "tests.test_benchmark_routes",
+    "tests.test_blueprint_load_validation",
+    "tests.test_blueprint_schema",
+    "tests.test_blueprint_translator",
+    "tests.test_call_budget",
+    "tests.test_contracts",
+    "tests.test_dead_knobs",
+    "tests.test_document_text",
+    "tests.test_event_recorder",
+    "tests.test_event_wiring",
+    "tests.test_explainer_fixtures",
+    "tests.test_frontier_queue",
+    "tests.test_item_extractor",
+    "tests.test_live_settings",
+    "tests.test_llm_cache_order",
+    "tests.test_llm_providers",
+    "tests.test_logging_pipeline",
+    "tests.test_nlp_service",
+    "tests.test_nlp_signals",
+    "tests.test_preset_text",
+    "tests.test_priority_strategy",
+    "tests.test_queue_depths",
+    "tests.test_rate_limit_detection",
+    "tests.test_results_mapper",
+    "tests.test_retry_processor",
+    "tests.test_robots",
+    "tests.test_run_isolation",
+    "tests.test_run_status",
+    "tests.test_runtime_invariants",
+    "tests.test_schema_content",
+    "tests.test_settings_wiring",
+    "tests.test_transformation_pipeline",
+    "tests.test_ui_gateway",
+    "tests.test_url_identity",
+    "tests.test_wire_protocol",
+    "tools.gen_explainer_fixtures",
+    "tools.nlp_eval",
+    "traceability.emitter",
+    "traceability.traced_llm_handler",
+    "traceability.traced_network_client",
+    "ui_bridge.crawl_state_snapshot",
+    "ui_bridge.event_recorder",
+    "ui_bridge.telemetry_bridge",
+    "ui_bridge.ui_websocket_gateway",
+    "utils.html_utils",
+]
+ignore_errors = true

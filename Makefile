@@ -1,7 +1,7 @@
-.PHONY: install dev dev-backend dev-frontend lint test check check-changed hook-test clean
+.PHONY: install dev dev-backend dev-frontend lint format typecheck check-baselines test check check-changed hook-test clean
 
 install:
-	uv sync
+	uv sync --extra dev
 	cd crawler-ui && npm install
 
 # Runs the FastAPI API (:8000), the crawl WebSocket gateway (:8765,
@@ -23,12 +23,25 @@ lint:
 	uv run ruff check .
 	cd crawler-ui && npm run lint
 
+# Formats Python with ruff. The repo is not formatted yet: apply it in its own commit
+# and list that commit in .git-blame-ignore-revs.
+format:
+	uv run ruff format .
+
+# Strict mypy; modules still on the legacy list in pyproject.toml are skipped.
+typecheck:
+	uv run mypy
+
+# The mypy legacy list and ruff baseline may only shrink (tools/check_baselines.py).
+check-baselines:
+	uv run python tools/check_baselines.py
+
 test:
 	uv run pytest -q
 	cd crawler-ui && npm run test
 
 # Everything CI runs. Agents and humans run this before asking for review.
-check: lint test hook-test
+check: lint typecheck check-baselines test hook-test
 	cd crawler-ui && npm run build
 
 # Lint and tests for the files this branch changed (see tools/check_changed.py).

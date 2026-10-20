@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v3
@@ -18,7 +20,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --locked --extra dev
 
       - name: Placeholder keys
         run: cp keys.example.json keys.json
@@ -26,8 +28,27 @@ jobs:
       - name: Lint (ruff)
         run: uv run ruff check .
 
+      - name: Type check (mypy)
+        run: uv run mypy
+
+      - name: Baselines only shrink
+        if: github.event_name == 'pull_request'
+        run: uv run python tools/check_baselines.py --base origin/main
+
       - name: Test (pytest)
-        run: uv run pytest
+        run: uv run pytest -m "not pins"
+
+      - name: Behaviour pins
+        run: uv run pytest -m pins
+
+      - name: Pin goldens unchanged
+        run: |
+          changed="$(git status --porcelain -- tests/pins)"
+          if [ -n "$changed" ]; then
+            echo "$changed"
+            echo "tests/pins changed during the run; goldens change only through the pin update process" >&2
+            exit 1
+          fi
 
   frontend:
     runs-on: ubuntu-latest
