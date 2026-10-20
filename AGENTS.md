@@ -31,10 +31,11 @@ domain has moved, its files stay where the table says.
 | `make dev` | API on :8000, Vite on :5173; the crawl WebSocket starts on :8765 per crawl |
 | `make lint` | ruff and ESLint |
 | `make test` | pytest and vitest |
-| `make check-changed` | ruff, ESLint and the tests that cover the files your branch changed |
-| `make typecheck` | mypy strict; modules on the legacy list in `pyproject.toml` are skipped, and the list only shrinks |
+| `make check-changed` | ruff, mypy, ESLint and the non-slow tests that import the files your branch changed; a tooling change checks the whole Python side, a method-file change adds the pins and method guards |
+| `make typecheck` | mypy strict; modules on the legacy list in `pyproject.toml` are checked with their errors ignored, and the list only shrinks |
+| `make check-baselines` | fails if the mypy legacy list or the ruff per-file baseline gained an entry or keeps a stale one |
 | `make format` | ruff format (the repo is not formatted yet; do not run it on unrelated files) |
-| `make check` | lint, type check, all tests, hook tests and the UI build: what CI runs |
+| `make check` | lint, type check, baseline guard, all tests, hook tests and the UI build: what CI runs |
 | `make hook-test` | the agent guard hook tests |
 | `uv run pytest -m pins` | the behaviour pins (`tests/pins/README.md`); goldens change only with `--update-pins` |
 | `python3 .claude/hooks/commit_msg_check.py --range main..HEAD` | commit titles in a range |
