@@ -14,6 +14,7 @@ async def test_every_policy_fills_the_budget_on_a_connected_graph():
 
 
 @pytest.mark.slow
+@pytest.mark.method_guard
 async def test_same_seed_gives_the_same_visit_order():
     graph = synthetic_graph(n_pages=200, seed=2)
     first = await run_policy(graph, "random", 40, seed=5)
@@ -122,6 +123,7 @@ def test_unscoped_cache_key_is_the_original_one(tmp_path):
 
 
 @pytest.mark.slow
+@pytest.mark.method_guard
 async def test_visit_order_does_not_depend_on_scoring_latency():
     # Lockstep: a page is fetched only after the previous page's scoring has landed.
     import asyncio
@@ -247,6 +249,7 @@ async def test_replay_only_never_calls_the_model_and_fails_loudly(tmp_path):
 
 
 @pytest.mark.slow
+@pytest.mark.method_guard
 async def test_visit_order_survives_irregular_scoring_latency():
     import asyncio
     import random
@@ -526,6 +529,7 @@ async def test_paced_llm_reports_waiting_while_it_backs_off(monkeypatch):
 
 
 @pytest.mark.slow
+@pytest.mark.method_guard
 async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monkeypatch):
     # Live run with a jittery fake LLM, then a replay-only run on the same
     # cache: same pages, same calls, nothing unrecorded. The last page's
@@ -644,6 +648,7 @@ async def _arm(tmp_path, arm, llm, **kw):
 
 
 @pytest.mark.slow
+@pytest.mark.method_guard
 async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, monkeypatch):
     from config import MAX_LLM_LINKS_PER_NODE
 
@@ -666,6 +671,7 @@ async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, 
 
 
 @pytest.mark.slow
+@pytest.mark.method_guard
 async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(tmp_path, monkeypatch):
     from benchmark.llm_cache import CachedLlm
 
