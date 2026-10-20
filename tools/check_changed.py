@@ -1,4 +1,4 @@
-"""Fast checks for the files a branch changed: lint plus the fast tests that cover them.
+"""Fast checks for the files a branch changed: lint, types and the fast tests that cover them.
 
 Used by `make check-changed` and by the agents' stop hook. "Changed" means anything
 that differs from the merge base with main: committed, staged, unstaged or untracked.
@@ -17,6 +17,11 @@ UI_DIR = ROOT / "crawler-ui"
 BASE_BRANCH = "main"
 PYTHON_SUFFIXES = {".py"}
 PYTEST_NO_TESTS_COLLECTED = 5
+# A change to any of these can alter the result for every Python file, so the whole
+# Python side is checked instead of only the changed files.
+PYTHON_TOOLING_FILES = {
+    "pyproject.toml", "pytest.ini", "uv.lock", "Makefile", ".github/workflows/ci.yml",
+}
 UI_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
 
@@ -69,20 +74,24 @@ def main() -> int:
     ui_files = [path for path in files
                 if path.suffix in UI_SUFFIXES and UI_DIR in path.parents
                 and "node_modules" not in path.parts]
-    if not python_files and not ui_files:
+    tooling_changed = any(path.relative_to(ROOT).as_posix() in PYTHON_TOOLING_FILES
+                          for path in files)
+    if not python_files and not ui_files and not tooling_changed:
         print("check-changed: no Python or UI source changes")
         return 0
 
     ok = True
-    if python_files:
+    if python_files or tooling_changed:
         relative = [str(path.relative_to(ROOT)) for path in python_files]
-        ok &= run(["uv", "run", "ruff", "check", *relative], ROOT)
-        tests = python_tests_for(python_files)
-        if tests:
+        ok &= run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
+        # mypy follows imports, so a change anywhere can break another module: always whole.
+        ok &= run(["uv", "run", "mypy"], ROOT)
+        tests = [] if tooling_changed else python_tests_for(python_files)
+        if tests or tooling_changed:
             # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
             # Exit code 5 means every selected test was slow, which is not a failure.
-            ok &= run(["uv", "run", "pytest", "-q", "-m", "not slow",
-                       *[str(t.relative_to(ROOT)) for t in tests]],
+            selected = [str(t.relative_to(ROOT)) for t in tests]
+            ok &= run(["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
                       ROOT, accepted=(0, PYTEST_NO_TESTS_COLLECTED))
     if ui_files:
         relative = [str(path.relative_to(UI_DIR)) for path in ui_files]
