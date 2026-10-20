@@ -1,4 +1,4 @@
-.PHONY: install dev dev-backend dev-frontend lint format typecheck test check check-changed hook-test clean
+.PHONY: install dev dev-backend dev-frontend lint format typecheck check-baselines test check check-changed hook-test clean
 
 install:
 	uv sync --extra dev
@@ -32,12 +32,16 @@ format:
 typecheck:
 	uv run mypy
 
+# The mypy legacy list and ruff baseline may only shrink (tools/check_baselines.py).
+check-baselines:
+	uv run python tools/check_baselines.py
+
 test:
 	uv run pytest -q
 	cd crawler-ui && npm run test
 
 # Everything CI runs. Agents and humans run this before asking for review.
-check: lint typecheck test hook-test
+check: lint typecheck check-baselines test hook-test
 	cd crawler-ui && npm run build
 
 # Lint and tests for the files this branch changed (see tools/check_changed.py).
