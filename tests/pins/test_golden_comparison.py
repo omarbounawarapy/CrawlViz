@@ -27,18 +27,34 @@ def test_the_tolerance_is_a_little_over_one_rounding_step() -> None:
 
 
 def test_a_float_one_rounding_step_away_passes_at_any_depth(tmp_path: Path) -> None:
-    golden = [{"nlp_breakdown": {"boilerplate_score": 0.534522}, "candidates": [{"x": 0.633018}]}]
-    now = [{"nlp_breakdown": {"boilerplate_score": 0.534523}, "candidates": [{"x": 0.633017}]}]
+    golden = [{"nlp_breakdown": {"boilerplate_score": 0.534522}, "links": [{"priority": 0.6}]}]
+    now = [{"nlp_breakdown": {"boilerplate_score": 0.534523}, "links": [{"priority": 0.599999}]}]
 
     assert failure_for(tmp_path, golden, now) is None
 
 
 @pytest.mark.parametrize("difference", [1e-4, 2 * ROUNDING_STEP, -1e-4])
 def test_a_float_further_away_fails(tmp_path: Path, difference: float) -> None:
-    golden = [{"target_similarity": 0.5}]
-    failure = failure_for(tmp_path, golden, [{"target_similarity": 0.5 + difference}])
+    golden = [{"nlp_breakdown": {"target_similarity": 0.5}}]
+    now = [{"nlp_breakdown": {"target_similarity": 0.5 + difference}}]
 
-    assert failure is not None and "record.target_similarity" in failure
+    failure = failure_for(tmp_path, golden, now)
+
+    assert failure is not None and "record.nlp_breakdown.target_similarity" in failure
+
+
+@pytest.mark.parametrize("key", ["temperature", "threshold", "weight"])
+def test_a_float_that_is_not_a_computed_score_is_compared_exactly(
+    tmp_path: Path, key: str
+) -> None:
+    failure = failure_for(tmp_path, [{key: 0.7}], [{key: 0.7 + ROUNDING_STEP}])
+
+    assert failure is not None and f"record.{key}" in failure
+
+
+@pytest.mark.parametrize("key", ["priority", "nlp_score"])
+def test_the_computed_scores_may_differ_by_one_step(tmp_path: Path, key: str) -> None:
+    assert failure_for(tmp_path, [{key: 0.7}], [{key: 0.7 + ROUNDING_STEP}]) is None
 
 
 @pytest.mark.parametrize(
@@ -75,15 +91,19 @@ def test_the_order_of_the_records_is_part_of_the_golden(tmp_path: Path) -> None:
 def test_the_failure_names_the_changed_values_and_leaves_out_the_tolerated_ones(
     tmp_path: Path,
 ) -> None:
-    golden = [{"n": 1, "x": 0.5}, {"n": 2, "x": 0.25}, {"n": 3, "x": 0.75}]
-    now = [{"n": 1, "x": 0.5 + ROUNDING_STEP}, {"n": 2, "x": 0.3}, {"n": 3, "x": 0.75}]
+    golden = [{"n": 1, "priority": 0.5}, {"n": 2, "priority": 0.25}, {"n": 3, "priority": 0.75}]
+    now = [
+        {"n": 1, "priority": 0.5 + ROUNDING_STEP},
+        {"n": 2, "priority": 0.3},
+        {"n": 3, "priority": 0.75},
+    ]
 
     failure = failure_for(tmp_path, golden, now)
 
     assert failure is not None
     assert "kind.jsonl changed (3 golden lines, 3 now)" in failure
-    assert "line 2: record.x: 0.25 became 0.3" in failure
-    assert '-{"n": 2, "x": 0.25}' in failure and '+{"n": 2, "x": 0.3}' in failure
+    assert "line 2: record.priority: 0.25 became 0.3" in failure
+    assert '-{"n": 2, "priority": 0.25}' in failure and '+{"n": 2, "priority": 0.3}' in failure
     assert "line 1" not in failure and '+{"n": 1' not in failure
 
 

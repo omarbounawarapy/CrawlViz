@@ -49,6 +49,11 @@ FLOAT_TOLERANCE = 1.5 * 10**-FLOAT_DECIMALS
 GLOBAL_ORDERING_KEYS = frozenset({"priority"})
 PER_PARENT_ORDERING_KEYS = frozenset({"nlp_score"})
 
+# Where floats are computed by the scoring code, so another numpy build can move
+# them by a rounding step: the two ordering keys, and every feature in an
+# `nlp_breakdown`. Any other float (a temperature, a threshold) compares exactly.
+COMPUTED_SCORE_KEYS = GLOBAL_ORDERING_KEYS | PER_PARENT_ORDERING_KEYS | {"nlp_breakdown"}
+
 # Changed values listed in a failure message before "and N more".
 MAX_CHANGED_VALUES = 10
 
@@ -116,16 +121,16 @@ def check_golden(path: Path, records: Iterable[object], update: bool) -> bool:
     return False
 
 
-def floats_match(expected: float, actual: float) -> bool:
+def floats_match(expected: float, actual: float, tolerance: float) -> bool:
     return (
         expected == actual
-        or abs(expected - actual) <= FLOAT_TOLERANCE
+        or abs(expected - actual) <= tolerance
         or (math.isnan(expected) and math.isnan(actual))
     )
 
 
 def changed_keys(
-    expected: dict[str, object], actual: dict[str, object], path: str
+    expected: dict[str, object], actual: dict[str, object], path: str, tolerance: float
 ) -> Iterator[str]:
     for key in sorted(expected.keys() | actual.keys()):
         child = f"{path}.{key}"
@@ -134,24 +139,28 @@ def changed_keys(
         elif key not in expected:
             yield f"{child}: key added"
         else:
-            yield from changed_values(expected[key], actual[key], child)
+            child_tolerance = FLOAT_TOLERANCE if key in COMPUTED_SCORE_KEYS else tolerance
+            yield from changed_values(expected[key], actual[key], child, child_tolerance)
 
 
-def changed_values(expected: object, actual: object, path: str) -> Iterator[str]:
+def changed_values(
+    expected: object, actual: object, path: str, tolerance: float = 0.0
+) -> Iterator[str]:
     """One line per value that differs, named by its path (``path`` is the record's root).
 
-    Floats within ``FLOAT_TOLERANCE`` match. Everything else must be equal, and
-    of the same type: ``36`` is not ``36.0``.
+    Floats under a ``COMPUTED_SCORE_KEYS`` key match within ``FLOAT_TOLERANCE``;
+    any other float must be equal. Everything else must be equal too, and of the
+    same type: ``36`` is not ``36.0``. ``tolerance`` is the one in force at ``path``.
     """
     if isinstance(expected, dict) and isinstance(actual, dict):
-        yield from changed_keys(expected, actual, path)
+        yield from changed_keys(expected, actual, path, tolerance)
     elif isinstance(expected, list) and isinstance(actual, list):
         if len(expected) != len(actual):
             yield f"{path}: {len(expected)} items became {len(actual)}"
         for index, (old, new) in enumerate(zip(expected, actual, strict=False)):
-            yield from changed_values(old, new, f"{path}[{index}]")
+            yield from changed_values(old, new, f"{path}[{index}]", tolerance)
     elif isinstance(expected, float) and isinstance(actual, float):
-        if not floats_match(expected, actual):
+        if not floats_match(expected, actual, tolerance):
             yield f"{path}: {expected!r} became {actual!r}"
     elif type(expected) is not type(actual) or expected != actual:
         yield f"{path}: {expected!r} became {actual!r}"
