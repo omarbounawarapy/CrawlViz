@@ -32,8 +32,8 @@ uv run pytest -q tests/pins
 uv run pytest -q -m pins
 ```
 
-In a git worktree, put the root on the path first (see "Worktrees" below):
-`PYTHONPATH=. uv run pytest -q tests/pins`. A pin takes a few seconds. A mismatch
+`pytest.ini` puts the repository root on the import path (`pythonpath = .`), so the
+same commands work in the main checkout and in a git worktree. A pin takes a few seconds. A mismatch
 fails with a unified diff of the changed golden lines, for example
 `fetch_order.jsonl changed (50 golden lines, 50 now)` followed by the `-` and `+` lines.
 
@@ -64,9 +64,11 @@ The same commit must give byte-identical goldens. Checked by running the pins
 repeatedly, under `PYTHONHASHSEED` 1 to 4, and four at a time in parallel: all
 green. After an update, run `uv run pytest -q tests/pins` once more without the flag.
 
-## Worktrees
+## Module names
 
-In the main checkout the project is installed editable, so the root is on the
-import path. A fresh `uv run` environment in a git worktree is not, and the whole
-suite (not only the pins) fails to import `pipelines`, `benchmark` and the rest
-unless the run starts with `PYTHONPATH=.`.
+`tests/pins` has no `__init__.py`, so pytest puts the folder on `sys.path` and its
+modules import each other by bare name; mypy does the same through `mypy_path` in
+`pyproject.toml`. A module here must therefore never share a name with a top-level
+package or module of the repository (`config`, `models`, `core`, ...) or with the
+standard library, or it would shadow the real one. `test_module_names.py` fails when
+one does.
