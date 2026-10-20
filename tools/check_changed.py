@@ -8,6 +8,7 @@ The full suite still runs in `make check` and in CI.
 from __future__ import annotations
 
 import argparse
+import ast
 import subprocess
 import sys
 from pathlib import Path
@@ -41,22 +42,76 @@ def changed_files(base: str) -> list[Path]:
     return sorted(ROOT / name for name in names if (ROOT / name).is_file())
 
 
+def python_modules() -> dict[str, Path]:
+    """Dotted module name to file for every tracked or new Python file, packages by `__init__`."""
+    names = _git("ls-files", "--cached", "--others", "--exclude-standard", "*.py")
+    modules: dict[str, Path] = {}
+    for name in names:
+        if (ROOT / name).is_file():
+            dotted = name.removesuffix(".py").replace("/", ".").removesuffix(".__init__")
+            modules[dotted] = ROOT / name
+    return modules
+
+
+def _import_candidates(node: ast.AST, directory: tuple[str, ...]) -> set[str]:
+    """Dotted names an import statement may refer to, including bare sibling imports."""
+    if isinstance(node, ast.Import):
+        names = [alias.name for alias in node.names]
+    elif isinstance(node, ast.ImportFrom) and node.level:
+        keep = len(directory) - (node.level - 1)
+        prefix = ".".join(directory[:keep])
+        module = ".".join(part for part in (prefix, node.module) if part)
+        return {module, *(f"{module}.{alias.name}" for alias in node.names)}
+    elif isinstance(node, ast.ImportFrom):
+        module = node.module or ""
+        names = [module, *(f"{module}.{alias.name}" for alias in node.names)]
+    else:
+        return set()
+    # pytest puts a test directory on sys.path, so `import sibling` works without a package.
+    return {*names, *(f"{'.'.join(directory)}.{name}" for name in names)}
+
+
+def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
+    """Repo files that `path` imports. Importing a.b.c also runs the package files a and a.b."""
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (SyntaxError, UnicodeDecodeError):
+        return set()
+    directory = path.relative_to(ROOT).parent.parts
+    found: set[Path] = set()
+    for node in ast.walk(tree):
+        for dotted in _import_candidates(node, directory):
+            parts = dotted.split(".")
+            prefixes = (".".join(parts[:end]) for end in range(1, len(parts) + 1))
+            found.update(modules[prefix] for prefix in prefixes if prefix in modules)
+    found.discard(path)
+    return found
+
+
 def python_tests_for(sources: list[Path]) -> list[Path]:
-    """Test files that are changed themselves or import a changed module."""
-    tests: set[Path] = set()
-    modules = []
-    for source in sources:
-        relative = source.relative_to(ROOT)
-        if relative.parts[0] == "tests" and relative.name.startswith("test_"):
-            tests.add(source)
-        elif relative.parts[0] != "tests":
-            modules.append(".".join(relative.with_suffix("").parts).removesuffix(".__init__"))
-    if modules:
-        for test_file in (ROOT / "tests").rglob("test_*.py"):
-            text = test_file.read_text(encoding="utf-8", errors="ignore")
-            if any(module in text for module in modules):
-                tests.add(test_file)
-    return sorted(tests)
+    """Test files that are changed, or import (transitively) a changed file.
+
+    Static imports only: a module loaded through importlib or a string is not followed.
+    A changed conftest.py selects every test beneath its directory.
+    """
+    modules = python_modules()
+    importers: dict[Path, set[Path]] = {}
+    for path in modules.values():
+        for imported in imports_of(path, modules):
+            importers.setdefault(imported, set()).add(path)
+    reached: set[Path] = set()
+    pending = list(sources)
+    while pending:
+        current = pending.pop()
+        if current not in reached:
+            reached.add(current)
+            pending.extend(importers.get(current, ()))
+    conftest_dirs = [source.parent for source in sources if source.name == "conftest.py"]
+    return sorted(
+        path for path in modules.values()
+        if path.name.startswith("test_") and "tests" in path.relative_to(ROOT).parts
+        and (path in reached or any(directory in path.parents for directory in conftest_dirs))
+    )
 
 
 def run(command: list[str], cwd: Path, accepted: tuple[int, ...] = (0,)) -> bool:
