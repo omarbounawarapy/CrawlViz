@@ -103,7 +103,7 @@ Scoring thresholds (`LOW`/`HIGH` bucket cutoffs), the embedding model name, and 
 
 ```bash
 make check-changed    # lint, mypy and the fast tests for the files your branch changed
-make check            # what CI runs, plus the hook tests
+make check            # what CI runs
 make lint             # ruff (backend) + eslint (frontend)
 make typecheck        # mypy --strict
 make check-baselines  # the mypy legacy list and ruff baseline did not grow
