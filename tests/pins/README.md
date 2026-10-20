@@ -63,3 +63,12 @@ Never update a golden to make a failure go away.
 The same commit must give byte-identical goldens. Checked by running the pins
 repeatedly, under `PYTHONHASHSEED` 1 to 4, and four at a time in parallel: all
 green. After an update, run `uv run pytest -q tests/pins` once more without the flag.
+
+## Module names
+
+`tests/pins` has no `__init__.py`, so pytest puts the folder on `sys.path` and its
+modules import each other by bare name; mypy does the same through `mypy_path` in
+`pyproject.toml`. A module here must therefore never share a name with a top-level
+package or module of the repository (`config`, `models`, `core`, ...) or with the
+standard library, or it would shadow the real one. `test_module_names.py` fails when
+one does.
