@@ -27,7 +27,6 @@ PYTHON_TOOLING_FILES = {
 # The same glob matcher the guard hooks use, so the method file list has one source:
 # [shared].method_files in .claude/ownership.toml.
 HOOKS_COMMON = ROOT / ".claude" / "hooks" / "_common.py"
-METHOD_EXTRA_FILES = {"core/crawler.py", "core/event_broker.py"}
 UI_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
 
@@ -132,7 +131,7 @@ def touches_method(files: list[Path]) -> bool:
     common = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(common)
     relative = [path.relative_to(ROOT).as_posix() for path in files]
-    return any(name in METHOD_EXTRA_FILES or common.is_method_file(name) for name in relative)
+    return any(common.is_method_file(name) for name in relative)
 
 
 def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
