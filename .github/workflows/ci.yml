@@ -30,15 +30,16 @@ jobs:
         run: uv run mypy
 
       - name: Test (pytest)
-        run: uv run pytest
+        run: uv run pytest -m "not pins"
 
       - name: Behaviour pins
         run: uv run pytest -m pins
 
       - name: Pin goldens unchanged
         run: |
-          if [ -n "$(git status --porcelain -- tests/pins)" ]; then
-            git status --short -- tests/pins
+          changed="$(git status --porcelain -- tests/pins)"
+          if [ -n "$changed" ]; then
+            echo "$changed"
             echo "tests/pins changed during the run; goldens change only through the pin update process" >&2
             exit 1
           fi
