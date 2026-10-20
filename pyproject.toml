@@ -184,7 +184,7 @@ module = ["aiofiles.*", "lxml.*", "scipy.*", "sklearn.*"]
 ignore_missing_imports = true
 
 # Legacy modules that do not pass strict yet. Remove a line when its module is clean;
-# never add one.
+# never add one. A listed module hides ALL its type errors, including new ones.
 [[tool.mypy.overrides]]
 module = [
     "benchmark.__main__",
