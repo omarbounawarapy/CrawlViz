@@ -62,6 +62,13 @@ class TestParseBaselines:
             "main.py": frozenset({"I001", "E501"}),
         }
 
+    def test_a_single_module_given_as_a_string_is_one_module_not_characters(self) -> None:
+        parsed = guard.parse_baselines(
+            '[[tool.mypy.overrides]]\nmodule = "core.crawler"\nignore_errors = true\n'
+        )
+
+        assert parsed.mypy_modules == {"core.crawler"}
+
     def test_file_without_tool_tables_has_no_baselines(self) -> None:
         parsed = guard.parse_baselines('[project]\nname = "demo"\n')
 

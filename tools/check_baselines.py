@@ -46,7 +46,8 @@ def parse_baselines(pyproject_text: str) -> Baselines:
     modules: set[str] = set()
     for override in tool.get("mypy", {}).get("overrides", []):
         if override.get("ignore_errors") is True:
-            modules.update(override.get("module", []))
+            listed = override.get("module", [])
+            modules.update([listed] if isinstance(listed, str) else listed)
     per_file = tool.get("ruff", {}).get("lint", {}).get("per-file-ignores", {})
     return Baselines(
         frozenset(modules), {path: frozenset(codes) for path, codes in per_file.items()}
