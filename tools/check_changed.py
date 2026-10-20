@@ -1,4 +1,4 @@
-"""Fast checks for the files a branch changed: lint plus the tests that cover them.
+"""Fast checks for the files a branch changed: lint plus the fast tests that cover them.
 
 Used by `make check-changed` and by the agents' stop hook. "Changed" means anything
 that differs from the merge base with main: committed, staged, unstaged or untracked.
@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = ROOT / "crawler-ui"
 BASE_BRANCH = "main"
 PYTHON_SUFFIXES = {".py"}
+PYTEST_NO_TESTS_COLLECTED = 5
 UI_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
 
@@ -53,9 +54,9 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
     return sorted(tests)
 
 
-def run(command: list[str], cwd: Path) -> bool:
+def run(command: list[str], cwd: Path, accepted: tuple[int, ...] = (0,)) -> bool:
     print("$", " ".join(command), flush=True)
-    return subprocess.run(command, cwd=cwd, check=False).returncode == 0
+    return subprocess.run(command, cwd=cwd, check=False).returncode in accepted
 
 
 def main() -> int:
@@ -78,8 +79,11 @@ def main() -> int:
         ok &= run(["uv", "run", "ruff", "check", *relative], ROOT)
         tests = python_tests_for(python_files)
         if tests:
-            ok &= run(["uv", "run", "pytest", "-q", *[str(t.relative_to(ROOT)) for t in tests]],
-                      ROOT)
+            # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
+            # Exit code 5 means every selected test was slow, which is not a failure.
+            ok &= run(["uv", "run", "pytest", "-q", "-m", "not slow",
+                       *[str(t.relative_to(ROOT)) for t in tests]],
+                      ROOT, accepted=(0, PYTEST_NO_TESTS_COLLECTED))
     if ui_files:
         relative = [str(path.relative_to(UI_DIR)) for path in ui_files]
         ok &= run(["npx", "eslint", *relative], UI_DIR)
