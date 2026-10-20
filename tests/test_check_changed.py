@@ -314,12 +314,13 @@ class TestChangedFiles:
 
         assert names(repo, tool.changed_files("main")) == ["new/crawler.py", "old/crawler.py"]
 
-    def test_unknown_base_still_reports_uncommitted_work(self, repo: Path) -> None:
+    def test_unknown_base_stops_instead_of_skipping_committed_changes(self, repo: Path) -> None:
         write(repo, "base.py")
         self.commit_all(repo, "Base")
         write(repo, "fresh.py")
 
-        assert names(repo, tool.changed_files("no-such-branch")) == ["fresh.py"]
+        with pytest.raises(SystemExit, match="no-such-branch"):
+            tool.changed_files("no-such-branch")
 
 
 class TestTouchesMethod:

@@ -47,9 +47,12 @@ def _changed_names(*diff_args: str) -> set[str]:
 def changed_files(base: str) -> list[Path]:
     """Changed paths. Deleted and renamed-away Python files stay in, so their importers run."""
     merge_base = _git("merge-base", "HEAD", base)
-    names: set[str] = set()
-    if merge_base:
-        names.update(_changed_names(merge_base[0]))
+    if not merge_base:
+        raise SystemExit(
+            f"check-changed: no merge base between HEAD and '{base}'; "
+            "committed changes cannot be listed (fetch it, or pass --base)"
+        )
+    names = _changed_names(merge_base[0])
     names.update(_changed_names())
     names.update(_changed_names("--cached"))
     names.update(_git("ls-files", "--others", "--exclude-standard"))
