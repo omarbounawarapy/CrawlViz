@@ -203,23 +203,16 @@ class TestOutcomes:
 
 
 class TestExpansionContract:
-    def _service(self, send):
+    def _bootstrapper(self, send):
         import asyncio
         from unittest.mock import MagicMock
-        from services.nlp_service import NLPService
+        from services.space_bootstrap import SpaceBootstrapper
 
-        svc = NLPService.__new__(NLPService)
-        svc.expansion_outcomes = __import__("services.llm_contracts", fromlist=["Outcomes"]).Outcomes()
-        svc.prompt_builder = MagicMock(build=MagicMock(return_value="p"))
-        svc.blueprint_id = "bp"
-        svc.llm_type, svc.model_information = "t", "m"
-
-        async def emit(_):
-            pass
-
-        svc._emit = emit
-        svc.llm_handler = MagicMock(send=send)
-        return svc, asyncio
+        bootstrapper = SpaceBootstrapper(
+            "bp", MagicMock(), MagicMock(send=send), {"llm_type": "t", "llm_model": "m"}
+        )
+        bootstrapper.prompt_builder = MagicMock(build=MagicMock(return_value="p"))
+        return bootstrapper, asyncio
 
     def test_junk_and_exceptions_yield_empty_seeds(self):
         async def junk(_):
@@ -229,13 +222,13 @@ class TestExpansionContract:
             raise RuntimeError("down")
 
         for send, key in ((junk, "malformed_response"), (boom, "request_failed")):
-            svc, asyncio = self._service(send)
-            assert asyncio.run(svc.create_expansions("t", {})) == {"descriptions": []}
-            assert svc.expansion_outcomes[key] == 1
+            bootstrapper, asyncio = self._bootstrapper(send)
+            assert asyncio.run(bootstrapper.create_expansions("t", {})) == {"descriptions": []}
+            assert bootstrapper.outcomes[key] == 1
 
     def test_valid_descriptions_are_cleaned(self):
         async def ok(_):
             return {"descriptions": [" a ", 3, "", "b"]}
 
-        svc, asyncio = self._service(ok)
-        assert asyncio.run(svc.create_expansions("t", {})) == {"descriptions": ["a", "b"]}
+        bootstrapper, asyncio = self._bootstrapper(ok)
+        assert asyncio.run(bootstrapper.create_expansions("t", {})) == {"descriptions": ["a", "b"]}

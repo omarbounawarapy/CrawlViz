@@ -1,6 +1,5 @@
 import logging
 import re
-import time
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -8,25 +7,16 @@ from scipy.spatial.distance import cosine
 
 from config import NLP_COMPOSITE_WEIGHTS
 from infrastructure import LlmHandler
-from models import ExpansionContext
 from utils.html_utils import document_text
 from nlp import (
     BaseEmbeddingEngine,
     BufferManager,
-    ExpansionPromptBuilder,
     FeatureExtractor,
     SpaceStore,
     VectorSpace,
     create_embedding_engine,
 )
-from .llm_contracts import Outcomes, parse_expansion_seeds
-from traceability.expansion_trace_events import (
-    EXP_CandidatePruned,
-    EXP_PromptBuilt,
-    EXP_SeedsGenerated,
-    EXP_SpaceBootstrapped,
-    EXP_Triggered,
-)
+from .space_bootstrap import SpaceBootstrapper
 from traceability.nlp_trace_events import (
     NLP_FeaturesExtracted,
     NLP_InputReceived,
@@ -34,7 +24,7 @@ from traceability.nlp_trace_events import (
     NLP_SimilarityScored,
     NLP_VectorComposed,
 )
-from traceability.trace_context import get_trace, new_trace_id
+from traceability.trace_context import get_trace
 
 if TYPE_CHECKING:
     from traceability.emitter import TraceEmitter
@@ -76,7 +66,8 @@ class NLPService:
     Args:
         blueprint_id: Identifies this blueprint's persisted semantic space.
         target_topic: The crawl's target topic; anchors the space's target vector.
-        llm_handler: Used to generate the target topic's semantic expansions.
+        llm_handler: Used to generate the target topic's semantic expansions
+            (see ``SpaceBootstrapper``).
         expansion_config: The blueprint's ``expansion`` sub-dict (llm_type,
             llm_model, style, num_descriptions, ...).
         engine: A ready embedding engine; overrides ``embedding_backend``.
@@ -124,17 +115,14 @@ class NLPService:
 
         self.store = SpaceStore(base_dir=store_base_dir, model_name=model_name)
         self.extractor = FeatureExtractor(target_top_k=target_top_k)
-        self.llm_handler = llm_handler
-        self.prompt_builder = ExpansionPromptBuilder()
+        self.bootstrapper = SpaceBootstrapper(
+            blueprint_id, self.engine, llm_handler, expansion_config, tracer=tracer
+        )
         self.space: VectorSpace | None = None
         self.persist_space = persist_space
         # Version of the stored space this run began from (see start()).
         self.start_version: int | None = None
         self.target_vec: np.ndarray | None = None
-        self.expansion_config = expansion_config
-        self.expansion_outcomes = Outcomes()
-        self.llm_type = expansion_config["llm_type"]
-        self.model_information = expansion_config["llm_model"]
         self.buffer_manager = buffer_manager
         # Local fallback buffer, only used when no buffer_manager is wired in.
         self._buffer: list[tuple[str, np.ndarray, dict]] = []
@@ -166,113 +154,12 @@ class NLPService:
         )
 
     async def build_space(self) -> None:
-        """Bootstrap the space from the target topic.
+        """Bootstrap the space from the target topic (see SpaceBootstrapper)."""
+        await self.bootstrapper.build(self.target_topic, adopt=self._adopt_space)
 
-        Generates seed sentences via the LLM at init time.
-        """
-        target = self.target_topic
-
-        t0 = time.monotonic()
-        trace_id, node_id = get_trace()
-        if not trace_id:
-            trace_id = new_trace_id()
-            node_id = f"bootstrap:{self.blueprint_id}"
-
-        await self._emit(EXP_Triggered(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            target_topic=target,
-            trigger_reason="new_blueprint",
-        ))
-
-        logger.info("Building new semantic space for '%s'", self.blueprint_id)
-        self.space = VectorSpace(dim=self.engine.dim)
-        target_vec = self.engine.encode(target)
-        self.target_vec = target_vec
-
-        expansions = await self.create_expansions(target, self.expansion_config)
-
-        seeds = expansions.get("descriptions", [])
-        await self._emit(EXP_SeedsGenerated(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            seed_count=len(seeds),
-            seed_previews=[s[:80] for s in seeds],
-            source="llm_expansion",
-        ))
-
-        seed_vectors = []
-        for description in seeds:
-            try:
-                vec = self.engine.encode(description)
-                key = f"seed::{self.blueprint_id}::{hash(description)}"
-                seed_vectors.append((key, vec, {"type": "seed"}))
-            except Exception:
-                logger.exception("Failed to encode seed description: %r", description[:80])
-                await self._emit(EXP_CandidatePruned(
-                    trace_id=trace_id,
-                    node_id=node_id,
-                    blueprint_id=self.blueprint_id,
-                    seed_preview=description[:80],
-                    reason="error",
-                    threshold=None,
-                ))
-
-        self.space.add_batch(seed_vectors)
-        self.space.add_vector(
-            key=f"__target__{self.blueprint_id}",
-            vector=target_vec,
-            metadata={"type": "target", "text": target},
-        )
-
+    def _adopt_space(self, space: VectorSpace, target_vec: np.ndarray) -> None:
+        self.space, self.target_vec = space, target_vec
         self.save_space()
-
-        duration_ms = (time.monotonic() - t0) * 1000
-        await self._emit(EXP_SpaceBootstrapped(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            vectors_added=len(seed_vectors) + 1,
-            space_version=self.space.version,
-            duration_ms=duration_ms,
-        ))
-
-    async def create_expansions(self, target: str, expansion_config: dict) -> dict:
-        trace_id, node_id = get_trace()
-
-        prompt = self.prompt_builder.build(target, expansion_config)
-
-        await self._emit(EXP_PromptBuilt(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            style=expansion_config.get("style", "balanced"),
-            num_descriptions=expansion_config.get("num_descriptions", 6),
-            prompt_len=len(prompt),
-            prompt_preview=prompt[:300],
-        ))
-
-        context = ExpansionContext(
-            self.llm_type,
-            self.model_information,
-            prompt,
-        )
-        logger.debug("Sending expansion request to LLM for '%s'", target)
-        try:
-            raw = await self.llm_handler.send(context)
-        except Exception:
-            logger.exception("Expansion request failed for '%s'", target)
-            self.expansion_outcomes["request_failed"] += 1
-            return {"descriptions": []}
-        parsed = parse_expansion_seeds(raw)
-        if parsed is None:
-            logger.warning("Expansion response was not an object: %.200r", raw)
-            self.expansion_outcomes["malformed_response"] += 1
-            return {"descriptions": []}
-        self.expansion_outcomes["ok" if parsed.descriptions else "empty"] += 1
-        return parsed.model_dump()
 
     def load_space(self) -> None:
         path = self.store.space_path(self.blueprint_id)
