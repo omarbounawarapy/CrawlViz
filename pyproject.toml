@@ -58,7 +58,6 @@ max-complexity = 10
 "benchmark/label.py" = ["B905", "E501", "PLR2004"]
 "benchmark/label_graph.py" = ["E501", "I001", "PLR2004"]
 "benchmark/llm_cache.py" = ["E501", "N818", "PLR0913", "PLR2004"]
-"benchmark/pilot.py" = ["E501"]
 "benchmark/provenance.py" = ["PLC0415", "PLR0913"]
 "benchmark/record.py" = ["B905", "E501", "PLR2004"]
 "benchmark/record_ball.py" = ["C901", "E501", "PLR2004", "UP041"]
@@ -192,7 +191,6 @@ module = [
     "benchmark.graph_stats",
     "benchmark.label",
     "benchmark.llm_cache",
-    "benchmark.pilot",
     "benchmark.policies",
     "benchmark.provenance",
     "benchmark.record",
