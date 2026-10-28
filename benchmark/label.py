@@ -8,7 +8,8 @@ evidence the metric measures what it should.
 
     .venv/bin/python -m benchmark.label --graph benchmark/data/isi.json \\
         --topic "institut superieur informatique ISI (tunisia / ariana)"
-    .venv/bin/python -m benchmark.label --graph benchmark/data/isi.json --agreement
+    .venv/bin/python -m benchmark.label --graph benchmark/data/isi.json \\
+        --spot benchmark/data/spotcheck.tsv --agreement
 """
 import argparse
 import asyncio
@@ -120,12 +121,14 @@ def main() -> None:
     ap.add_argument("--cache", type=Path, default=Path("benchmark/data/judge_cache.jsonl"))
     ap.add_argument("--keys", type=Path, default=Path("keys.json"))
     ap.add_argument("--limit", type=int, help="label only the first N pages (a dry run)")
-    ap.add_argument("--spot", type=Path, default=Path("benchmark/data/spotcheck.tsv"))
+    ap.add_argument("--spot", type=Path, help="spot-check TSV: written after labelling, read by --agreement")
     ap.add_argument("--agreement", action="store_true", help="compare the judge with the filled TSV")
     args = ap.parse_args()
 
     graph = FrozenGraph.load(args.graph)
     if args.agreement:
+        if not args.spot:
+            ap.error("--agreement needs --spot")
         agreement(graph, args.spot)
         return
     if args.topic:
@@ -138,10 +141,12 @@ def main() -> None:
         graph.terms = sorted({w for w in re.findall(r"\w+", graph.topic.lower()) if len(w) > 3})
     llm = asyncio.run(label_graph(graph, args.cache, args.keys, args.limit))
     graph.save(args.graph)
-    write_spot_check(graph, args.spot)
+    if args.spot:
+        write_spot_check(graph, args.spot)
     labelled = [p["relevant"] for p in graph.pages.values() if p["relevant"] is not None]
     print(f"{sum(labelled)} relevant of {len(labelled)} labelled ({llm.hits} cached, {llm.misses} calls)")
-    print(f"spot check written to {args.spot}")
+    if args.spot:
+        print(f"spot check written to {args.spot}")
 
 
 if __name__ == "__main__":

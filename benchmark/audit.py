@@ -11,8 +11,8 @@ a browser (answers are kept in the browser and exported as the filled TSV).
 It carries only what the TSV carries, so the form is as blind as the TSV.
 
 ``sample`` draws every label-2 page plus label-1, label-0 (weighted toward
-pages that mention Tunisia) and uniformly random pages, minus the pages of the
-pilot files, and writes a shuffled TSV that carries only id, title, excerpt and
+pages that mention Tunisia) and uniformly random pages, minus the pages of any
+``--exclude`` TSV, and writes a shuffled TSV that carries only id, title, excerpt and
 an empty human_label. The stratum and the judge's label go to a separate key
 file that the annotator must not read.
 
@@ -34,7 +34,6 @@ from pathlib import Path
 from .graph import FrozenGraph, page_key
 
 EXCERPT_CHARS = 450
-PILOT_FILES = ("benchmark/data/pilot30.tsv", "benchmark/data/pilot_label2.tsv")
 # Shares of the sample that is not label 2: label 1, label 0, uniform (60 : 60 : 30).
 SHARES = {"label1": 0.4, "label0": 0.4, "uniform": 0.2}
 DEFAULT_REST = 150
@@ -112,7 +111,7 @@ def sample(graph_path: Path, out: Path, key: Path, total: int | None, seed: int,
     }, ensure_ascii=False, indent=1))
     by = Counter(s for _, s in picks)
     print(f"{len(picks)} pages ({', '.join(f'{s} {c}' for s, c in by.items())}); "
-          f"{len(exclude)} pilot pages excluded; wrote {out} and {key}")
+          f"{len(exclude)} pages excluded; wrote {out} and {key}")
 
 
 # ---- scoring ---------------------------------------------------------------
@@ -390,7 +389,7 @@ def main() -> None:
     s.add_argument("--key", type=Path, default=Path("benchmark/data/audit_key.json"))
     s.add_argument("--total", type=int, help=f"sample size, label-2 pages included (default: label 2 plus {DEFAULT_REST})")
     s.add_argument("--seed", type=int, default=0)
-    s.add_argument("--exclude", type=Path, nargs="*", default=[Path(p) for p in PILOT_FILES],
+    s.add_argument("--exclude", type=Path, nargs="*", default=[],
                    help="TSV files with a `page` column whose pages are left out")
     c = sub.add_parser("score", help="compare the filled TSV with the judge")
     c.add_argument("--tsv", type=Path, required=True)
