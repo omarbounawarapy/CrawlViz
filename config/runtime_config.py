@@ -8,7 +8,7 @@ this crawl operating under?".
 
 Why this exists
 ----------------
-`routes/blueprint_schema.py` already solved this exact problem for
+`config/blueprint_schema.py` already solved this exact problem for
 blueprints: a Pydantic model as the single source of truth, with its
 JSON schema exported for the frontend rather than hand-duplicated. That
 model's own docstring documents three past incidents of drift between
@@ -42,7 +42,6 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import config as _config
-from infrastructure.llm_handler import LlmHandler
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
 from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
@@ -494,18 +493,18 @@ class PromptsConfig(BaseModel):
 
 
 class ProvidersConfig(BaseModel):
-    """Request URL per LLM provider (infrastructure/llm_handler.py). Point a
+    """Request URL per LLM provider (config/config.py). Point a
     provider at any compatible server; Gemini takes a base URL."""
 
     endpoints: dict[str, str] = _f(
-        dict(LlmHandler.DEFAULT_ENDPOINTS),
+        dict(_config.LLM_DEFAULT_ENDPOINTS),
         "Request URL used for each provider.", "Providers", "stringmap",
         effect="Changing a URL sends that provider's requests to another server, such as a local or compatible one.")
 
     @model_validator(mode="after")
     def _valid(self) -> "ProvidersConfig":
         for name, url in self.endpoints.items():
-            if name not in LlmHandler.DEFAULT_ENDPOINTS:
+            if name not in _config.LLM_DEFAULT_ENDPOINTS:
                 raise ValueError(f"Unknown LLM provider: {name}.")
             if not url.startswith(("http://", "https://")):
                 raise ValueError(f"The {name} endpoint must start with http:// or https://.")
@@ -601,7 +600,7 @@ class RuntimeConfig(BaseModel):
     """Top-level runtime configuration: everything a researcher would want
     to see before trusting a crawl's results, beyond the per-run blueprint
     (target topic, seeds, extraction schema) already covered by
-    routes/blueprint_schema.py."""
+    config/blueprint_schema.py."""
 
     scoring_cascade: ScoringCascadeConfig = Field(default_factory=ScoringCascadeConfig)
     embeddings: EmbeddingConfig = Field(default_factory=EmbeddingConfig)

@@ -66,6 +66,8 @@ max-complexity = 10
 "benchmark/runner.py" = ["C901", "E501", "PLC0415", "PLR0913", "PLR0915", "PLR2004"]
 "benchmark/seed_probe.py" = ["E501", "PLR2004"]
 "config/__init__.py" = ["I001", "RUF022"]
+"config/blueprint_schema.py" = ["I001"]
+"config/blueprint_translator.py" = ["C901", "I001", "RUF100"]
 "config/runtime_config.py" = ["E501", "PLR0913", "UP037"]
 "core/boot_strapper.py" = ["UP015"]
 "core/crawler.py" = ["I001", "PLC0415", "PLR0913", "RUF012"]
@@ -92,10 +94,8 @@ max-complexity = 10
 "pipelines/scoring_pipeline.py" = ["I001", "PLR0913"]
 "priority/__init__.py" = ["RUF022"]
 "priority/strategy.py" = ["PLR0913"]
-"routes/benchmark.py" = ["B904", "E501", "I001", "PLC0415", "PLR2004", "PLW0603", "RUF006", "SIM300"]
-"routes/blueprint_schema.py" = ["I001"]
-"routes/blueprint_translator.py" = ["C901", "I001", "RUF100"]
-"routes/config.py" = ["B904", "E501", "I001", "PLC0415"]
+"routes/benchmark.py" = ["E501", "I001", "PLC0415", "PLR2004"]
+"routes/config.py" = ["B904", "E501"]
 "routes/run.py" = ["B904", "E501", "N815", "PLW0602", "PLW0603"]
 "routes/templates.py" = ["B904", "I001"]
 "routes/validation.py" = ["B904", "RUF001"]
@@ -200,6 +200,7 @@ module = [
     "benchmark.results",
     "benchmark.runner",
     "benchmark.seed_probe",
+    "config.blueprint_translator",
     "config.paths",
     "config.runtime_config",
     "config.settings_store",
@@ -248,7 +249,6 @@ module = [
     "pipelines.transformation_pipeline",
     "priority.strategy",
     "routes.benchmark",
-    "routes.blueprint_translator",
     "routes.config",
     "routes.run",
     "routes.templates",

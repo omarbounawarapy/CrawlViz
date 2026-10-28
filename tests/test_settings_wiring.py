@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import routes.config as config_routes
+from routes import config_support
 import routes.run as run_routes
 from config import settings_store as store
 from config.paths import RuntimePaths
@@ -149,7 +150,7 @@ def test_default_runtime_config_ignores_stored_settings(tmp_path):
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     paths = RuntimePaths.under(tmp_path)
-    monkeypatch.setattr(config_routes, "default_runtime_paths", lambda: paths)
+    monkeypatch.setattr(config_support, "default_runtime_paths", lambda: paths)
     monkeypatch.setattr(run_routes, "default_runtime_paths", lambda: paths)
     app = FastAPI()
     app.include_router(config_routes.router)

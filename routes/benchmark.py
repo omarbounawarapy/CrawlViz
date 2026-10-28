@@ -6,14 +6,10 @@ LLM. The only writes are the annotator TSVs (``audit_ui_<annotator>.tsv``,
 never ``audit_filled.tsv``) and whatever the whitelisted CLIs themselves write.
 """
 
-import asyncio
 import csv
 import json
 import math
 import re
-import sys
-import time
-from collections import deque
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query
@@ -28,13 +24,11 @@ from benchmark.graph import FrozenGraph
 from benchmark.graph_stats import stats as graph_stats
 from benchmark.results import RunRecord
 
-router = APIRouter(prefix="/benchmark", tags=["benchmark"])
+from .benchmark_jobs import router as jobs_router
+from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR
 
-ROOT = Path(__file__).resolve().parent.parent
-BENCH_DIR = ROOT / "benchmark"
-DATA_DIR = BENCH_DIR / "data"
-RESULTS_DIR = BENCH_DIR / "results"
-LOG_TAIL = 400
+router = APIRouter(prefix="/benchmark", tags=["benchmark"])
+router.include_router(jobs_router)
 
 PROTOCOL_FILE = BENCH_DIR / "PROTOCOL.md"
 
@@ -398,170 +392,3 @@ def score_audit(annotator: str = "1", source: str = "ui"):
     if result is None:
         raise HTTPException(status_code=409, detail="no annotated items yet")
     return result
-
-
-# ── jobs ─────────────────────────────────────────────────────────────────────
-
-_SAFE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./:-]*$")
-
-
-def _path_arg(value: str) -> str:
-    if not isinstance(value, str) or not _SAFE.match(value) or ".." in value:
-        raise HTTPException(status_code=422, detail=f"bad path argument: {value!r}")
-    resolved = (ROOT / value).resolve()
-    if ROOT not in resolved.parents:
-        raise HTTPException(status_code=422, detail=f"path outside the project: {value!r}")
-    return value
-
-
-def _word(value: str) -> str:
-    if not isinstance(value, str) or not _SAFE.match(value):
-        raise HTTPException(status_code=422, detail=f"bad argument: {value!r}")
-    return value
-
-
-# flag -> (type, validator). Only these reach the subprocess.
-RUN_FLAGS = {
-    "graph": _path_arg, "budget": int, "reps": int, "cascade": bool, "llm_all": bool,
-    "no_llm": bool, "replay_only": bool, "flush_every": int, "provider": _word, "model": _word,
-    "llm_cache": _path_arg, "runs_file": _path_arg, "template": _path_arg,
-    "low_pct": float, "high_pct": float, "low": float, "high": float,
-    "results_dir": _path_arg, "save_sequences": _path_arg,
-}
-ANALYZE_FLAGS = {"k": int, "test_k": int, "ndcg": bool, "no_dedupe": bool}
-LABEL_FLAGS = {"graph": _path_arg, "merge": bool}
-JOBS = {
-    "run": ("benchmark", RUN_FLAGS),
-    "analyze": ("benchmark.analyze", ANALYZE_FLAGS),
-    "label": ("benchmark.label_graph", LABEL_FLAGS),
-}
-
-
-def build_command(kind: str, args: dict) -> list[str]:
-    if kind not in JOBS:
-        raise HTTPException(status_code=422, detail=f"unknown job kind {kind!r}")
-    module, flags = JOBS[kind]
-    cmd = [sys.executable, "-m", module]
-    for key, value in args.items():
-        spec = flags.get(key)
-        if spec is None:
-            raise HTTPException(status_code=422, detail=f"flag {key!r} is not allowed for {kind}")
-        flag = "--" + key.replace("_", "-")
-        if spec is bool:
-            if value is True:
-                cmd.append(flag)
-            elif value is not False:
-                raise HTTPException(status_code=422, detail=f"{key} must be true or false")
-            continue
-        try:
-            cooked = spec(value)
-        except (TypeError, ValueError):
-            raise HTTPException(status_code=422, detail=f"bad value for {key}: {value!r}")
-        cmd += [flag, str(cooked)]
-    return cmd
-
-
-class JobBody(BaseModel):
-    kind: str
-    args: dict = {}
-
-
-LAST_JOB_FILE = BENCH_DIR / "analysis" / "last_job.json"
-
-
-def expected_results(kind: str, args: dict) -> int | None:
-    """Result files a run writes: every repeat of every baseline, plus the cascade arm."""
-    if kind != "run":
-        return None
-    from benchmark import POLICIES
-
-    reps = int(args.get("reps", 1))
-    return len(POLICIES) * reps + (reps if args.get("cascade") else 0)
-
-
-class _Job:
-    def __init__(self, kind: str, cmd: list[str], args: dict | None = None):
-        self.kind, self.cmd = kind, cmd
-        self.expected = expected_results(kind, args or {})
-        self.started = time.time()
-        self.ended: float | None = None
-        self.returncode: int | None = None
-        self.stopped = False
-        self.log: deque[str] = deque(maxlen=LOG_TAIL)
-        self.proc: asyncio.subprocess.Process | None = None
-
-    def snapshot(self) -> dict:
-        now = self.ended or time.time()
-        new = {p.name for d in _result_dirs(self.cmd) for p in d.glob("*.json")
-               if p.stat().st_mtime >= self.started}
-        text = "\n".join(self.log)
-        waits = len(re.findall(r"429|rate.?limit", text, re.I))
-        if self.returncode is None:
-            state = "running"
-        elif self.stopped:
-            state = "stopped"
-        else:
-            state = "done" if self.returncode == 0 else "failed"
-        return {"kind": self.kind, "command": " ".join(self.cmd[1:]), "state": state,
-                "returncode": self.returncode, "elapsed": round(now - self.started, 1),
-                "expected_results": self.expected, "new_results": sorted(new), "rate_limit_mentions": waits, "log": list(self.log)}
-
-
-def _result_dirs(cmd: list[str]) -> list[Path]:
-    if "--results-dir" in cmd:
-        return [ROOT / cmd[cmd.index("--results-dir") + 1]]
-    return [RESULTS_DIR] if "benchmark" == cmd[2] else []
-
-
-_job: _Job | None = None
-
-
-async def _pump(job: _Job) -> None:
-    proc = job.proc
-    assert proc is not None and proc.stdout is not None
-    async for raw in proc.stdout:
-        job.log.append(raw.decode(errors="replace").rstrip())
-    job.returncode = await proc.wait()
-    job.ended = time.time()
-    try:  # the finished job survives a backend restart
-        LAST_JOB_FILE.parent.mkdir(parents=True, exist_ok=True)
-        LAST_JOB_FILE.write_text(json.dumps(job.snapshot()))
-    except OSError:
-        pass
-
-
-@router.post("/jobs")
-async def start_job(body: JobBody):
-    global _job
-    if _job and _job.returncode is None:
-        raise HTTPException(status_code=409, detail="A benchmark job is already running")
-    cmd = build_command(body.kind, body.args)
-    job = _Job(body.kind, cmd, body.args)
-    job.proc = await asyncio.create_subprocess_exec(
-        *cmd, cwd=ROOT, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
-    )
-    _job = job
-    asyncio.create_task(_pump(job))
-    return job.snapshot()
-
-
-@router.get("/jobs/current")
-def current_job():
-    if _job:
-        return _job.snapshot()
-    if LAST_JOB_FILE.is_file():
-        try:
-            last = json.loads(LAST_JOB_FILE.read_text())
-            return {**last, "state": last["state"] if last.get("state") != "running" else "interrupted"}
-        except (OSError, ValueError, KeyError):
-            pass
-    return {"state": "idle", "log": []}
-
-
-@router.post("/jobs/stop")
-async def stop_job():
-    if not _job or _job.returncode is not None or _job.proc is None:
-        raise HTTPException(status_code=409, detail="No benchmark job is running")
-    _job.stopped = True
-    _job.proc.terminate()
-    return _job.snapshot()

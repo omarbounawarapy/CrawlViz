@@ -37,7 +37,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, ValidationError
 
-from config import DEFAULT_PRIORITY_STRATEGY
+from .config import DEFAULT_PRIORITY_STRATEGY
 from priority.strategy import STRATEGY_REGISTRY
 
 # =========================================================

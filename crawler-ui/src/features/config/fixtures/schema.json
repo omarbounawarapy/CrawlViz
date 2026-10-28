@@ -609,7 +609,7 @@
       "type": "object"
     },
     "ProvidersConfig": {
-      "description": "Request URL per LLM provider (infrastructure/llm_handler.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
+      "description": "Request URL per LLM provider (config/config.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
       "properties": {
         "endpoints": {
           "additionalProperties": {
@@ -959,7 +959,7 @@
       "type": "object"
     }
   },
-  "description": "Top-level runtime configuration: everything a researcher would want\nto see before trusting a crawl's results, beyond the per-run blueprint\n(target topic, seeds, extraction schema) already covered by\nroutes/blueprint_schema.py.",
+  "description": "Top-level runtime configuration: everything a researcher would want\nto see before trusting a crawl's results, beyond the per-run blueprint\n(target topic, seeds, extraction schema) already covered by\nconfig/blueprint_schema.py.",
   "properties": {
     "scoring_cascade": {
       "$ref": "#/$defs/ScoringCascadeConfig"

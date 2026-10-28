@@ -32,52 +32,36 @@ construction. Fields flagged ``ui_apply: live`` can also be pushed to the
 running crawl with PATCH /config/live (not persisted; PUT /config does that).
 """
 
-import hmac
 import json
 import os
-import re
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ValidationError
 
-from config import RuntimePaths, default_runtime_paths
 from config import settings_store as store
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core.live_settings import LiveSettingsError
-from infrastructure.key_manager import KeyManager
 from infrastructure.llm_handler import LlmHandler
 from models.link import Link
 from models.prompts import STRATEGIES, PromptBuilder
 
-def _require_token(authorization: str | None = Header(default=None)) -> None:
-    token = os.environ.get("CRAWLVIZ_API_TOKEN")
-    if not token:
-        return
-    supplied = (authorization or "").removeprefix("Bearer ").strip()
-    if not hmac.compare_digest(supplied.encode(), token.encode()):
-        raise HTTPException(status_code=401, detail="Missing or invalid API token")
+from . import run as run_routes
+from .config_presets import router as presets_router
+from .config_support import (
+    ConfigPatch,
+    get_paths,
+    require_token,
+    validation_errors,
+    validation_http_error,
+)
+from .keys import get_key_manager
+from .keys import router as keys_router
+
+router = APIRouter(tags=["config"], dependencies=[Depends(require_token)])
+router.include_router(presets_router)
+router.include_router(keys_router)
 
 
-router = APIRouter(tags=["config"], dependencies=[Depends(_require_token)])
-
-
-def _paths() -> RuntimePaths:
-    return default_runtime_paths()
-
-
-def _errors(exc: ValidationError) -> list[dict]:
-    return [
-        {"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]}
-        for e in exc.errors()
-    ]
-
-
-def _422(exc: ValidationError) -> HTTPException:
-    return HTTPException(status_code=422, detail={"errors": _errors(exc)})
-
-
-class ConfigPatch(BaseModel):
-    values: dict
 
 
 @router.get("/config/schema")
@@ -90,7 +74,7 @@ def get_config_schema() -> dict:
 @router.get("/config")
 def get_config() -> dict:
     """The runtime configuration currently in effect."""
-    return store.load_runtime_config(_paths().settings_file).model_dump()
+    return store.load_runtime_config(get_paths().settings_file).model_dump()
 
 
 @router.get("/config/defaults")
@@ -100,53 +84,51 @@ def get_defaults() -> dict:
 
 @router.get("/config/stored")
 def get_stored() -> dict:
-    return store.read_stored(_paths().settings_file)
+    return store.read_stored(get_paths().settings_file)
 
 
 @router.put("/config")
 def put_config(body: ConfigPatch) -> dict:
     try:
-        return store.save_settings(_paths().settings_file, body.values).model_dump()
+        return store.save_settings(get_paths().settings_file, body.values).model_dump()
     except ValidationError as exc:
-        raise _422(exc)
+        raise validation_http_error(exc)
 
 
 @router.put("/config/replace")
 def replace_config(body: ConfigPatch) -> dict:
     try:
-        return store.replace_settings(_paths().settings_file, body.values).model_dump()
+        return store.replace_settings(get_paths().settings_file, body.values).model_dump()
     except ValidationError as exc:
-        raise _422(exc)
+        raise validation_http_error(exc)
 
 
 @router.post("/config/validate")
 def validate_config(body: ConfigPatch) -> dict:
     try:
-        store.load_runtime_config(_paths().settings_file, body.values)
+        store.load_runtime_config(get_paths().settings_file, body.values)
     except ValidationError as exc:
-        return {"valid": False, "errors": _errors(exc)}
+        return {"valid": False, "errors": validation_errors(exc)}
     return {"valid": True, "errors": []}
 
 
 @router.post("/config/effective")
 def effective_config(body: ConfigPatch) -> dict:
     try:
-        return store.load_runtime_config(_paths().settings_file, body.values).model_dump()
+        return store.load_runtime_config(get_paths().settings_file, body.values).model_dump()
     except ValidationError as exc:
-        raise _422(exc)
+        raise validation_http_error(exc)
 
 
 @router.patch("/config/live")
 def patch_live(body: ConfigPatch) -> dict:
-    from routes import run as run_routes
-
     crawler = run_routes._current_crawler
     if crawler is None:
         raise HTTPException(status_code=409, detail="No active crawl")
     try:
         return crawler.apply_live(body.values).model_dump()
     except ValidationError as exc:
-        raise _422(exc)
+        raise validation_http_error(exc)
     except LiveSettingsError as exc:
         raise HTTPException(status_code=422, detail={"errors": [{"path": "", "message": str(exc)}]})
 
@@ -155,170 +137,7 @@ def patch_live(body: ConfigPatch) -> dict:
 def reset_config(section: str | None = None) -> dict:
     if section is not None and section not in RuntimeConfig.model_fields:
         raise HTTPException(status_code=404, detail=f"Unknown section '{section}'")
-    return store.reset_settings(_paths().settings_file, section).model_dump()
-
-
-BUILTIN_PRESETS: dict[str, dict] = {
-    "polite": {
-        "fetch": {"min_delay": 2.0, "jitter_max": 0.5},
-        "pipelines": {"requests": {"workers": 2}},
-    },
-    "fast": {
-        "fetch": {"min_delay": 0.2, "jitter_max": 0.05},
-        "pipelines": {"requests": {"workers": 8}},
-    },
-    "frugal": {
-        "scoring_cascade": {"high_score_llm_fraction": 0.1, "low_score_sample_fraction": 0.0},
-    },
-}
-
-
-def _num(value: float) -> str:
-    """A preset number as people read it: 2 not 2.0, 0.05 not 0.050000001."""
-    return f"{value:g}"
-
-
-def _pct(fraction: float) -> str:
-    return f"{round(fraction * 100):g} %"
-
-
-def _pace(values: dict) -> str:
-    fetch = values["fetch"]
-    workers = values["pipelines"]["requests"]["workers"]
-    return (f"{_num(fetch['min_delay'])} s between requests (plus up to {_num(fetch['jitter_max'])} s random) "
-            f"and {workers} parallel fetches")
-
-
-# The built-in presets' names as people see them. The keys stay as they are (the API and the
-# tests use them); the goal guide's cards use the same words, so a preset and its card match.
-PRESET_LABELS: dict[str, str] = {
-    "polite": "Gentler on a site",
-    "fast": "Faster on a site that allows it",
-    "frugal": "Cheaper",
-}
-
-
-def _preset_description(name: str, values: dict) -> str:
-    """Prose generated from a preset's values, so the words cannot drift from the numbers."""
-    if name == "polite":
-        return f"Gentler on small sites: {_pace(values)}."
-    if name == "fast":
-        return f"Quicker crawl on sites that can take it: {_pace(values)}. More likely to see 429s."
-    if name == "frugal":
-        cascade = values["scoring_cascade"]
-        base = default_runtime_config().scoring_cascade
-        return (f"Spend less LLM budget: {_pct(cascade['high_score_llm_fraction'])} of the high-confidence "
-                f"bucket goes to the model (default {_pct(base.high_score_llm_fraction)}), and "
-                f"{_pct(cascade['low_score_sample_fraction'])} of low-score links are kept for exploration "
-                f"(default {_pct(base.low_score_sample_fraction)}).")
-    raise KeyError(name)
-
-
-PRESET_DESCRIPTIONS: dict[str, str] = {name: _preset_description(name, values)
-                                       for name, values in BUILTIN_PRESETS.items()}
-
-# The goal guide's three starting points. Each is a patch of settings, and its
-# prose is generated from the same values, as the presets' prose is.
-GOALS: dict[str, dict] = {
-    "gentler": {
-        "label": "Gentler on a site",
-        "values": BUILTIN_PRESETS["polite"],
-    },
-    "cheaper": {
-        "label": "Cheaper",
-        "values": BUILTIN_PRESETS["frugal"],
-    },
-    "explore": {
-        "label": "Explore more",
-        "values": {
-            "scoring_cascade": {"low_score_sample_fraction": 0.2, "default_priority_strategy": "exploration"},
-            "priority": {"nlp_bias": 85, "llm_bias": 15},
-        },
-    },
-}
-
-
-def _goal_description(name: str, values: dict) -> str:
-    if name == "gentler":
-        return f"Waits longer between requests and fetches fewer pages at once: {_pace(values)}."
-    if name == "cheaper":
-        return _preset_description("frugal", values)
-    if name == "explore":
-        cascade = values["scoring_cascade"]
-        priority = values["priority"]
-        return (f"Keeps {_pct(cascade['low_score_sample_fraction'])} of doubtful links for the LLM, orders the "
-                f"queue with the {cascade['default_priority_strategy']} strategy, and weighs the NLP score "
-                f"{_num(priority['nlp_bias'])} to the LLM's {_num(priority['llm_bias'])}.")
-    raise KeyError(name)
-
-
-def goals() -> dict[str, dict]:
-    return {name: {"label": g["label"], "values": g["values"],
-                   "description": _goal_description(name, g["values"])}
-            for name, g in GOALS.items()}
-_PRESET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]{0,39}$")
-
-
-def _presets_file():
-    return _paths().settings_file.with_name("presets.json")
-
-
-def _read_presets() -> dict:
-    try:
-        data = json.loads(_presets_file().read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def _check_preset_name(name: str) -> None:
-    if name in BUILTIN_PRESETS or not _PRESET_NAME.match(name):
-        raise HTTPException(status_code=422, detail=f"Invalid preset name '{name}'")
-
-
-@router.get("/config/export")
-def export_config() -> dict:
-    return store.read_stored(_paths().settings_file)
-
-
-@router.get("/config/presets")
-def list_presets() -> dict:
-    return {"builtin": BUILTIN_PRESETS, "labels": PRESET_LABELS, "descriptions": PRESET_DESCRIPTIONS,
-            "user": _read_presets(), "goals": goals()}
-
-
-@router.put("/config/presets/{name}")
-def save_preset(name: str, body: ConfigPatch | None = None) -> dict:
-    _check_preset_name(name)
-    values = body.values if body and body.values else store.read_stored(_paths().settings_file)
-    try:
-        store.load_runtime_config(None, values)
-    except ValidationError as exc:
-        raise _422(exc)
-    presets = _read_presets()
-    presets[name] = values
-    store._write(_presets_file(), presets)
-    return {"saved": name}
-
-
-@router.delete("/config/presets/{name}")
-def delete_preset(name: str) -> dict:
-    presets = _read_presets()
-    if presets.pop(name, None) is None:
-        raise HTTPException(status_code=404, detail="Preset not found")
-    store._write(_presets_file(), presets)
-    return {"removed": name}
-
-
-@router.post("/config/presets/{name}/apply")
-def apply_preset(name: str) -> dict:
-    values = BUILTIN_PRESETS.get(name) or _read_presets().get(name)
-    if values is None:
-        raise HTTPException(status_code=404, detail="Preset not found")
-    try:
-        return store.replace_settings(_paths().settings_file, values).model_dump()
-    except ValidationError as exc:
-        raise _422(exc)
+    return store.reset_settings(get_paths().settings_file, section).model_dump()
 
 
 _SAMPLE_LINKS = [
@@ -376,7 +195,7 @@ def get_providers() -> dict:
     """Registered LLM providers, with the models blueprints already use
     (read from templates/*.json) so the UI can offer them as choices."""
     providers = {name: {"models": [], "keys": 0} for name in LlmHandler.translators}
-    templates_dir = _paths().templates_dir
+    templates_dir = get_paths().templates_dir
     try:
         names = sorted(os.listdir(templates_dir))
     except OSError:
@@ -397,57 +216,13 @@ def get_providers() -> dict:
         for provider, model in pairs:
             if provider in providers and model not in providers[provider]["models"]:
                 providers[provider]["models"].append(model)
-    for provider, keys in _keys().snapshot().items():
+    for provider, keys in get_key_manager().snapshot().items():
         if provider in providers:
             providers[provider]["keys"] = len(keys)
     return providers
 
 
-# ---------------------------------------------------------------- keys
 
-def _keys() -> KeyManager:
-    path = _paths().keys_file
-    if not path.exists():
-        path.write_text("{}", encoding="utf-8")
-        os.chmod(path, 0o600)
-    return KeyManager(keys_file=path)
-
-
-def _reload_running_keys() -> None:
-    """Make a key change visible to the crawl in progress."""
-    from routes import run as run_routes
-
-    crawler = run_routes._current_crawler
-    manager = getattr(crawler, "key_manager", None)
-    if manager is not None:
-        manager.reload()
-
-
-class KeyBody(BaseModel):
-    provider: str
-    key: str
-
-
-@router.get("/keys")
-def list_keys() -> dict:
-    return _keys().snapshot()
-
-
-@router.post("/keys")
-def add_key(body: KeyBody) -> dict:
-    if body.provider not in LlmHandler.translators:
-        raise HTTPException(status_code=422, detail=f"Unknown provider '{body.provider}'")
-    try:
-        key_id = _keys().add_key(body.provider, body.key)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    _reload_running_keys()
-    return {"id": key_id}
-
-
-@router.delete("/keys/{provider}/{key_id}")
-def delete_key(provider: str, key_id: str) -> dict:
-    if not _keys().remove_key(provider, key_id):
-        raise HTTPException(status_code=404, detail="Key not found")
-    _reload_running_keys()
-    return {"removed": key_id}
+@router.get("/config/export")
+def export_config() -> dict:
+    return store.read_stored(get_paths().settings_file)

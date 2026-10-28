@@ -1,5 +1,5 @@
 """Tests for the pydantic schema layer added to
-routes/blueprint_translator.py's final validation pass.
+config/blueprint_translator.py's final validation pass.
 
 These specifically target cases the pre-existing hand-written validators
 never checked (they only checked key *presence*, not value *type*), to
@@ -8,8 +8,8 @@ what was already there.
 """
 import pytest
 
-from routes.blueprint_schema import Blueprint, StopConditions
-from routes.blueprint_translator import BlueprintValidationError
+from config.blueprint_schema import Blueprint, StopConditions
+from config.blueprint_translator import BlueprintValidationError
 from tests.test_blueprint_translator import base_user_input, translate
 
 

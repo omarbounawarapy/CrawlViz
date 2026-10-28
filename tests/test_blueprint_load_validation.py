@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 
 import routes.run as run_routes
 import routes.templates as template_routes
+from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
 from core.boot_strapper import BootStrapper
-from routes.blueprint_schema import BlueprintSchemaError, validate_blueprint
 
 with open("templates/wikiMD.json", encoding="utf-8") as _f:
     GOOD = json.load(_f)

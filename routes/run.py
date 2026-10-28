@@ -17,9 +17,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import TEMPLATES_DIR, default_runtime_paths
+from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
 from config.settings_store import load_runtime_config
 from core import Crawler
-from routes.blueprint_schema import BlueprintSchemaError, validate_blueprint
 
 logger = logging.getLogger(__name__)
 

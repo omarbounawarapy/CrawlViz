@@ -1,15 +1,24 @@
 import asyncio
 import logging
-from typing import TYPE_CHECKING
+from typing import Protocol
 
 from events import StopCrawlEvent
 
 from .buffer_manager import BufferManager
-
-if TYPE_CHECKING:
-    from services import NLPService
+from .vector_space import VectorSpace
 
 logger = logging.getLogger(__name__)
+
+
+class SpaceOwner(Protocol):
+    """What the updater needs from the service that owns the semantic space
+    (services.NLPService), so nlp does not import services."""
+
+    space: VectorSpace | None
+
+    def save_space(self) -> None: ...
+
+    def space_size(self) -> int: ...
 
 
 _POLL_SECONDS = 1.0
@@ -44,7 +53,7 @@ class SpaceUpdater:
 
     def __init__(
         self,
-        nlp_service: "NLPService",
+        nlp_service: SpaceOwner,
         buffer_manager: BufferManager,
         flush_interval: float = 60.0,
         flush_threshold: int = 50,
