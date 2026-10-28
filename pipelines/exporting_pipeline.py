@@ -53,6 +53,10 @@ class ExportingPipeline:
             StopCrawlEvent: self._on_stop_crawl,
         }
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        return tuple(self.handlers)
+
     # =========================================================
     # INIT
     # =========================================================

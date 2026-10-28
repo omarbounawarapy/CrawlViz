@@ -24,6 +24,7 @@ from events import (
     LowScoreLinksEvent,
     ProcessingExtractionFailedEvent,
 )
+from pipelines.contracts import EventConsumer
 
 FAKE_BLUEPRINT = {
     "blueprint_id": "test-bp",
@@ -111,6 +112,36 @@ class TestTelemetryBridgeCoverage:
         ]
         # V1's UIEventTranslator subscribed to 7 event types.
         assert len(subscribed) >= 30
+
+
+def subscribed_to(crawler, consumer):
+    registry = crawler.event_broker.registry.registry
+    return {event_type for event_type, consumers in registry.items() if consumer in consumers}
+
+
+class TestConsumersNameTheirEvents:
+    """Each consumer's ``event_types`` is the one list of what it receives."""
+
+    def test_every_stage_is_subscribed_to_exactly_its_event_types(self, tmp_path):
+        crawler = Crawler("wikiMD.json", paths=RuntimePaths.under(tmp_path))
+        crawler._load_blueprint_config(FAKE_BLUEPRINT)
+        pipelines = crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
+        crawler._wire_subscriptions(pipelines, Fake())
+        for key, stage in pipelines.items():
+            assert isinstance(stage, EventConsumer), key
+            assert subscribed_to(crawler, stage) == set(stage.event_types), key
+
+    def test_handler_tables_are_the_source(self, tmp_path):
+        from nlp import BufferManager, SpaceUpdater
+        from ui_bridge import CrawlStateSnapshot, TelemetryBridge
+
+        updater = SpaceUpdater(Fake(), BufferManager())
+        assert updater.event_types == tuple(updater.handlers)
+        bridge = TelemetryBridge(CrawlStateSnapshot(), Fake())
+        with pytest.raises(RuntimeError):
+            _ = bridge.event_types
+        bridge.register_handlers()
+        assert bridge.event_types == tuple(bridge._dispatch)
 
 
 class TestRuntimeConfigIsTheSource:

@@ -27,6 +27,10 @@ class FilteringPipeline(BasePipeline):
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        return (ContentExtractedEvent,)
+
     # =========================================================
     # ENTRY POINT
     # =========================================================

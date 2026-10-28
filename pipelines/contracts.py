@@ -1,11 +1,29 @@
 """Structural contracts for the collaborators the pipelines are given.
 
 These describe what is consumed today, nothing more. Implementations
-(NLPService, ScoringService, NetworkClient, TracedNetworkClient, and test
-doubles) satisfy them by shape, without inheriting.
+(the pipelines, NLPService, ScoringService, NetworkClient,
+TracedNetworkClient, and test doubles) satisfy them by shape, without
+inheriting.
 """
 
 from typing import Any, Protocol, runtime_checkable
+
+
+@runtime_checkable
+class EventConsumer(Protocol):
+    """Anything the broker delivers events to (pipelines, SpaceUpdater,
+    TelemetryBridge, observers).
+
+    ``event_types`` names the events it is subscribed to; the composition
+    root subscribes it to exactly those.
+    """
+
+    @property
+    def event_types(self) -> tuple[type, ...]: ...
+
+    # Any, not object: each consumer annotates the narrower events it accepts,
+    # which an `object` parameter would reject.
+    async def put(self, event: Any) -> None: ...
 
 
 @runtime_checkable

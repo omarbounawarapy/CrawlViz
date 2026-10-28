@@ -63,6 +63,11 @@ class StoppingPipeline(BasePipeline):
             StorageNodeUpdatedEvent: self._on_node_updated,
         }
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        # StopCrawlEvent has no handler: it only runs the time check once more.
+        return (*self.handlers, StopCrawlEvent)
+
     async def start(self) -> None:
         # Time conditions must fire on a quiet crawl too, not only when
         # an event arrives.

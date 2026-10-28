@@ -157,6 +157,10 @@ class RequestsPipeline:
         for _ in range(self.max_concurrency):
             await self.queue.put(SHUTDOWN)
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        return tuple(self.handlers)
+
     # =========================================================
     # ENTRY POINT
     # =========================================================

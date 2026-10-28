@@ -2,6 +2,7 @@ import asyncio
 import re
 
 from events import (
+    ContentFilteredEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
     TransformationStartedEvent,
@@ -40,6 +41,10 @@ class TransformationPipeline(BasePipeline):
             "truncate": self._truncate,
             "deduplicate": self._deduplicate,
         }
+
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        return (ContentFilteredEvent,)
 
     # =========================================================
     # PROCESS ONE QUEUED EVENT

@@ -202,6 +202,14 @@ class TelemetryBridge:
             RetryOperationFailedEvent:   self._on_retry_failed,
         }
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        """The events this bridge translates, which are the events the crawl
+        subscribes it to. Valid once `register_handlers` has run."""
+        if not self._dispatch:
+            raise RuntimeError("TelemetryBridge.register_handlers() must run before event_types")
+        return tuple(self._dispatch)
+
     # ------------------------------------------------------------------
     # EventBroker entry point
     # ------------------------------------------------------------------

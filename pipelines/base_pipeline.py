@@ -98,6 +98,13 @@ class BasePipeline:
         self.workers: list[asyncio.Task] = []
         # Subclasses are expected to set self.queue themselves.
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        """The events the crawl subscribes this pipeline to: the keys of its
+        `handlers` table, so the two cannot disagree. A pipeline that
+        dispatches another way overrides this."""
+        return tuple(self.handlers)
+
     async def put(self, event) -> None:
         await self.queue.put(event)
 

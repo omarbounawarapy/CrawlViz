@@ -55,6 +55,10 @@ class LoggingPipeline(BasePipeline):
             ScoreRescheduledEvent: self._rescheduled_score,
         }
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        return tuple(self.state_map)
+
     # =========================================================
     # START
     # =========================================================
