@@ -3,6 +3,8 @@ import logging
 import re
 from typing import Any
 
+from config import LLM_DEFAULT_ENDPOINTS
+
 from .token_usage import gemini_usage
 
 logger = logging.getLogger(__name__)
@@ -30,7 +32,7 @@ class GeminiTranslator:
     the same shape (a plain parsed dict) every other translator returns.
     """
 
-    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+    BASE_URL = LLM_DEFAULT_ENDPOINTS["gemini"]
 
     @staticmethod
     def translate_request(context) -> dict:

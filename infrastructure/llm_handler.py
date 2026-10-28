@@ -1,5 +1,7 @@
 import aiohttp
 
+from config import LLM_DEFAULT_ENDPOINTS
+
 from .anthropic_translator import AnthropicTranslator
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
@@ -28,16 +30,6 @@ class LlmHandler:
             to a plain NetworkClient.
     """
 
-    # Request URL per provider (Gemini: base URL, the model is appended).
-    DEFAULT_ENDPOINTS = {
-        "openrouter": "https://openrouter.ai/api/v1/chat/completions",
-        "openai": "https://api.openai.com/v1/chat/completions",
-        "anthropic": "https://api.anthropic.com/v1/messages",
-        "gemini": GeminiTranslator.BASE_URL,
-        "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
-        "groq": "https://api.groq.com/openai/v1/chat/completions",
-    }
-
     translators = {
         "openrouter": OpenRouterTranslator,
         "openai": OpenAITranslator,
@@ -63,7 +55,7 @@ class LlmHandler:
         # Only entries that differ from the built-in URL are applied.
         self.endpoints = {
             p: u for p, u in (endpoints or {}).items()
-            if u and u != self.DEFAULT_ENDPOINTS.get(p)
+            if u and u != LLM_DEFAULT_ENDPOINTS.get(p)
         }
 
     def _apply_options(self, llm_type: str, params: dict) -> None:

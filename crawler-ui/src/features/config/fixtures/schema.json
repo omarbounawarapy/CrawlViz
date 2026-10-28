@@ -609,7 +609,7 @@
       "type": "object"
     },
     "ProvidersConfig": {
-      "description": "Request URL per LLM provider (infrastructure/llm_handler.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
+      "description": "Request URL per LLM provider (config/config.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
       "properties": {
         "endpoints": {
           "additionalProperties": {
