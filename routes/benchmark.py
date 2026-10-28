@@ -280,7 +280,7 @@ def estimate(budget: int = Query(50, ge=1)):
 # ── audit annotation ─────────────────────────────────────────────────────────
 
 ANNOTATORS = ("1", "2")
-SECOND_ANNOTATOR_ITEMS = 50  # PROTOCOL.md section 8.4: the first 50 ids of the same TSV
+SECOND_ANNOTATOR_ITEMS = 50  # annotator 2 labels the first 50 ids of the same TSV
 
 
 def _audit_paths(annotator: str) -> Path:
@@ -365,7 +365,7 @@ def _audit_result(key_path: Path, tsv: Path, total: int | None = None, other: Pa
 
 
 def _human_pair(human: dict[str, int], other: Path | None) -> dict | None:
-    """Annotator 2 against annotator 1 on the ids both labelled (PROTOCOL.md section 8.4)."""
+    """Annotator 2 against annotator 1 on the ids both labelled ."""
     first = _labels_of(other) if other else {}
     both = sorted(set(human) & set(first), key=int)
     if not both:
