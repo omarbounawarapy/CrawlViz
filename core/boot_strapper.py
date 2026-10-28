@@ -11,9 +11,9 @@ import logging
 from pathlib import Path
 
 from config import TEMPLATES_DIR
+from config.blueprint_schema import validate_blueprint
 from events import NodeAddedEvent
 from models import Domain, Node
-from routes.blueprint_schema import validate_blueprint
 
 logger = logging.getLogger(__name__)
 

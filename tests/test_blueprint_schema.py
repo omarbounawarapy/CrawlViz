@@ -8,7 +8,7 @@ what was already there.
 """
 import pytest
 
-from routes.blueprint_schema import Blueprint, StopConditions
+from config.blueprint_schema import Blueprint, StopConditions
 from routes.blueprint_translator import BlueprintValidationError
 from tests.test_blueprint_translator import base_user_input, translate
 

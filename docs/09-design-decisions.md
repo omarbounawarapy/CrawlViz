@@ -46,7 +46,7 @@ Each rationale is cited where the repository or the report gives direct evidence
 
 **Options/constraints:** A general-purpose scripting/config API embedded in the engine (flexible, but blurs the line between configuration and code, and makes the engine's behavior harder to reason about in isolation); a declarative, schema-validated configuration document.
 
-**Decision:** A JSON "blueprint" (validated against a Pydantic schema in `routes/blueprint_schema.py`) fully describes seeds, domains, scoring strategy, extraction fields and transforms, and stop conditions. The engine's procedural logic is written once; blueprints only configure it, they don't extend it. This is the declarative-configuration principle the report lays out in [§2.8.1: Blueprint Principle](../report/rapport-english.pdf#page=19).
+**Decision:** A JSON "blueprint" (validated against a Pydantic schema in `config/blueprint_schema.py`) fully describes seeds, domains, scoring strategy, extraction fields and transforms, and stop conditions. The engine's procedural logic is written once; blueprints only configure it, they don't extend it. This is the declarative-configuration principle the report lays out in [§2.8.1: Blueprint Principle](../report/rapport-english.pdf#page=19).
 
 **Consequences:** The same engine ran the report's `wikiMD` diabetes case study, and it runs a different topic and domain by swapping the blueprint. `templates/wikiMD.json` and `templates/isi.json` are two working configurations. The cost is that anything the blueprint schema cannot express (a new extraction pattern, a new priority strategy) needs a code change. The blueprint model trades flexibility for configuration-only reuse within the space it covers.
 

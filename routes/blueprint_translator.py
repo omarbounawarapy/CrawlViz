@@ -24,7 +24,7 @@ import pydantic
 
 from config import DEFAULT_PRIORITY_STRATEGY
 
-from .blueprint_schema import (
+from config.blueprint_schema import (
     ALLOWED_EXPORT_TYPES,
     ALLOWED_FIELD_TYPES,
     ALLOWED_PRIORITY_STRATEGIES,
@@ -32,7 +32,7 @@ from .blueprint_schema import (
     ALLOWED_TRANSFORMS,
     Blueprint,
 )
-from .blueprint_schema import _PARAMETERISED_TRANSFORMS  # noqa: F401 (used below)
+from config.blueprint_schema import _PARAMETERISED_TRANSFORMS  # noqa: F401 (used below)
 
 # =========================================================
 # PROFILE REGISTRY

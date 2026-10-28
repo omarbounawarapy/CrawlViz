@@ -8,7 +8,7 @@ this crawl operating under?".
 
 Why this exists
 ----------------
-`routes/blueprint_schema.py` already solved this exact problem for
+`config/blueprint_schema.py` already solved this exact problem for
 blueprints: a Pydantic model as the single source of truth, with its
 JSON schema exported for the frontend rather than hand-duplicated. That
 model's own docstring documents three past incidents of drift between
@@ -601,7 +601,7 @@ class RuntimeConfig(BaseModel):
     """Top-level runtime configuration: everything a researcher would want
     to see before trusting a crawl's results, beyond the per-run blueprint
     (target topic, seeds, extraction schema) already covered by
-    routes/blueprint_schema.py."""
+    config/blueprint_schema.py."""
 
     scoring_cascade: ScoringCascadeConfig = Field(default_factory=ScoringCascadeConfig)
     embeddings: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
