@@ -28,7 +28,7 @@ At the start of a crawl, this basis is thin. Only the seed pages and a short con
 
 ## Stage 3: the composite NLP score and bucketing
 
-`NLPService._composite_score()` combines several scalar signals, target similarity (dominant weight), coverage of under-explored regions, novelty versus visited content, contextual coherence with the parent page, and lexical keyword overlap, into a single number per link, `link._nlp_score`. This single score exists for one purpose: **deciding which bucket a link falls into**, not ranking the frontier (that's a separate, later computation, see below).
+`LinkFeatureScorer.composite_score()` (`services/link_features.py`) combines several scalar signals, target similarity (dominant weight), coverage of under-explored regions, novelty versus visited content, contextual coherence with the parent page, and lexical keyword overlap, into a single number per link, `link._nlp_score`. This single score exists for one purpose: **deciding which bucket a link falls into**, not ranking the frontier (that's a separate, later computation, see below).
 
 `ScoringPipeline.bucket_links()` sorts every link in a node against two configurable thresholds (`LOW`, `HIGH`):
 

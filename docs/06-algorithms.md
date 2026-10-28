@@ -37,7 +37,7 @@ The basis can then continue to grow during the crawl as the LLM produces further
 
 ## 2. Composite NLP Score
 
-`NLPService._composite_score()` combines several named scalar signals into a single value:
+`LinkFeatureScorer.composite_score()` (`services/link_features.py`) combines several named scalar signals into a single value:
 
 ```math
 \mathrm{nlp\_score}(c)
