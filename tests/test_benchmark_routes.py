@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from routes import benchmark as bm
+from routes import benchmark_jobs as jobs
 
 
 @pytest.fixture
@@ -70,12 +71,12 @@ def test_audit_is_blind_and_annotation_persists(client, tmp_path):
 
 
 def test_job_flags_are_whitelisted():
-    cmd = bm.build_command("run", {"graph": "benchmark/data/isi.json", "budget": 50, "cascade": True})
+    cmd = jobs.build_command("run", {"graph": "benchmark/data/isi.json", "budget": 50, "cascade": True})
     assert "--cascade" in cmd and cmd[cmd.index("--budget") + 1] == "50"
     for kind, args in [("run", {"rm": 1}), ("run", {"graph": "../x.json"}),
                        ("run", {"model": "a; ls"}), ("shell", {})]:
         with pytest.raises(HTTPException):
-            bm.build_command(kind, args)
+            jobs.build_command(kind, args)
 
 
 def test_second_annotator_labels_only_the_first_items(client, monkeypatch):
@@ -116,6 +117,6 @@ def test_estimate_comes_from_recorded_runs(client):
 def test_expected_results_counts_baselines_and_the_arm():
     from benchmark import POLICIES
 
-    assert bm.expected_results("run", {"reps": 2}) == len(POLICIES) * 2
-    assert bm.expected_results("run", {"reps": 2, "cascade": True}) == len(POLICIES) * 2 + 2
-    assert bm.expected_results("analyze", {}) is None
+    assert jobs.expected_results("run", {"reps": 2}) == len(POLICIES) * 2
+    assert jobs.expected_results("run", {"reps": 2, "cascade": True}) == len(POLICIES) * 2 + 2
+    assert jobs.expected_results("analyze", {}) is None
