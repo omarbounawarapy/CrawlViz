@@ -49,6 +49,9 @@ from infrastructure.llm_handler import LlmHandler
 from models.link import Link
 from models.prompts import STRATEGIES, PromptBuilder
 
+from . import run as run_routes
+
+
 def _require_token(authorization: str | None = Header(default=None)) -> None:
     token = os.environ.get("CRAWLVIZ_API_TOKEN")
     if not token:
@@ -138,8 +141,6 @@ def effective_config(body: ConfigPatch) -> dict:
 
 @router.patch("/config/live")
 def patch_live(body: ConfigPatch) -> dict:
-    from routes import run as run_routes
-
     crawler = run_routes._current_crawler
     if crawler is None:
         raise HTTPException(status_code=409, detail="No active crawl")
@@ -415,8 +416,6 @@ def _keys() -> KeyManager:
 
 def _reload_running_keys() -> None:
     """Make a key change visible to the crawl in progress."""
-    from routes import run as run_routes
-
     crawler = run_routes._current_crawler
     manager = getattr(crawler, "key_manager", None)
     if manager is not None:
