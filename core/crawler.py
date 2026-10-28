@@ -18,51 +18,6 @@ from datetime import datetime
 from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from utils.html_utils import configure_url_normalization
-from events import (
-    ContentExtractedEvent,
-    ContentFilteredEvent,
-    EmptyScoreResultsEvent,
-    ExportBatchCompletedEvent,
-    ExportBatchFailedEvent,
-    ExportBatchStartedEvent,
-    ExportRowFailedEvent,
-    ExtractionStartedEvent,
-    FilteringEnqueuedEvent,
-    FilteringInputSnapshotEvent,
-    FilteringPipelineErrorEvent,
-    FilteringWorkerCycleStartedEvent,
-    HighScoreLinksEvent,
-    ItemExtractionCompletedEvent,
-    ItemFilteringCompletedEvent,
-    LinkExtractionCompletedEvent,
-    LinkFilteringCompletedEvent,
-    LinksScoredEvent,
-    LowScoreLinksEvent,
-    NodeAddedEvent,
-    NodeContentSetEvent,
-    NoLinksToScoreEvent,
-    PageFetchedEvent,
-    PriorityCalculatedEvent,
-    PriorityCalculationFailedEvent,
-    PriorityCalculationStartedEvent,
-    ProcessingExtractionFailedEvent,
-    RequestEnqueuedEvent,
-    RequestFailedEvent,
-    RequestResponseReceivedEvent,
-    RequestStartedEvent,
-    RetryOperationFailedEvent,
-    ScoreRescheduledEvent,
-    ScoringCompletedEvent,
-    ScoringEnqueuedEvent,
-    ScoringFailedEvent,
-    ScoringStartedEvent,
-    StopCrawlEvent,
-    StorageNodeUpdatedEvent,
-    StorageOperationFailedEvent,
-    TransformationCompletedEvent,
-    TransformationFailedEvent,
-    TransformationStartedEvent,
-)
 from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
@@ -95,35 +50,6 @@ from .event_broker import EventBroker
 # clients that emit it -- this is what produces the granular
 # "[NLP] SCORE_EMITTED" / "[LLM] DISPATCHED" trace log lines.
 from traceability.emitter import TraceEmitter
-from traceability.expansion_trace_events import (
-    EXP_CandidatePruned,
-    EXP_CandidateScored,
-    EXP_PromptBuilt,
-    EXP_SeedsGenerated,
-    EXP_SpaceBootstrapped,
-    EXP_Triggered,
-)
-from traceability.llm_trace_events import (
-    LLM_PromptBuilt,
-    LLM_RequestDispatched,
-    LLM_RequestFailed,
-    LLM_ResponseParsed,
-    LLM_ResponseReceived,
-)
-from traceability.network_trace_events import (
-    NET_RequestCreated,
-    NET_RequestDispatched,
-    NET_RequestFailed,
-    NET_ResponseReceived,
-    NET_RetryAttempted,
-)
-from traceability.nlp_trace_events import (
-    NLP_FeaturesExtracted,
-    NLP_InputReceived,
-    NLP_ScoreEmitted,
-    NLP_SimilarityScored,
-    NLP_VectorComposed,
-)
 from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
@@ -531,126 +457,21 @@ class Crawler:
 
         return p
 
+    # The order consumers receive an event in (EventBroker dispatches to each
+    # subscriber of an event type in subscription order).
+    _SUBSCRIPTION_ORDER = (
+        "retry", "space_updater", "logging", "canon", "debug", "processing", "requests",
+        "scoring", "filtering", "priority", "transformation", "storage", "exporting", "stopping",
+    )
+
     def _wire_subscriptions(self, p: dict, space_updater: SpaceUpdater) -> None:
-        """All EventBroker.subscribe() calls in one place -- this is the
-        "who reacts to what" map for the whole crawl. Adding a new
-        pipeline means adding both a `_build_pipelines` entry and a
-        subscription here; nothing currently enforces both halves get
-        done (see the engineering audit's note on this being the root
-        cause of two bugs already found and fixed this session).
-        """
-        b = self.event_broker
-
-        b.subscribe(
-            p["retry"],
-            [EmptyScoreResultsEvent, RequestFailedEvent, ScoringFailedEvent],
-        )
-
-        # SpaceUpdater's flush loop otherwise runs forever -- this is
-        # what lets it notice the crawl ended and actually stop (see
-        # nlp/space_updater.py's docstring).
-        b.subscribe(space_updater, [StopCrawlEvent])
-
-        b.subscribe(
-            p["logging"],
-            [
-                NodeAddedEvent,
-                PageFetchedEvent,
-                ContentFilteredEvent,
-                LinksScoredEvent,
-                PriorityCalculatedEvent,
-                TransformationCompletedEvent,
-                ExportBatchCompletedEvent,
-                ScoreRescheduledEvent,
-                StopCrawlEvent,
-            ],
-        )
-
-        b.subscribe(p["canon"], [PageFetchedEvent])
-
-        b.subscribe(
-            p["debug"],
-            [
-                RequestStartedEvent,
-                RequestResponseReceivedEvent,
-                RequestFailedEvent,
-                ExtractionStartedEvent,
-                LinkExtractionCompletedEvent,
-                ItemExtractionCompletedEvent,
-                # ProcessingExtractionFailedEvent / FilteringPipelineErrorEvent:
-                # DebuggingPipeline.handlers already had _extraction_failed /
-                # _filter_failed implemented for these -- they just weren't
-                # subscribed, so extraction/filtering exceptions produced no
-                # log line and no UI signal at all (V2 audit §A.1.2).
-                ProcessingExtractionFailedEvent,
-                FilteringPipelineErrorEvent,
-                FilteringInputSnapshotEvent,
-                LinkFilteringCompletedEvent,
-                ItemFilteringCompletedEvent,
-                ScoringStartedEvent,
-                ScoringCompletedEvent,
-                ScoringFailedEvent,
-                PriorityCalculationStartedEvent,
-                PriorityCalculatedEvent,
-                PriorityCalculationFailedEvent,
-                TransformationStartedEvent,
-                TransformationCompletedEvent,
-                TransformationFailedEvent,
-                ExportBatchFailedEvent,
-                ExportBatchStartedEvent,
-                ExportRowFailedEvent,
-                RetryOperationFailedEvent,
-                EmptyScoreResultsEvent,
-                NoLinksToScoreEvent,
-                NodeContentSetEvent,
-                # trace events routed into the same debug pipeline
-                NLP_InputReceived,
-                NLP_FeaturesExtracted,
-                NLP_SimilarityScored,
-                NLP_VectorComposed,
-                NLP_ScoreEmitted,
-                LLM_PromptBuilt,
-                LLM_RequestDispatched,
-                LLM_ResponseReceived,
-                LLM_ResponseParsed,
-                LLM_RequestFailed,
-                NET_RequestCreated,
-                NET_RequestDispatched,
-                NET_ResponseReceived,
-                NET_RequestFailed,
-                NET_RetryAttempted,
-                EXP_Triggered,
-                EXP_PromptBuilt,
-                EXP_SeedsGenerated,
-                EXP_CandidateScored,
-                EXP_CandidatePruned,
-                EXP_SpaceBootstrapped,
-            ],
-        )
-
-        b.subscribe(p["processing"], [PageFetchedEvent])
-        b.subscribe(p["requests"], [NodeAddedEvent])
-        b.subscribe(p["scoring"], [NodeAddedEvent, ScoreRescheduledEvent])
-        b.subscribe(p["filtering"], [ContentExtractedEvent])
-        # NOTE (audit finding): PriorityPipeline's
-        # own handler table has always mapped HighScoreLinksEvent -> _on_links_scored,
-        # but it was never actually subscribed to receive that event type. That bucket
-        # is exactly the links the cascade is confident about and deliberately skips an
-        # LLM call for -- the entire cost-saving half of the cascade -- and without this
-        # subscription they were scored, correctly bucketed, and then silently dropped:
-        # never prioritized, never stored, never expanded into the frontier. Restoring
-        # this line is a correctness fix, not a feature addition.
-        b.subscribe(p["priority"], [LinksScoredEvent, HighScoreLinksEvent])
-        b.subscribe(p["transformation"], [ContentFilteredEvent])
-        b.subscribe(
-            p["storage"],
-            [PriorityCalculatedEvent, TransformationCompletedEvent, PageFetchedEvent],
-        )
-        b.subscribe(p["exporting"], [TransformationCompletedEvent, StopCrawlEvent])
-        b.subscribe(
-            p["stopping"],
-            [NodeAddedEvent, PageFetchedEvent, StorageNodeUpdatedEvent, StopCrawlEvent],
-        )
+        """Subscribe every consumer to the events it names in `event_types`
+        (pipelines.contracts.EventConsumer), so a consumer's handler table
+        and its subscriptions cannot drift apart."""
+        consumers = {**p, "space_updater": space_updater}
+        for key in Crawler._SUBSCRIPTION_ORDER:
+            consumer = consumers[key]
+            self.event_broker.subscribe(consumer, consumer.event_types)
 
     def _run_manifest(self) -> dict:
         return {
@@ -666,18 +487,8 @@ class Crawler:
         }
 
     def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:
-        """Wire TelemetryBridge.
-
-        V1's UIEventTranslator subscribed to 7 event types. This subscribes
-        to everything TelemetryBridge knows how to translate: the original
-        7 (unchanged behavior) plus every pipeline stage's start/complete/
-        fail events, the scoring cascade's two candidate-decision events,
-        and every previously-orphaned failure event. This is the single
-        change that unlocks Pipeline Monitor, candidate/frontier visibility,
-        the Node Inspector's scoring breakdown, and crawl-wide error
-        visibility -- none of it required new backend instrumentation, only
-        a wider subscription list and a bigger translator.
-        """
+        """Build the UI bridge: the WebSocket gateway, the event recorder
+        and the TelemetryBridge, subscribed to every event it translates."""
         obs = self.config.observability
         snapshot = CrawlStateSnapshot(
             max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
@@ -695,54 +506,7 @@ class Crawler:
         )
         telemetry.register_handlers()
 
-        self.event_broker.subscribe(
-            telemetry,
-            [
-                # V1 node lifecycle (unchanged)
-                NodeAddedEvent,
-                PageFetchedEvent,
-                ContentFilteredEvent,
-                LinksScoredEvent,
-                PriorityCalculatedEvent,
-                StorageNodeUpdatedEvent,
-                StopCrawlEvent,
-                # V2: request stage
-                RequestEnqueuedEvent,
-                RequestStartedEvent,
-                RequestResponseReceivedEvent,
-                RequestFailedEvent,
-                # V2: extraction stage
-                ExtractionStartedEvent,
-                LinkExtractionCompletedEvent,
-                ProcessingExtractionFailedEvent,
-                # V2: filtering stage
-                FilteringEnqueuedEvent,
-                FilteringWorkerCycleStartedEvent,
-                FilteringPipelineErrorEvent,
-                # V2: scoring stage + cascade candidate visibility
-                ScoringEnqueuedEvent,
-                ScoringStartedEvent,
-                ScoringCompletedEvent,
-                ScoringFailedEvent,
-                HighScoreLinksEvent,
-                LowScoreLinksEvent,
-                # V2: priority stage
-                PriorityCalculationStartedEvent,
-                PriorityCalculationFailedEvent,
-                # V2: transformation stage
-                TransformationStartedEvent,
-                TransformationCompletedEvent,
-                TransformationFailedEvent,
-                # V2: export stage
-                ExportBatchStartedEvent,
-                ExportBatchCompletedEvent,
-                ExportBatchFailedEvent,
-                ExportRowFailedEvent,
-                # V2: crawl-wide errors
-                StorageOperationFailedEvent,
-                RetryOperationFailedEvent,
-            ],
-        )
+        self.event_broker.subscribe(telemetry, telemetry.event_types)
         return ui_gateway
 
     def _collect_tasks(
