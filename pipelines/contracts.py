@@ -27,6 +27,14 @@ class EventConsumer(Protocol):
 
 
 @runtime_checkable
+class CrawlStage(EventConsumer, Protocol):
+    """A pipeline the crawl runs as a task: ``start`` returns once it has
+    been stopped and has drained."""
+
+    async def start(self) -> None: ...
+
+
+@runtime_checkable
 class RelevanceScorer(Protocol):
     """Cheap similarity stage (NLPService).
 

@@ -107,7 +107,7 @@ Both are constructed once by `BootStrapper` and handed to the pipelines that nee
 
 ## Extensibility
 
-Because every pipeline's only coupling to the rest of the system is "subscribe to these event types, emit those event types," adding a new pipeline means registering it with the broker (`b.subscribe(new_pipeline, [SomeEvent])`). No existing pipeline changes. `TelemetryBridge` is an example: it was added as one more subscriber, and the crawl pipelines that already existed needed no changes.
+Because every pipeline's only coupling to the rest of the system is "subscribe to these event types, emit those event types," adding a new pipeline means one entry in `STAGES` (`core/stages.py`) and a handler for each event it receives; the crawler subscribes it to those events. No existing pipeline changes. `TelemetryBridge` is an example: it was added as one more subscriber, and the crawl pipelines that already existed needed no changes.
 
 ## Where to go next
 

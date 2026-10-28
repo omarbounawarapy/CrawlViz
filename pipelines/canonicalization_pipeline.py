@@ -19,7 +19,7 @@ class CanonicalizationPipeline(BasePipeline):
     saw, regardless of what the blueprint chose to extract.
     """
 
-    def __init__(self, crawl_id, event_broker, export_path):
+    def __init__(self, crawl_id: str, event_broker, export_path) -> None:
         super().__init__(max_concurrency=1)
         self.event_broker = event_broker
         self.export_path = export_path

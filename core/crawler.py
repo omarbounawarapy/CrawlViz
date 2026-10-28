@@ -1,9 +1,9 @@
 """Composition root for a single crawl session.
 
 ``Crawler.start()`` reads a blueprint (see ``core.boot_strapper``),
-builds the 13 pipelines (plus the space updater and the telemetry
-bridge and gateway) described in the project report's architecture
-chapters, wires them together through one
+builds the 13 pipelines from the registry in ``core.stages`` (plus the
+space updater and the telemetry bridge and gateway) described in the
+project report's architecture chapters, wires them together through one
 :class:`~core.event_broker.EventBroker`, and runs them concurrently
 until a stop condition fires and every pipeline has drained (see
 ``pipelines.stopping_pipeline``), or until the task is cancelled from
@@ -12,7 +12,6 @@ outside (the manual STOP endpoint in ``routes.run``).
 
 import asyncio
 import logging
-import random
 from datetime import datetime
 
 from config.paths import RuntimePaths, default_runtime_paths
@@ -22,28 +21,13 @@ from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
 from nlp import BufferManager, SpaceUpdater
-from pipelines import (
-    CanonicalizationPipeline,
-    DebuggingPipeline,
-    ExportingPipeline,
-    FilteringPipeline,
-    LoggingPipeline,
-    PriorityPipeline,
-    ProcessingPipeline,
-    RequestsPipeline,
-    RetryProcessor,
-    ScoringPipeline,
-    StopConditions,
-    StoppingPipeline,
-    StoragePipeline,
-    TransformationPipeline,
-)
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
+from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 
 # Traceability is a second, finer-grained event stream (see
 # traceability/emitter.py) plus thin wrappers around the network/LLM
@@ -54,11 +38,6 @@ from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
 logger = logging.getLogger(__name__)
-
-
-def _qsize(bound: int | None) -> int:
-    """A configured queue bound as asyncio's maxsize: None (no limit) is 0."""
-    return bound or 0
 
 
 class Crawler:
@@ -124,7 +103,6 @@ class Crawler:
         )
 
         pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service)
-        self._pipelines = pipelines
         self._wire_subscriptions(pipelines, space_updater)
         ui_gateway = self._build_ui_layer(pipelines)
 
@@ -142,27 +120,15 @@ class Crawler:
             await pipelines["requests"].network_client.close()
             await traced_network.close()
 
-    def _priority_strategy_name(self) -> str:
-        return self.stop_conditions.get(
-            "priority_strategy", self.config.scoring_cascade.default_priority_strategy
-        )
-
-    # Pipeline key in _build_pipelines -> the Pipelines setting it is shown under.
-    _QUEUE_STAGES = {
-        "requests": "requests", "processing": "processing", "filtering": "filtering",
-        "transformation": "transformation", "scoring": "scoring", "priority": "priority",
-        "storage": "storage", "debug": "debugging", "retry": "retry",
-    }
-
     def queue_depths(self) -> dict:
         """Items waiting in each stage's queue right now, keyed by the Pipelines setting name."""
         pipelines = getattr(self, "_pipelines", None) or {}
         out = {}
-        for key, name in Crawler._QUEUE_STAGES.items():
-            queue = getattr(pipelines.get(key), "queue", None)
-            if queue is None:
+        for spec in STAGES:
+            queue = getattr(pipelines.get(spec.key), "queue", None)
+            if spec.setting is None or queue is None:
                 continue
-            out[name] = {"size": queue.qsize(), "max": queue.maxsize or None}
+            out[spec.setting] = {"size": queue.qsize(), "max": queue.maxsize or None}
         return out
 
     def apply_live(self, patch: dict) -> RuntimeConfig:
@@ -199,24 +165,15 @@ class Crawler:
     # =========================================================
     # COMPOSITION STEPS
     # =========================================================
-    # Split out of what used to be one ~250-line start() method so each
-    # piece of the wiring can be read (and, eventually, tested) on its
-    # own. Behavior is unchanged -- this is a pure decomposition.
+    # The stages themselves come from the registry in core/stages.py
+    # (docs/adr/0002-crawl-composition-root.md).
 
     def _load_blueprint_config(self, blueprint: dict) -> None:
-        """Unpack the blueprint into the attributes the rest of this
-        class expects.
+        """Unpack the parts of the blueprint the crawler itself reads; the
+        stages read theirs from `StageInputs` (core/stages.py).
         """
         self.blueprint = blueprint
         self.blueprint_id = blueprint.get("blueprint_id")
-        self.extraction_blueprint = blueprint.get("extraction")
-
-        self.stop_conditions = blueprint.get("stop_conditions")
-        self.max_nodes = self.stop_conditions["max_nodes"]
-        self.max_depth = self.stop_conditions["max_depth"]
-        self.max_duration = self.stop_conditions["max_duration"]
-        self.no_progress_timeout = self.stop_conditions["no_progress_timeout"]
-        self.target_url = self.stop_conditions["stop_url"]
 
         self.scoring_config = blueprint.get("scoring")
         self.scoring_strategy = self.scoring_config.get("strategy")
@@ -304,173 +261,34 @@ class Crawler:
 
         return nlp_service, space_updater, scoring_service
 
-    def _rng(self, name: str) -> random.Random:
-        """One independent stream per consumer, so adding a draw in one
-        pipeline cannot shift another's sequence. Unseeded when no seed."""
-        return random.Random(f"{self.seed}:{name}" if self.seed is not None else None)
-
     def _build_pipelines(
         self, blueprint: dict, nlp_service: NLPService, scoring_service: ScoringService
     ) -> dict:
-        """Construct every pipeline.
-
-        Returns a name -> instance dict rather than ~14 separate local
-        variables, since both `_wire_subscriptions` and `_collect_tasks`
-        need to look most of them up individually, and a dict makes that
-        an explicit, greppable key rather than relying on closure scope.
-        """
-        p: dict = {}
-
-        pl = self.config.pipelines
-        fetch = self.config.fetch
-        cascade = self.config.scoring_cascade
-        retries = self.config.retries
-
-        p["processing"] = ProcessingPipeline(
-            self.event_broker,
-            self.extraction_blueprint,
-            max_concurrency=pl.processing.workers,
-            max_queue_size=_qsize(pl.processing.max_queue_size),
-            link_context_length=self.config.nlp.link_context_length,
-        )
-        p["requests"] = RequestsPipeline(
-            self.event_broker,
-            max_concurrency=self.fetch_concurrency,
-            max_queue_size=_qsize(pl.requests.max_queue_size),
-            fetcher=NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout),
-            min_delay=fetch.min_delay,
-            user_agent=fetch.user_agent,
-            respect_robots=fetch.respect_robots,
-            rng=self._rng("requests"),
-            jitter_max=fetch.jitter_max,
-            robots_ttl=fetch.robots_ttl_seconds,
-            backoff_start=fetch.backoff_start,
-            max_backoff=fetch.backoff_max,
-            backoff_growth=fetch.backoff_growth,
-            backoff_success_decay=fetch.backoff_success_decay,
-            backoff_failure_decay=fetch.backoff_failure_decay,
-            extra_headers=fetch.extra_headers,
-            accept=fetch.accept,
-            accept_encoding=fetch.accept_encoding,
-            accept_language=fetch.accept_language,
-        )
+        """Build every stage from the registry in core/stages.py, keyed by
+        stage, and keep them for `queue_depths` and `apply_live`."""
         # One budget per crawl: every scoring worker draws from the same counter.
         self.call_budget = CallBudget(self.config.llm.max_calls_per_crawl)
-        p["scoring"] = ScoringPipeline(
-            scoring_service,
-            nlp_service,
-            self.event_broker,
-            low_threshold=cascade.low_threshold,
-            high_threshold=cascade.high_threshold,
-            high_score_llm_fraction=cascade.high_score_llm_fraction,
-            low_score_sample_fraction=cascade.low_score_sample_fraction,
-            high_score_random_fraction=cascade.high_score_random_fraction,
-            max_queue_size=_qsize(pl.scoring.max_queue_size),
-            percentile_bucketing=cascade.percentile_bucketing,
-            low_percentile=cascade.low_percentile,
-            high_percentile=cascade.high_percentile,
-            percentile_min_links=cascade.percentile_min_links,
-            max_llm_links=cascade.max_llm_links_per_node,
-            llm_batch_size=cascade.llm_batch_size,
-            max_concurrency=self.scoring_concurrency,
-            rng=self._rng("scoring"),
+        self._pipelines = build_stages(StageInputs(
+            broker=self.event_broker,
+            storage=self.storage,
+            config=self.config,
+            paths=self.paths,
+            crawl_id=self.crawl_id,
+            blueprint=blueprint,
+            nlp_service=nlp_service,
+            scoring_service=scoring_service,
             call_budget=self.call_budget,
-        )
-        p["storage"] = StoragePipeline(
-            self.storage,
-            self.event_broker,
-            max_queue_size=_qsize(pl.storage.max_queue_size),
-            max_concurrency=pl.storage.workers,
-            max_depth=self.max_depth,
-        )
-        p["filtering"] = FilteringPipeline(
-            self.event_broker,
-            self.storage,
-            max_concurrency=pl.filtering.workers,
-            max_queue_size=_qsize(pl.filtering.max_queue_size),
-        )
-        p["priority"] = PriorityPipeline(
-            self.storage,
-            self.event_broker,
-            nlp_bias=self.config.priority.nlp_bias,
-            llm_bias=self.config.priority.llm_bias,
-            strategy_name=self.stop_conditions.get(
-                "priority_strategy", cascade.default_priority_strategy
-            ),
-            max_queue_size=_qsize(pl.priority.max_queue_size),
-            strategy_weights=getattr(
-                self.config.priority, f"{self._priority_strategy_name()}_weights", None
-            ),
-            max_concurrency=pl.priority.workers,
-        )
-        p["logging"] = LoggingPipeline(
-            self.event_broker, self.crawl_id, log_root=self.paths.log_dir
-        )
-        p["stopping"] = StoppingPipeline(
-            self.event_broker,
-            StopConditions(
-                max_nodes=self.max_nodes,
-                max_duration=self.max_duration,
-                no_progress_timeout=self.no_progress_timeout,
-                target_url=self.target_url,
-            ),
-            check_interval=self.config.run.stop_check_interval,
-        )
-        p["debug"] = DebuggingPipeline(
-            self.event_broker,
-            self.crawl_id,
-            enabled=self.config.observability.debug_enabled,
-            max_queue_size=_qsize(pl.debugging.max_queue_size),
-            max_concurrency=pl.debugging.workers,
-            debug_root=self.paths.debug_dir,
-        )
-        p["transformation"] = TransformationPipeline(
-            self.event_broker,
-            self.extraction_blueprint,
-            max_queue_size=_qsize(pl.transformation.max_queue_size),
-            max_concurrency=pl.transformation.workers,
-        )
-        p["exporting"] = ExportingPipeline(
-            self.crawl_id,
-            self.blueprint_id,
-            blueprint,
-            self.event_broker,
-            db_path=self.paths.items_db,
-            batch_size=self.config.export.batch_size,
-        )
-        p["canon"] = CanonicalizationPipeline(
-            self.crawl_id, self.event_broker, export_path=self.paths.export_dir
-        )
-        p["retry"] = RetryProcessor(
-            self.storage,
-            self.event_broker,
-            requests_pipeline=p["requests"],
-            max_queue_size=_qsize(pl.retry.max_queue_size),
-            max_concurrency=pl.retry.workers,
-            max_request_retries=retries.max_request_retries,
-            max_scoring_retries=retries.max_scoring_retries,
-            retry_base_delay=retries.base_delay,
-            retry_growth=retries.growth,
-            empty_score_demotion=retries.empty_score_demotion,
-            fetch_retry_demotion=retries.fetch_retry_demotion,
-        )
-
-        return p
-
-    # The order consumers receive an event in (EventBroker dispatches to each
-    # subscriber of an event type in subscription order).
-    _SUBSCRIPTION_ORDER = (
-        "retry", "space_updater", "logging", "canon", "debug", "processing", "requests",
-        "scoring", "filtering", "priority", "transformation", "storage", "exporting", "stopping",
-    )
+            fetch_concurrency=self.fetch_concurrency,
+            scoring_concurrency=self.scoring_concurrency,
+            seed=self.seed,
+        ))
+        return self._pipelines
 
     def _wire_subscriptions(self, p: dict, space_updater: SpaceUpdater) -> None:
-        """Subscribe every consumer to the events it names in `event_types`
-        (pipelines.contracts.EventConsumer), so a consumer's handler table
-        and its subscriptions cannot drift apart."""
-        consumers = {**p, "space_updater": space_updater}
-        for key in Crawler._SUBSCRIPTION_ORDER:
-            consumer = consumers[key]
+        """Subscribe every stage, then the space updater, to the events it
+        names in `event_types` (pipelines.contracts.EventConsumer). This
+        order is the order consumers receive an event in."""
+        for consumer in (*p.values(), space_updater):
             self.event_broker.subscribe(consumer, consumer.event_types)
 
     def _run_manifest(self) -> dict:
@@ -500,9 +318,7 @@ class Crawler:
         telemetry = TelemetryBridge(
             snapshot,
             RecordingGateway(ui_gateway, recorder),
-            priority_strategy_name=self.stop_conditions.get(
-                "priority_strategy", self.config.scoring_cascade.default_priority_strategy
-            ),
+            priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
         )
         telemetry.register_handlers()
 
@@ -514,19 +330,7 @@ class Crawler:
     ) -> list:
         return [
             self.event_broker.start(),
-            p["logging"].start(),
-            p["requests"].start(),
-            p["processing"].start(),
-            p["filtering"].start(),
-            p["scoring"].start(),
-            p["priority"].start(),
-            p["storage"].start(),
-            p["debug"].start(),
-            p["stopping"].start(),
-            p["transformation"].start(),
-            p["exporting"].start(),
-            p["canon"].start(),
-            p["retry"].start(),
+            *(stage.start() for stage in p.values()),
             ui_gateway.start(),
             space_updater.start(),
         ]

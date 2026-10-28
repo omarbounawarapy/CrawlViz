@@ -70,7 +70,7 @@ max-complexity = 10
 "config/blueprint_translator.py" = ["C901", "I001", "RUF100"]
 "config/runtime_config.py" = ["E501", "PLR0913", "UP037"]
 "core/boot_strapper.py" = ["UP015"]
-"core/crawler.py" = ["I001", "PLC0415", "PLR0913", "RUF012"]
+"core/crawler.py" = ["I001", "PLC0415", "PLR0913"]
 "events/__init__.py" = ["I001", "RUF022"]
 "infrastructure/key_manager.py" = ["PLR2004"]
 "infrastructure/llm_handler.py" = ["RUF012"]
@@ -223,7 +223,6 @@ module = [
     "models.item_extractor",
     "models.link",
     "models.node",
-    "models.storage",
     "nlp.buffer_manager",
     "nlp.embedding_engine",
     "nlp.expansion_prompt_builder",

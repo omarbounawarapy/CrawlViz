@@ -138,12 +138,13 @@ class TestConsumersNameTheirEvents:
             assert subscribed_to(wired_crawler, consumer) == set(consumer.event_types), name
 
     def test_consumers_hear_an_event_in_subscription_order(self, wired_crawler):
+        # The stage registry order, then the space updater, then the UI bridge.
         assert consumers_of(wired_crawler, StopCrawlEvent) == [
-            "SpaceUpdater", "LoggingPipeline", "ExportingPipeline", "StoppingPipeline",
+            "LoggingPipeline", "ExportingPipeline", "StoppingPipeline", "SpaceUpdater",
             "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, RequestFailedEvent) == [
-            "RetryProcessor", "DebuggingPipeline", "TelemetryBridge",
+            "DebuggingPipeline", "RetryProcessor", "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, PageFetchedEvent) == [
             "LoggingPipeline", "CanonicalizationPipeline", "ProcessingPipeline",

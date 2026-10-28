@@ -84,8 +84,9 @@ the NLP subsystem, the UI layer, the run manifest, `queue_depths`, `apply_live` 
   `ScoringFailedEvent`, `RetryProcessor` now receives the event after `DebuggingPipeline`
   instead of before. For `StopCrawlEvent`, `SpaceUpdater` now comes after the stages. The
   broker gives each consumer its own task (`core/event_broker.py:48`), and these `put`
-  methods only enqueue or set a flag, so no consumer sees different data. The shutdown order
-  in `EventBroker._shutdown` follows the same order; each `stop()` only wakes its own workers.
+  methods only enqueue or set a flag, so no consumer sees different data. The order in which
+  `EventBroker._shutdown` stops consumers follows first subscription, so it changes too; each
+  `stop()` only wakes its own workers or sets its own flag.
 - Task start order follows the registry. Start order only decides which worker loop is
   created first; events already on the bus wait in each stage's queue.
 - The behaviour pins run the benchmark runner, not `Crawler`, so they do not cover this
