@@ -1,4 +1,4 @@
-"""Unit tests for routes/blueprint_translator.py.
+"""Unit tests for config/blueprint_translator.py.
 
 Covers the validation/defaulting logic directly responsible for two bugs
 found in this codebase's audit: `priority_strategy` being silently
@@ -10,7 +10,7 @@ import copy
 
 import pytest
 
-from routes.blueprint_translator import (
+from config.blueprint_translator import (
     ALLOWED_EXPORT_TYPES,
     ALLOWED_PRIORITY_STRATEGIES,
     ALLOWED_STRATEGIES,

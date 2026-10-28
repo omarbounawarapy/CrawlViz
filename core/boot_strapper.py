@@ -1,6 +1,6 @@
 """Turns a blueprint JSON file into the runtime objects a crawl needs.
 
-See routes/blueprint_translator.py for how a blueprint gets authored,
+See config/blueprint_translator.py for how a blueprint gets authored,
 and templates/*.json for examples. BootStrapper only *consumes* an
 already-assembled blueprint: it registers each domain, creates a
 Node per seed URL, and emits the NodeAddedEvent that starts the crawl.

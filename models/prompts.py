@@ -32,7 +32,7 @@ No explanation outside JSON.
 # is a perfectly normal combination).
 #
 # Kept in sync by hand with ALLOWED_STRATEGIES in
-# routes/blueprint_translator.py -- see that module's docstring.
+# config/blueprint_translator.py -- see that module's docstring.
 
 STRATEGIES: dict[str, dict[str, str]] = {
     "TOPICAL": {
