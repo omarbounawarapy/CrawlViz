@@ -80,10 +80,7 @@ class SpaceBootstrapper:
         """Build the space and hand it, with the target vector, to `adopt`
         (which saves it) before the bootstrap is reported as done."""
         started = time.monotonic()
-        trace_id, node_id = get_trace()
-        if not trace_id:
-            trace_id = new_trace_id()
-            node_id = f"bootstrap:{self.blueprint_id}"
+        trace_id, node_id = self._bootstrap_trace()
 
         await self._emit(EXP_Triggered(
             trace_id=trace_id,
@@ -125,6 +122,14 @@ class SpaceBootstrapper:
             space_version=space.version,
             duration_ms=(time.monotonic() - started) * 1000,
         ))
+
+    def _bootstrap_trace(self) -> tuple[str, str]:
+        """The current trace, or a new one named after the blueprint when the
+        bootstrap runs outside any trace."""
+        trace_id, node_id = get_trace()
+        if not trace_id:
+            return new_trace_id(), f"bootstrap:{self.blueprint_id}"
+        return trace_id, node_id
 
     async def _encode_seeds(
         self, seeds: list[str], trace_id: str, node_id: str
