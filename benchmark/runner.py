@@ -22,22 +22,14 @@ from config import (
 )
 from core.event_broker import EventBroker
 from events import (
-    ContentExtractedEvent,
-    ContentFilteredEvent,
     EmptyScoreResultsEvent,
-    HighScoreLinksEvent,
-    LinksScoredEvent,
     NodeAddedEvent,
-    PageFetchedEvent,
-    PriorityCalculatedEvent,
     PriorityCalculationFailedEvent,
     RequestFailedEvent,
-    ScoreRescheduledEvent,
     ScoringCompletedEvent,
     ScoringFailedEvent,
     StopCrawlEvent,
     StorageOperationFailedEvent,
-    TransformationCompletedEvent,
 )
 from models import Domain, Node, Storage
 from pipelines import (
@@ -472,19 +464,14 @@ async def _run(
     monitor = HealthMonitor()
     pipelines += extra
 
-    broker.subscribe(requests, [NodeAddedEvent])
-    broker.subscribe(processing, [PageFetchedEvent])
-    broker.subscribe(filtering, [ContentExtractedEvent])
-    broker.subscribe(transformation, [ContentFilteredEvent])
-    broker.subscribe(
-        store, [PriorityCalculatedEvent, TransformationCompletedEvent, PageFetchedEvent]
-    )
-    broker.subscribe(scoring, [NodeAddedEvent, ScoreRescheduledEvent])
-    broker.subscribe(priority, [LinksScoredEvent, HighScoreLinksEvent])
+    # Each stage is subscribed to the events it names (docs/adr/0002), in this
+    # order: the stages, the extra components, the health monitor, then retry.
+    for stage in (requests, processing, filtering, transformation, store, scoring, priority):
+        broker.subscribe(stage, stage.event_types)
     for component in extra:
         broker.subscribe(component, list(component.handlers))
     broker.subscribe(monitor, HealthMonitor.EVENTS)
-    broker.subscribe(retry, [EmptyScoreResultsEvent, RequestFailedEvent, ScoringFailedEvent])
+    broker.subscribe(retry, retry.event_types)
 
     if lockstep:
         idle_pipelines = [processing, filtering, transformation, store, priority, retry]
