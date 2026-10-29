@@ -21,6 +21,8 @@ method_files = [
   "priority/**",
   "nlp/**",
   "services/nlp_service.py",
+  "services/link_features.py",
+  "services/space_bootstrap.py",
   "services/scoring_service.py",
   "services/results_mapper.py",
   "models/prompts.py",
