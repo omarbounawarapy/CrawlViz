@@ -73,6 +73,11 @@ class SpaceUpdater:
             StopCrawlEvent: self._on_stop_crawl,
         }
 
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        """The events the crawl subscribes this updater to."""
+        return tuple(self.handlers)
+
     # =========================================================
     # LIFECYCLE
     # =========================================================

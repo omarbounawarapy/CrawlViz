@@ -18,7 +18,7 @@ class EventBroker:
     ones around it, and what makes replay possible.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.event_bus = asyncio.Queue()
         self.registry = EventRegistry()
         self.running = True

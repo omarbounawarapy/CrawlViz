@@ -14,7 +14,7 @@ class Storage:
     allocated node before requesting the next one.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: list[Node] = []
         self.current_id = 0
         self.link_to_id: dict[str, int] = {}

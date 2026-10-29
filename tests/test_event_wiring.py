@@ -1,13 +1,15 @@
 """Regression coverage for Crawler's event subscription wiring.
 
-core/crawler.py's _wire_subscriptions is a flat, hand-maintained list mapping
-event types to the pipelines that should receive them. That shape makes it
-easy for a pipeline to be built to handle an event (its handler table maps
+core/crawler.py's _wire_subscriptions used to be a flat, hand-maintained list
+mapping event types to the pipelines that should receive them. That shape made
+it easy for a pipeline to be built to handle an event (its handler table maps
 it) without ever being subscribed to receive it -- which is exactly what
 happened to HighScoreLinksEvent: PriorityPipeline has always known how to
 process it, but nothing subscribed PriorityPipeline to receive it, so every
 link the cascade was confident enough to trust without an LLM call was
-silently dropped from the crawl instead of being fast-tracked into it.
+silently dropped from the crawl instead of being fast-tracked into it. Each
+consumer now names its events in ``event_types`` and is subscribed to exactly
+those (docs/adr/0002-crawl-composition-root.md).
 
 This suite builds a real Crawler, drives it through the same construction
 path core/crawler.py.start() uses, and asserts directly against the live
@@ -22,8 +24,14 @@ from events import (
     FilteringPipelineErrorEvent,
     HighScoreLinksEvent,
     LowScoreLinksEvent,
+    PageFetchedEvent,
     ProcessingExtractionFailedEvent,
+    RequestFailedEvent,
+    StopCrawlEvent,
 )
+from nlp import BufferManager, SpaceUpdater
+from pipelines.contracts import EventConsumer
+from ui_bridge import CrawlStateSnapshot, TelemetryBridge
 
 FAKE_BLUEPRINT = {
     "blueprint_id": "test-bp",
@@ -43,7 +51,7 @@ FAKE_BLUEPRINT = {
 
 
 class Fake:
-    """Stand-in for nlp_service / scoring_service / space_updater -- none of
+    """Stand-in for nlp_service / scoring_service -- none of
     these get their methods called during pipeline construction or
     subscription wiring, only stored as attributes, so an inert object is
     sufficient for this test's purposes."""
@@ -59,7 +67,7 @@ def wired_crawler(tmp_path):
     crawler = Crawler("wikiMD.json", paths=RuntimePaths.under(tmp_path))
     crawler._load_blueprint_config(FAKE_BLUEPRINT)
     pipelines = crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
-    crawler._wire_subscriptions(pipelines, Fake())
+    crawler._wire_subscriptions(pipelines, SpaceUpdater(Fake(), BufferManager()))
     crawler._build_ui_layer(pipelines)
     return crawler
 
@@ -111,6 +119,46 @@ class TestTelemetryBridgeCoverage:
         ]
         # V1's UIEventTranslator subscribed to 7 event types.
         assert len(subscribed) >= 30
+
+
+def subscribed_to(crawler, consumer):
+    registry = crawler.event_broker.registry.registry
+    return {event_type for event_type, consumers in registry.items() if consumer in consumers}
+
+
+class TestConsumersNameTheirEvents:
+    """Each consumer's ``event_types`` is the one list of what it receives."""
+
+    def test_every_consumer_is_subscribed_to_exactly_its_event_types(self, wired_crawler):
+        consumers = wired_crawler.event_broker.registry.all_consumers()
+        assert len(consumers) == 15  # 13 stages, the space updater, the telemetry bridge
+        for consumer in consumers:
+            name = type(consumer).__name__
+            assert isinstance(consumer, EventConsumer), name
+            assert subscribed_to(wired_crawler, consumer) == set(consumer.event_types), name
+
+    def test_consumers_hear_an_event_in_subscription_order(self, wired_crawler):
+        # The stage registry order, then the space updater, then the UI bridge.
+        assert consumers_of(wired_crawler, StopCrawlEvent) == [
+            "LoggingPipeline", "ExportingPipeline", "StoppingPipeline", "SpaceUpdater",
+            "TelemetryBridge",
+        ]
+        assert consumers_of(wired_crawler, RequestFailedEvent) == [
+            "DebuggingPipeline", "RetryProcessor", "TelemetryBridge",
+        ]
+        assert consumers_of(wired_crawler, PageFetchedEvent) == [
+            "LoggingPipeline", "CanonicalizationPipeline", "ProcessingPipeline",
+            "StoragePipeline", "StoppingPipeline", "TelemetryBridge",
+        ]
+
+    def test_handler_tables_are_the_source(self):
+        updater = SpaceUpdater(Fake(), BufferManager())
+        assert updater.event_types == tuple(updater.handlers)
+        bridge = TelemetryBridge(CrawlStateSnapshot(), Fake())
+        with pytest.raises(RuntimeError):
+            _ = bridge.event_types
+        bridge.register_handlers()
+        assert bridge.event_types == tuple(bridge._dispatch)
 
 
 class TestRuntimeConfigIsTheSource:

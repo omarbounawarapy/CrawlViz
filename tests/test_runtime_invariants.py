@@ -1,7 +1,7 @@
 """Runtime invariants for the crawl pipelines, checked end to end.
 
-Each test wires the real pipelines by hand (the way core/crawler.py's
-_build_pipelines / _wire_subscriptions do) around a fake fetcher serving a
+Each test builds the real pipelines by hand and subscribes each to its
+own ``event_types`` (as core/crawler.py does) around a fake fetcher serving a
 small synthetic site and a heuristic stand-in for NLPService/ScoringService.
 No API keys, embedding model, network, items.db, logs/ or export/ are
 involved, so these run anywhere in a few seconds.
@@ -31,8 +31,6 @@ from config import (
 )
 from core.event_broker import EventBroker
 from events import (
-    ContentExtractedEvent,
-    ContentFilteredEvent,
     EmptyScoreResultsEvent,
     HighScoreLinksEvent,
     LinksScoredEvent,
@@ -40,11 +38,9 @@ from events import (
     NoLinksToScoreEvent,
     PageFetchedEvent,
     PriorityCalculatedEvent,
-    RequestFailedEvent,
     ScoreRescheduledEvent,
     ScoringFailedEvent,
     StopCrawlEvent,
-    TransformationCompletedEvent,
 )
 from models import Domain, Link, Node, Storage
 from pipelines import (
@@ -210,19 +206,8 @@ class Crawl:
             PriorityPipeline(s, b),
             self.retry,
         ]
-        requests, processing, filtering, transformation, storage, scoring, priority, retry = (
-            self.pipelines
-        )
-        b.subscribe(requests, [NodeAddedEvent])
-        b.subscribe(processing, [PageFetchedEvent])
-        b.subscribe(filtering, [ContentExtractedEvent])
-        b.subscribe(transformation, [ContentFilteredEvent])
-        b.subscribe(
-            storage, [PriorityCalculatedEvent, TransformationCompletedEvent, PageFetchedEvent]
-        )
-        b.subscribe(scoring, [NodeAddedEvent, ScoreRescheduledEvent])
-        b.subscribe(priority, [LinksScoredEvent, HighScoreLinksEvent])
-        b.subscribe(retry, [EmptyScoreResultsEvent, RequestFailedEvent, ScoringFailedEvent])
+        for pipeline in self.pipelines:
+            b.subscribe(pipeline, pipeline.event_types)
         b.subscribe(
             self.recorder,
             [PageFetchedEvent, LinksScoredEvent, NoLinksToScoreEvent, EmptyScoreResultsEvent,

@@ -30,8 +30,8 @@ class ExportingPipeline:
         blueprint,
         event_broker,
         db_path=ITEMS_DB_PATH,
-        batch_size=50,
-    ):
+        batch_size: int = 50,
+    ) -> None:
         self.event_broker = event_broker
         self.db_path = db_path
         self.batch_size = batch_size
@@ -52,6 +52,10 @@ class ExportingPipeline:
             TransformationCompletedEvent: self._on_transformation_completed,
             StopCrawlEvent: self._on_stop_crawl,
         }
+
+    @property
+    def event_types(self) -> tuple[type, ...]:
+        return tuple(self.handlers)
 
     # =========================================================
     # INIT

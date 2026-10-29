@@ -24,7 +24,7 @@ Each rationale is cited where the repository or the report gives direct evidence
 
 **Decision:** A single `EventBroker` with typed events and a subscription registry. Pipelines never call each other, only `broker.subscribe()` at wiring time and `broker.dispatch()` (implicitly, via emitting events) at runtime.
 
-**Consequences:** Producers do not know who is listening, so a new consumer is added without touching the producers (see `03-deep-dive-event-pipeline.md`). The cost is that the system is easy to reason about one stage at a time but hard to follow end to end. Answering "what happens when a node is created" means tracing every subscriber to `NodeAddedEvent` across the wiring block. Events with no subscriber, or a missing subscription, are easy to introduce this way.
+**Consequences:** Producers do not know who is listening, so a new consumer is added without touching the producers (see `03-deep-dive-event-pipeline.md`). The cost is that the system is easy to reason about one stage at a time but hard to follow end to end. Answering "what happens when a node is created" means finding every consumer whose handler table names `NodeAddedEvent`. Subscriptions used to be a separate hand-written list, which let a handler exist without its subscription; since [ADR 2](adr/0002-crawl-composition-root.md) each consumer is subscribed to the events its own table names.
 
 ---
 
