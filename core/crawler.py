@@ -21,6 +21,7 @@ from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
 from nlp import BufferManager, SpaceUpdater
+from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
@@ -57,6 +58,8 @@ class Crawler:
         fetch_concurrency: int | None = None,
         scoring_concurrency: int | None = None,
         ui_port: int | None = None,
+        llm: LlmSender | None = None,
+        fetcher: Fetcher | None = None,
     ):
         self.config = config if config is not None else default_runtime_config()
         configure_url_normalization(
@@ -80,6 +83,10 @@ class Crawler:
         # Built lazily in _setup_traceability so constructing a Crawler
         # does not need keys.json.
         self.key_manager = key_manager
+        # Replace the LLM provider and the HTTP client, for offline runs
+        # (see the offline package). Without them the crawl needs keys and network.
+        self.llm = llm
+        self.fetcher = fetcher
         self.crawl_id = (
             template_file[: template_file.find(".")]
             + "-"
@@ -118,7 +125,8 @@ class Crawler:
             # more than one crawl per process lifetime. `finally` so this
             # still runs if a pipeline task raises.
             await pipelines["requests"].network_client.close()
-            await traced_network.close()
+            if traced_network is not None:
+                await traced_network.close()
 
     def queue_depths(self) -> dict:
         """Items waiting in each stage's queue right now, keyed by the Pipelines setting name."""
@@ -184,19 +192,24 @@ class Crawler:
         self.target_topic = blueprint.get("target_topic")
         self.expansion_config = blueprint.get("expansion")
 
-    def _setup_traceability(self) -> tuple[TraceEmitter, TracedNetworkClient, TracedLlmHandler]:
+    def _setup_traceability(
+        self,
+    ) -> tuple[TraceEmitter, TracedNetworkClient | None, TracedLlmHandler]:
         """TraceEmitter reads TRACE_MODE / TRACE_SAMPLE_RATE from env
         (defaults: mode="full", sample_rate=0.1). Everything downstream
         (NetworkClient, LlmHandler) gets wrapped in traced variants so
         every request/response also emits a fine-grained trace event
         (see traceability/emitter.py).
         """
+        tracer = TraceEmitter.from_env(self.event_broker)
+        if self.llm is not None:
+            # No keys and no LLM HTTP traffic: the injected sender answers.
+            return tracer, None, TracedLlmHandler(self.llm, tracer)
         if self.key_manager is None:
             self.key_manager = KeyManager(
                 cooldown=self.config.llm.key_cooldown_seconds,
                 keys_file=self.paths.keys_file,
             )
-        tracer = TraceEmitter.from_env(self.event_broker)
         fetch = self.config.fetch
         traced_network = TracedNetworkClient(
             NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout), tracer
@@ -281,6 +294,7 @@ class Crawler:
             fetch_concurrency=self.fetch_concurrency,
             scoring_concurrency=self.scoring_concurrency,
             seed=self.seed,
+            fetcher=self.fetcher,
         ))
         return self._pipelines
 
