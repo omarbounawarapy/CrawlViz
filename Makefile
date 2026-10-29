@@ -21,12 +21,13 @@ dev-frontend:
 
 lint:
 	uv run ruff check .
+	uv run ruff format --check .
 	cd crawler-ui && npm run lint && npm run lint:css && npm run lint:html && npm run format:check
 
-# Formats Python with ruff. The repo is not formatted yet: apply it in its own commit
-# and list that commit in .git-blame-ignore-revs.
+# Formats Python and the UI. A formatting-only commit goes in .git-blame-ignore-revs.
 format:
 	uv run ruff format .
+	cd crawler-ui && npm run format
 
 # Strict mypy (modules still on the legacy list in pyproject.toml are skipped) and tsc.
 typecheck:
