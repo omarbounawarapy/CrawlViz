@@ -1,4 +1,4 @@
-import services.nlp_service as nlp_service
+import services.link_features as link_features
 from utils.html_utils import document_text
 
 PAGE = (
@@ -23,6 +23,7 @@ def test_empty_input():
 
 
 def test_scoring_uses_this_function():
-    # score_links (used by the crawl and by tools/nlp_eval.py) reduces
-    # parent.content, which is raw HTML, with this exact function.
-    assert nlp_service.document_text is document_text
+    # NLPService.score_links (used by the crawl and by tools/nlp_eval.py)
+    # reduces parent.content, which is raw HTML, with this exact function, in
+    # LinkFeatureScorer.parent_context.
+    assert link_features.document_text is document_text
