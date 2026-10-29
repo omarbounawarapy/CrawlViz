@@ -15,6 +15,7 @@ temp_roots = ["/tmp/claude-*", "/tmp/pytest-*"]
 method_files = [
   "core/crawler.py",
   "core/event_broker.py",
+  "core/stages.py",
   "pipelines/scoring_pipeline.py",
   "pipelines/priority_pipeline.py",
   "priority/**",
