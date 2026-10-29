@@ -43,7 +43,7 @@ jobs:
 
       - name: Dependency audit (pip-audit)
         run: |
-          uv export --locked --extra dev --no-emit-project --no-hashes -o ${RUNNER_TEMP}/audit-requirements.txt
+          uv export --locked --extra dev --no-emit-project --no-emit-package torch --no-hashes -o ${RUNNER_TEMP}/audit-requirements.txt
           uv run pip-audit --strict -r ${RUNNER_TEMP}/audit-requirements.txt --no-deps --disable-pip
 
       - name: Test (pytest)

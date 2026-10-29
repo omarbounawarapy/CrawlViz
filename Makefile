@@ -48,8 +48,9 @@ check-baselines:
 	uv run python tools/check_baselines.py
 
 # Known-vulnerability scan of the locked Python and npm dependencies (what CI runs).
+# torch is left out: the CPU build (2.x+cpu) is not on PyPI, so pip-audit cannot look it up.
 audit:
-	uv export --locked --extra dev --no-emit-project --no-hashes -o .audit-requirements.txt
+	uv export --locked --extra dev --no-emit-project --no-emit-package torch --no-hashes -o .audit-requirements.txt
 	uv run pip-audit --strict -r .audit-requirements.txt --no-deps --disable-pip; \
 		status=$$?; rm -f .audit-requirements.txt; exit $$status
 	cd crawler-ui && npm audit --audit-level=high
