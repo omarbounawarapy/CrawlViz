@@ -6,10 +6,12 @@ import ProviderTable from "./ProviderTable";
 import { fetchProviders } from "../../api/client";
 
 vi.mock("../../api/client", () => ({
-  fetchProviders: vi.fn(() => Promise.resolve({
-    groq: { models: ["openai/gpt-oss-120b"], keys: 2 },
-    openai: { models: [], keys: 0 },
-  })),
+  fetchProviders: vi.fn(() =>
+    Promise.resolve({
+      groq: { models: ["openai/gpt-oss-120b"], keys: 2 },
+      openai: { models: [], keys: 0 },
+    }),
+  ),
 }));
 
 const PIPES = {
@@ -25,8 +27,13 @@ const PIPES = {
 };
 
 const FETCH = {
-  min_delay: 1, jitter_max: 0.2, backoff_start: 1, backoff_max: 10, backoff_growth: 2,
-  backoff_success_decay: 0.5, backoff_failure_decay: 0.5,
+  min_delay: 1,
+  jitter_max: 0.2,
+  backoff_start: 1,
+  backoff_max: 10,
+  backoff_growth: 2,
+  backoff_success_decay: 0.5,
+  backoff_failure_decay: 0.5,
 };
 
 describe("PipelineFlow", () => {

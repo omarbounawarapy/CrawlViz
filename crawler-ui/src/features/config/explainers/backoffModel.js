@@ -36,7 +36,7 @@ export function timeline(outcomes, cfg, latency = 0.3) {
   const jitter = (cfg.jitter_max ?? 0) / 2; // expected value of uniform(0, jitter_max)
   let t = 0;
   const points = waits.map((w, i) => {
-    t += (i === 0 ? 0 : Math.max(w + jitter, latency));
+    t += i === 0 ? 0 : Math.max(w + jitter, latency);
     return { t, wait: w + jitter, outcome: outcomes[i] };
   });
   return points.map((p, i) => {

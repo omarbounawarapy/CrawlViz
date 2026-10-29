@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
 import schema from "./fixtures/schema.json";
 import defaults from "./fixtures/defaults.json";
-import {
-  buildFields, buildPatch, getIn, groupBySection, matches, setIn, validateField,
-} from "./configModel";
+import { buildFields, buildPatch, getIn, groupBySection, matches, setIn, validateField } from "./configModel";
 
 const fields = buildFields(schema);
 const byPath = Object.fromEntries(fields.map((f) => [f.path, f]));
@@ -24,11 +22,17 @@ describe("buildFields", () => {
 
   it("covers every leaf of the default config", () => {
     const leaves = [];
-    const walk = (o, p) => Object.entries(o).forEach(([k, v]) => {
-      const path = p ? `${p}.${k}` : k;
-      const isLeaf = v === null || typeof v !== "object" || ["extra_headers", "composite_weights", "strategy_contexts", "endpoints"].includes(k) || k.endsWith("_weights");
-      if (isLeaf) leaves.push(path); else walk(v, path);
-    });
+    const walk = (o, p) =>
+      Object.entries(o).forEach(([k, v]) => {
+        const path = p ? `${p}.${k}` : k;
+        const isLeaf =
+          v === null ||
+          typeof v !== "object" ||
+          ["extra_headers", "composite_weights", "strategy_contexts", "endpoints"].includes(k) ||
+          k.endsWith("_weights");
+        if (isLeaf) leaves.push(path);
+        else walk(v, path);
+      });
     walk(defaults, "");
     expect(fields.map((f) => f.path).sort()).toEqual(leaves.sort());
   });
@@ -62,10 +66,20 @@ describe("effect hint", () => {
   it("carries the plain-language effect line of a field", () => {
     const tiny = {
       type: "object",
-      properties: { embeddings: { type: "object", properties: {
-        flush_threshold: { type: "integer", ui_section: "Embeddings", ui_unit: "links", ui_effect: "Lower flushes sooner." },
-        model_name: { type: "string", ui_section: "Embeddings" },
-      } } },
+      properties: {
+        embeddings: {
+          type: "object",
+          properties: {
+            flush_threshold: {
+              type: "integer",
+              ui_section: "Embeddings",
+              ui_unit: "links",
+              ui_effect: "Lower flushes sooner.",
+            },
+            model_name: { type: "string", ui_section: "Embeddings" },
+          },
+        },
+      },
     };
     const [threshold, model] = buildFields(tiny);
     expect(threshold).toMatchObject({ effect: "Lower flushes sooner.", unit: "links" });

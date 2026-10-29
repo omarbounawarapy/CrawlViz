@@ -22,13 +22,33 @@ function StageBox({ stage, stats }) {
   const phase = stagePhase(stats);
   const inFlight = Math.max(0, (stats?.started || 0) - (stats?.completed || 0) - (stats?.failed || 0));
   return (
-    <div style={{ ...S.stageBox(phase), borderStyle: phase === "idle" ? "dashed" : "solid", borderWidth: phase === "failed" ? 2 : 1 }}>
+    <div
+      style={{
+        ...S.stageBox(phase),
+        borderStyle: phase === "idle" ? "dashed" : "solid",
+        borderWidth: phase === "failed" ? 2 : 1,
+      }}
+    >
       <h3 style={{ ...S.stageBoxLabel, fontWeight: 400, margin: 0 }}>{PIPELINE_STAGE_LABELS[stage] || stage}</h3>
       {/* The phase in words: the border colour alone would not say it (WCAG 1.4.1). */}
-      <div style={{ fontSize: theme.typography.size.xxs, fontWeight: 600, color: phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary }}>
+      <div
+        style={{
+          fontSize: theme.typography.size.xxs,
+          fontWeight: 600,
+          color: phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary,
+        }}
+      >
         {PHASE_WORD[phase]}
       </div>
-      <div style={{ fontSize: theme.typography.size.xl, fontWeight: theme.typography.weight.semibold, color: theme.colors.text.primary, marginTop: 4, fontVariantNumeric: "tabular-nums" }}>
+      <div
+        style={{
+          fontSize: theme.typography.size.xl,
+          fontWeight: theme.typography.weight.semibold,
+          color: theme.colors.text.primary,
+          marginTop: 4,
+          fontVariantNumeric: "tabular-nums",
+        }}
+      >
         {stats?.completed || 0}
       </div>
       <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, marginTop: 2 }}>
@@ -68,7 +88,7 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
 
   const recentErrors = useMemo(() => errors.slice(-10).reverse(), [errors]);
 
-  const maxCompleted = Math.max(1, ...PIPELINE_STAGES.map(s => pipelineStats[s]?.completed || 0));
+  const maxCompleted = Math.max(1, ...PIPELINE_STAGES.map((s) => pipelineStats[s]?.completed || 0));
 
   return (
     <div style={S.panel}>
@@ -81,12 +101,18 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
 
       <div style={S.panelScroll}>
         {/* Stage DAG */}
-        <p style={S.sectionCardTitle}>Request, extraction, filtering, scoring, priority, transform, export, in that order.</p>
+        <p style={S.sectionCardTitle}>
+          Request, extraction, filtering, scoring, priority, transform, export, in that order.
+        </p>
         <ol style={{ ...S.stageRow, listStyle: "none", margin: 0, padding: 0 }}>
           {PIPELINE_STAGES.map((stage, i) => (
             <li key={stage} style={{ display: "flex", alignItems: "stretch" }}>
               <StageBox stage={stage} stats={pipelineStats[stage]} />
-              {i < PIPELINE_STAGES.length - 1 && <div aria-hidden="true" style={S.stageBoxArrow}>→</div>}
+              {i < PIPELINE_STAGES.length - 1 && (
+                <div aria-hidden="true" style={S.stageBoxArrow}>
+                  →
+                </div>
+              )}
             </li>
           ))}
         </ol>
@@ -94,7 +120,7 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
         {/* Throughput comparison */}
         <div style={{ ...S.sectionCard, marginTop: 20 }}>
           <h3 style={{ ...S.sectionCardTitle, fontWeight: 400 }}>Completed per stage</h3>
-          {PIPELINE_STAGES.map(stage => (
+          {PIPELINE_STAGES.map((stage) => (
             <ThroughputBar key={stage} stage={stage} stats={pipelineStats[stage]} maxCompleted={maxCompleted} />
           ))}
         </div>
@@ -108,11 +134,43 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
             ) : (
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {recentTicks.map((t, i) => (
-                  <div key={i} style={{ display: "flex", gap: 8, padding: "3px 0", borderBottom: `1px solid ${theme.colors.rowBorder}`, fontSize: theme.typography.size.xxs }}>
-                    <span style={{ color: theme.colors.text.muted, minWidth: 82 }}>{PIPELINE_STAGE_LABELS[t.stage] || t.stage}</span>
-                    <span style={{ color: t.phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary, minWidth: 68 }}>{t.phase}</span>
-                    <span style={{ color: theme.colors.text.muted, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.detail}</span>
-                    {t.duration_ms != null && <span style={{ color: theme.colors.text.muted, flexShrink: 0 }}>{formatDuration(t.duration_ms)}</span>}
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      padding: "3px 0",
+                      borderBottom: `1px solid ${theme.colors.rowBorder}`,
+                      fontSize: theme.typography.size.xxs,
+                    }}
+                  >
+                    <span style={{ color: theme.colors.text.muted, minWidth: 82 }}>
+                      {PIPELINE_STAGE_LABELS[t.stage] || t.stage}
+                    </span>
+                    <span
+                      style={{
+                        color: t.phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary,
+                        minWidth: 68,
+                      }}
+                    >
+                      {t.phase}
+                    </span>
+                    <span
+                      style={{
+                        color: theme.colors.text.muted,
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {t.detail}
+                    </span>
+                    {t.duration_ms != null && (
+                      <span style={{ color: theme.colors.text.muted, flexShrink: 0 }}>
+                        {formatDuration(t.duration_ms)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -121,7 +179,13 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
 
           {/* Recent errors */}
           <div style={{ ...S.sectionCard, flex: "1 1 240px", minWidth: 0 }}>
-            <h3 style={{ ...S.sectionCardTitle, fontWeight: 400, color: recentErrors.length ? theme.colors.accent.red : theme.colors.text.muted }}>
+            <h3
+              style={{
+                ...S.sectionCardTitle,
+                fontWeight: 400,
+                color: recentErrors.length ? theme.colors.accent.red : theme.colors.text.muted,
+              }}
+            >
               Recent errors ({errors.length} total)
             </h3>
             {recentErrors.length === 0 ? (
@@ -130,8 +194,14 @@ export default function PipelineMonitor({ pipelineStats, eventLog, errors }) {
               <div style={{ maxHeight: 320, overflowY: "auto" }}>
                 {recentErrors.map((e, i) => (
                   <div key={i} style={{ padding: "6px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-                    <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>{e.stage}: {e.error_type}</div>
-                    <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.secondary, marginTop: 1 }}>{e.error_message}</div>
+                    <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>
+                      {e.stage}: {e.error_type}
+                    </div>
+                    <div
+                      style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.secondary, marginTop: 1 }}
+                    >
+                      {e.error_message}
+                    </div>
                   </div>
                 ))}
               </div>

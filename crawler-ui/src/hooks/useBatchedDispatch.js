@@ -18,10 +18,18 @@ export function useBatchedDispatch(dispatch) {
     dispatch(events.length === 1 ? events[0] : { type: "__BATCH", events });
   }, [dispatch]);
 
-  useEffect(() => () => { if (frame.current) cancelAnimationFrame(frame.current); }, []);
+  useEffect(
+    () => () => {
+      if (frame.current) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
-  return useCallback((event) => {
-    queue.current.push(event);
-    if (!frame.current) frame.current = requestAnimationFrame(flush);
-  }, [flush]);
+  return useCallback(
+    (event) => {
+      queue.current.push(event);
+      if (!frame.current) frame.current = requestAnimationFrame(flush);
+    },
+    [flush],
+  );
 }

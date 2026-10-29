@@ -12,17 +12,30 @@ const GLOSSARY = {
   "robots.txt": "A file that says what crawlers may fetch.",
 };
 
-beforeEach(() => { act(() => primeGlossary(GLOSSARY)); });
-afterEach(() => { cleanup(); resetGlossaryForTests(); });
+beforeEach(() => {
+  act(() => primeGlossary(GLOSSARY));
+});
+afterEach(() => {
+  cleanup();
+  resetGlossaryForTests();
+});
 
 describe("Explain", () => {
   it("wraps glossary words in explainable buttons", () => {
-    render(<p><Explain text="The backoff grows after each 429." /></p>);
+    render(
+      <p>
+        <Explain text="The backoff grows after each 429." />
+      </p>,
+    );
     expect(screen.getByRole("button", { name: "backoff" })).toBeTruthy();
   });
 
   it("prefers the longer term and leaves words inside longer words alone", () => {
-    render(<p><Explain text="Keep the top-k matches, not the top ones. Seeds differ." /></p>);
+    render(
+      <p>
+        <Explain text="Keep the top-k matches, not the top ones. Seeds differ." />
+      </p>,
+    );
     expect(screen.getByRole("button", { name: "top-k" })).toBeTruthy();
     // "top" alone is explained once, in "the top ones"; it is not split out of "top-k".
     expect(screen.getAllByRole("button", { name: "top" })).toHaveLength(1);
@@ -30,13 +43,21 @@ describe("Explain", () => {
   });
 
   it("matches terms that contain punctuation", () => {
-    render(<p><Explain text="Honors robots.txt before fetching." /></p>);
+    render(
+      <p>
+        <Explain text="Honors robots.txt before fetching." />
+      </p>,
+    );
     expect(screen.getByRole("button", { name: "robots.txt" })).toBeTruthy();
   });
 
   it("returns plain text when the glossary is not loaded", () => {
     act(() => resetGlossaryForTests());
-    render(<p><Explain text="The backoff grows." /></p>);
+    render(
+      <p>
+        <Explain text="The backoff grows." />
+      </p>,
+    );
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.getByText("The backoff grows.")).toBeTruthy();
   });
@@ -44,7 +65,11 @@ describe("Explain", () => {
 
 describe("Hint", () => {
   it("opens from the keyboard and closes on Escape", () => {
-    render(<Hint text="Explained."><span>Term</span></Hint>);
+    render(
+      <Hint text="Explained.">
+        <span>Term</span>
+      </Hint>,
+    );
     const trigger = screen.getByRole("button", { name: "Term" });
     fireEvent.focus(trigger);
     expect(screen.getByRole("tooltip").textContent).toBe("Explained.");
@@ -54,7 +79,11 @@ describe("Hint", () => {
   });
 
   it("toggles on click, which is how touch reaches it", () => {
-    render(<Hint text="Explained."><span>Term</span></Hint>);
+    render(
+      <Hint text="Explained.">
+        <span>Term</span>
+      </Hint>,
+    );
     const trigger = screen.getByRole("button", { name: "Term" });
     fireEvent.click(trigger);
     expect(screen.getByRole("tooltip").textContent).toBe("Explained.");

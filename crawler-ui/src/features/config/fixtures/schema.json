@@ -8,9 +8,7 @@
           "description": "Embedding backend used to build the crawl's semantic space.",
           "title": "Backend",
           "type": "string",
-          "ui_options": [
-            "sentence_transformers"
-          ],
+          "ui_options": ["sentence_transformers"],
           "ui_section": "Embeddings",
           "ui_widget": "select"
         },
@@ -841,11 +839,7 @@
           "description": "Priority strategy used when a blueprint doesn't specify one.",
           "title": "Default Priority Strategy",
           "type": "string",
-          "ui_options": [
-            "aggressive",
-            "balanced",
-            "exploration"
-          ],
+          "ui_options": ["aggressive", "balanced", "exploration"],
           "ui_section": "Scoring cascade",
           "ui_widget": "select"
         },

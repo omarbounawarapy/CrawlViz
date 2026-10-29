@@ -16,17 +16,42 @@ describe("cascadeCounts", () => {
     });
   });
   it("accounts for every link", () => {
-    const g = cascadeCounts(sample.cascadeScores, { low_threshold: 0.2, high_threshold: 0.75,
-      high_score_llm_fraction: 0.3, low_score_sample_fraction: 0.1, high_score_random_fraction: 0.25 });
+    const g = cascadeCounts(sample.cascadeScores, {
+      low_threshold: 0.2,
+      high_threshold: 0.75,
+      high_score_llm_fraction: 0.3,
+      low_score_sample_fraction: 0.1,
+      high_score_random_fraction: 0.25,
+    });
     expect(g.toLlm + g.trusted + g.dropped).toBe(g.total);
   });
 });
 
 describe("priorityParts", () => {
   const defaults = {
-    aggressive: { target_similarity: 0.40, coverage_gap: 0.15, novelty_injection: 0.10, contextual_consistency: 0.05, depth_penalty: 0.08 },
-    balanced: { target_similarity: 0.25, novelty_injection: 0.20, coverage_gap: 0.15, contextual_consistency: 0.10, lexical_overlap: 0.05, depth_penalty: 0.05 },
-    exploration: { novelty_injection: 0.35, cluster_distance: 0.25, coverage_gap: 0.20, target_similarity: 0.05, semantic_delta: 0.05, depth_penalty: 0.03 },
+    aggressive: {
+      target_similarity: 0.4,
+      coverage_gap: 0.15,
+      novelty_injection: 0.1,
+      contextual_consistency: 0.05,
+      depth_penalty: 0.08,
+    },
+    balanced: {
+      target_similarity: 0.25,
+      novelty_injection: 0.2,
+      coverage_gap: 0.15,
+      contextual_consistency: 0.1,
+      lexical_overlap: 0.05,
+      depth_penalty: 0.05,
+    },
+    exploration: {
+      novelty_injection: 0.35,
+      cluster_distance: 0.25,
+      coverage_gap: 0.2,
+      target_similarity: 0.05,
+      semantic_delta: 0.05,
+      depth_penalty: 0.03,
+    },
   };
   cases.strategy.forEach((c, i) => {
     it(`case ${i} (${c.strategy}) matches priority/strategy.py`, () => {

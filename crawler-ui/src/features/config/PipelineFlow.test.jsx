@@ -8,8 +8,9 @@ afterEach(cleanup);
 
 describe("pipeline picture", () => {
   it("shows the items waiting in each queue while a crawl runs", () => {
-    const { container } = render(<PipelineFlow pipelines={defaults.pipelines} batchSize={10}
-                                               queues={{ requests: { size: 4, max: 50 } }} />);
+    const { container } = render(
+      <PipelineFlow pipelines={defaults.pipelines} batchSize={10} queues={{ requests: { size: 4, max: 50 } }} />,
+    );
     expect(container.textContent).toContain("4 waiting now");
   });
 
@@ -22,8 +23,14 @@ describe("pipeline picture", () => {
 describe("strategy cards keyboard", () => {
   it("moves focus and the default with the arrow keys, and only the default is a Tab stop", () => {
     const onChange = vi.fn();
-    render(<StrategyCards priority={defaults.priority} defaults={defaults.priority}
-                          defaultStrategy="balanced" onChange={onChange} />);
+    render(
+      <StrategyCards
+        priority={defaults.priority}
+        defaults={defaults.priority}
+        defaultStrategy="balanced"
+        onChange={onChange}
+      />,
+    );
     const cards = screen.getAllByRole("radio");
     expect(cards.map((c) => c.tabIndex)).toEqual([-1, 0, -1]);
     cards[1].focus();

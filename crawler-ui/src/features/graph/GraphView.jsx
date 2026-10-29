@@ -4,13 +4,21 @@ import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
 import Legend from "./Legend";
 import {
-  radialTreeTargets, chooseView, depthsOf, importanceOf, relevanceOf, edgeCurve, aspectOf, fitTransform,
-  labelCapacity, LABEL, MIN_PITCH_PX,
+  radialTreeTargets,
+  chooseView,
+  depthsOf,
+  importanceOf,
+  relevanceOf,
+  edgeCurve,
+  aspectOf,
+  fitTransform,
+  labelCapacity,
+  LABEL,
+  MIN_PITCH_PX,
 } from "./layout";
 
-const theme  = getTheme();
+const theme = getTheme();
 const styles = createComponentStyles(theme);
-
 
 // How many pages the eye can follow gliding to new places; beyond it they are placed directly.
 const MAX_ANIMATED = 300;
@@ -21,62 +29,141 @@ const SCORE_MIN = 0.5;
 // Folded "+N pages" nodes rank just above unremarkable pages, so they usually get a label.
 const AGGREGATE_IMPORTANCE = 0.3;
 // Zoom limits and the step a button or key takes (each press is one multiplicative step).
-const ZOOM_MIN = 0.02, ZOOM_MAX = 4, ZOOM_STEP = 1.4;
+const ZOOM_MIN = 0.02,
+  ZOOM_MAX = 4,
+  ZOOM_STEP = 1.4;
 const STAGE_ORDER = ["CREATED", "FETCHED", "FILTERED", "SCORED", "EXPANDED"];
 const REL = theme.colors.relevance;
 
-function safeDecode(t) { try { return decodeURIComponent(t); } catch { return t; } }
+function safeDecode(t) {
+  try {
+    return decodeURIComponent(t);
+  } catch {
+    return t;
+  }
+}
 
-function ghostKey(c) { return `${c.parent_id}::${c.url}`; }
+function ghostKey(c) {
+  return `${c.parent_id}::${c.url}`;
+}
 
 // ── Filter bar: URL search + excluded-candidate toggle + fold control ──────
-function GraphControls({ showCandidates, onToggleCandidates, candidateCount, search, onSearch, fold, matches, annotation }) {
+function GraphControls({
+  showCandidates,
+  onToggleCandidates,
+  candidateCount,
+  search,
+  onSearch,
+  fold,
+  matches,
+  annotation,
+}) {
   return (
-    <div className="graph-controls" style={{
-      position: "absolute", top: 16, left: 16, zIndex: 6,
-      display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", maxWidth: "calc(100% - 32px)",
-      background: theme.colors.background.panel, border: `1px solid ${theme.colors.background.border}`,
-      borderRadius: theme.radii.lg, padding: "8px 12px", fontFamily: theme.typography.fontMono,
-    }}>
+    <div
+      className="graph-controls"
+      style={{
+        position: "absolute",
+        top: 16,
+        left: 16,
+        zIndex: 6,
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        flexWrap: "wrap",
+        maxWidth: "calc(100% - 32px)",
+        background: theme.colors.background.panel,
+        border: `1px solid ${theme.colors.background.border}`,
+        borderRadius: theme.radii.lg,
+        padding: "8px 12px",
+        fontFamily: theme.typography.fontMono,
+      }}
+    >
       {/* The toolbar floats over the plate, so its label is for assistive tech; the placeholder is an example. */}
-      <label htmlFor="graph-find" className="sr-only">Find a page by URL</label>
+      <label htmlFor="graph-find" className="sr-only">
+        Find a page by URL
+      </label>
       <input
-        id="graph-find" type="search"
+        id="graph-find"
+        type="search"
         value={search}
-        onChange={e => onSearch(e.target.value)}
+        onChange={(e) => onSearch(e.target.value)}
         placeholder="Find a URL…"
         className="find-input"
         style={{
-          background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none", borderBottom: `1px solid ${theme.colors.text.muted}`,
-          padding: "3px 2px", fontSize: 13, color: theme.colors.text.primary, width: 180, maxWidth: "100%",
+          background: "transparent",
+          borderTop: "none",
+          borderLeft: "none",
+          borderRight: "none",
+          borderBottom: `1px solid ${theme.colors.text.muted}`,
+          padding: "3px 2px",
+          fontSize: 13,
+          color: theme.colors.text.primary,
+          width: 180,
+          maxWidth: "100%",
         }}
       />
       <p role="status" className="sr-only">
         {search.trim() ? `${matches} ${matches === 1 ? "page matches" : "pages match"}` : ""}
       </p>
       {candidateCount > 0 && (
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: theme.colors.text.secondary, cursor: "pointer" }}>
-          <input type="checkbox" checked={showCandidates} onChange={e => onToggleCandidates(e.target.checked)} />
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 13,
+            color: theme.colors.text.secondary,
+            cursor: "pointer",
+          }}
+        >
+          <input type="checkbox" checked={showCandidates} onChange={(e) => onToggleCandidates(e.target.checked)} />
           Show {candidateCount} links the crawler skipped
         </label>
       )}
       {annotation && (
-        <button type="button" onClick={() => document.getElementById(annotation)?.focus()} style={{
-          minHeight: 26, padding: "0 10px", borderRadius: theme.radii.md, fontSize: 12, fontWeight: 600,
-          background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
-        }}>
+        <button
+          type="button"
+          onClick={() => document.getElementById(annotation)?.focus()}
+          style={{
+            minHeight: 26,
+            padding: "0 10px",
+            borderRadius: theme.radii.md,
+            fontSize: 12,
+            fontWeight: 600,
+            background: "transparent",
+            color: theme.colors.text.primary,
+            border: `1px solid ${theme.colors.text.primary}`,
+          }}
+        >
           Read the annotation
         </button>
       )}
       {fold && (
-        <span style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: theme.colors.text.secondary }}>
-          {fold.folded
-            ? <>Showing the {fold.shown.toLocaleString()} most important of {fold.total.toLocaleString()} pages, so each stays legible.</>
-            : <>Showing all {fold.total.toLocaleString()} pages.</>}
-          <button type="button" onClick={fold.onToggle} style={{
-            minHeight: 26, padding: "0 10px", borderRadius: theme.radii.md, fontSize: 12, fontWeight: 600,
-            background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
-          }}>
+        <span
+          style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: theme.colors.text.secondary }}
+        >
+          {fold.folded ? (
+            <>
+              Showing the {fold.shown.toLocaleString()} most important of {fold.total.toLocaleString()} pages, so each
+              stays legible.
+            </>
+          ) : (
+            <>Showing all {fold.total.toLocaleString()} pages.</>
+          )}
+          <button
+            type="button"
+            onClick={fold.onToggle}
+            style={{
+              minHeight: 26,
+              padding: "0 10px",
+              borderRadius: theme.radii.md,
+              fontSize: 12,
+              fontWeight: 600,
+              background: "transparent",
+              color: theme.colors.text.primary,
+              border: `1px solid ${theme.colors.text.primary}`,
+            }}
+          >
             {fold.folded ? "Show all" : "Fold to important"}
           </button>
         </span>
@@ -85,27 +172,66 @@ function GraphControls({ showCandidates, onToggleCandidates, candidateCount, sea
   );
 }
 
-
 // ── Zoom utility: step in and out, fit everything, centre on the selection ──
 const ZOOM_ICONS = {
-  in: <><path d="M3 8h10" /><path d="M8 3v10" /></>,
+  in: (
+    <>
+      <path d="M3 8h10" />
+      <path d="M8 3v10" />
+    </>
+  ),
   out: <path d="M3 8h10" />,
-  fit: <><path d="M2.5 6V2.5H6" /><path d="M10 2.5h3.5V6" /><path d="M13.5 10v3.5H10" /><path d="M6 13.5H2.5V10" /></>,
-  focus: <><circle cx="8" cy="8" r="2.2" /><path d="M8 1.5v3" /><path d="M8 11.5v3" /><path d="M1.5 8h3" /><path d="M11.5 8h3" /></>,
+  fit: (
+    <>
+      <path d="M2.5 6V2.5H6" />
+      <path d="M10 2.5h3.5V6" />
+      <path d="M13.5 10v3.5H10" />
+      <path d="M6 13.5H2.5V10" />
+    </>
+  ),
+  focus: (
+    <>
+      <circle cx="8" cy="8" r="2.2" />
+      <path d="M8 1.5v3" />
+      <path d="M8 11.5v3" />
+      <path d="M1.5 8h3" />
+      <path d="M11.5 8h3" />
+    </>
+  ),
 };
 
 function ZoomButton({ label, icon, onClick, disabled, shortcut }) {
   return (
     <button
-      type="button" onClick={onClick} disabled={disabled} aria-label={label} title={shortcut ? `${label} (${shortcut})` : label}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={shortcut ? `${label} (${shortcut})` : label}
       style={{
-        minWidth: 30, minHeight: 30, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: 0,
-        borderRadius: theme.radii.md, background: "transparent",
+        minWidth: 30,
+        minHeight: 30,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 0,
+        borderRadius: theme.radii.md,
+        background: "transparent",
         border: `1px solid ${disabled ? theme.colors.background.border : theme.colors.text.primary}`,
         color: disabled ? theme.colors.text.muted : theme.colors.text.primary,
       }}
     >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
         {ZOOM_ICONS[icon]}
       </svg>
     </button>
@@ -114,18 +240,43 @@ function ZoomButton({ label, icon, onClick, disabled, shortcut }) {
 
 function ZoomControls({ k, canFocus, onIn, onOut, onFit, onFocus }) {
   return (
-    <div role="group" aria-label="Zoom" className="graph-zoom" style={{
-      position: "absolute", right: 16, bottom: 16, zIndex: 5, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4,
-      background: theme.colors.background.panel, border: `1px solid ${theme.colors.background.border}`,
-      borderRadius: theme.radii.lg, padding: 6, fontFamily: theme.typography.fontMono,
-    }}>
-      <output className="num" aria-label="Zoom level" style={{ fontSize: 12, textAlign: "center", color: theme.colors.text.secondary, padding: "2px 0 4px" }}>
+    <div
+      role="group"
+      aria-label="Zoom"
+      className="graph-zoom"
+      style={{
+        position: "absolute",
+        right: 16,
+        bottom: 16,
+        zIndex: 5,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "stretch",
+        gap: 4,
+        background: theme.colors.background.panel,
+        border: `1px solid ${theme.colors.background.border}`,
+        borderRadius: theme.radii.lg,
+        padding: 6,
+        fontFamily: theme.typography.fontMono,
+      }}
+    >
+      <output
+        className="num"
+        aria-label="Zoom level"
+        style={{ fontSize: 12, textAlign: "center", color: theme.colors.text.secondary, padding: "2px 0 4px" }}
+      >
         {Math.round(k * 100)}%
       </output>
       <ZoomButton label="Zoom in" icon="in" shortcut="+" onClick={onIn} disabled={k >= ZOOM_MAX * 0.99} />
       <ZoomButton label="Zoom out" icon="out" shortcut="-" onClick={onOut} disabled={k <= ZOOM_MIN * 1.01} />
       <ZoomButton label="Fit the whole plate" icon="fit" shortcut="0" onClick={onFit} />
-      <ZoomButton label="Centre on the selected page" icon="focus" shortcut="F" onClick={onFocus} disabled={!canFocus} />
+      <ZoomButton
+        label="Centre on the selected page"
+        icon="focus"
+        shortcut="F"
+        onClick={onFocus}
+        disabled={!canFocus}
+      />
     </div>
   );
 }
@@ -140,9 +291,9 @@ function radiusOf(d) {
 
 function labelText(d) {
   if (d.isAggregate) return d.url;
-  const url   = d.url || d.id;
+  const url = d.url || d.id;
   const parts = url.split("/").filter(Boolean);
-  const last  = safeDecode(parts[parts.length - 1] || url).replace(/_/g, " ");
+  const last = safeDecode(parts[parts.length - 1] || url).replace(/_/g, " ");
   return last.length > 22 ? last.slice(0, 21) + "…" : last;
 }
 
@@ -153,7 +304,11 @@ function measurer() {
   if (measureCtx === undefined) {
     // jsdom has no canvas; there the estimate below stands in.
     const real = typeof navigator !== "undefined" && !/jsdom/i.test(navigator.userAgent);
-    try { measureCtx = real ? document.createElement("canvas").getContext("2d") : null; } catch { measureCtx = null; }
+    try {
+      measureCtx = real ? document.createElement("canvas").getContext("2d") : null;
+    } catch {
+      measureCtx = null;
+    }
   }
   return measureCtx;
 }
@@ -173,7 +328,13 @@ function textWidth(str, bold) {
   return w;
 }
 
-const STATE_WORD = { CREATED: "found", FETCHED: "fetched", FILTERED: "filtered", SCORED: "scored", EXPANDED: "expanded" };
+const STATE_WORD = {
+  CREATED: "found",
+  FETCHED: "fetched",
+  FILTERED: "filtered",
+  SCORED: "scored",
+  EXPANDED: "expanded",
+};
 
 /**
  * The crawl plate. For the keyboard it is one tab stop: the focused page holds tabindex 0
@@ -183,25 +344,35 @@ const STATE_WORD = { CREATED: "found", FETCHED: "fetched", FILTERED: "filtered",
  * `heading` names the view for screen readers when the page has no other h1 for it.
  * `annotationId` is the id of the panel that describes the selection; a button jumps to it.
  */
-export default function GraphView({ nodes, edges, candidates = [], replayIndex, onNodeClick, onBackgroundClick, selectedNodeId, heading, annotationId }) {
-  const svgRef     = useRef(null);
-  const canvasRef  = useRef(null);
-  const engineRef  = useRef(null);
+export default function GraphView({
+  nodes,
+  edges,
+  candidates = [],
+  replayIndex,
+  onNodeClick,
+  onBackgroundClick,
+  selectedNodeId,
+  heading,
+  annotationId,
+}) {
+  const svgRef = useRef(null);
+  const canvasRef = useRef(null);
+  const engineRef = useRef(null);
   const nodeMapRef = useRef(new Map());
-  const zoomRef    = useRef(null);
+  const zoomRef = useRef(null);
   const userZoomed = useRef(false);
   const cleanupRef = useRef(null);
   const ghostsByParentRef = useRef(new Map());
-  const linksRef   = useRef([]);
-  const dimRef     = useRef(() => 1);
+  const linksRef = useRef([]);
+  const dimRef = useRef(() => 1);
   const transformRef = useRef(d3.zoomIdentity);
-  const drawRef    = useRef(() => {});
-  const cullRef    = useRef(() => {});
+  const drawRef = useRef(() => {});
+  const cullRef = useRef(() => {});
   const annotateRef = useRef(() => {});
-  const centerRef  = useRef({ x: 0, y: 0, aspect: 1.5 });
+  const centerRef = useRef({ x: 0, y: 0, aspect: 1.5 });
   const selectedRef = useRef(null);
-  const roverRef   = useRef(null);   // id of the page that holds the graph's one tab stop
-  const keyNavRef  = useRef(() => {});
+  const roverRef = useRef(null); // id of the page that holds the graph's one tab stop
+  const keyNavRef = useRef(() => {});
 
   const [showCandidates, setShowCandidates] = useState(true);
   const [search, setSearch] = useState("");
@@ -215,8 +386,9 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const el = svgRef.current;
     if (!el || typeof ResizeObserver === "undefined") return undefined;
     const ro = new ResizeObserver(() => {
-      const w = el.clientWidth, h = el.clientHeight;
-      if (w && h) setSize(prev => (prev.w === w && prev.h === h ? prev : { w, h }));
+      const w = el.clientWidth,
+        h = el.clientHeight;
+      if (w && h) setSize((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -228,7 +400,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     return max;
   }, [nodes]);
 
-  const fillFor = (d) => d.isAggregate ? theme.colors.background.primary : (theme.colors.state[d.state] || theme.colors.state.CREATED);
+  const fillFor = (d) =>
+    d.isAggregate ? theme.colors.background.primary : theme.colors.state[d.state] || theme.colors.state.CREATED;
 
   // Neighborhood of the selected node: itself, its ancestor chain to root,
   // and its direct children -- everything else dims.
@@ -236,7 +409,10 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     if (!selectedNodeId) return null;
     const ids = new Set([selectedNodeId]);
     let cur = nodes.get(selectedNodeId);
-    while (cur?.parent_id) { ids.add(cur.parent_id); cur = nodes.get(cur.parent_id); }
+    while (cur?.parent_id) {
+      ids.add(cur.parent_id);
+      cur = nodes.get(cur.parent_id);
+    }
     for (const n of nodes.values()) if (n.parent_id === selectedNodeId) ids.add(n.node_id);
     return ids;
   }, [selectedNodeId, nodes]);
@@ -254,7 +430,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const m = new Map();
     for (const c of candidates) {
       const e = m.get(c.parent_id) ?? { dropped: 0, trusted: 0 };
-      if (c.decision === "dropped") e.dropped += 1; else e.trusted += 1;
+      if (c.decision === "dropped") e.dropped += 1;
+      else e.trusted += 1;
       m.set(c.parent_id, e);
     }
     return m;
@@ -266,10 +443,17 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   const dNodes = useDeferredValue(nodes);
   const dEdges = useDeferredValue(edges);
   const auto = useMemo(
-    () => chooseView(dNodes, dEdges, {
-      showAll: false, expanded, selectedId: selectedNodeId, neighborhood, search: searchLower, maxPriority,
-      viewport: size, aspect: aspectOf(size.w, size.h),
-    }),
+    () =>
+      chooseView(dNodes, dEdges, {
+        showAll: false,
+        expanded,
+        selectedId: selectedNodeId,
+        neighborhood,
+        search: searchLower,
+        maxPriority,
+        viewport: size,
+        aspect: aspectOf(size.w, size.h),
+      }),
     [dNodes, dEdges, expanded, selectedNodeId, neighborhood, searchLower, maxPriority, size],
   );
   const folding = auto.folded && !showAll;
@@ -283,16 +467,18 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   // "trusted" candidate's NODE_ADDED arrives a moment later.
   const liveCandidates = useMemo(() => {
     if (!showCandidates) return [];
-    const existingUrls = new Set(Array.from(nodes.values()).map(n => n.url));
+    const existingUrls = new Set(Array.from(nodes.values()).map((n) => n.url));
     // Skipped-link marks are fine detail: show them only where there is room (pages well apart on
     // screen), or around the page you are looking at.
     const roomy = !view.folded && view.pitchPx >= 2 * MIN_PITCH_PX;
-    return candidates.filter(c => !existingUrls.has(c.url) && nodes.has(c.parent_id) && (roomy || neighborhood?.has(c.parent_id)));
+    return candidates.filter(
+      (c) => !existingUrls.has(c.url) && nodes.has(c.parent_id) && (roomy || neighborhood?.has(c.parent_id)),
+    );
   }, [candidates, nodes, showCandidates, view.folded, view.pitchPx, neighborhood]);
 
   useEffect(() => {
     const byParent = new Map();
-    liveCandidates.forEach(c => {
+    liveCandidates.forEach((c) => {
       if (!byParent.has(c.parent_id)) byParent.set(c.parent_id, []);
       byParent.get(c.parent_id).push(c);
     });
@@ -302,8 +488,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   // ── Initialize simulation (once) ──────────────────────────────────────────
   useEffect(() => {
     const svg = d3.select(svgRef.current);
-    const W   = svgRef.current.clientWidth  || 800;
-    const H   = svgRef.current.clientHeight || 500;
+    const W = svgRef.current.clientWidth || 800;
+    const H = svgRef.current.clientHeight || 500;
 
     svg.selectAll("*").remove();
     centerRef.current = { ...centerRef.current, x: W / 2, y: H / 2 };
@@ -324,9 +510,11 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       const cv = canvasRef.current;
       if (!cv) return;
       const dpr = window.devicePixelRatio || 1;
-      const w = cv.clientWidth, h = cv.clientHeight;
+      const w = cv.clientWidth,
+        h = cv.clientHeight;
       if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
-        cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+        cv.width = Math.round(w * dpr);
+        cv.height = Math.round(h * dpr);
       }
       const ctx = cv.getContext("2d");
       if (!ctx) return;
@@ -345,27 +533,35 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
         const heads = [];
         const { x: ccx, y: ccy, aspect: asp } = centerRef.current;
         for (const l of links) {
-          const s = l.source, g = l.target;
+          const s = l.source,
+            g = l.target;
           if (!s || !g || !Number.isFinite(s.x) || !Number.isFinite(g.x)) continue;
           const c = edgeCurve(s, g, ccx, ccy, asp);
-          const X = (i) => c[i] * t.k + t.x, Y = (i) => c[i] * t.k + t.y;
-          const xs = [X(0), X(2), X(4), X(6)], ys = [Y(1), Y(3), Y(5), Y(7)];
-          if (xs.every(v => v < 0) || xs.every(v => v > w) || ys.every(v => v < 0) || ys.every(v => v > h)) continue;
+          const X = (i) => c[i] * t.k + t.x,
+            Y = (i) => c[i] * t.k + t.y;
+          const xs = [X(0), X(2), X(4), X(6)],
+            ys = [Y(1), Y(3), Y(5), Y(7)];
+          if (xs.every((v) => v < 0) || xs.every((v) => v > w) || ys.every((v) => v < 0) || ys.every((v) => v > h))
+            continue;
           const full = Math.min(dim(s.id), dim(g.id)) === 1;
           if (full !== (pass === 1)) continue;
           ctx.moveTo(xs[0], ys[0]);
           ctx.bezierCurveTo(xs[1], ys[1], xs[2], ys[2], xs[3], ys[3]);
           // An arrowhead needs room to be read: only on links long enough on screen to carry one.
-          if (pass === 1 && Math.hypot(xs[3] - xs[0], ys[3] - ys[0]) >= ARROW_MIN_PX) heads.push(xs[2], ys[2], xs[3], ys[3]);
+          if (pass === 1 && Math.hypot(xs[3] - xs[0], ys[3] - ys[0]) >= ARROW_MIN_PX)
+            heads.push(xs[2], ys[2], xs[3], ys[3]);
         }
         ctx.stroke();
         if (heads.length) {
           ctx.beginPath();
           for (let i = 0; i < heads.length; i += 4) {
-            const dx = heads[i + 2] - heads[i], dy = heads[i + 3] - heads[i + 1];
+            const dx = heads[i + 2] - heads[i],
+              dy = heads[i + 3] - heads[i + 1];
             const len = Math.hypot(dx, dy) || 1;
-            const ux = dx / len, uy = dy / len;
-            const tipX = heads[i + 2] - ux * 14 * t.k, tipY = heads[i + 3] - uy * 14 * t.k;
+            const ux = dx / len,
+              uy = dy / len;
+            const tipX = heads[i + 2] - ux * 14 * t.k,
+              tipY = heads[i + 3] - uy * 14 * t.k;
             const size = 7 * Math.min(t.k, 1.2);
             ctx.moveTo(tipX, tipY);
             ctx.lineTo(tipX - ux * size + uy * size * 0.5, tipY - uy * size - ux * size * 0.5);
@@ -377,7 +573,12 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       }
       ctx.globalAlpha = 1;
     };
-    const scheduleDraw = () => { if (!drawQueued) { drawQueued = true; requestAnimationFrame(drawEdges); } };
+    const scheduleDraw = () => {
+      if (!drawQueued) {
+        drawQueued = true;
+        requestAnimationFrame(drawEdges);
+      }
+    };
     drawRef.current = scheduleDraw;
 
     // ── Viewport culling: pages outside the window are not laid out or painted.
@@ -386,15 +587,27 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       cullQueued = false;
       const all = nodeMapRef.current.size;
       const t = transformRef.current;
-      const w = svgRef.current?.clientWidth || W, h = svgRef.current?.clientHeight || H;
+      const w = svgRef.current?.clientWidth || W,
+        h = svgRef.current?.clientHeight || H;
       const m = 80;
-      const x0 = (-t.x - m) / t.k, x1 = (w - t.x + m) / t.k, y0 = (-t.y - m) / t.k, y1 = (h - t.y + m) / t.k;
+      const x0 = (-t.x - m) / t.k,
+        x1 = (w - t.x + m) / t.k,
+        y0 = (-t.y - m) / t.k,
+        y1 = (h - t.y + m) / t.k;
       svg.selectAll("g.node-group").each(function (d) {
         const off = all > MAX_ANIMATED && Number.isFinite(d.x) && (d.x < x0 || d.x > x1 || d.y < y0 || d.y > y1);
-        if (off !== !!d._culled) { d._culled = off; this.style.display = off ? "none" : null; }
+        if (off !== !!d._culled) {
+          d._culled = off;
+          this.style.display = off ? "none" : null;
+        }
       });
     };
-    const scheduleCull = () => { if (!cullQueued) { cullQueued = true; requestAnimationFrame(cull); } };
+    const scheduleCull = () => {
+      if (!cullQueued) {
+        cullQueued = true;
+        requestAnimationFrame(cull);
+      }
+    };
     cullRef.current = scheduleCull;
 
     // ── Annotations: scores and labels ──────────────────────────────────────────
@@ -409,8 +622,10 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const annotate = () => {
       const el = svgRef.current;
       if (!el) return;
-      const w = el.clientWidth, h = el.clientHeight;
-      const t = transformRef.current, k = t.k;
+      const w = el.clientWidth,
+        h = el.clientHeight;
+      const t = transformRef.current,
+        k = t.k;
       const sel = selectedRef.current;
       const cap = labelCapacity(w, h);
       const CELL = 64;
@@ -426,7 +641,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       const near = (box) => {
         const out = new Set();
         for (let i = Math.floor(box.l / CELL); i <= Math.floor(box.r / CELL); i++) {
-          for (let j = Math.floor(box.t / CELL); j <= Math.floor(box.b / CELL); j++) for (const it of grid.get(i + "," + j) ?? []) out.add(it);
+          for (let j = Math.floor(box.t / CELL); j <= Math.floor(box.b / CELL); j++)
+            for (const it of grid.get(i + "," + j) ?? []) out.add(it);
         }
         return out;
       };
@@ -434,7 +650,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       const pages = [];
       for (const d of nodeMapRef.current.values()) {
         if (!Number.isFinite(d.x) || !d.__t) continue;
-        const X = d.x * k + t.x, Y = d.y * k + t.y;
+        const X = d.x * k + t.x,
+          Y = d.y * k + t.y;
         if (X < -30 || X > w + 30 || Y < -30 || Y > h + 30) continue;
         const R = Math.max(2.5, (radiusOf(d) + 3.5) * k);
         pages.push({ d, X, Y, R });
@@ -448,21 +665,25 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
           const v = 1 - u;
           const px = (v * v * v * c[0] + 3 * v * v * u * c[2] + 3 * v * u * u * c[4] + u * u * u * c[6]) * k + t.x;
           const py = (v * v * v * c[1] + 3 * v * v * u * c[3] + 3 * v * u * u * c[5] + u * u * u * c[7]) * k + t.y;
-          if (px > -30 && px < w + 30 && py > -30 && py < h + 30) put(px, py, 0, 0, { pt: true, x: px, y: py, a: l.source.id, b: l.target.id });
+          if (px > -30 && px < w + 30 && py > -30 && py < h + 30)
+            put(px, py, 0, 0, { pt: true, x: px, y: py, a: l.source.id, b: l.target.id });
         }
       }
 
       const placed = [];
       const free = (box, own) => {
         const pad = 3;
-        for (const q of placed) if (!(box.r + pad < q.l || box.l - pad > q.r || box.b + pad < q.t || box.t - pad > q.b)) return -1;
+        for (const q of placed)
+          if (!(box.r + pad < q.l || box.l - pad > q.r || box.b + pad < q.t || box.t - pad > q.b)) return -1;
         let edgeHits = 0;
         for (const it of near(box)) {
           if (it.disc) {
             if (it.id === own) continue;
-            const nx = Math.max(box.l, Math.min(it.X, box.r)), ny = Math.max(box.t, Math.min(it.Y, box.b));
+            const nx = Math.max(box.l, Math.min(it.X, box.r)),
+              ny = Math.max(box.t, Math.min(it.Y, box.b));
             if (Math.hypot(nx - it.X, ny - it.Y) < it.r) return -1;
-          } else if (it.a !== own && it.b !== own && it.x > box.l && it.x < box.r && it.y > box.t && it.y < box.b) edgeHits += 1;
+          } else if (it.a !== own && it.b !== own && it.x > box.l && it.x < box.r && it.y > box.t && it.y < box.b)
+            edgeHits += 1;
         }
         return edgeHits;
       };
@@ -474,7 +695,7 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
 
       const keep = new Set();
       const dim = dimRef.current;
-      const pool = pages.filter(p => p.d.__vis === 1 && dim(p.d.id) === 1);
+      const pool = pages.filter((p) => p.d.__vis === 1 && dim(p.d.id) === 1);
       const rank = (p) => (p.d.id === sel ? Infinity : p.d.imp);
       pool.sort((a, b) => rank(b) - rank(a));
       const top = pool.slice(0, Math.ceil(cap * 1.6));
@@ -488,21 +709,26 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
         if (rel == null || rel < SCORE_MIN) continue;
         const txt = String(Math.round(rel * 100));
         const tw = textWidth(txt, true);
-        const dx = p.R + 9, dy = -p.R - 4;
+        const dx = p.R + 9,
+          dy = -p.R - 4;
         const box = boxOf(p.X, p.Y, dx, dy, "start", tw);
         if (free(box, p.d.id) < 0) continue;
         placed.push(box);
         nScores += 1;
         const T = p.d.__t;
         T.score.textContent = txt;
-        T.score.setAttribute("x", dx / k); T.score.setAttribute("y", dy / k);
+        T.score.setAttribute("x", dx / k);
+        T.score.setAttribute("y", dy / k);
         T.score.setAttribute("font-size", LABEL.size / k);
         T.score.style.display = null;
-        T.leader.setAttribute("x1", (p.R * 0.71) / k); T.leader.setAttribute("y1", -(p.R * 0.71) / k);
-        T.leader.setAttribute("x2", (p.R + 7) / k); T.leader.setAttribute("y2", -(p.R + 7) / k);
+        T.leader.setAttribute("x1", (p.R * 0.71) / k);
+        T.leader.setAttribute("y1", -(p.R * 0.71) / k);
+        T.leader.setAttribute("x2", (p.R + 7) / k);
+        T.leader.setAttribute("y2", -(p.R + 7) / k);
         T.leader.setAttribute("stroke-width", 1 / k);
         T.leader.style.display = null;
-        keep.add(T.score); keep.add(T.leader);
+        keep.add(T.score);
+        keep.add(T.leader);
       }
 
       // labels, most important first, up to the room the viewport has
@@ -518,11 +744,17 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
         const right = { dx: p.R + g, dy: 4, anchor: "start" };
         const left = { dx: -(p.R + g), dy: 4, anchor: "end" };
         const len = Math.hypot(p.d.tx ?? 0, p.d.ty ?? 0);
-        const ux = len > 1 ? p.d.tx / len : 0, uy = len > 1 ? p.d.ty / len : 1;
+        const ux = len > 1 ? p.d.tx / len : 0,
+          uy = len > 1 ? p.d.ty / len : 1;
         const sideways = Math.abs(ux) > 0.35;
-        const spoke = p.d.depth === 0 || p.d.isAggregate || len < 1 ? below
-          : sideways ? { dx: Math.sign(ux) * (p.R + g), dy: uy * p.R * 0.5 + 4, anchor: ux > 0 ? "start" : "end" }
-          : (uy > 0 ? below : above);
+        const spoke =
+          p.d.depth === 0 || p.d.isAggregate || len < 1
+            ? below
+            : sideways
+              ? { dx: Math.sign(ux) * (p.R + g), dy: uy * p.R * 0.5 + 4, anchor: ux > 0 ? "start" : "end" }
+              : uy > 0
+                ? below
+                : above;
         let best = null;
         for (const c of [spoke, below, above, right, left]) {
           const box = boxOf(p.X, p.Y, c.dx, c.dy, c.anchor, tw);
@@ -536,7 +768,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
         nLabels += 1;
         const T = p.d.__t;
         T.label.textContent = txt;
-        T.label.setAttribute("x", best.c.dx / k); T.label.setAttribute("y", best.c.dy / k);
+        T.label.setAttribute("x", best.c.dx / k);
+        T.label.setAttribute("y", best.c.dy / k);
         T.label.setAttribute("text-anchor", best.c.anchor);
         T.label.setAttribute("font-size", LABEL.size / k);
         T.label.setAttribute("stroke-width", 3 / k);
@@ -548,17 +781,26 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       shown.clear();
       for (const e of keep) shown.add(e);
     };
-    const scheduleAnnotate = (ms = 60) => { clearTimeout(annotateTimer); annotateTimer = setTimeout(annotate, ms); };
+    const scheduleAnnotate = (ms = 60) => {
+      clearTimeout(annotateTimer);
+      annotateTimer = setTimeout(annotate, ms);
+    };
     annotateRef.current = scheduleAnnotate;
 
-    const zoom = d3.zoom()
+    const zoom = d3
+      .zoom()
       .scaleExtent([ZOOM_MIN, ZOOM_MAX])
-      .extent(() => [[0, 0], [svgRef.current?.clientWidth || W, svgRef.current?.clientHeight || H]])
-      .on("start", e => { if (e.sourceEvent) userZoomed.current = true; })
-      .on("zoom", e => {
+      .extent(() => [
+        [0, 0],
+        [svgRef.current?.clientWidth || W, svgRef.current?.clientHeight || H],
+      ])
+      .on("start", (e) => {
+        if (e.sourceEvent) userZoomed.current = true;
+      })
+      .on("zoom", (e) => {
         transformRef.current = e.transform;
         container.attr("transform", e.transform);
-        setZoomK(prev => (Math.abs(prev - e.transform.k) / prev > 0.005 ? e.transform.k : prev));
+        setZoomK((prev) => (Math.abs(prev - e.transform.k) / prev > 0.005 ? e.transform.k : prev));
         scheduleDraw();
         scheduleCull();
         scheduleAnnotate();
@@ -572,11 +814,13 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const fitToView = () => {
       const pts = [];
       for (const n of nodeMapRef.current.values()) {
-        const x = n.gx ?? n.x, y = n.gy ?? n.y;
+        const x = n.gx ?? n.x,
+          y = n.gy ?? n.y;
         if (Number.isFinite(x) && Number.isFinite(y)) pts.push({ x, y });
       }
       if (pts.length === 0 || !zoomRef.current) return;
-      const w = svgRef.current.clientWidth || W, h = svgRef.current.clientHeight || H;
+      const w = svgRef.current.clientWidth || W,
+        h = svgRef.current.clientHeight || H;
       const { k, tx, ty } = fitTransform(pts, w, h);
       svg.transition().duration(300).call(zoomRef.current.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
     };
@@ -588,21 +832,31 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     // on themselves: that is what made folding and unfolding messy.)
     const engine = { raf: 0, start: 0, dur: 0 };
     const paint = () => {
-      container.select(".nodes").selectAll("g.node-group").attr("transform", d => `translate(${d.x},${d.y})`);
+      container
+        .select(".nodes")
+        .selectAll("g.node-group")
+        .attr("transform", (d) => `translate(${d.x},${d.y})`);
       // Ghosts ride along their parent, fanned out at a small fixed radius.
-      container.select(".ghosts").selectAll("g.ghost-group")
+      container
+        .select(".ghosts")
+        .selectAll("g.ghost-group")
         .attr("transform", (d) => {
           const parent = nodeMapRef.current.get(d.parent_id);
-          const px = parent?.x ?? 0, py = parent?.y ?? 0;
+          const px = parent?.x ?? 0,
+            py = parent?.y ?? 0;
           const siblings = ghostsByParentRef.current.get(d.parent_id) || [d];
-          const idx = siblings.findIndex(s => ghostKey(s) === ghostKey(d));
+          const idx = siblings.findIndex((s) => ghostKey(s) === ghostKey(d));
           const angle = (2 * Math.PI * Math.max(idx, 0)) / Math.max(siblings.length, 1) - Math.PI / 2;
           const r = 24;
           return `translate(${px + r * Math.cos(angle)},${py + r * Math.sin(angle)})`;
         });
       scheduleDraw();
     };
-    const finish = () => { if (!userZoomed.current) fitToView(); scheduleCull(); scheduleAnnotate(0); };
+    const finish = () => {
+      if (!userZoomed.current) fitToView();
+      scheduleCull();
+      scheduleAnnotate(0);
+    };
     const step = (now) => {
       const p = engine.dur ? Math.min(1, (now - engine.start) / engine.dur) : 1;
       const e = 1 - Math.pow(1 - p, 3);
@@ -612,7 +866,11 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
         n.y = n.y0 + (n.gy - n.y0) * e;
       }
       paint();
-      if (p < 1) engine.raf = requestAnimationFrame(step); else { engine.raf = 0; finish(); }
+      if (p < 1) engine.raf = requestAnimationFrame(step);
+      else {
+        engine.raf = 0;
+        finish();
+      }
     };
     engineRef.current = {
       // Point every page at its new goal and move there over `dur` ms (0 places them at once).
@@ -620,11 +878,17 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
         const { x: cx, y: cy } = centerRef.current;
         for (const n of nodeMapRef.current.values()) {
           if (n.tx == null) continue;
-          n.gx = cx + n.tx; n.gy = cy + n.ty;
-          if (!Number.isFinite(n.x)) { n.x = n.gx; n.y = n.gy; }
-          n.x0 = n.x; n.y0 = n.y;
+          n.gx = cx + n.tx;
+          n.gy = cy + n.ty;
+          if (!Number.isFinite(n.x)) {
+            n.x = n.gx;
+            n.y = n.gy;
+          }
+          n.x0 = n.x;
+          n.y0 = n.y;
         }
-        engine.dur = dur; engine.start = performance.now();
+        engine.dur = dur;
+        engine.start = performance.now();
         if (!userZoomed.current) fitToView();
         if (!engine.raf) engine.raf = requestAnimationFrame(step);
       },
@@ -633,37 +897,69 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       zoomBy(factor) {
         const el = svgRef.current;
         userZoomed.current = true;
-        svg.transition().duration(180).call(zoomRef.current.scaleBy, factor, [el.clientWidth / 2, el.clientHeight / 2]);
+        svg
+          .transition()
+          .duration(180)
+          .call(zoomRef.current.scaleBy, factor, [el.clientWidth / 2, el.clientHeight / 2]);
       },
-      fit() { userZoomed.current = false; fitToView(); },
+      fit() {
+        userZoomed.current = false;
+        fitToView();
+      },
       focusOn(id) {
         const n = nodeMapRef.current.get(id);
         const el = svgRef.current;
         if (!n || !Number.isFinite(n.x)) return;
         const k = Math.min(ZOOM_MAX, Math.max(transformRef.current.k, 1));
         userZoomed.current = true;
-        svg.transition().duration(300).call(zoomRef.current.transform, d3.zoomIdentity.translate(el.clientWidth / 2 - k * n.x, el.clientHeight / 2 - k * n.y).scale(k));
+        svg
+          .transition()
+          .duration(300)
+          .call(
+            zoomRef.current.transform,
+            d3.zoomIdentity.translate(el.clientWidth / 2 - k * n.x, el.clientHeight / 2 - k * n.y).scale(k),
+          );
       },
-      stop() { if (engine.raf) cancelAnimationFrame(engine.raf); engine.raf = 0; },
+      stop() {
+        if (engine.raf) cancelAnimationFrame(engine.raf);
+        engine.raf = 0;
+      },
     };
 
     // Docking the annotation panel narrows the canvas: keep the graph centred in what is left.
     let resizeTimer;
-    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => { if (!userZoomed.current) fitToView(); scheduleDraw(); scheduleAnnotate(); }, 120);
-    });
+    const ro =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(() => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+              if (!userZoomed.current) fitToView();
+              scheduleDraw();
+              scheduleAnnotate();
+            }, 120);
+          });
     ro?.observe(svgRef.current);
-    cleanupRef.current = () => { ro?.disconnect(); clearTimeout(resizeTimer); clearTimeout(annotateTimer); engineRef.current?.stop(); };
+    cleanupRef.current = () => {
+      ro?.disconnect();
+      clearTimeout(resizeTimer);
+      clearTimeout(annotateTimer);
+      engineRef.current?.stop();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => () => { cleanupRef.current?.(); }, []);
+  useEffect(
+    () => () => {
+      cleanupRef.current?.();
+    },
+    [],
+  );
 
   // ── Sync node/edge data ────────────────────────────────────────────────────
   useEffect(() => {
     if (!engineRef.current || !svgRef.current) return;
 
-    const svg       = d3.select(svgRef.current);
+    const svg = d3.select(svgRef.current);
     const container = svg.select(".container");
 
     // Scrubbing the replay (or folding) removes nodes from the view: drop them from the
@@ -671,15 +967,19 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     for (const id of Array.from(nodeMapRef.current.keys())) {
       if (!vNodes.has(id)) nodeMapRef.current.delete(id);
     }
-    Array.from(vNodes.values()).forEach(n => {
+    Array.from(vNodes.values()).forEach((n) => {
       const known = nodeMapRef.current.get(n.node_id);
-      if (known) { Object.assign(known, n); return; }
+      if (known) {
+        Object.assign(known, n);
+        return;
+      }
       // A new page appears beside the page it was found on, so the graph grows outward
       // from its parent instead of flying in from the corner of the canvas.
       const parent = n.parent_id ? nodeMapRef.current.get(n.parent_id) : null;
-      const seeded = parent && Number.isFinite(parent.x)
-        ? { x: parent.x + (Math.random() - 0.5) * 30, y: parent.y + (Math.random() - 0.5) * 30 }
-        : {};
+      const seeded =
+        parent && Number.isFinite(parent.x)
+          ? { x: parent.x + (Math.random() - 0.5) * 30, y: parent.y + (Math.random() - 0.5) * 30 }
+          : {};
       nodeMapRef.current.set(n.node_id, { id: n.node_id, ...n, ...seeded });
     });
     const d3Nodes = Array.from(nodeMapRef.current.values());
@@ -691,7 +991,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     d3Nodes.forEach((n) => {
       const t = targets.get(n.id);
       if (t) {
-        n.tx = t.x; n.ty = t.y;
+        n.tx = t.x;
+        n.ty = t.y;
       }
       n.imp = n.isAggregate ? AGGREGATE_IMPORTANCE : importanceOf(n, depths.get(n.id) ?? 0, maxPriority);
       n.__rel = n.isAggregate ? null : relevanceOf(n, maxPriority);
@@ -700,7 +1001,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const d3Links = [];
     for (const e of vEdges) {
       const [src, tgt] = e.split("→");
-      const source = nodeMapRef.current.get(src), target = nodeMapRef.current.get(tgt);
+      const source = nodeMapRef.current.get(src),
+        target = nodeMapRef.current.get(tgt);
       if (source && target) d3Links.push({ source, target, id: e });
     }
     linksRef.current = d3Links;
@@ -719,55 +1021,86 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const matchesSearch = (d) => !searchLower || (d.url || "").toLowerCase().includes(searchLower);
 
     // ── Candidate ghosts ────────────────────────────────────
-    const ghostSel = container.select(".ghosts").selectAll("g.ghost-group")
-      .data(liveCandidates, ghostKey);
+    const ghostSel = container.select(".ghosts").selectAll("g.ghost-group").data(liveCandidates, ghostKey);
 
-    const ghostEnter = ghostSel.enter().append("g")
-      .attr("class", "ghost-group")
-      .style("cursor", "default");
+    const ghostEnter = ghostSel.enter().append("g").attr("class", "ghost-group").style("cursor", "default");
 
     // Dropped = hollow dashed square; trusted (no LLM) = filled diamond.
-    ghostEnter.append("path")
-      .attr("d", d => d3.symbol().type(d.decision === "dropped" ? d3.symbolSquare : d3.symbolDiamond).size(0)())
-      .attr("fill", d => d.decision === "dropped" ? theme.colors.background.primary : theme.colors.state.TRUSTED)
-      .attr("stroke", d => theme.colors.state.label[d.decision === "dropped" ? "DROPPED" : "TRUSTED"])
+    ghostEnter
+      .append("path")
+      .attr("d", (d) =>
+        d3
+          .symbol()
+          .type(d.decision === "dropped" ? d3.symbolSquare : d3.symbolDiamond)
+          .size(0)(),
+      )
+      .attr("fill", (d) => (d.decision === "dropped" ? theme.colors.background.primary : theme.colors.state.TRUSTED))
+      .attr("stroke", (d) => theme.colors.state.label[d.decision === "dropped" ? "DROPPED" : "TRUSTED"])
       .attr("stroke-width", 1)
-      .attr("stroke-dasharray", d => d.decision === "dropped" ? "2 1.5" : null)
+      .attr("stroke-dasharray", (d) => (d.decision === "dropped" ? "2 1.5" : null))
       .attr("opacity", 0)
-      .transition().duration(300)
-      .attr("d", d => d3.symbol().type(d.decision === "dropped" ? d3.symbolSquare : d3.symbolDiamond).size(d.decision === "dropped" ? 34 : 46)())
+      .transition()
+      .duration(300)
+      .attr("d", (d) =>
+        d3
+          .symbol()
+          .type(d.decision === "dropped" ? d3.symbolSquare : d3.symbolDiamond)
+          .size(d.decision === "dropped" ? 34 : 46)(),
+      )
       .attr("opacity", 1);
 
-    ghostEnter.append("title")
-      .text(d => `${d.decision === "dropped" ? "Skipped: judged off-topic" : "Followed on NLP alone, no LLM call"} (NLP score ${(d.nlp_score ?? 0).toFixed(2)})\n${d.url}`);
+    ghostEnter
+      .append("title")
+      .text(
+        (d) =>
+          `${d.decision === "dropped" ? "Skipped: judged off-topic" : "Followed on NLP alone, no LLM call"} (NLP score ${(d.nlp_score ?? 0).toFixed(2)})\n${d.url}`,
+      );
 
-    ghostSel.exit()
-      .select("path").transition().duration(200).attr("opacity", 0);
+    ghostSel.exit().select("path").transition().duration(200).attr("opacity", 0);
     ghostSel.exit().transition().delay(200).remove();
 
     // ── Nodes ─────────────────────────────────────────────
-    const nodeSel = container.select(".nodes").selectAll("g.node-group").data(d3Nodes, d => d.id);
+    const nodeSel = container
+      .select(".nodes")
+      .selectAll("g.node-group")
+      .data(d3Nodes, (d) => d.id);
 
     const radius = radiusOf;
     const relOf = (d) => (d.isAggregate ? null : relevanceOf(d, maxPriority));
     const activate = (d) => {
       if (d.isAggregate) {
-        setExpanded(prev => { const next = new Set(prev); next.add(d.parent_id); return next; });
+        setExpanded((prev) => {
+          const next = new Set(prev);
+          next.add(d.parent_id);
+          return next;
+        });
       } else if (onNodeClick) {
         onNodeClick({ node_id: d.node_id ?? d.id, ...d });
       }
     };
 
-    const nodeEnter = nodeSel.enter().append("g")
+    const nodeEnter = nodeSel
+      .enter()
+      .append("g")
       .attr("class", "node-group")
       .style("cursor", "pointer")
       .call(
-        d3.drag()
-          .clickDistance(4)   // a click is not a drag: do not reheat the layout for it
-          .on("start", (e, d) => { d.dragging = true; })
-          .on("drag", (e, d) => { d.x = e.x; d.y = e.y; engineRef.current.paint(); })
+        d3
+          .drag()
+          .clickDistance(4) // a click is not a drag: do not reheat the layout for it
+          .on("start", (e, d) => {
+            d.dragging = true;
+          })
+          .on("drag", (e, d) => {
+            d.x = e.x;
+            d.y = e.y;
+            engineRef.current.paint();
+          })
           // Let go and the page returns to its place in the tree.
-          .on("end", (e, d) => { d.dragging = false; engineRef.current.retarget(250); })
+          .on("end", (e, d) => {
+            d.dragging = false;
+            engineRef.current.retarget(250);
+          }),
       )
       .attr("role", "button")
       .on("keydown", (event, d) => {
@@ -776,7 +1109,9 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
           activate(d);
         } else keyNavRef.current(event, d);
       })
-      .on("focus", (event, d) => { roverRef.current = d.id; })
+      .on("focus", (event, d) => {
+        roverRef.current = d.id;
+      })
       .on("click", (event, d) => {
         event.stopPropagation();
         roverRef.current = d.id;
@@ -787,13 +1122,16 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     // = the crawler judged this link more promising.
     nodeEnter.append("circle").attr("class", "relevance-ring").attr("fill", "none");
 
-    nodeEnter.append("circle")
+    nodeEnter
+      .append("circle")
       .attr("class", "body")
       .attr("r", 0)
-      .transition().duration(animate ? 500 : 0)
+      .transition()
+      .duration(animate ? 500 : 0)
       .attr("r", radius);
 
-    nodeEnter.append("circle")
+    nodeEnter
+      .append("circle")
       .attr("class", "selection-ring")
       .attr("r", 0)
       .attr("fill", "none")
@@ -802,7 +1140,8 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       .attr("stroke-dasharray", "3 2")
       .attr("opacity", 0);
 
-    nodeEnter.append("text")
+    nodeEnter
+      .append("text")
       .attr("class", "label")
       .attr("text-anchor", "middle")
       .attr("font-size", 12)
@@ -814,14 +1153,16 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       .attr("pointer-events", "none")
       .style("display", "none");
 
-    nodeEnter.append("line")
+    nodeEnter
+      .append("line")
       .attr("class", "leader")
       .attr("stroke", REL.mark)
       .attr("stroke-width", 1)
       .attr("pointer-events", "none")
       .style("display", "none");
 
-    nodeEnter.append("text")
+    nodeEnter
+      .append("text")
       .attr("class", "score")
       .attr("text-anchor", "start")
       .attr("font-size", 12)
@@ -832,31 +1173,43 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       .style("display", "none");
 
     const nodeAll = nodeEnter.merge(nodeSel);
-    const vis = (d) => matchesSearch(d) ? dimmed(d.node_id ?? d.id) : 0.1;
+    const vis = (d) => (matchesSearch(d) ? dimmed(d.node_id ?? d.id) : 0.1);
 
     // Ring weight, like every rule, is in screen pixels (see global.css): it does not thin out as the plate zooms out.
-    nodeAll.select("circle.relevance-ring")
-      .attr("r", d => radius(d) + 3.5)
+    nodeAll
+      .select("circle.relevance-ring")
+      .attr("r", (d) => radius(d) + 3.5)
       .attr("stroke", REL.mark)
-      .attr("stroke-width", d => { const r = relOf(d); return r == null ? 0 : 0.75 + r * 3.25; })
-      .attr("stroke-opacity", d => { const r = relOf(d); return r == null ? 0 : 0.35 + r * 0.65; })
+      .attr("stroke-width", (d) => {
+        const r = relOf(d);
+        return r == null ? 0 : 0.75 + r * 3.25;
+      })
+      .attr("stroke-opacity", (d) => {
+        const r = relOf(d);
+        return r == null ? 0 : 0.35 + r * 0.65;
+      })
       .attr("opacity", vis);
 
-    nodeAll.select("circle.body")
+    nodeAll
+      .select("circle.body")
       .attr("r", radius)
-      .attr("fill", d => fillFor(d))
-      .attr("stroke", d => d.isAggregate ? theme.colors.text.secondary : (theme.colors.state.label[d.state] || theme.colors.text.secondary))
-      .attr("stroke-width", d => d.state === "EXPANDED" ? 2 : 1)
-      .attr("stroke-dasharray", d => d.isAggregate ? "3 2" : null)
+      .attr("fill", (d) => fillFor(d))
+      .attr("stroke", (d) =>
+        d.isAggregate ? theme.colors.text.secondary : theme.colors.state.label[d.state] || theme.colors.text.secondary,
+      )
+      .attr("stroke-width", (d) => (d.state === "EXPANDED" ? 2 : 1))
+      .attr("stroke-dasharray", (d) => (d.isAggregate ? "3 2" : null))
       .attr("opacity", vis);
 
-    nodeAll.select(".selection-ring")
-      .attr("r", d => radius(d) + 9)
-      .attr("opacity", d => (d.node_id ?? d.id) === selectedNodeId ? 1 : 0);
+    nodeAll
+      .select(".selection-ring")
+      .attr("r", (d) => radius(d) + 9)
+      .attr("opacity", (d) => ((d.node_id ?? d.id) === selectedNodeId ? 1 : 0));
 
     // What a page says when focused: where it points, how far it got, how promising it looked.
     const childCount = new Map();
-    for (const n of nodeMapRef.current.values()) if (n.parent_id) childCount.set(n.parent_id, (childCount.get(n.parent_id) ?? 0) + 1);
+    for (const n of nodeMapRef.current.values())
+      if (n.parent_id) childCount.set(n.parent_id, (childCount.get(n.parent_id) ?? 0) + 1);
     const spoken = (d) => {
       if (d.isAggregate) return `Show ${d.count} more pages`;
       const url = d.url || d.node_id || d.id;
@@ -874,43 +1227,59 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
       return parts.join(", ");
     };
     // One tab stop for the whole plate: the selected page, else the one last focused, else the seed.
-    const ids = new Set(d3Nodes.map(n => n.id));
+    const ids = new Set(d3Nodes.map((n) => n.id));
     if (!ids.has(roverRef.current)) roverRef.current = null;
     if (selectedNodeId && ids.has(selectedNodeId)) roverRef.current = selectedNodeId;
-    if (!roverRef.current) roverRef.current = (d3Nodes.find(n => !n.parent_id || n.depth === 0) ?? d3Nodes[0])?.id ?? null;
+    if (!roverRef.current)
+      roverRef.current = (d3Nodes.find((n) => !n.parent_id || n.depth === 0) ?? d3Nodes[0])?.id ?? null;
     nodeAll
-      .attr("data-node-id", d => d.id)
-      .attr("tabindex", d => (d.id === roverRef.current ? 0 : -1))
+      .attr("data-node-id", (d) => d.id)
+      .attr("tabindex", (d) => (d.id === roverRef.current ? 0 : -1))
       .attr("aria-label", spoken)
-      .attr("aria-current", d => ((d.node_id ?? d.id) === selectedNodeId ? "true" : null));
+      .attr("aria-current", (d) => ((d.node_id ?? d.id) === selectedNodeId ? "true" : null));
 
     // Handles for the annotation pass, and the page's visibility for it.
     nodeAll.each(function (d) {
-      d.__t = { label: this.querySelector("text.label"), score: this.querySelector("text.score"), leader: this.querySelector("line.leader") };
+      d.__t = {
+        label: this.querySelector("text.label"),
+        score: this.querySelector("text.score"),
+        leader: this.querySelector("line.leader"),
+      };
       d.__vis = vis(d);
-      d.__t.label.setAttribute("opacity", d.__vis); d.__t.score.setAttribute("opacity", d.__vis);
+      d.__t.label.setAttribute("opacity", d.__vis);
+      d.__t.score.setAttribute("opacity", d.__vis);
     });
 
     nodeSel.exit().remove();
     drawRef.current();
     cullRef.current();
     annotateRef.current(120);
-
-  }, [vNodes, vEdges, liveCandidates, onNodeClick, selectedNodeId, maxPriority, neighborhood, searchLower, animate, ghostCounts]);
+  }, [
+    vNodes,
+    vEdges,
+    liveCandidates,
+    onNodeClick,
+    selectedNodeId,
+    maxPriority,
+    neighborhood,
+    searchLower,
+    animate,
+    ghostCounts,
+  ]);
 
   // Arrow keys walk the tree from the focused page. Siblings are ordered around the plate.
   keyNavRef.current = (event, d) => {
     const map = nodeMapRef.current;
     const angle = (n) => Math.atan2(n.ty ?? 0, n.tx ?? 0);
-    const kids = (id) => [...map.values()].filter(n => n.parent_id === id).sort((a, b) => angle(a) - angle(b));
+    const kids = (id) => [...map.values()].filter((n) => n.parent_id === id).sort((a, b) => angle(a) - angle(b));
     let next = null;
     if (event.key === "ArrowUp") next = d.parent_id ? map.get(d.parent_id) : null;
     else if (event.key === "ArrowDown") next = kids(d.id)[0] ?? null;
     else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      const sibs = d.parent_id ? kids(d.parent_id) : [...map.values()].filter(n => !n.parent_id);
-      const i = sibs.findIndex(n => n.id === d.id);
+      const sibs = d.parent_id ? kids(d.parent_id) : [...map.values()].filter((n) => !n.parent_id);
+      const i = sibs.findIndex((n) => n.id === d.id);
       if (sibs.length > 1) next = sibs[(i + (event.key === "ArrowRight" ? 1 : -1) + sibs.length) % sibs.length];
-    } else if (event.key === "Home") next = [...map.values()].find(n => !n.parent_id) ?? null;
+    } else if (event.key === "Home") next = [...map.values()].find((n) => !n.parent_id) ?? null;
     else return;
     event.preventDefault();
     if (!next) return;
@@ -922,13 +1291,14 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
     const svg = svgRef.current;
     const el = svg?.querySelector(`g.node-group[data-node-id="${CSS.escape(String(id))}"]`);
     if (!el) return;
-    svg.querySelectorAll('g.node-group[tabindex="0"]').forEach(g => g.setAttribute("tabindex", "-1"));
+    svg.querySelectorAll('g.node-group[tabindex="0"]').forEach((g) => g.setAttribute("tabindex", "-1"));
     el.setAttribute("tabindex", "0");
     roverRef.current = id;
     const n = nodeMapRef.current.get(id);
     const t = transformRef.current;
     if (n && Number.isFinite(n.x)) {
-      const X = n.x * t.k + t.x, Y = n.y * t.k + t.y;
+      const X = n.x * t.k + t.x,
+        Y = n.y * t.k + t.y;
       if (X < 24 || Y < 24 || X > svg.clientWidth - 24 || Y > svg.clientHeight - 24) engineRef.current?.focusOn(id);
     }
     if (el.style.display === "none") el.style.display = null;
@@ -940,50 +1310,79 @@ export default function GraphView({ nodes, edges, candidates = [], replayIndex, 
   const onGraphKey = (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const t = e.target;
-    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable))
+      return;
     const eng = engineRef.current;
     if (!eng) return;
-    if (e.key === "+" || e.key === "=") { e.preventDefault(); eng.zoomBy(ZOOM_STEP); }
-    else if (e.key === "-" || e.key === "_") { e.preventDefault(); eng.zoomBy(1 / ZOOM_STEP); }
-    else if (e.key === "0") { e.preventDefault(); eng.fit(); }
-    else if ((e.key === "f" || e.key === "F") && selectedRef.current) { e.preventDefault(); eng.focusOn(selectedRef.current); }
+    if (e.key === "+" || e.key === "=") {
+      e.preventDefault();
+      eng.zoomBy(ZOOM_STEP);
+    } else if (e.key === "-" || e.key === "_") {
+      e.preventDefault();
+      eng.zoomBy(1 / ZOOM_STEP);
+    } else if (e.key === "0") {
+      e.preventDefault();
+      eng.fit();
+    } else if ((e.key === "f" || e.key === "F") && selectedRef.current) {
+      e.preventDefault();
+      eng.focusOn(selectedRef.current);
+    }
   };
 
-  const fold = auto.folded ? {
-    folded: folding,
-    shown: dNodes.size - auto.hidden,
-    total: dNodes.size,
-    onToggle: () => { userZoomed.current = false; setShowAll(v => !v); setExpanded(new Set()); },
-  } : null;
+  const fold = auto.folded
+    ? {
+        folded: folding,
+        shown: dNodes.size - auto.hidden,
+        total: dNodes.size,
+        onToggle: () => {
+          userZoomed.current = false;
+          setShowAll((v) => !v);
+          setExpanded(new Set());
+        },
+      }
+    : null;
 
   return (
     <div style={styles.graphWrap} onKeyDown={onGraphKey}>
       {heading && <h1 className="sr-only">{heading}</h1>}
       {/* The toolbar comes first in the tab order, as it reads on screen: find, then the plate. */}
-      {nodes.size > 0 && <GraphControls
-        showCandidates={showCandidates} onToggleCandidates={setShowCandidates}
-        candidateCount={liveCandidates.length}
-        search={search} onSearch={setSearch} fold={fold} matches={matchCount}
-        annotation={selectedNodeId && annotationId ? annotationId : null}
-      />}
-      <canvas ref={canvasRef} aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+      {nodes.size > 0 && (
+        <GraphControls
+          showCandidates={showCandidates}
+          onToggleCandidates={setShowCandidates}
+          candidateCount={liveCandidates.length}
+          search={search}
+          onSearch={setSearch}
+          fold={fold}
+          matches={matchCount}
+          annotation={selectedNodeId && annotationId ? annotationId : null}
+        />
+      )}
+      <canvas
+        ref={canvasRef}
+        aria-hidden="true"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+      />
       <svg
-        ref={svgRef} style={{ ...styles.graphSvg, position: "relative" }}
-        role="group" aria-roledescription="crawl graph"
+        ref={svgRef}
+        style={{ ...styles.graphSvg, position: "relative" }}
+        role="group"
+        aria-roledescription="crawl graph"
         aria-label={`${nodes.size.toLocaleString()} ${nodes.size === 1 ? "page" : "pages"}. Arrow keys move between linked pages, Enter selects, plus and minus zoom.`}
       />
       {nodes.size > 0 && <Legend />}
       {nodes.size > 0 && (
         <ZoomControls
-          k={zoomK} canFocus={!!selectedNodeId}
-          onIn={() => engineRef.current?.zoomBy(ZOOM_STEP)} onOut={() => engineRef.current?.zoomBy(1 / ZOOM_STEP)}
-          onFit={() => engineRef.current?.fit()} onFocus={() => selectedNodeId && engineRef.current?.focusOn(selectedNodeId)}
+          k={zoomK}
+          canFocus={!!selectedNodeId}
+          onIn={() => engineRef.current?.zoomBy(ZOOM_STEP)}
+          onOut={() => engineRef.current?.zoomBy(1 / ZOOM_STEP)}
+          onFit={() => engineRef.current?.fit()}
+          onFocus={() => selectedNodeId && engineRef.current?.focusOn(selectedNodeId)}
         />
       )}
       {replayIndex !== null && replayIndex !== undefined && (
-        <div style={styles.replayBadge}>
-          Replaying · event {replayIndex + 1}
-        </div>
+        <div style={styles.replayBadge}>Replaying · event {replayIndex + 1}</div>
       )}
     </div>
   );

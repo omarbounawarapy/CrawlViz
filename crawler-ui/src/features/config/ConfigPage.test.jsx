@@ -17,10 +17,19 @@ vi.mock("../../api/client", () => ({
   removeKey: vi.fn(() => Promise.resolve({ removed: "abc" })),
   crawlStatus: vi.fn(() => Promise.resolve({ running: true })),
   patchLiveConfig: vi.fn(() => Promise.resolve({})),
-  fetchPresets: vi.fn(() => Promise.resolve({
-    builtin: { polite: {} }, user: { mine: {} },
-    goals: { gentler: { label: "Gentler on a site", description: "Waits longer between requests.", values: { fetch: { min_delay: 2 } } } },
-  })),
+  fetchPresets: vi.fn(() =>
+    Promise.resolve({
+      builtin: { polite: {} },
+      user: { mine: {} },
+      goals: {
+        gentler: {
+          label: "Gentler on a site",
+          description: "Waits longer between requests.",
+          values: { fetch: { min_delay: 2 } },
+        },
+      },
+    }),
+  ),
   applyPreset: vi.fn(() => Promise.resolve({ ...defaults, fetch: { ...defaults.fetch, min_delay: 2 } })),
   savePreset: vi.fn(() => Promise.resolve({ saved: "x" })),
   deletePreset: vi.fn(() => Promise.resolve({ removed: "mine" })),
@@ -33,10 +42,15 @@ vi.mock("../../api/client", () => ({
 import * as api from "../../api/client";
 import ConfigPage from "./ConfigPage";
 
-beforeEach(() => { vi.clearAllMocks(); window.location.hash = ""; });
+beforeEach(() => {
+  vi.clearAllMocks();
+  window.location.hash = "";
+});
 afterEach(cleanup);
 
-const at = (slug) => { window.location.hash = `#/config/${slug}`; };
+const at = (slug) => {
+  window.location.hash = `#/config/${slug}`;
+};
 
 const type = (el, v) => fireEvent.change(el, { target: { value: v } });
 
@@ -75,7 +89,9 @@ describe("ConfigPage", () => {
     expect(none.checked).toBe(true);
     fireEvent.click(none);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    await waitFor(() => expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { max_queue_size: 100 } } }));
+    await waitFor(() =>
+      expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { max_queue_size: 100 } } }),
+    );
   });
 
   it("shows one section at a time and marks it current", async () => {
@@ -95,7 +111,9 @@ describe("ConfigPage", () => {
     render(<ConfigPage />);
     expect(await screen.findByRole("heading", { name: "Gentler on a site" })).toBeTruthy();
     const nav = screen.getByRole("navigation", { name: "Configuration sections" });
-    const names = within(nav).getAllByRole("link").map((a) => a.textContent);
+    const names = within(nav)
+      .getAllByRole("link")
+      .map((a) => a.textContent);
     expect(names.slice(0, 4)).toEqual(["Start here", "Scoring cascade", "Fetch", "Priority"]);
   });
 
@@ -166,7 +184,9 @@ describe("ConfigPage", () => {
 
   it("shows what a preset changes before applying it", async () => {
     api.fetchPresets.mockResolvedValueOnce({
-      builtin: { gentle: { fetch: { min_delay: 5 } } }, descriptions: { gentle: "Slow and kind." }, user: {},
+      builtin: { gentle: { fetch: { min_delay: 5 } } },
+      descriptions: { gentle: "Slow and kind." },
+      user: {},
     });
     at("presets");
     render(<ConfigPage />);

@@ -10,9 +10,14 @@ const { text, background, accent } = theme.colors;
 // The border is a control boundary, so it keeps 3:1 against the page (WCAG 1.4.11).
 // minHeight, not height: text spacing overrides must not clip the value (1.4.12).
 const control = {
-  width: "100%", minHeight: 34, padding: "0 10px", fontSize: 14,
-  background: background.panel, color: text.primary,
-  border: `1px solid ${theme.colors.control}`, borderRadius: theme.radii.sm,
+  width: "100%",
+  minHeight: 34,
+  padding: "0 10px",
+  fontSize: 14,
+  background: background.panel,
+  color: text.primary,
+  border: `1px solid ${theme.colors.control}`,
+  borderRadius: theme.radii.sm,
 };
 const invalidBorder = { border: `1px solid ${accent.red}` };
 
@@ -24,7 +29,10 @@ export function Field({ label, hint, error, id, children }) {
   const describedBy = error ? `${fieldId}-err` : hint ? `${fieldId}-hint` : undefined;
   return (
     <div style={{ marginBottom: 14, minWidth: 0 }}>
-      <label htmlFor={fieldId} style={{ display: "block", fontSize: 13, fontWeight: 600, color: text.primary, marginBottom: 4 }}>
+      <label
+        htmlFor={fieldId}
+        style={{ display: "block", fontSize: 13, fontWeight: 600, color: text.primary, marginBottom: 4 }}
+      >
         {label}
       </label>
       {(() => {
@@ -32,8 +40,16 @@ export function Field({ label, hint, error, id, children }) {
         if (typeof children === "function") return children(a);
         return isValidElement(children) ? cloneElement(children, a) : children;
       })()}
-      {hint && !error && <div id={`${fieldId}-hint`} style={{ fontSize: 13, color: text.muted, marginTop: 4 }}>{hint}</div>}
-      {error && <div id={`${fieldId}-err`} style={{ fontSize: 13, color: accent.red, marginTop: 4 }}>{error}</div>}
+      {hint && !error && (
+        <div id={`${fieldId}-hint`} style={{ fontSize: 13, color: text.muted, marginTop: 4 }}>
+          {hint}
+        </div>
+      )}
+      {error && (
+        <div id={`${fieldId}-err`} style={{ fontSize: 13, color: accent.red, marginTop: 4 }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
@@ -43,7 +59,11 @@ export function TextInput({ invalid, style, ...rest }) {
 }
 
 export function Select({ invalid, style, children, ...rest }) {
-  return <select {...rest} style={{ ...control, cursor: "pointer", ...(invalid ? invalidBorder : null), ...style }}>{children}</select>;
+  return (
+    <select {...rest} style={{ ...control, cursor: "pointer", ...(invalid ? invalidBorder : null), ...style }}>
+      {children}
+    </select>
+  );
 }
 
 /** Two-up grid that collapses to one column on narrow screens. */
@@ -52,7 +72,11 @@ export function Grid({ children }) {
 }
 
 const BTN = {
-  minHeight: 30, padding: "0 12px", fontSize: 13, fontWeight: 600, borderRadius: theme.radii.md,
+  minHeight: 30,
+  padding: "0 12px",
+  fontSize: 13,
+  fontWeight: 600,
+  borderRadius: theme.radii.md,
   whiteSpace: "nowrap",
 };
 
@@ -62,10 +86,28 @@ export function Button({ variant = "outline", armed, style, ...rest }) {
     outline: { background: "transparent", color: text.primary, border: `1px solid ${text.primary}` },
     primary: { background: text.primary, color: background.panel, border: `1px solid ${text.primary}` },
     // Plum is for the armed, about-to-destroy state only (same as Stop crawl).
-    danger:  { background: armed ? accent.red : "transparent", color: armed ? "#fff" : text.primary, border: `1px solid ${armed ? accent.red : text.primary}` },
-    quiet:   { background: "transparent", color: text.secondary, border: "1px solid transparent", textDecoration: "underline", padding: "0 4px" },
+    danger: {
+      background: armed ? accent.red : "transparent",
+      color: armed ? "#fff" : text.primary,
+      border: `1px solid ${armed ? accent.red : text.primary}`,
+    },
+    quiet: {
+      background: "transparent",
+      color: text.secondary,
+      border: "1px solid transparent",
+      textDecoration: "underline",
+      padding: "0 4px",
+    },
   }[variant];
-  const off = rest.disabled ? { color: text.muted, border: `1px solid ${background.border}`, background: "transparent", cursor: "not-allowed", textDecoration: "none" } : null;
+  const off = rest.disabled
+    ? {
+        color: text.muted,
+        border: `1px solid ${background.border}`,
+        background: "transparent",
+        cursor: "not-allowed",
+        textDecoration: "none",
+      }
+    : null;
   return <button type="button" {...rest} style={{ ...BTN, ...v, ...off, ...style }} />;
 }
 
@@ -77,14 +119,31 @@ export function Button({ variant = "outline", armed, style, ...rest }) {
 export function ConfirmButton({ label, confirmLabel, onConfirm, ...rest }) {
   const [armed, setArmed] = useState(false);
   const ref = useRef(null);
-  useEffect(() => { if (armed) ref.current?.focus(); }, [armed]);
+  useEffect(() => {
+    if (armed) ref.current?.focus();
+  }, [armed]);
   return (
     <Button
-      {...rest} ref={ref} variant="danger" armed={armed}
+      {...rest}
+      ref={ref}
+      variant="danger"
+      armed={armed}
       aria-label={armed ? `${confirmLabel}. Press again to confirm, Escape to cancel` : rest["aria-label"]}
-      onClick={() => { if (!armed) { setArmed(true); return; } setArmed(false); onConfirm(); }}
+      onClick={() => {
+        if (!armed) {
+          setArmed(true);
+          return;
+        }
+        setArmed(false);
+        onConfirm();
+      }}
       onBlur={() => setArmed(false)}
-      onKeyDown={(e) => { if (e.key === "Escape" && armed) { e.preventDefault(); setArmed(false); } }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape" && armed) {
+          e.preventDefault();
+          setArmed(false);
+        }
+      }}
     >
       {armed ? confirmLabel : label}
     </Button>
@@ -95,7 +154,9 @@ export function ConfirmButton({ label, confirmLabel, onConfirm, ...rest }) {
 export function Tabs({ id, label, value, options, onChange }) {
   return (
     <div
-      role="tablist" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}
+      role="tablist"
+      aria-label={label}
+      style={{ display: "flex", flexWrap: "wrap", gap: 4 }}
       onKeyDown={(e) => {
         const i = options.findIndex(([optId]) => optId === value);
         const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -108,14 +169,25 @@ export function Tabs({ id, label, value, options, onChange }) {
     >
       {options.map(([optId, name]) => (
         <button
-          key={optId} type="button" role="tab" aria-selected={value === optId} tabIndex={value === optId ? 0 : -1}
-          id={`${id}-tab-${optId}`} aria-controls={value === optId ? `${id}-panel-${optId}` : undefined}
+          key={optId}
+          type="button"
+          role="tab"
+          aria-selected={value === optId}
+          tabIndex={value === optId ? 0 : -1}
+          id={`${id}-tab-${optId}`}
+          aria-controls={value === optId ? `${id}-panel-${optId}` : undefined}
           onClick={() => onChange(optId)}
           style={{
-            minHeight: 34, padding: "0 10px", background: "transparent", borderTop: "none", borderLeft: "none", borderRight: "none",
+            minHeight: 34,
+            padding: "0 10px",
+            background: "transparent",
+            borderTop: "none",
+            borderLeft: "none",
+            borderRight: "none",
             borderBottom: `2px solid ${value === optId ? text.primary : "transparent"}`,
             color: value === optId ? text.primary : text.secondary,
-            fontSize: 14, fontWeight: value === optId ? 600 : 500,
+            fontSize: 14,
+            fontWeight: value === optId ? 600 : 500,
           }}
         >
           {name}
@@ -129,9 +201,15 @@ export function Tabs({ id, label, value, options, onChange }) {
 export function Chip({ pressed, onClick, children }) {
   return (
     <button
-      type="button" aria-pressed={pressed} onClick={onClick}
+      type="button"
+      aria-pressed={pressed}
+      onClick={onClick}
       style={{
-        minHeight: 28, padding: "0 10px", fontSize: 13, fontWeight: 500, borderRadius: theme.radii.sm,
+        minHeight: 28,
+        padding: "0 10px",
+        fontSize: 13,
+        fontWeight: 500,
+        borderRadius: theme.radii.sm,
         background: pressed ? text.primary : "transparent",
         color: pressed ? background.panel : text.secondary,
         border: `1px solid ${pressed ? text.primary : theme.colors.control}`,
@@ -146,9 +224,21 @@ export function Chip({ pressed, onClick, children }) {
 export function Group({ title, onRemove, removeLabel = "Remove", children }) {
   return (
     <div style={{ borderTop: `1px solid ${theme.colors.rowBorder}`, paddingTop: 12, marginTop: 4 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, minHeight: 30 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 10,
+          minHeight: 30,
+        }}
+      >
         <span style={{ fontSize: 14, fontWeight: 600, color: text.primary }}>{title}</span>
-        {onRemove && <Button variant="quiet" onClick={onRemove}>{removeLabel}</Button>}
+        {onRemove && (
+          <Button variant="quiet" onClick={onRemove}>
+            {removeLabel}
+          </Button>
+        )}
       </div>
       {children}
     </div>
@@ -160,9 +250,23 @@ export function Group({ title, onRemove, removeLabel = "Remove", children }) {
  *  a table row, where a live region per row would read the whole table out. */
 export function Status({ ok, live = true, children }) {
   return (
-    <span role={live ? "status" : undefined} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 500, color: ok ? text.primary : accent.red }}>
+    <span
+      role={live ? "status" : undefined}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 13,
+        fontWeight: 500,
+        color: ok ? text.primary : accent.red,
+      }}
+    >
       <svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">
-        {ok ? <rect x="0.5" y="0.5" width="8" height="8" fill="currentColor" /> : <path d="M4.5 0.5 8.5 8.5H0.5Z" fill="currentColor" />}
+        {ok ? (
+          <rect x="0.5" y="0.5" width="8" height="8" fill="currentColor" />
+        ) : (
+          <path d="M4.5 0.5 8.5 8.5H0.5Z" fill="currentColor" />
+        )}
       </svg>
       {children}
     </span>

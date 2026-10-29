@@ -10,7 +10,9 @@ export async function axeViolations(node, { page = false, rules = {} } = {}) {
     resultTypes: ["violations"],
     rules: { "color-contrast": { enabled: false }, region: { enabled: page }, ...rules },
   });
-  return result.violations.map((v) => `${v.id}: ${v.help}\n    ${v.nodes.map((n) => n.target.join(" ")).join("\n    ")}`);
+  return result.violations.map(
+    (v) => `${v.id}: ${v.help}\n    ${v.nodes.map((n) => n.target.join(" ")).join("\n    ")}`,
+  );
 }
 
 /** Every <label for> must point at an element a label can name. */

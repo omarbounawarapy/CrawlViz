@@ -24,10 +24,7 @@ export default function PolitenessCard({ cfg, workers, maxRetries, latency }) {
         : `A crawl of 100 pages takes at least ${Math.round(minutes * 10) / 10} minutes at this pace`,
       "Only the fetch time: parsing, scoring and the LLM can make it slower.",
     ],
-    [
-      `Up to ${p.inFlight} requests in flight at once`,
-      "Pipelines › requests › workers.",
-    ],
+    [`Up to ${p.inFlight} requests in flight at once`, "Pipelines › requests › workers."],
     [
       `A page that keeps failing is tried up to ${p.attempts} time${p.attempts === 1 ? "" : "s"}`,
       "Retries › max request retries, plus the first try.",

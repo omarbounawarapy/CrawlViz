@@ -29,9 +29,15 @@ export function lineDiff(before = "", after = "") {
   let i = 0;
   let j = 0;
   while (i < a.length && j < b.length) {
-    if (a[i] === b[j]) { out.push({ kind: "same", text: a[i] }); i++; j++; }
-    else if (lcs[i + 1][j] >= lcs[i][j + 1]) { out.push({ kind: "del", text: a[i++] }); }
-    else { out.push({ kind: "add", text: b[j++] }); }
+    if (a[i] === b[j]) {
+      out.push({ kind: "same", text: a[i] });
+      i++;
+      j++;
+    } else if (lcs[i + 1][j] >= lcs[i][j + 1]) {
+      out.push({ kind: "del", text: a[i++] });
+    } else {
+      out.push({ kind: "add", text: b[j++] });
+    }
   }
   while (i < a.length) out.push({ kind: "del", text: a[i++] });
   while (j < b.length) out.push({ kind: "add", text: b[j++] });

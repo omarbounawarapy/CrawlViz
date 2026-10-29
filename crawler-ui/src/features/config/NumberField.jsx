@@ -15,21 +15,39 @@ const { text } = theme.colors;
  * and any `describedBy` ids are read after the value.
  */
 export default function NumberField({
-  id, value, onChange, nullable = false, unit, invalid = false, label, width = 110, integer = false, describedBy, ...rest
+  id,
+  value,
+  onChange,
+  nullable = false,
+  unit,
+  invalid = false,
+  label,
+  width = 110,
+  integer = false,
+  describedBy,
+  ...rest
 }) {
   const [raw, setRaw] = useState(null); // text while typing, so "0." and "" survive
   const uid = useId();
   const shown = raw ?? formatNumber(value);
   const bad = raw !== null && !parseNumberText(raw).ok;
   const flagged = invalid || bad;
-  const unitId = `${uid}-unit`, badId = `${uid}-bad`;
-  const describe = [rest["aria-describedby"], describedBy, unit && unitId, bad && badId].filter(Boolean).join(" ") || undefined;
+  const unitId = `${uid}-unit`,
+    badId = `${uid}-bad`;
+  const describe =
+    [rest["aria-describedby"], describedBy, unit && unitId, bad && badId].filter(Boolean).join(" ") || undefined;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
       <TextInput
         {...rest}
-        id={id} type="text" inputMode={integer ? "numeric" : "decimal"} value={shown}
-        invalid={flagged} aria-invalid={flagged || undefined} aria-label={label} aria-describedby={describe}
+        id={id}
+        type="text"
+        inputMode={integer ? "numeric" : "decimal"}
+        value={shown}
+        invalid={flagged}
+        aria-invalid={flagged || undefined}
+        aria-label={label}
+        aria-describedby={describe}
         style={{ width, maxWidth: "100%", textAlign: "right", color: bad ? theme.colors.accent.red : text.primary }}
         onChange={(e) => {
           const t = e.target.value;
@@ -41,7 +59,11 @@ export default function NumberField({
         }}
         onBlur={() => setRaw(null)}
       />
-      {unit && <span id={unitId} style={{ fontSize: 13, color: text.muted, minWidth: 18 }}>{unit}</span>}
+      {unit && (
+        <span id={unitId} style={{ fontSize: 13, color: text.muted, minWidth: 18 }}>
+          {unit}
+        </span>
+      )}
       {bad && (
         <span id={badId} style={{ flexBasis: "100%", fontSize: 13, color: theme.colors.accent.red }}>
           Enter a {integer ? "whole number, like 12" : "number, like 0.5"}.

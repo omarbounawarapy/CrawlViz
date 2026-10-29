@@ -15,21 +15,21 @@ export const MAX_CANDIDATES = 4000;
 export const MAX_ERRORS = 1000;
 
 export const INITIAL_STATE = {
-  nodes:        new Map(),  // node_id → NodeRecord
-  edges:        new Set(),  // "parent_id→child_id" strings
-  metrics:      null,
-  status:       "CONNECTING",   // crawl lifecycle: CONNECTING | RUNNING | STOPPED
-  stop_reason:  null,
-  eventLog:     [],         // append-only; used for replay
+  nodes: new Map(), // node_id → NodeRecord
+  edges: new Set(), // "parent_id→child_id" strings
+  metrics: null,
+  status: "CONNECTING", // crawl lifecycle: CONNECTING | RUNNING | STOPPED
+  stop_reason: null,
+  eventLog: [], // append-only; used for replay
   _replayIndex: null,
-  _checkpoints: [],         // [{ index, state }] periodic full-state snapshots for O(1)-ish seeking
+  _checkpoints: [], // [{ index, state }] periodic full-state snapshots for O(1)-ish seeking
 
   // V2 additions
-  connectionStatus: "CONNECTING",  // socket health: CONNECTING | CONNECTED | DISCONNECTED
-                                     // -- deliberately separate from `status` (crawl
-                                     // lifecycle)
-  pipelineStats: {},   // stage -> { started, completed, failed, queue_size, last_duration_ms, avg_duration_ms }
-  candidates:    [],   // flat, most-recent-last, bounded to MAX_CANDIDATES
-  nodeDetails:   {},   // node_id -> { nlp_score, nlp_breakdown, llm_score, priority, priority_strategy }
-  errors:        [],   // flat, most-recent-last, bounded to MAX_ERRORS
+  connectionStatus: "CONNECTING", // socket health: CONNECTING | CONNECTED | DISCONNECTED
+  // -- deliberately separate from `status` (crawl
+  // lifecycle)
+  pipelineStats: {}, // stage -> { started, completed, failed, queue_size, last_duration_ms, avg_duration_ms }
+  candidates: [], // flat, most-recent-last, bounded to MAX_CANDIDATES
+  nodeDetails: {}, // node_id -> { nlp_score, nlp_breakdown, llm_score, priority, priority_strategy }
+  errors: [], // flat, most-recent-last, bounded to MAX_ERRORS
 };

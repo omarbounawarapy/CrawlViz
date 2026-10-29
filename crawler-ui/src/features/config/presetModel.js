@@ -11,16 +11,19 @@ export function flatten(values, prefix = "") {
   });
 }
 
-export const shown = (v) => (v === null || v === undefined ? "no limit" : typeof v === "boolean" ? (v ? "on" : "off") : String(v));
+export const shown = (v) =>
+  v === null || v === undefined ? "no limit" : typeof v === "boolean" ? (v ? "on" : "off") : String(v);
 
 // A 0-1 slider with no unit is a fraction: people read it as a percentage, as the control draws it.
-const isFraction = (field) => Boolean(field) && field.widget === "slider" && field.minimum === 0
-  && field.maximum === 1 && field.unit === "";
+const isFraction = (field) =>
+  Boolean(field) && field.widget === "slider" && field.minimum === 0 && field.maximum === 1 && field.unit === "";
 
 // A path as the page names it: a pipeline's key reads as its stage name, as the Pipelines table shows it.
-const labelPath = (path) => path.split(".").map((part, i, all) => (
-  all[0] === "pipelines" && i === 1 ? (STAGE_NAMES[part] ?? humanize(part)) : humanize(part)
-)).join(" › ");
+const labelPath = (path) =>
+  path
+    .split(".")
+    .map((part, i, all) => (all[0] === "pipelines" && i === 1 ? (STAGE_NAMES[part] ?? humanize(part)) : humanize(part)))
+    .join(" › ");
 
 /** A value as the page shows it: fractions as percentages, everything else as `shown` does. */
 export function valueText(v, field) {
@@ -44,10 +47,18 @@ function mergeShares(changes, current, values) {
   const rest = changes.filter((c) => c.path !== nlp && c.path !== llm);
   if (from === to) return rest;
   const sharePair = (l) => `NLP ${100 - l} % · LLM ${l} %`;
-  return [...rest, {
-    path: nlp, name: "NLP and LLM share of priority", label: "Priority › NLP and LLM share",
-    from: sharePair(from), to: sharePair(to), fromText: sharePair(from), toText: sharePair(to),
-  }];
+  return [
+    ...rest,
+    {
+      path: nlp,
+      name: "NLP and LLM share of priority",
+      label: "Priority › NLP and LLM share",
+      from: sharePair(from),
+      to: sharePair(to),
+      fromText: sharePair(from),
+      toText: sharePair(to),
+    },
+  ];
 }
 
 /**
@@ -77,7 +88,11 @@ export function presetChanges(values, current, fields = []) {
 /** Markdown for a methods section: every setting that differs from the built-in defaults, grouped by section. */
 export function changesMarkdown(current, defaults, when, fields = []) {
   const changes = presetChanges(current, defaults, fields);
-  const lines = ["# Settings changed from defaults", "", `${when}. ${changes.length === 1 ? "One setting differs" : `${changes.length} settings differ`} from the built-in defaults.`];
+  const lines = [
+    "# Settings changed from defaults",
+    "",
+    `${when}. ${changes.length === 1 ? "One setting differs" : `${changes.length} settings differ`} from the built-in defaults.`,
+  ];
   if (changes.length === 0) return [...lines, "", "No setting differs from the built-in defaults."].join("\n") + "\n";
   const sections = new Map();
   changes.forEach((c) => {

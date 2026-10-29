@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { radialTreeTargets, chooseView, depthsOf, fitTransform, labelCapacity, importanceOf, edgeCurve, bezierPoint, PITCH_PX, MIN_PITCH_PX } from "./layout";
+import {
+  radialTreeTargets,
+  chooseView,
+  depthsOf,
+  fitTransform,
+  labelCapacity,
+  importanceOf,
+  edgeCurve,
+  bezierPoint,
+  PITCH_PX,
+  MIN_PITCH_PX,
+} from "./layout";
 
 // A crawl as the reducer holds it: nodes by id, edges as "parent→child".
 function crawl(rows) {
@@ -17,7 +28,11 @@ function fan(n, depth = 2) {
   let i = 0;
   const add = (parent, d) => {
     if (d > depth) return;
-    for (let k = 0; k < n; k++) { const id = `n${i++}`; rows.push([id, parent, 20]); add(id, d + 1); }
+    for (let k = 0; k < n; k++) {
+      const id = `n${i++}`;
+      rows.push([id, parent, 20]);
+      add(id, d + 1);
+    }
   };
   add("root", 1);
   return rows;
@@ -25,7 +40,12 @@ function fan(n, depth = 2) {
 
 describe("radialTreeTargets", () => {
   it("puts a lone seed at the centre and every page on a ring by depth", () => {
-    const { nodes } = crawl([["a", null], ["b", "a"], ["c", "a"], ["d", "b"]]);
+    const { nodes } = crawl([
+      ["a", null],
+      ["b", "a"],
+      ["c", "a"],
+      ["d", "b"],
+    ]);
     const t = radialTreeTargets(nodes, 1);
     expect(t.get("a")).toEqual({ x: 0, y: 0 });
     const r = (id) => Math.hypot(t.get(id).x, t.get(id).y);
@@ -48,7 +68,8 @@ describe("radialTreeTargets", () => {
     const { nodes } = crawl(fan(9, 2));
     const t = [...radialTreeTargets(nodes, 1).values()];
     let min = Infinity;
-    for (let i = 0; i < t.length; i++) for (let j = i + 1; j < t.length; j++) min = Math.min(min, Math.hypot(t[i].x - t[j].x, t[i].y - t[j].y));
+    for (let i = 0; i < t.length; i++)
+      for (let j = i + 1; j < t.length; j++) min = Math.min(min, Math.hypot(t[i].x - t[j].x, t[i].y - t[j].y));
     expect(min).toBeGreaterThan(14);
   });
 
@@ -77,7 +98,16 @@ describe("radialTreeTargets", () => {
 
 describe("chooseView", () => {
   const roomy = { w: 1568, h: 609 };
-  const opts = (extra = {}) => ({ showAll: false, expanded: new Set(), selectedId: null, neighborhood: null, search: "", maxPriority: 0, viewport: roomy, ...extra });
+  const opts = (extra = {}) => ({
+    showAll: false,
+    expanded: new Set(),
+    selectedId: null,
+    neighborhood: null,
+    search: "",
+    maxPriority: 0,
+    viewport: roomy,
+    ...extra,
+  });
 
   it("draws everything while the whole crawl stays legible", () => {
     const { nodes, edges } = crawl(fan(3, 2));
@@ -117,7 +147,11 @@ describe("chooseView", () => {
   });
 
   it("keeps highly rated pages ahead of dull ones, and the path to what it keeps", () => {
-    const rows = [["r", null, 90], ["a", "r", 10], ["b", "a", 10]];
+    const rows = [
+      ["r", null, 90],
+      ["a", "r", 10],
+      ["b", "a", 10],
+    ];
     for (let i = 0; i < 200; i++) rows.push([`dull${i}`, "b", 5]);
     rows.push(["gem", "b", 95]);
     const { nodes, edges } = crawl(rows);
@@ -127,7 +161,13 @@ describe("chooseView", () => {
   });
 
   it("pins the selection, a search hit, and a branch the viewer opened", () => {
-    const rows = [["r", null, 90], ["a", "r", 10], ["b", "a", 10], ["c", "b", 10], ["d", "c", 10]];
+    const rows = [
+      ["r", null, 90],
+      ["a", "r", 10],
+      ["b", "a", 10],
+      ["c", "b", 10],
+      ["d", "c", 10],
+    ];
     for (let i = 0; i < 300; i++) rows.push([`x${i}`, "b", 60]);
     const { nodes, edges } = crawl(rows);
     nodes.get("d").url = "/wiki/Needle";
@@ -146,7 +186,10 @@ describe("the legibility model", () => {
   });
 
   it("fits points inside the viewport at the zoom it reports", () => {
-    const pts = [{ x: -500, y: -200 }, { x: 500, y: 200 }];
+    const pts = [
+      { x: -500, y: -200 },
+      { x: 500, y: 200 },
+    ];
     const { k, tx, ty } = fitTransform(pts, 1000, 600);
     for (const p of pts) {
       expect(p.x * k + tx).toBeGreaterThan(0);
@@ -164,10 +207,17 @@ describe("the legibility model", () => {
   });
 
   it("measures depth from the seed and survives cycles", () => {
-    const { nodes } = crawl([["a", null], ["b", "a"], ["c", "b"]]);
+    const { nodes } = crawl([
+      ["a", null],
+      ["b", "a"],
+      ["c", "b"],
+    ]);
     const d = depthsOf(nodes);
     expect([d.get("a"), d.get("b"), d.get("c")]).toEqual([0, 1, 2]);
-    const loop = new Map([["x", { node_id: "x", parent_id: "y" }], ["y", { node_id: "y", parent_id: "x" }]]);
+    const loop = new Map([
+      ["x", { node_id: "x", parent_id: "y" }],
+      ["y", { node_id: "y", parent_id: "x" }],
+    ]);
     expect(() => depthsOf(loop)).not.toThrow();
   });
 });
@@ -194,7 +244,8 @@ describe("edgeCurve", () => {
     const child = { x: 220, y: 40 };
     const c = edgeCurve(parent, child, 0, 0, 1);
     // every point on the curve stays inside the box spanned by its four defining points
-    const xs = [c[0], c[2], c[4], c[6]], ys = [c[1], c[3], c[5], c[7]];
+    const xs = [c[0], c[2], c[4], c[6]],
+      ys = [c[1], c[3], c[5], c[7]];
     for (let u = 0; u <= 1; u += 0.1) {
       const [x, y] = bezierPoint(c, u);
       expect(x).toBeGreaterThanOrEqual(Math.min(...xs) - 1e-9);

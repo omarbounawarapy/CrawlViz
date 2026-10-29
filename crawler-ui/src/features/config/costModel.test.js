@@ -5,10 +5,17 @@ import { cascadeCounts } from "./explainers/cascadeModel";
 import { estimateTokens } from "./promptModel";
 
 const cascade = {
-  percentile_bucketing: false, low_threshold: 0.2, high_threshold: 0.75,
-  high_score_llm_fraction: 0.5, high_score_random_fraction: 0.2, low_score_sample_fraction: 0.1,
-  low_percentile: 20, high_percentile: 75, percentile_min_links: 10,
-  max_llm_links_per_node: 100, llm_batch_size: null,
+  percentile_bucketing: false,
+  low_threshold: 0.2,
+  high_threshold: 0.75,
+  high_score_llm_fraction: 0.5,
+  high_score_random_fraction: 0.2,
+  low_score_sample_fraction: 0.1,
+  low_percentile: 20,
+  high_percentile: 75,
+  percentile_min_links: 10,
+  max_llm_links_per_node: 100,
+  llm_batch_size: null,
 };
 const nlp = { link_context_length: 100 };
 const llm = { max_calls_per_crawl: null };

@@ -9,7 +9,18 @@ const nodes = new Map([
 const edges = new Set(["a→b"]);
 
 function setup(props = {}) {
-  render(<GraphView nodes={nodes} edges={edges} candidates={[]} replayIndex={null} onNodeClick={vi.fn()} onBackgroundClick={vi.fn()} selectedNodeId={null} {...props} />);
+  render(
+    <GraphView
+      nodes={nodes}
+      edges={edges}
+      candidates={[]}
+      replayIndex={null}
+      onNodeClick={vi.fn()}
+      onBackgroundClick={vi.fn()}
+      selectedNodeId={null}
+      {...props}
+    />,
+  );
 }
 
 describe("zoom utility", () => {

@@ -6,8 +6,14 @@ import NotFoundPage from "./NotFoundPage";
 describe("error screens", () => {
   it("shows a recoverable screen instead of a blank page", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    const Boom = () => { throw new Error("kaboom"); };
-    render(<ErrorBoundary><Boom /></ErrorBoundary>);
+    const Boom = () => {
+      throw new Error("kaboom");
+    };
+    render(
+      <ErrorBoundary>
+        <Boom />
+      </ErrorBoundary>,
+    );
     expect(screen.getByRole("alert").textContent).toMatch(/Something went wrong/);
     expect(screen.getByText("kaboom")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reload" })).toBeTruthy();

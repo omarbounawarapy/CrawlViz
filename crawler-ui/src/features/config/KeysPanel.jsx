@@ -27,7 +27,9 @@ export default function KeysPanel() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const add = async () => {
     if (!provider || !secret.trim() || busy) return;
@@ -59,8 +61,8 @@ export default function KeysPanel() {
     <section aria-labelledby="cfg-api-keys">
       <SectionTitle id="cfg-api-keys">API keys</SectionTitle>
       <p style={{ fontSize: 13, color: theme.colors.text.muted, maxWidth: "60ch", marginBottom: 8 }}>
-        Stored in keys.json on the machine running the backend. Only the last four characters are shown.
-        Keys rotate round-robin within a provider.
+        Stored in keys.json on the machine running the backend. Only the last four characters are shown. Keys rotate
+        round-robin within a provider.
       </p>
       {names.map((name) => (
         <div key={name} style={{ padding: "10px 0", borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
@@ -73,10 +75,18 @@ export default function KeysPanel() {
           </h3>
           {(keys[name] ?? []).map((k) => (
             <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, marginTop: 4 }}>
-              <code><span aria-hidden="true">••••</span><span className="sr-only">Key ending </span>{k.last4}</code>
+              <code>
+                <span aria-hidden="true">••••</span>
+                <span className="sr-only">Key ending </span>
+                {k.last4}
+              </code>
               {/* A removed key cannot be shown again, so removing takes a second press (WCAG 3.3.4). */}
-              <ConfirmButton label="Remove" confirmLabel="Confirm remove" aria-label={`Remove key ending ${k.last4} from ${name}`}
-                             onConfirm={() => remove(name, k.id)} />
+              <ConfirmButton
+                label="Remove"
+                confirmLabel="Confirm remove"
+                aria-label={`Remove key ending ${k.last4} from ${name}`}
+                onConfirm={() => remove(name, k.id)}
+              />
             </div>
           ))}
         </div>
@@ -85,19 +95,34 @@ export default function KeysPanel() {
         <div style={{ width: "min(160px, 100%)" }}>
           <Field label="Provider">
             <Select value={provider} onChange={(e) => setProvider(e.target.value)}>
-              {names.map((n) => <option key={n} value={n}>{n}</option>)}
+              {names.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </Select>
           </Field>
         </div>
         <div style={{ width: "min(320px, 100%)" }}>
           <Field label="API key">
-            <TextInput type="password" autoComplete="off" placeholder="Paste the key" value={secret} onChange={(e) => setSecret(e.target.value)} />
+            <TextInput
+              type="password"
+              autoComplete="off"
+              placeholder="Paste the key"
+              value={secret}
+              onChange={(e) => setSecret(e.target.value)}
+            />
           </Field>
         </div>
-        <Button variant="primary" disabled={!secret.trim() || busy} onClick={add} style={{ marginBottom: 14 }}>Add key</Button>
+        <Button variant="primary" disabled={!secret.trim() || busy} onClick={add} style={{ marginBottom: 14 }}>
+          Add key
+        </Button>
       </div>
       {msg && (
-        <p role="status" style={{ fontSize: 13, marginTop: 8, color: msg.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>
+        <p
+          role="status"
+          style={{ fontSize: 13, marginTop: 8, color: msg.ok ? theme.colors.text.secondary : theme.colors.accent.red }}
+        >
           {msg.text}
         </p>
       )}

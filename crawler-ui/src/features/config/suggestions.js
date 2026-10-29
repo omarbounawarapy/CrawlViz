@@ -6,7 +6,8 @@ const RULES = [
     id: "gentle-delay",
     section: "Fetch",
     when: (c) => c.fetch.min_delay < 1 && c.pipelines.requests.workers >= 4,
-    text: (c) => `A pause of ${c.fetch.min_delay}s with ${c.pipelines.requests.workers} request workers is fast enough to draw 429 responses from small sites.`,
+    text: (c) =>
+      `A pause of ${c.fetch.min_delay}s with ${c.pipelines.requests.workers} request workers is fast enough to draw 429 responses from small sites.`,
     fix: { label: "Set the pause to 1 s", set: [["fetch.min_delay", 1]] },
   },
   {
@@ -28,7 +29,9 @@ const RULES = [
     section: "Pipelines",
     when: (c) => Object.values(c.pipelines).some((p) => p.max_queue_size == null && p.workers >= 16),
     text: (c) => {
-      const names = Object.entries(c.pipelines).filter(([, p]) => p.max_queue_size == null && p.workers >= 16).map(([n]) => n);
+      const names = Object.entries(c.pipelines)
+        .filter(([, p]) => p.max_queue_size == null && p.workers >= 16)
+        .map(([n]) => n);
       return `No queue limit with 16 or more workers (${names.join(", ")}) can let memory grow on a large crawl.`;
     },
   },
@@ -37,8 +40,11 @@ const RULES = [
 /** Suggestions that apply to `cfg`, minus the dismissed ids. */
 export function suggest(cfg, dismissed = []) {
   if (!cfg) return [];
-  return RULES.filter((r) => !dismissed.includes(r.id))
-    .flatMap((r) => {
-      try { return r.when(cfg) ? [{ id: r.id, section: r.section, text: r.text(cfg), fix: r.fix }] : []; } catch { return []; }
-    });
+  return RULES.filter((r) => !dismissed.includes(r.id)).flatMap((r) => {
+    try {
+      return r.when(cfg) ? [{ id: r.id, section: r.section, text: r.text(cfg), fix: r.fix }] : [];
+    } catch {
+      return [];
+    }
+  });
 }
