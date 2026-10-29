@@ -40,8 +40,10 @@ domain has moved, its files stay where the table says.
 | `uv run pytest -m pins` | the behaviour pins (`tests/pins/README.md`); goldens change only with `--update-pins` |
 | `python3 .claude/hooks/commit_msg_check.py --range main..HEAD` | commit titles in a range |
 
-Planned in phase A and not available yet: `CRAWLVIZ_OFFLINE=1`,
-`make e2e`, `make model`. Do not document or rely on them until they exist.
+`CRAWLVIZ_OFFLINE=1 make dev` runs crawls with no keys and no network (see the offline
+doubles below; start the `offline_demo.json` blueprint).
+
+Planned in phase A and not available yet: `make e2e`, `make model`. Do not document or rely on them until they exist.
 
 ## How we work
 
@@ -245,6 +247,7 @@ the shared empty state`.
   because they write one file in order.
 - **Offline doubles.** These exist for tests and agents, so no keys or network are needed:
   - `HashingEmbeddingEngine` (`nlp/embedding_engine.py`)
+  - `ScriptedLlm` (`offline/scripted_llm.py`), used by `CRAWLVIZ_OFFLINE=1` and the pins
   - `FixedLlm` (`tests/test_runtime_invariants.py`)
   - `CachedLlm` (`benchmark/llm_cache.py`)
   - `FrozenGraph` (`benchmark/graph.py`)
