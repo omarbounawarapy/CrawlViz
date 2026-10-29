@@ -315,9 +315,72 @@ method file I review. Contracts-steward adds the topic length rule to the schema
 
 ### `services/space_bootstrap.py` (PR #5)
 
-Not reviewed: I ran out of time before reading it. The pins exercise the bootstrap through
-`run_cascade`, and they pass unchanged, but that only covers the scripted-LLM path. The
-review is still owed.
+Reviewed on 2026-10-29, after the rest of this document. Verdict: the method is unchanged.
+One behaviour changed, and it does not reach scores or ordering. I compared the module with
+`build_space` and `create_expansions` as they were in `services/nlp_service.py:168-275` at
+`47f991d^`, and read the two later commits that touch it (`a54dfce`, `434ba4f`). Line
+numbers below are `services/space_bootstrap.py` unless a file is named.
+
+- The prompt and the LLM call are the same. The same `ExpansionPromptBuilder` builds the
+  prompt from the same arguments (`:69`, `:174`). It goes out in an `ExpansionContext` with
+  `llm_type` and `llm_model` read from the same keys when the service is constructed
+  (`:67-68`, `:188-192`). The prompt text, and with it the `CachedLlm` key (type, model,
+  prompt; `benchmark/llm_cache.py:71`), are unchanged, so cached expansion answers still hit.
+- The space is built the same way. The topic is embedded first (`:97`). The seeds are
+  embedded in the order the LLM gave them (`:146-150`), with the same keys and metadata,
+  added in one `add_batch` (one version bump, `nlp/vector_space.py:60`), and the target
+  vector goes in last (`:113-118`). A seed that fails to embed is still logged and reported
+  as pruned, and the others are kept (`:151-164`).
+- Failures are handled the same way. A failed request or a malformed answer gives no
+  descriptions and is counted (`:194-205`). The counter moved from
+  `NLPService.expansion_outcomes` to `NLPService.bootstrapper.outcomes`. Only tests read
+  either one, then and now (`git grep` at `47f991d^` and at the branch tip).
+- `a54dfce` moves the trace fallback into `_bootstrap_trace` (`:132-138`). It returns the
+  same pair the inline code built.
+- `434ba4f` is formatting only: `ast.dump` of `services/space_bootstrap.py` and of
+  `services/nlp_service.py` is identical before and after it. Verified.
+- What changed: the old code set `self.space` (empty) and `self.target_vec` before it
+  awaited the LLM (`services/nlp_service.py:190-194` at `47f991d^`). Now both stay local
+  until the target vector is in, and reach the service through `adopt` (`:96-97`, `:119`,
+  `services/nlp_service.py:132-134`). The space is still saved before
+  `EXP_SpaceBootstrapped` is emitted. Nothing reads the space during the bootstrap: both
+  callers await `start()` before any stage runs (`core/crawler.py:255`,
+  `benchmark/runner.py:658`). If the bootstrap raises, `NLPService.space` is now `None`
+  instead of a half-built space, and `start()` fails in both versions. Read, not run.
+- Coverage: the pins only cover the scripted LLM answering well. `tests/test_space_bootstrap.py`
+  checks that the seeds and the target are in the space and adopted before the bootstrap is
+  reported. The bootstrap tests in `tests/test_results_mapper.py` cover the failure outcomes.
+  I ran both files: 35 passed.
+
+Problems that were there before PR #5 and that the move kept as they were:
+
+1. A failed expansion becomes the blueprint's space for good. A request error or a
+   malformed answer gives a space that holds only the target vector (`:194-204`).
+   `save_space` writes it on the first run whatever `persist_space` says
+   (`services/nlp_service.py:152-155`), and every later run loads it (`:116-117`). One
+   transient LLM failure on a blueprint's first crawl changes the NLP features of every
+   later crawl of it. Only a log line records it, and the counter that sees it is never
+   reported (LLM-3). The benchmark does not keep the space (each run gets a new temporary
+   store, `benchmark/__main__.py:136`), but a failed expansion there still gives that run a
+   target-only space without notice. Recommended fix for Phase C: do not save a space whose
+   expansion failed, and put the expansion outcome in the run manifest. This changes the
+   space only after a failure, so it is a method change in that case and needs my sign-off.
+   The pins should not change, because the scripted LLM answers.
+2. Seed keys use `hash(description)` (`:149`). Python salts string hashes per process, so
+   the same seeds get different keys in every run, and a saved space is not byte-identical
+   between runs of the same blueprint. No scoring code reads the keys (`git grep`), so
+   scores do not change. It does stop a saved space from being checksummed (REPRO-1). Use a
+   content hash of the text. Whether any pin compares keys: not checked.
+3. `create_expansions` takes its trace from `get_trace()` (`:172`), not from
+   `_bootstrap_trace()`. Outside a trace, `EXP_PromptBuilt` therefore carries an empty trace
+   id, while the other bootstrap events carry the new one. This affects observability only
+   (OBS-1).
+4. The expansion prompt's hash is not in the run manifest. This is the same gap noted above
+   for `core/crawler.py:310-321`, and it applies to this second prompt as well (LLM-2,
+   REPRO-1).
+
+Sign-off: the move needs none, since the method and the pins are unchanged. Items 1 and 2
+are Phase C fixes for the backend-engineer, with my review because this is a method file.
 
 ## Order of work for Phase C
 
