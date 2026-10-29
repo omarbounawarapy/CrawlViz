@@ -24,10 +24,11 @@ class NLPService:
     """Core NLP subsystem.
 
     Responsibilities:
-        - Manage the semantic vector space lifecycle (build / load / save).
-        - Embed links, parent nodes, and target topics.
-        - Compute per-link feature vectors (nlp_vector).
-        - Provide space-level signals for the scoring pipeline.
+        - Own the semantic vector space: load, save, and buffered growth.
+        - Score links against it (per-link work in ``LinkFeatureScorer``,
+          services/link_features.py).
+        - Build a blueprint's first space (``SpaceBootstrapper``,
+          services/space_bootstrap.py).
         - Accept batch updates from the space updater (never real-time).
 
     The space is stable during a crawl session: link scoring only *reads*
