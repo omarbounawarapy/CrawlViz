@@ -21,16 +21,17 @@ dev-frontend:
 
 lint:
 	uv run ruff check .
-	cd crawler-ui && npm run lint
+	cd crawler-ui && npm run lint && npm run lint:css && npm run lint:html && npm run format:check
 
 # Formats Python with ruff. The repo is not formatted yet: apply it in its own commit
 # and list that commit in .git-blame-ignore-revs.
 format:
 	uv run ruff format .
 
-# Strict mypy; modules still on the legacy list in pyproject.toml are skipped.
+# Strict mypy (modules still on the legacy list in pyproject.toml are skipped) and tsc.
 typecheck:
 	uv run mypy
+	cd crawler-ui && npm run typecheck
 
 # The mypy legacy list and ruff baseline may only shrink (tools/check_baselines.py).
 check-baselines:

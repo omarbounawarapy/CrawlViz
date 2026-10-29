@@ -81,6 +81,18 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Lint (CSS)
+        run: npm run lint:css
+
+      - name: Lint (HTML)
+        run: npm run lint:html
+
+      - name: Formatting (Prettier)
+        run: npm run format:check
+
+      - name: Type check (tsc)
+        run: npm run typecheck
+
       - name: Test
         run: npm run test
 
