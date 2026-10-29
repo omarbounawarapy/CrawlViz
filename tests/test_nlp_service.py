@@ -19,8 +19,7 @@ SEEDS = [
 
 class SeedLlm:
     async def send(self, context):
-        import json
-        return json.dumps({"descriptions": SEEDS})
+        return {"descriptions": SEEDS}
 
 
 def make(tmp_path, engine=None, **kw):
@@ -70,6 +69,7 @@ def test_expansions_reach_the_space_only_after_flush(tmp_path):
     async def go():
         await svc.start()
         before = len(svc.space)
+        assert before == len(SEEDS) + 1  # the seed descriptions and the target
         link = Link("http://s/a", "a", "b")
         link.expansions = ["glucose metabolism", "beta cell function"]
         await svc.update_space([link])
