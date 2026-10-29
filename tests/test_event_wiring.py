@@ -16,6 +16,7 @@ path core/crawler.py.start() uses, and asserts directly against the live
 EventBroker registry -- so a future edit that reintroduces this class of gap
 (or a new one like it) fails a test instead of waiting for another audit.
 """
+
 import pytest
 
 from config.paths import RuntimePaths
@@ -43,8 +44,11 @@ FAKE_BLUEPRINT = {
         "params": {"scoring_type": "topical", "model_information": {}},
     },
     "stop_conditions": {
-        "max_nodes": 50, "max_depth": 3, "max_duration": 60,
-        "no_progress_timeout": 30, "stop_url": None,
+        "max_nodes": 50,
+        "max_depth": 3,
+        "max_duration": 60,
+        "no_progress_timeout": 30,
+        "stop_url": None,
         "priority_strategy": "balanced",
     },
 }
@@ -55,6 +59,7 @@ class Fake:
     these get their methods called during pipeline construction or
     subscription wiring, only stored as attributes, so an inert object is
     sufficient for this test's purposes."""
+
     def __getattr__(self, name):
         return Fake()
 
@@ -103,7 +108,9 @@ class TestFailureEventsAreNoLongerSilent:
     this, an extraction or filtering exception produced no log line and no
     UI signal anywhere."""
 
-    @pytest.mark.parametrize("event_type", [FilteringPipelineErrorEvent, ProcessingExtractionFailedEvent])
+    @pytest.mark.parametrize(
+        "event_type", [FilteringPipelineErrorEvent, ProcessingExtractionFailedEvent]
+    )
     def test_failure_reaches_debug_log_and_ui(self, wired_crawler, event_type):
         consumers = consumers_of(wired_crawler, event_type)
         assert "DebuggingPipeline" in consumers
@@ -114,7 +121,8 @@ class TestTelemetryBridgeCoverage:
     def test_subscribed_to_substantially_more_than_the_v1_translator(self, wired_crawler):
         registry = wired_crawler.event_broker.registry.registry
         subscribed = [
-            event_type for event_type, consumers in registry.items()
+            event_type
+            for event_type, consumers in registry.items()
             if any(type(c).__name__ == "TelemetryBridge" for c in consumers)
         ]
         # V1's UIEventTranslator subscribed to 7 event types.
@@ -140,15 +148,24 @@ class TestConsumersNameTheirEvents:
     def test_consumers_hear_an_event_in_subscription_order(self, wired_crawler):
         # The stage registry order, then the space updater, then the UI bridge.
         assert consumers_of(wired_crawler, StopCrawlEvent) == [
-            "LoggingPipeline", "ExportingPipeline", "StoppingPipeline", "SpaceUpdater",
+            "LoggingPipeline",
+            "ExportingPipeline",
+            "StoppingPipeline",
+            "SpaceUpdater",
             "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, RequestFailedEvent) == [
-            "DebuggingPipeline", "RetryProcessor", "TelemetryBridge",
+            "DebuggingPipeline",
+            "RetryProcessor",
+            "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, PageFetchedEvent) == [
-            "LoggingPipeline", "CanonicalizationPipeline", "ProcessingPipeline",
-            "StoragePipeline", "StoppingPipeline", "TelemetryBridge",
+            "LoggingPipeline",
+            "CanonicalizationPipeline",
+            "ProcessingPipeline",
+            "StoragePipeline",
+            "StoppingPipeline",
+            "TelemetryBridge",
         ]
 
     def test_handler_tables_are_the_source(self):
@@ -166,8 +183,10 @@ class TestRuntimeConfigIsTheSource:
         from config.runtime_config import RuntimeConfig
 
         cfg = RuntimeConfig.model_validate(
-            {"scoring_cascade": {"low_threshold": 0.1, "high_threshold": 0.9},
-             "export": {"batch_size": 7}}
+            {
+                "scoring_cascade": {"low_threshold": 0.1, "high_threshold": 0.9},
+                "export": {"batch_size": 7},
+            }
         )
         crawler = Crawler("wikiMD.json", config=cfg, paths=RuntimePaths.under(tmp_path))
         crawler._load_blueprint_config(FAKE_BLUEPRINT)
@@ -190,8 +209,13 @@ class TestFilesystemRootsAreInjectable:
 class TestSeededDeterminism:
     def test_same_seed_same_bucketing_and_jitter(self, tmp_path):
         def build(seed):
-            c = Crawler("wikiMD.json", paths=RuntimePaths.under(tmp_path), seed=seed,
-                        fetch_concurrency=1, scoring_concurrency=1)
+            c = Crawler(
+                "wikiMD.json",
+                paths=RuntimePaths.under(tmp_path),
+                seed=seed,
+                fetch_concurrency=1,
+                scoring_concurrency=1,
+            )
             c._load_blueprint_config(FAKE_BLUEPRINT)
             return c._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
 
@@ -202,7 +226,10 @@ class TestSeededDeterminism:
         def run(p):
             links = [L(i / 100) for i in range(100)]
             sampled, skip, dropped = p["scoring"].bucket_links(links)
-            return ([link._nlp_score for link in sampled], [p["requests"].rng.random() for _ in range(5)])
+            return (
+                [link._nlp_score for link in sampled],
+                [p["requests"].rng.random() for _ in range(5)],
+            )
 
         a, b, c = run(build(7)), run(build(7)), run(build(8))
         assert a == b

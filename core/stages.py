@@ -32,7 +32,7 @@ from pipelines import (
     StoragePipeline,
     TransformationPipeline,
 )
-from pipelines.contracts import Annotator, CrawlStage, RelevanceScorer
+from pipelines.contracts import Annotator, CrawlStage, Fetcher, RelevanceScorer
 
 from .event_broker import EventBroker
 
@@ -55,6 +55,8 @@ class StageInputs:
     fetch_concurrency: int
     scoring_concurrency: int
     seed: int | None
+    # Replaces the HTTP client, e.g. with a frozen site for offline runs.
+    fetcher: Fetcher | None = None
 
     @property
     def stop_conditions(self) -> dict[str, Any]:
@@ -131,7 +133,8 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         inputs.broker,
         max_concurrency=inputs.fetch_concurrency,
         max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),
-        fetcher=NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout),
+        fetcher=inputs.fetcher
+        or NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout),
         min_delay=fetch.min_delay,
         user_agent=fetch.user_agent,
         respect_robots=fetch.respect_robots,

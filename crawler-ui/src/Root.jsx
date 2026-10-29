@@ -4,7 +4,7 @@ import Landing from "./features/landing/Landing.jsx";
 import SpiderLoader from "./features/loading/SpiderLoader.jsx";
 import { useRoute } from "./hooks/useRoute";
 
-const BOOT_MS = 1200;   // long enough for the spider to land and the ring to close
+const BOOT_MS = 1200; // long enough for the spider to land and the ring to close
 const ENTER_MS = 900;
 const SEEN_KEY = "crawlviz:boot-seen";
 
@@ -13,7 +13,9 @@ function firstBoot() {
   try {
     if (sessionStorage.getItem(SEEN_KEY)) return false;
     sessionStorage.setItem(SEEN_KEY, "1");
-  } catch { /* storage blocked: show it */ }
+  } catch {
+    /* storage blocked: show it */
+  }
   return true;
 }
 
@@ -55,17 +57,31 @@ export default function Root() {
     const minTime = new Promise((r) => setTimeout(r, loading === "enter" ? ENTER_MS : BOOT_MS));
     // Fonts get at most 1.2s; a hung font request must not hold the page.
     const fonts = Promise.race([document.fonts?.ready ?? Promise.resolve(), new Promise((r) => setTimeout(r, 1200))]);
-    Promise.all([minTime, fonts]).then(() => { if (!cancelled) setReady(true); });
-    return () => { cancelled = true; };
+    Promise.all([minTime, fonts]).then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [loading]);
 
   // The app sets a title per section; the landing page and the boot screen keep the plain name.
-  useEffect(() => { if (isLanding) document.title = "CrawlViz"; }, [isLanding]);
+  useEffect(() => {
+    if (isLanding) document.title = "CrawlViz";
+  }, [isLanding]);
 
-  const enter = useCallback((to) => { setReady(false); setPendingTo(to); setLoading("enter"); }, []);
+  const enter = useCallback((to) => {
+    setReady(false);
+    setPendingTo(to);
+    setLoading("enter");
+  }, []);
 
   const onExit = useCallback(() => {
-    if (pendingTo) { navigate(pendingTo); window.scrollTo(0, 0); setPendingTo(null); }
+    if (pendingTo) {
+      navigate(pendingTo);
+      window.scrollTo(0, 0);
+      setPendingTo(null);
+    }
     setLoading(null);
   }, [pendingTo, navigate]);
 

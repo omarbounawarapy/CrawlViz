@@ -8,16 +8,24 @@ import { TopKExample, ClusterExample, ContextExample } from "./TopKExample";
 afterEach(cleanup);
 
 const CASCADE = {
-  low_threshold: 0.2, high_threshold: 0.75, high_score_llm_fraction: 0.3, low_score_sample_fraction: 0.1,
-  high_score_random_fraction: 0.25, percentile_bucketing: false, percentile_min_links: 10,
-  max_llm_links_per_node: 50, low_percentile: 20, high_percentile: 75,
+  low_threshold: 0.2,
+  high_threshold: 0.75,
+  high_score_llm_fraction: 0.3,
+  low_score_sample_fraction: 0.1,
+  high_score_random_fraction: 0.25,
+  percentile_bucketing: false,
+  percentile_min_links: 10,
+  max_llm_links_per_node: 50,
+  low_percentile: 20,
+  high_percentile: 75,
 };
 
 describe("CascadeFunnel", () => {
   it("states what happens to the example page", () => {
     render(<CascadeFunnel cfg={CASCADE} />);
     expect(screen.getByRole("status").textContent).toBe(
-      "Of 40 links: 8 dropped, 25 sent to the LLM, 7 trusted without one.");
+      "Of 40 links: 8 dropped, 25 sent to the LLM, 7 trusted without one.",
+    );
   });
   it("re-flows when a cut-off moves", () => {
     const { rerender } = render(<CascadeFunnel cfg={CASCADE} />);
@@ -32,13 +40,22 @@ describe("CascadeFunnel", () => {
 
 describe("StrategyCards", () => {
   const weights = { target_similarity: 0.25, novelty_injection: 0.2, depth_penalty: 0.05 };
-  const priority = { nlp_bias: 60, llm_bias: 40, aggressive_weights: weights, balanced_weights: weights, exploration_weights: weights };
+  const priority = {
+    nlp_bias: 60,
+    llm_bias: 40,
+    aggressive_weights: weights,
+    balanced_weights: weights,
+    exploration_weights: weights,
+  };
 
   it("writes a changed weight back under the chosen strategy", () => {
     const onChange = vi.fn();
     render(<StrategyCards priority={priority} defaults={priority} defaultStrategy="aggressive" onChange={onChange} />);
     fireEvent.change(screen.getByLabelText("aggressive target similarity"), { target: { value: "0.8" } });
-    expect(onChange).toHaveBeenCalledWith("priority.aggressive_weights", expect.objectContaining({ target_similarity: 0.8 }));
+    expect(onChange).toHaveBeenCalledWith(
+      "priority.aggressive_weights",
+      expect.objectContaining({ target_similarity: 0.8 }),
+    );
   });
   it("makes the clicked card the default strategy", () => {
     const onChange = vi.fn();
@@ -61,8 +78,15 @@ describe("StrategyCards", () => {
 });
 
 describe("BackoffChart", () => {
-  const fetch = { min_delay: 1, jitter_max: 0.2, backoff_start: 1, backoff_max: 10, backoff_growth: 2,
-    backoff_success_decay: 0.5, backoff_failure_decay: 0.5 };
+  const fetch = {
+    min_delay: 1,
+    jitter_max: 0.2,
+    backoff_start: 1,
+    backoff_max: 10,
+    backoff_growth: 2,
+    backoff_success_decay: 0.5,
+    backoff_failure_decay: 0.5,
+  };
   it("reports the steady pace and the worst wait", () => {
     render(<BackoffChart cfg={fetch} />);
     expect(screen.getByRole("status").textContent).toContain("The longest a request waits is 11.2 s");

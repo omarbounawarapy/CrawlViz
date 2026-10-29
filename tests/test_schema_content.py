@@ -5,7 +5,6 @@ needs a unit key (``""`` when it is a count or multiplier), every section in
 the guide needs at least one visible field, and the glossary is emitted.
 """
 
-
 from config.runtime_config import SECTION_GUIDE, RuntimeConfig
 
 SECTIONS = [name for name, _ in SECTION_GUIDE]
@@ -31,8 +30,11 @@ def _fields():
 
 
 def _visible():
-    return [(path, raw, sec) for path, raw, sec in _fields()
-            if not raw.get("ui_advanced") and sec is not None]
+    return [
+        (path, raw, sec)
+        for path, raw, sec in _fields()
+        if not raw.get("ui_advanced") and sec is not None
+    ]
 
 
 def test_every_visible_field_has_an_effect_line():
@@ -49,7 +51,7 @@ def test_numeric_fields_declare_a_unit_or_none():
     numeric = [(p, r) for p, r, _ in _visible() if _is_numeric(r)]
     assert numeric, "no numeric fields found"
     missing = [p for p, r in numeric if "ui_unit" not in r]
-    assert not missing, f"numeric fields without ui_unit (use \"\" for unitless): {missing}"
+    assert not missing, f'numeric fields without ui_unit (use "" for unitless): {missing}'
 
 
 def test_every_section_has_a_field():
@@ -62,10 +64,27 @@ def test_every_section_has_a_field():
 
 def test_glossary_is_emitted_with_plain_definitions():
     glossary = RuntimeConfig.model_json_schema()["ui_glossary"]
-    for term in ("percentile", "cascade", "backoff", "jitter", "embedding", "cosine",
-                 "top-k", "queue", "flush", "backpressure", "temperature", "demotion",
-                 "novelty injection", "coverage gap", "semantic delta", "random fraction",
-                 "best-ranked", "key cooldown", "backoff decay"):
+    for term in (
+        "percentile",
+        "cascade",
+        "backoff",
+        "jitter",
+        "embedding",
+        "cosine",
+        "top-k",
+        "queue",
+        "flush",
+        "backpressure",
+        "temperature",
+        "demotion",
+        "novelty injection",
+        "coverage gap",
+        "semantic delta",
+        "random fraction",
+        "best-ranked",
+        "key cooldown",
+        "backoff decay",
+    ):
         assert glossary.get(term), f"glossary lacks {term!r}"
         assert len(glossary[term]) < 200, f"glossary entry for {term!r} is too long"
 
@@ -78,9 +97,24 @@ def test_every_visible_field_has_a_description():
 def test_glossary_defines_the_terms_the_page_uses():
     from config.runtime_config import GLOSSARY
 
-    for term in ("percentile bucketing", "bucket", "middle band", "high-confidence bucket", "nlp bias",
-                 "llm bias", "priority points", "in flight", "politeness", "token", "tokens", "template",
-                 "blueprint", "debug trace", "queue bound", "requeue"):
+    for term in (
+        "percentile bucketing",
+        "bucket",
+        "middle band",
+        "high-confidence bucket",
+        "nlp bias",
+        "llm bias",
+        "priority points",
+        "in flight",
+        "politeness",
+        "token",
+        "tokens",
+        "template",
+        "blueprint",
+        "debug trace",
+        "queue bound",
+        "requeue",
+    ):
         assert GLOSSARY.get(term), term
 
 

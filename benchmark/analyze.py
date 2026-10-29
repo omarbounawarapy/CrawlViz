@@ -24,6 +24,7 @@ Invalid runs are excluded from every table except validity and replay.
 Replay records (``__replay.json``) are only used by the replay table. Runs
 are paired on (graph, repeat).
 """
+
 import argparse
 import csv
 import math
@@ -55,6 +56,7 @@ def recall_at(labels: list[int], k: int, relevant_in_graph: int) -> float:
 def ndcg_at(labels: list[int], k: int, graph_grades: dict[int, int]) -> float:
     """nDCG@k with the grade as gain. The ideal order is the graph's best k
     pages (all label 2, then label 1), which no crawler is promised to reach."""
+
     def dcg(grades) -> float:
         return sum(g / math.log2(i + 2) for i, g in enumerate(grades))
 
@@ -132,7 +134,9 @@ def by_policy(records: list[RunRecord]) -> dict[str, list[RunRecord]]:
     return dict(groups)
 
 
-def curves(groups: dict[str, list[RunRecord]], max_k: int) -> list[tuple[str, int, float, float, int]]:
+def curves(
+    groups: dict[str, list[RunRecord]], max_k: int
+) -> list[tuple[str, int, float, float, int]]:
     rows = []
     for policy, runs in groups.items():
         for k in range(1, max_k + 1):
@@ -159,12 +163,15 @@ def wilcoxon(groups: dict[str, list[RunRecord]], k: int, subject: str = "cascade
             p_value = float("nan") if not diffs else 1.0
         else:
             p_value = float(stats.wilcoxon(a, b).pvalue)
-        out.append({
-            "policy": policy, "n": len(pairs),
-            "subject_mean": statistics.mean(a) if a else float("nan"),
-            "other_mean": statistics.mean(b) if b else float("nan"),
-            "p": p_value,
-        })
+        out.append(
+            {
+                "policy": policy,
+                "n": len(pairs),
+                "subject_mean": statistics.mean(a) if a else float("nan"),
+                "other_mean": statistics.mean(b) if b else float("nan"),
+                "p": p_value,
+            }
+        )
     return out
 
 
@@ -176,14 +183,22 @@ def metric_table_tex(groups: dict[str, list[RunRecord]], value, ks=TABLE_KS) -> 
     """Mean +/- 95% CI of ``value(run, k)`` per policy at each k; runs with a
     NaN value (a metric that needs a missing graph file) are left out."""
     head = " & ".join(f"@{k}" for k in ks)
-    lines = [r"\begin{tabular}{l" + "c" * len(ks) + "r}", r"\toprule",
-             f"Policy & {head} & runs \\\\", r"\midrule"]
+    lines = [
+        r"\begin{tabular}{l" + "c" * len(ks) + "r}",
+        r"\toprule",
+        f"Policy & {head} & runs \\\\",
+        r"\midrule",
+    ]
     for policy, runs in groups.items():
         cells = []
         for k in ks:
             vals = [v for v in (value(r, k) for r in runs) if not math.isnan(v)]
             mean, ci = mean_ci(vals)
-            cells.append("--" if not vals else f"{mean:.3f}" + ("" if math.isnan(ci) else f" $\\pm$ {ci:.3f}"))
+            cells.append(
+                "--"
+                if not vals
+                else f"{mean:.3f}" + ("" if math.isnan(ci) else f" $\\pm$ {ci:.3f}")
+            )
         lines.append(f"{_tex(policy)} & " + " & ".join(cells) + f" & {len(runs)} \\\\")
     return "\n".join(lines + [r"\bottomrule", r"\end{tabular}", ""])
 
@@ -197,15 +212,22 @@ def efficiency(run: RunRecord) -> tuple[float, float]:
     found = sum(1 for v in run.labels if v >= 1)
     calls = run.llm_calls + run.llm_replayed
     tokens = run.input_tokens + run.output_tokens
-    return (found / calls if calls else float("nan"), found / (tokens / 1000) if tokens else float("nan"))
+    return (
+        found / calls if calls else float("nan"),
+        found / (tokens / 1000) if tokens else float("nan"),
+    )
 
 
 def efficiency_table_tex(groups: dict[str, list[RunRecord]]) -> str:
     """Tokens are the cost metric: arms batch links differently (llm_all sends
     up to 60 per call, the cascade one batch per page), so call counts are not
     comparable between arms. Calls are listed for reference."""
-    lines = [r"\begin{tabular}{lrrrr}", r"\toprule",
-             r"Policy & tokens & relevant / 1k tokens & LLM calls & relevant / call \\", r"\midrule"]
+    lines = [
+        r"\begin{tabular}{lrrrr}",
+        r"\toprule",
+        r"Policy & tokens & relevant / 1k tokens & LLM calls & relevant / call \\",
+        r"\midrule",
+    ]
     for policy, runs in groups.items():
         per_call = [e[0] for e in map(efficiency, runs) if not math.isnan(e[0])]
         per_tok = [e[1] for e in map(efficiency, runs) if not math.isnan(e[1])]
@@ -214,9 +236,15 @@ def efficiency_table_tex(groups: dict[str, list[RunRecord]]) -> str:
 
         def cell(vals):
             mean, ci = mean_ci(vals)
-            return "--" if not vals else f"{mean:.3f}" + ("" if math.isnan(ci) else f" $\\pm$ {ci:.3f}")
+            return (
+                "--"
+                if not vals
+                else f"{mean:.3f}" + ("" if math.isnan(ci) else f" $\\pm$ {ci:.3f}")
+            )
 
-        lines.append(f"{_tex(policy)} & {tokens:.0f} & {cell(per_tok)} & {calls:.0f} & {cell(per_call)} \\\\")
+        lines.append(
+            f"{_tex(policy)} & {tokens:.0f} & {cell(per_tok)} & {calls:.0f} & {cell(per_call)} \\\\"
+        )
     return "\n".join(lines + [r"\bottomrule", r"\end{tabular}", ""])
 
 
@@ -233,10 +261,16 @@ def validity_counts(records: list[RunRecord]) -> dict[str, dict[str, int]]:
 
 
 def validity_table_tex(records: list[RunRecord]) -> str:
-    lines = [r"\begin{tabular}{lrrrr}", r"\toprule",
-             r"Policy & runs & valid & invalid & early-stopped \\", r"\midrule"]
+    lines = [
+        r"\begin{tabular}{lrrrr}",
+        r"\toprule",
+        r"Policy & runs & valid & invalid & early-stopped \\",
+        r"\midrule",
+    ]
     for policy, c in validity_counts(records).items():
-        lines.append(f"{_tex(policy)} & {c['valid'] + c['invalid']} & {c['valid']} & {c['invalid']} & {c['early']} \\\\")
+        lines.append(
+            f"{_tex(policy)} & {c['valid'] + c['invalid']} & {c['valid']} & {c['invalid']} & {c['early']} \\\\"
+        )
     return "\n".join(lines + [r"\bottomrule", r"\end{tabular}", ""])
 
 
@@ -253,16 +287,24 @@ def replay_counts(records: list[RunRecord]) -> dict[str, dict[str, int]]:
 
 
 def replay_table_tex(records: list[RunRecord]) -> str:
-    lines = [r"\begin{tabular}{lrrr}", r"\toprule",
-             r"Policy & replays & with misses & cache misses \\", r"\midrule"]
+    lines = [
+        r"\begin{tabular}{lrrr}",
+        r"\toprule",
+        r"Policy & replays & with misses & cache misses \\",
+        r"\midrule",
+    ]
     for policy, c in replay_counts(records).items():
         lines.append(f"{_tex(policy)} & {c['replays']} & {c['with_misses']} & {c['misses']} \\\\")
     return "\n".join(lines + [r"\bottomrule", r"\end{tabular}", ""])
 
 
 def wilcoxon_table_tex(rows: list[dict], k: int) -> str:
-    lines = [r"\begin{tabular}{lrrrr}", r"\toprule",
-             f"Baseline & pairs & cascade @{k} & baseline @{k} & $p$ \\\\", r"\midrule"]
+    lines = [
+        r"\begin{tabular}{lrrrr}",
+        r"\toprule",
+        f"Baseline & pairs & cascade @{k} & baseline @{k} & $p$ \\\\",
+        r"\midrule",
+    ]
     for r in rows:
         p = "--" if math.isnan(r["p"]) else (f"{r['p']:.4f}" if r["p"] >= 0.0001 else "<0.0001")
         lines.append(
@@ -275,9 +317,15 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--results", type=Path, default=Path("benchmark/results"))
     ap.add_argument("--out", type=Path, default=Path("benchmark/analysis"))
-    ap.add_argument("--graphs-dir", type=Path, default=Path("benchmark/data"),
-                    help="where the graph files named in the results live; each title counts once")
-    ap.add_argument("--no-dedupe", action="store_true", help="count every fetched page, duplicates included")
+    ap.add_argument(
+        "--graphs-dir",
+        type=Path,
+        default=Path("benchmark/data"),
+        help="where the graph files named in the results live; each title counts once",
+    )
+    ap.add_argument(
+        "--no-dedupe", action="store_true", help="count every fetched page, duplicates included"
+    )
     ap.add_argument("--k", type=int, default=100, help="curves run from 1 to this k")
     ap.add_argument("--test-k", type=int, default=30, help="k for the Wilcoxon tests")
     ap.add_argument("--ndcg", action="store_true", help="also write nDCG@k (needs the graph files)")
@@ -308,36 +356,50 @@ def main() -> None:
         def value(r: RunRecord, k: int) -> float:
             grades = graph_grades(args.graphs_dir, r.graph)
             return float("nan") if grades is None else fn(r, k, grades)
+
         return value
 
-    (args.out / "recall_table.tex").write_text(metric_table_tex(
-        groups, graph_metric(lambda r, k, g: recall_at(r.labels, k, g[1] + g[2]))))
+    (args.out / "recall_table.tex").write_text(
+        metric_table_tex(groups, graph_metric(lambda r, k, g: recall_at(r.labels, k, g[1] + g[2])))
+    )
     if args.ndcg:
-        (args.out / "ndcg_table.tex").write_text(metric_table_tex(
-            groups, graph_metric(lambda r, k, g: ndcg_at(r.labels, k, g))))
+        (args.out / "ndcg_table.tex").write_text(
+            metric_table_tex(groups, graph_metric(lambda r, k, g: ndcg_at(r.labels, k, g)))
+        )
     tests = wilcoxon(groups, args.test_k)
     (args.out / "wilcoxon_table.tex").write_text(wilcoxon_table_tex(tests, args.test_k))
 
-    print(f"{len(live)} live runs read ({len(records) - len(live)} replays), {skipped} invalid excluded; wrote {args.out}/")
+    print(
+        f"{len(live)} live runs read ({len(records) - len(live)} replays), {skipped} invalid excluded; wrote {args.out}/"
+    )
     for policy, runs in groups.items():
         mean, ci = mean_ci([harvest_at(r.labels, args.test_k) for r in runs])
         print(f"  {policy:<16} harvest@{args.test_k} {mean:.3f} +/- {ci:.3f}  (n={len(runs)})")
-    print(f"\n  {'policy':<16} {'label2@30':>9} {'recall@30':>10} {'rel/call':>9} {'rel/1k tok':>11}  valid/invalid/early")
+    print(
+        f"\n  {'policy':<16} {'label2@30':>9} {'recall@30':>10} {'rel/call':>9} {'rel/1k tok':>11}  valid/invalid/early"
+    )
     validity = validity_counts(records)
     for policy, runs in groups.items():
         l2 = statistics.mean(harvest_at(r.labels, args.test_k, 2) for r in runs)
-        rec = [graph_metric(lambda r, k, g: recall_at(r.labels, k, g[1] + g[2]))(r, args.test_k) for r in runs]
+        rec = [
+            graph_metric(lambda r, k, g: recall_at(r.labels, k, g[1] + g[2]))(r, args.test_k)
+            for r in runs
+        ]
         rec = [v for v in rec if not math.isnan(v)]
         eff = [efficiency(r) for r in runs]
         per_call = [e[0] for e in eff if not math.isnan(e[0])]
         per_tok = [e[1] for e in eff if not math.isnan(e[1])]
         v = validity[policy]
-        print(f"  {policy:<16} {l2:>9.3f} {statistics.mean(rec) if rec else float('nan'):>10.3f} "
-              f"{statistics.mean(per_call) if per_call else float('nan'):>9.3f} "
-              f"{statistics.mean(per_tok) if per_tok else float('nan'):>11.3f}  "
-              f"{v['valid']}/{v['invalid']}/{v['early']}")
+        print(
+            f"  {policy:<16} {l2:>9.3f} {statistics.mean(rec) if rec else float('nan'):>10.3f} "
+            f"{statistics.mean(per_call) if per_call else float('nan'):>9.3f} "
+            f"{statistics.mean(per_tok) if per_tok else float('nan'):>11.3f}  "
+            f"{v['valid']}/{v['invalid']}/{v['early']}"
+        )
     for policy, c in replay_counts(records).items():
-        print(f"  replay {policy}: {c['replays']} replayed, {c['misses']} cache misses in {c['with_misses']}")
+        print(
+            f"  replay {policy}: {c['replays']} replayed, {c['misses']} cache misses in {c['with_misses']}"
+        )
     for t in tests:
         print(f"  cascade vs {t['policy']:<16} n={t['n']} p={t['p']:.4f}")
 

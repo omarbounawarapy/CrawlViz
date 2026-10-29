@@ -1,1401 +1,537 @@
 {
- "cascade": [
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.3,
-    "low_score_sample_fraction": 0.1,
-    "high_score_random_fraction": 0.25
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 25,
-    "trusted": 7,
-    "dropped": 8
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 1.0,
-    "low_score_sample_fraction": 0.0,
-    "high_score_random_fraction": 0.25
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 32,
-    "trusted": 0,
-    "dropped": 8
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.0,
-    "low_score_sample_fraction": 1.0,
-    "high_score_random_fraction": 0.25
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 31,
-    "trusted": 9,
-    "dropped": 0
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.5,
-    "high_threshold": 0.51,
-    "high_score_llm_fraction": 0.3,
-    "low_score_sample_fraction": 0.1,
-    "high_score_random_fraction": 0.25
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 8,
-    "trusted": 12,
-    "dropped": 20
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.3,
-    "low_score_sample_fraction": 0.1,
-    "high_score_random_fraction": 0.25,
-    "percentile_bucketing": true,
-    "low_percentile": 20,
-    "high_percentile": 75
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 25,
-    "trusted": 7,
-    "dropped": 8
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.3,
-    "low_score_sample_fraction": 0.1,
-    "high_score_random_fraction": 0.25,
-    "percentile_bucketing": true,
-    "low_percentile": 33.3,
-    "high_percentile": 66.6,
-    "percentile_min_links": 60
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 25,
-    "trusted": 7,
-    "dropped": 8
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.3,
-    "low_score_sample_fraction": 0.1,
-    "high_score_random_fraction": 0.25,
-    "max_llm_links": 12
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 12,
-    "trusted": 20,
-    "dropped": 8
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.7,
-    "low_score_sample_fraction": 0.1,
-    "high_score_random_fraction": 0.5,
-    "max_llm_links": 5
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 5,
-    "trusted": 27,
-    "dropped": 8
-   }
-  },
-  {
-   "config": {
-    "low_threshold": 0.2,
-    "high_threshold": 0.75,
-    "high_score_llm_fraction": 0.3,
-    "low_score_sample_fraction": 0.3,
-    "high_score_random_fraction": 0.25,
-    "percentile_bucketing": true,
-    "low_percentile": 10,
-    "high_percentile": 90,
-    "max_llm_links": 15
-   },
-   "scores": [
-    0.04,
-    0.07,
-    0.09,
-    0.11,
-    0.13,
-    0.15,
-    0.17,
-    0.19,
-    0.22,
-    0.24,
-    0.26,
-    0.28,
-    0.3,
-    0.32,
-    0.34,
-    0.36,
-    0.38,
-    0.4,
-    0.42,
-    0.44,
-    0.46,
-    0.48,
-    0.5,
-    0.52,
-    0.55,
-    0.58,
-    0.61,
-    0.64,
-    0.67,
-    0.7,
-    0.73,
-    0.76,
-    0.79,
-    0.82,
-    0.85,
-    0.88,
-    0.91,
-    0.93,
-    0.95,
-    0.97
-   ],
-   "expected": {
-    "toLlm": 15,
-    "trusted": 22,
-    "dropped": 3
-   }
-  }
- ],
- "strategy": [
-  {
-   "strategy": "aggressive",
-   "weights": null,
-   "nlpBias": 60,
-   "llmBias": 40,
-   "scores": [
-    29.63,
-    52.87,
-    12.97,
-    31.15,
-    17.9,
-    36.6,
-    13.83,
-    32.97
-   ]
-  },
-  {
-   "strategy": "aggressive",
-   "weights": null,
-   "nlpBias": 100,
-   "llmBias": 0,
-   "scores": [
-    26.05,
-    31.45,
-    14.95,
-    15.25,
-    16.5,
-    9.0,
-    13.05,
-    14.95
-   ]
-  },
-  {
-   "strategy": "aggressive",
-   "weights": null,
-   "nlpBias": 0,
-   "llmBias": 100,
-   "scores": [
-    35.0,
-    85.0,
-    10.0,
-    55.0,
-    20.0,
-    78.0,
-    15.0,
-    60.0
-   ]
-  },
-  {
-   "strategy": "aggressive",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 60,
-   "llmBias": 40,
-   "scores": [
-    35.48,
-    57.52,
-    1.72,
-    13.0,
-    0.2,
-    26.4,
-    5.88,
-    19.32
-   ]
-  },
-  {
-   "strategy": "aggressive",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 100,
-   "llmBias": 0,
-   "scores": [
-    35.8,
-    39.2,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ]
-  },
-  {
-   "strategy": "aggressive",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 0,
-   "llmBias": 100,
-   "scores": [
-    35.0,
-    85.0,
-    10.0,
-    55.0,
-    20.0,
-    78.0,
-    15.0,
-    60.0
-   ]
-  },
-  {
-   "strategy": "balanced",
-   "weights": null,
-   "nlpBias": 60,
-   "llmBias": 40,
-   "scores": [
-    30.5,
-    55.0,
-    17.5,
-    38.35,
-    24.35,
-    42.15,
-    17.55,
-    39.0
-   ]
-  },
-  {
-   "strategy": "balanced",
-   "weights": null,
-   "nlpBias": 100,
-   "llmBias": 0,
-   "scores": [
-    27.5,
-    35.0,
-    22.5,
-    27.25,
-    27.25,
-    18.25,
-    19.25,
-    25.0
-   ]
-  },
-  {
-   "strategy": "balanced",
-   "weights": null,
-   "nlpBias": 0,
-   "llmBias": 100,
-   "scores": [
-    35.0,
-    85.0,
-    10.0,
-    55.0,
-    20.0,
-    78.0,
-    15.0,
-    60.0
-   ]
-  },
-  {
-   "strategy": "balanced",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 60,
-   "llmBias": 40,
-   "scores": [
-    35.48,
-    57.52,
-    1.72,
-    13.0,
-    0.2,
-    26.4,
-    5.88,
-    19.32
-   ]
-  },
-  {
-   "strategy": "balanced",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 100,
-   "llmBias": 0,
-   "scores": [
-    35.8,
-    39.2,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ]
-  },
-  {
-   "strategy": "balanced",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 0,
-   "llmBias": 100,
-   "scores": [
-    35.0,
-    85.0,
-    10.0,
-    55.0,
-    20.0,
-    78.0,
-    15.0,
-    60.0
-   ]
-  },
-  {
-   "strategy": "exploration",
-   "weights": null,
-   "nlpBias": 60,
-   "llmBias": 40,
-   "scores": [
-    26.06,
-    48.64,
-    32.74,
-    52.45,
-    45.5,
-    37.35,
-    26.46,
-    46.89
-   ]
-  },
-  {
-   "strategy": "exploration",
-   "weights": null,
-   "nlpBias": 100,
-   "llmBias": 0,
-   "scores": [
-    20.1,
-    24.4,
-    47.9,
-    50.75,
-    62.5,
-    10.25,
-    34.1,
-    38.15
-   ]
-  },
-  {
-   "strategy": "exploration",
-   "weights": null,
-   "nlpBias": 0,
-   "llmBias": 100,
-   "scores": [
-    35.0,
-    85.0,
-    10.0,
-    55.0,
-    20.0,
-    78.0,
-    15.0,
-    60.0
-   ]
-  },
-  {
-   "strategy": "exploration",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 60,
-   "llmBias": 40,
-   "scores": [
-    35.48,
-    57.52,
-    1.72,
-    13.0,
-    0.2,
-    26.4,
-    5.88,
-    19.32
-   ]
-  },
-  {
-   "strategy": "exploration",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 100,
-   "llmBias": 0,
-   "scores": [
-    35.8,
-    39.2,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0,
-    0.0
-   ]
-  },
-  {
-   "strategy": "exploration",
-   "weights": {
-    "target_similarity": 0.9,
-    "depth_penalty": 0.2,
-    "novelty_injection": 0.0
-   },
-   "nlpBias": 0,
-   "llmBias": 100,
-   "scores": [
-    35.0,
-    85.0,
-    10.0,
-    55.0,
-    20.0,
-    78.0,
-    15.0,
-    60.0
-   ]
-  }
- ],
- "backoff": [
-  {
-   "config": {
-    "min_delay": 1.0,
-    "backoff_start": 1.0,
-    "backoff_max": 10.0,
-    "backoff_growth": 2.0,
-    "backoff_success_decay": 0.5,
-    "backoff_failure_decay": 0.5
-   },
-   "outcomes": [
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "429",
-    "429",
-    "429",
-    "429",
-    "429",
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "ok"
-   ],
-   "delays": [
-    0.0,
-    1.0,
-    1.0,
-    1.0,
-    1.0,
-    2.0,
-    3.0,
-    5.0,
-    9.0,
-    11.0,
-    6.0,
-    3.5,
-    2.25,
-    1.62,
-    1.31
-   ]
-  },
-  {
-   "config": {
-    "min_delay": 1.0,
-    "backoff_start": 1.0,
-    "backoff_max": 10.0,
-    "backoff_growth": 2.0,
-    "backoff_success_decay": 0.5,
-    "backoff_failure_decay": 0.5
-   },
-   "outcomes": [
-    "429",
-    "ok",
-    "429",
-    "fail",
-    "fail",
-    "ok",
-    "429",
-    "429",
-    "429",
-    "429",
-    "429",
-    "ok"
-   ],
-   "delays": [
-    0.0,
-    2.0,
-    1.5,
-    2.0,
-    1.5,
-    1.25,
-    1.12,
-    1.25,
-    1.5,
-    2.0,
-    3.0,
-    5.0
-   ]
-  },
-  {
-   "config": {
-    "min_delay": 0.5,
-    "backoff_start": 1.0,
-    "backoff_max": 20.0,
-    "backoff_growth": 3.0,
-    "backoff_success_decay": 0.5,
-    "backoff_failure_decay": 0.5
-   },
-   "outcomes": [
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "429",
-    "429",
-    "429",
-    "429",
-    "429",
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "ok"
-   ],
-   "delays": [
-    0.0,
-    0.5,
-    0.5,
-    0.5,
-    0.5,
-    1.5,
-    3.5,
-    9.5,
-    20.5,
-    20.5,
-    10.5,
-    5.5,
-    3.0,
-    1.75,
-    1.12
-   ]
-  },
-  {
-   "config": {
-    "min_delay": 0.5,
-    "backoff_start": 1.0,
-    "backoff_max": 20.0,
-    "backoff_growth": 3.0,
-    "backoff_success_decay": 0.5,
-    "backoff_failure_decay": 0.5
-   },
-   "outcomes": [
-    "429",
-    "ok",
-    "429",
-    "fail",
-    "fail",
-    "ok",
-    "429",
-    "429",
-    "429",
-    "429",
-    "429",
-    "ok"
-   ],
-   "delays": [
-    0.0,
-    1.5,
-    1.0,
-    2.0,
-    1.25,
-    0.87,
-    0.69,
-    1.06,
-    2.19,
-    5.56,
-    15.69,
-    20.5
-   ]
-  },
-  {
-   "config": {
-    "min_delay": 1.0,
-    "backoff_start": 2.5,
-    "backoff_max": 10.0,
-    "backoff_growth": 2.0,
-    "backoff_success_decay": 0.0,
-    "backoff_failure_decay": 0.5
-   },
-   "outcomes": [
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "429",
-    "429",
-    "429",
-    "429",
-    "429",
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "ok",
-    "ok"
-   ],
-   "delays": [
-    0.0,
-    1.0,
-    1.0,
-    1.0,
-    1.0,
-    3.5,
-    6.0,
-    11.0,
-    11.0,
-    11.0,
-    1.0,
-    1.0,
-    1.0,
-    1.0,
-    1.0
-   ]
-  },
-  {
-   "config": {
-    "min_delay": 1.0,
-    "backoff_start": 2.5,
-    "backoff_max": 10.0,
-    "backoff_growth": 2.0,
-    "backoff_success_decay": 0.0,
-    "backoff_failure_decay": 0.5
-   },
-   "outcomes": [
-    "429",
-    "ok",
-    "429",
-    "fail",
-    "fail",
-    "ok",
-    "429",
-    "429",
-    "429",
-    "429",
-    "429",
-    "ok"
-   ],
-   "delays": [
-    0.0,
-    3.5,
-    1.0,
-    3.5,
-    2.25,
-    1.62,
-    1.0,
-    3.5,
-    6.0,
-    11.0,
-    11.0,
-    11.0
-   ]
-  }
- ],
- "cluster": [
-  {
-   "eps": 0.002,
-   "minSamples": 1,
-   "labels": [
-    0,
-    1,
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    8,
-    9,
-    10,
-    11
-   ]
-  },
-  {
-   "eps": 0.002,
-   "minSamples": 2,
-   "labels": [
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1
-   ]
-  },
-  {
-   "eps": 0.002,
-   "minSamples": 3,
-   "labels": [
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1,
-    -1
-   ]
-  },
-  {
-   "eps": 0.01,
-   "minSamples": 1,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    2,
-    2,
-    3,
-    4
-   ]
-  },
-  {
-   "eps": 0.01,
-   "minSamples": 2,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    2,
-    2,
-    -1,
-    -1
-   ]
-  },
-  {
-   "eps": 0.01,
-   "minSamples": 3,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1
-   ]
-  },
-  {
-   "eps": 0.05,
-   "minSamples": 1,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    2,
-    2,
-    3,
-    3
-   ]
-  },
-  {
-   "eps": 0.05,
-   "minSamples": 2,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    2,
-    2,
-    3,
-    3
-   ]
-  },
-  {
-   "eps": 0.05,
-   "minSamples": 3,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    -1,
-    -1,
-    -1,
-    -1
-   ]
-  },
-  {
-   "eps": 0.3,
-   "minSamples": 1,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    1
-   ]
-  },
-  {
-   "eps": 0.3,
-   "minSamples": 2,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    1
-   ]
-  },
-  {
-   "eps": 0.3,
-   "minSamples": 3,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    1
-   ]
-  },
-  {
-   "eps": 0.8,
-   "minSamples": 1,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ]
-  },
-  {
-   "eps": 0.8,
-   "minSamples": 2,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ]
-  },
-  {
-   "eps": 0.8,
-   "minSamples": 3,
-   "labels": [
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-   ]
-  }
- ],
- "context": [
-  {
-   "limit": 1,
-   "context": "O"
-  },
-  {
-   "limit": 20,
-   "context": "Our shop sells fresh"
-  },
-  {
-   "limit": 60,
-   "context": "Our shop sells fresh fruit all year. Ripe spotted ones are b"
-  },
-  {
-   "limit": 100,
-   "context": "Ripe spotted ones are best for baking, so try our Banana bread"
-  },
-  {
-   "limit": 140,
-   "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
-  },
-  {
-   "limit": 160,
-   "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
-  },
-  {
-   "limit": 200,
-   "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
-  },
-  {
-   "limit": 400,
-   "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
-  }
- ]
+  "cascade": [
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.3,
+        "low_score_sample_fraction": 0.1,
+        "high_score_random_fraction": 0.25
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 25,
+        "trusted": 7,
+        "dropped": 8
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 1.0,
+        "low_score_sample_fraction": 0.0,
+        "high_score_random_fraction": 0.25
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 32,
+        "trusted": 0,
+        "dropped": 8
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.0,
+        "low_score_sample_fraction": 1.0,
+        "high_score_random_fraction": 0.25
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 31,
+        "trusted": 9,
+        "dropped": 0
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.5,
+        "high_threshold": 0.51,
+        "high_score_llm_fraction": 0.3,
+        "low_score_sample_fraction": 0.1,
+        "high_score_random_fraction": 0.25
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 8,
+        "trusted": 12,
+        "dropped": 20
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.3,
+        "low_score_sample_fraction": 0.1,
+        "high_score_random_fraction": 0.25,
+        "percentile_bucketing": true,
+        "low_percentile": 20,
+        "high_percentile": 75
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 25,
+        "trusted": 7,
+        "dropped": 8
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.3,
+        "low_score_sample_fraction": 0.1,
+        "high_score_random_fraction": 0.25,
+        "percentile_bucketing": true,
+        "low_percentile": 33.3,
+        "high_percentile": 66.6,
+        "percentile_min_links": 60
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 25,
+        "trusted": 7,
+        "dropped": 8
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.3,
+        "low_score_sample_fraction": 0.1,
+        "high_score_random_fraction": 0.25,
+        "max_llm_links": 12
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 12,
+        "trusted": 20,
+        "dropped": 8
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.7,
+        "low_score_sample_fraction": 0.1,
+        "high_score_random_fraction": 0.5,
+        "max_llm_links": 5
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 5,
+        "trusted": 27,
+        "dropped": 8
+      }
+    },
+    {
+      "config": {
+        "low_threshold": 0.2,
+        "high_threshold": 0.75,
+        "high_score_llm_fraction": 0.3,
+        "low_score_sample_fraction": 0.3,
+        "high_score_random_fraction": 0.25,
+        "percentile_bucketing": true,
+        "low_percentile": 10,
+        "high_percentile": 90,
+        "max_llm_links": 15
+      },
+      "scores": [
+        0.04, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.36, 0.38, 0.4, 0.42,
+        0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.64, 0.67, 0.7, 0.73, 0.76, 0.79, 0.82, 0.85, 0.88, 0.91, 0.93,
+        0.95, 0.97
+      ],
+      "expected": {
+        "toLlm": 15,
+        "trusted": 22,
+        "dropped": 3
+      }
+    }
+  ],
+  "strategy": [
+    {
+      "strategy": "aggressive",
+      "weights": null,
+      "nlpBias": 60,
+      "llmBias": 40,
+      "scores": [29.63, 52.87, 12.97, 31.15, 17.9, 36.6, 13.83, 32.97]
+    },
+    {
+      "strategy": "aggressive",
+      "weights": null,
+      "nlpBias": 100,
+      "llmBias": 0,
+      "scores": [26.05, 31.45, 14.95, 15.25, 16.5, 9.0, 13.05, 14.95]
+    },
+    {
+      "strategy": "aggressive",
+      "weights": null,
+      "nlpBias": 0,
+      "llmBias": 100,
+      "scores": [35.0, 85.0, 10.0, 55.0, 20.0, 78.0, 15.0, 60.0]
+    },
+    {
+      "strategy": "aggressive",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 60,
+      "llmBias": 40,
+      "scores": [35.48, 57.52, 1.72, 13.0, 0.2, 26.4, 5.88, 19.32]
+    },
+    {
+      "strategy": "aggressive",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 100,
+      "llmBias": 0,
+      "scores": [35.8, 39.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    {
+      "strategy": "aggressive",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 0,
+      "llmBias": 100,
+      "scores": [35.0, 85.0, 10.0, 55.0, 20.0, 78.0, 15.0, 60.0]
+    },
+    {
+      "strategy": "balanced",
+      "weights": null,
+      "nlpBias": 60,
+      "llmBias": 40,
+      "scores": [30.5, 55.0, 17.5, 38.35, 24.35, 42.15, 17.55, 39.0]
+    },
+    {
+      "strategy": "balanced",
+      "weights": null,
+      "nlpBias": 100,
+      "llmBias": 0,
+      "scores": [27.5, 35.0, 22.5, 27.25, 27.25, 18.25, 19.25, 25.0]
+    },
+    {
+      "strategy": "balanced",
+      "weights": null,
+      "nlpBias": 0,
+      "llmBias": 100,
+      "scores": [35.0, 85.0, 10.0, 55.0, 20.0, 78.0, 15.0, 60.0]
+    },
+    {
+      "strategy": "balanced",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 60,
+      "llmBias": 40,
+      "scores": [35.48, 57.52, 1.72, 13.0, 0.2, 26.4, 5.88, 19.32]
+    },
+    {
+      "strategy": "balanced",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 100,
+      "llmBias": 0,
+      "scores": [35.8, 39.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    {
+      "strategy": "balanced",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 0,
+      "llmBias": 100,
+      "scores": [35.0, 85.0, 10.0, 55.0, 20.0, 78.0, 15.0, 60.0]
+    },
+    {
+      "strategy": "exploration",
+      "weights": null,
+      "nlpBias": 60,
+      "llmBias": 40,
+      "scores": [26.06, 48.64, 32.74, 52.45, 45.5, 37.35, 26.46, 46.89]
+    },
+    {
+      "strategy": "exploration",
+      "weights": null,
+      "nlpBias": 100,
+      "llmBias": 0,
+      "scores": [20.1, 24.4, 47.9, 50.75, 62.5, 10.25, 34.1, 38.15]
+    },
+    {
+      "strategy": "exploration",
+      "weights": null,
+      "nlpBias": 0,
+      "llmBias": 100,
+      "scores": [35.0, 85.0, 10.0, 55.0, 20.0, 78.0, 15.0, 60.0]
+    },
+    {
+      "strategy": "exploration",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 60,
+      "llmBias": 40,
+      "scores": [35.48, 57.52, 1.72, 13.0, 0.2, 26.4, 5.88, 19.32]
+    },
+    {
+      "strategy": "exploration",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 100,
+      "llmBias": 0,
+      "scores": [35.8, 39.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    },
+    {
+      "strategy": "exploration",
+      "weights": {
+        "target_similarity": 0.9,
+        "depth_penalty": 0.2,
+        "novelty_injection": 0.0
+      },
+      "nlpBias": 0,
+      "llmBias": 100,
+      "scores": [35.0, 85.0, 10.0, 55.0, 20.0, 78.0, 15.0, 60.0]
+    }
+  ],
+  "backoff": [
+    {
+      "config": {
+        "min_delay": 1.0,
+        "backoff_start": 1.0,
+        "backoff_max": 10.0,
+        "backoff_growth": 2.0,
+        "backoff_success_decay": 0.5,
+        "backoff_failure_decay": 0.5
+      },
+      "outcomes": ["ok", "ok", "ok", "ok", "429", "429", "429", "429", "429", "ok", "ok", "ok", "ok", "ok", "ok"],
+      "delays": [0.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 5.0, 9.0, 11.0, 6.0, 3.5, 2.25, 1.62, 1.31]
+    },
+    {
+      "config": {
+        "min_delay": 1.0,
+        "backoff_start": 1.0,
+        "backoff_max": 10.0,
+        "backoff_growth": 2.0,
+        "backoff_success_decay": 0.5,
+        "backoff_failure_decay": 0.5
+      },
+      "outcomes": ["429", "ok", "429", "fail", "fail", "ok", "429", "429", "429", "429", "429", "ok"],
+      "delays": [0.0, 2.0, 1.5, 2.0, 1.5, 1.25, 1.12, 1.25, 1.5, 2.0, 3.0, 5.0]
+    },
+    {
+      "config": {
+        "min_delay": 0.5,
+        "backoff_start": 1.0,
+        "backoff_max": 20.0,
+        "backoff_growth": 3.0,
+        "backoff_success_decay": 0.5,
+        "backoff_failure_decay": 0.5
+      },
+      "outcomes": ["ok", "ok", "ok", "ok", "429", "429", "429", "429", "429", "ok", "ok", "ok", "ok", "ok", "ok"],
+      "delays": [0.0, 0.5, 0.5, 0.5, 0.5, 1.5, 3.5, 9.5, 20.5, 20.5, 10.5, 5.5, 3.0, 1.75, 1.12]
+    },
+    {
+      "config": {
+        "min_delay": 0.5,
+        "backoff_start": 1.0,
+        "backoff_max": 20.0,
+        "backoff_growth": 3.0,
+        "backoff_success_decay": 0.5,
+        "backoff_failure_decay": 0.5
+      },
+      "outcomes": ["429", "ok", "429", "fail", "fail", "ok", "429", "429", "429", "429", "429", "ok"],
+      "delays": [0.0, 1.5, 1.0, 2.0, 1.25, 0.87, 0.69, 1.06, 2.19, 5.56, 15.69, 20.5]
+    },
+    {
+      "config": {
+        "min_delay": 1.0,
+        "backoff_start": 2.5,
+        "backoff_max": 10.0,
+        "backoff_growth": 2.0,
+        "backoff_success_decay": 0.0,
+        "backoff_failure_decay": 0.5
+      },
+      "outcomes": ["ok", "ok", "ok", "ok", "429", "429", "429", "429", "429", "ok", "ok", "ok", "ok", "ok", "ok"],
+      "delays": [0.0, 1.0, 1.0, 1.0, 1.0, 3.5, 6.0, 11.0, 11.0, 11.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    },
+    {
+      "config": {
+        "min_delay": 1.0,
+        "backoff_start": 2.5,
+        "backoff_max": 10.0,
+        "backoff_growth": 2.0,
+        "backoff_success_decay": 0.0,
+        "backoff_failure_decay": 0.5
+      },
+      "outcomes": ["429", "ok", "429", "fail", "fail", "ok", "429", "429", "429", "429", "429", "ok"],
+      "delays": [0.0, 3.5, 1.0, 3.5, 2.25, 1.62, 1.0, 3.5, 6.0, 11.0, 11.0, 11.0]
+    }
+  ],
+  "cluster": [
+    {
+      "eps": 0.002,
+      "minSamples": 1,
+      "labels": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    },
+    {
+      "eps": 0.002,
+      "minSamples": 2,
+      "labels": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+    },
+    {
+      "eps": 0.002,
+      "minSamples": 3,
+      "labels": [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]
+    },
+    {
+      "eps": 0.01,
+      "minSamples": 1,
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 4]
+    },
+    {
+      "eps": 0.01,
+      "minSamples": 2,
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, -1, -1]
+    },
+    {
+      "eps": 0.01,
+      "minSamples": 3,
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, -1, -1, -1, -1]
+    },
+    {
+      "eps": 0.05,
+      "minSamples": 1,
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 3]
+    },
+    {
+      "eps": 0.05,
+      "minSamples": 2,
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 3, 3]
+    },
+    {
+      "eps": 0.05,
+      "minSamples": 3,
+      "labels": [0, 0, 0, 0, 0, 1, 1, 1, -1, -1, -1, -1]
+    },
+    {
+      "eps": 0.3,
+      "minSamples": 1,
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+    },
+    {
+      "eps": 0.3,
+      "minSamples": 2,
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+    },
+    {
+      "eps": 0.3,
+      "minSamples": 3,
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]
+    },
+    {
+      "eps": 0.8,
+      "minSamples": 1,
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "eps": 0.8,
+      "minSamples": 2,
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "eps": 0.8,
+      "minSamples": 3,
+      "labels": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    }
+  ],
+  "context": [
+    {
+      "limit": 1,
+      "context": "O"
+    },
+    {
+      "limit": 20,
+      "context": "Our shop sells fresh"
+    },
+    {
+      "limit": 60,
+      "context": "Our shop sells fresh fruit all year. Ripe spotted ones are b"
+    },
+    {
+      "limit": 100,
+      "context": "Ripe spotted ones are best for baking, so try our Banana bread"
+    },
+    {
+      "limit": 140,
+      "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
+    },
+    {
+      "limit": 160,
+      "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
+    },
+    {
+      "limit": 200,
+      "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
+    },
+    {
+      "limit": 400,
+      "context": "Ripe spotted ones are best for baking, so try our Banana bread recipe for a moist loaf"
+    }
+  ]
 }

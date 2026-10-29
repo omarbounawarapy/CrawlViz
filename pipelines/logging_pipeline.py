@@ -28,12 +28,18 @@ class LoggingPipeline(BasePipeline):
     then the broker's dispatch order.
     """
 
-    def __init__(self, event_broker, crawl_id, max_queue_size: int = 0, max_concurrency: int = 1,
-                 log_root="logs"):
+    def __init__(
+        self,
+        event_broker,
+        crawl_id,
+        max_queue_size: int = 0,
+        max_concurrency: int = 1,
+        log_root="logs",
+    ):
         super().__init__(max_concurrency=max_concurrency)
         self.event_broker = event_broker
 
-        log_dir = os.path.join(log_root, crawl_id[:crawl_id.find("-")])
+        log_dir = os.path.join(log_root, crawl_id[: crawl_id.find("-")])
         os.makedirs(log_dir, exist_ok=True)
 
         path = os.path.join(log_dir, crawl_id)
@@ -88,36 +94,57 @@ class LoggingPipeline(BasePipeline):
 
     def _created(self, e, w):
         node = e.node
-        return {"event": "node_created", "node_id": node.get_id(),
-                "url": unquote(node.get_link()), "depth": node.get_depth()}
+        return {
+            "event": "node_created",
+            "node_id": node.get_id(),
+            "url": unquote(node.get_link()),
+            "depth": node.get_depth(),
+        }
 
     def _fetched(self, e, w):
         return {"event": "node_fetched", "node_id": e.node.get_id()}
 
     def _filtered(self, e, w):
-        return {"event": "node_filtered", "node_id": e.node.get_id(),
-                "links": len(e.links), "items": len(e.items)}
+        return {
+            "event": "node_filtered",
+            "node_id": e.node.get_id(),
+            "links": len(e.links),
+            "items": len(e.items),
+        }
 
     def _transformed(self, e, w):
-        return {"event": "node_transformed", "node_id": e.node.get_id(),
-                "items": len(e.transformed_items)}
+        return {
+            "event": "node_transformed",
+            "node_id": e.node.get_id(),
+            "items": len(e.transformed_items),
+        }
 
     def _scored(self, e, w):
-        return {"event": "node_scored", "node_id": e.node.get_id(),
-                "links": len(e.scored_links)}
+        return {"event": "node_scored", "node_id": e.node.get_id(), "links": len(e.scored_links)}
 
     def _expanded(self, e, w):
-        return {"event": "node_expanded", "node_id": e.parent.get_id(),
-                "children": len(e.links)}
+        return {"event": "node_expanded", "node_id": e.parent.get_id(), "children": len(e.links)}
 
     def _exported(self, e, w):
-        return {"event": "export_completed", "table": e.table,
-                "inserted": e.inserted_count, "duration_ms": round(e.duration_ms, 2)}
+        return {
+            "event": "export_completed",
+            "table": e.table,
+            "inserted": e.inserted_count,
+            "duration_ms": round(e.duration_ms, 2),
+        }
 
     def _rescheduled_score(self, e, w):
-        return {"event": "score_rescheduled", "node_id": e.node.get_id(),
-                "new_priority": e.node.get_priority()}
+        return {
+            "event": "score_rescheduled",
+            "node_id": e.node.get_id(),
+            "new_priority": e.node.get_priority(),
+        }
 
     def _stopped(self, e, w):
-        return {"event": "crawl_stopped", "reason": e.reason, "nodes": e.node_count,
-                "depth": e.max_depth, "duration_s": round(e.duration, 2)}
+        return {
+            "event": "crawl_stopped",
+            "reason": e.reason,
+            "nodes": e.node_count,
+            "depth": e.max_depth,
+            "duration_s": round(e.duration, 2),
+        }

@@ -8,7 +8,12 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint:css": "stylelint \"src/**/*.css\"",
+    "lint:html": "html-validate index.html",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "d3": "^7.9.0",
@@ -24,10 +29,18 @@
     "@vitejs/plugin-react": "^6.0.1",
     "axe-core": "^4.10.3",
     "eslint": "^9.39.4",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "html-validate": "^11.17.0",
     "jsdom": "^30.0.1",
+    "lefthook": "^2.2.2",
+    "prettier": "^3.9.10",
+    "stylelint": "^17.16.0",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
     "vite": "^8.0.4",
     "vitest": "^4.1.10"
   }

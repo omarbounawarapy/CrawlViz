@@ -4,11 +4,13 @@ import GoalGuide from "./GoalGuide";
 
 const goals = {
   gentler: {
-    label: "Gentler on a site", description: "Waits longer between requests.",
+    label: "Gentler on a site",
+    description: "Waits longer between requests.",
     values: { fetch: { min_delay: 2, jitter_max: 0.5 } },
   },
   cheaper: {
-    label: "Cheaper", description: "Spends less on the LLM.",
+    label: "Cheaper",
+    description: "Spends less on the LLM.",
     values: { scoring_cascade: { high_score_llm_fraction: 0.1 } },
   },
 };

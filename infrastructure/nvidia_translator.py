@@ -33,9 +33,7 @@ class NvidiaTranslator:
             },
             "data": {
                 "model": context.get_model_information(),
-                "messages": [
-                    {"role": "user", "content": context.get_prompt()}
-                ],
+                "messages": [{"role": "user", "content": context.get_prompt()}],
             },
         }
 
@@ -69,6 +67,7 @@ class NvidiaTranslator:
         except Exception as e:
             logger.warning(
                 "Failed to parse NVIDIA response: %s. Raw response: %.300s",
-                e, response,
+                e,
+                response,
             )
             return {}

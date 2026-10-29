@@ -34,6 +34,7 @@ from typing import Any
 # HELPERS
 # =========================================================
 
+
 def _nlp(link, key: str, default: float = 0.0) -> float:
     """Safe accessor for nlp_vector entries."""
     vec = getattr(link, "nlp_vector", None)
@@ -113,6 +114,7 @@ def aggressive(node, link, nlp_bias, llm_bias, weights=None) -> float:
 # Goal: stable, broad crawling without runaway exploration or tunnel vision
 # =========================================================
 
+
 def balanced(node, link, nlp_bias: float = 0.5, llm_bias: float = 0.5, weights=None) -> float:
     return _score("balanced", node, link, nlp_bias, llm_bias, weights)
 
@@ -122,6 +124,7 @@ def balanced(node, link, nlp_bias: float = 0.5, llm_bias: float = 0.5, weights=N
 # Goal: discover semantically distant, under-covered regions
 # Bias: novelty + cluster distance + coverage gap; LLM score is a weak signal
 # =========================================================
+
 
 def exploration(node, link, nlp_bias: float = 0.85, llm_bias: float = 0.15, weights=None) -> float:
     return _score("exploration", node, link, nlp_bias, llm_bias, weights)
@@ -150,8 +153,7 @@ def get_strategy(name: str, weights: dict[str, float] | None = None) -> Strategy
     fn = STRATEGY_REGISTRY.get(name)
     if fn is None:
         raise ValueError(
-            f"Unknown priority strategy: {name!r}. "
-            f"Registered strategies: {list(STRATEGY_REGISTRY)}"
+            f"Unknown priority strategy: {name!r}. Registered strategies: {list(STRATEGY_REGISTRY)}"
         )
     if weights is not None and name in DEFAULT_WEIGHTS:
         return lambda node, link, nlp_bias, llm_bias: fn(

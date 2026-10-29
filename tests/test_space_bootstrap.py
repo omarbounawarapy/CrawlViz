@@ -1,4 +1,5 @@
 """SpaceBootstrapper builds a blueprint's first space: seeds, target, trace order."""
+
 import asyncio
 from typing import Any
 
@@ -35,13 +36,19 @@ def test_seeds_and_target_reach_the_space_before_bootstrap_is_reported() -> None
         adopted.update(space=space, target=target_vec)
 
     bootstrapper = SpaceBootstrapper(
-        "bp", HashingEmbeddingEngine(), SeedLlm(), EXPANSION,  # type: ignore[arg-type]
+        "bp",
+        HashingEmbeddingEngine(),
+        SeedLlm(),  # type: ignore[arg-type]
+        EXPANSION,
         tracer=RecordingTracer(log),  # type: ignore[arg-type]
     )
     asyncio.run(bootstrapper.build(TOPIC, adopt))
 
     assert log == [
-        "EXP_Triggered", "EXP_PromptBuilt", "EXP_SeedsGenerated", "adopt",
+        "EXP_Triggered",
+        "EXP_PromptBuilt",
+        "EXP_SeedsGenerated",
+        "adopt",
         "EXP_SpaceBootstrapped",
     ]
     space = adopted["space"]

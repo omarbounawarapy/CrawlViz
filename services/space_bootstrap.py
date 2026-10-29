@@ -82,13 +82,15 @@ class SpaceBootstrapper:
         started = time.monotonic()
         trace_id, node_id = self._bootstrap_trace()
 
-        await self._emit(EXP_Triggered(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            target_topic=target_topic,
-            trigger_reason="new_blueprint",
-        ))
+        await self._emit(
+            EXP_Triggered(
+                trace_id=trace_id,
+                node_id=node_id,
+                blueprint_id=self.blueprint_id,
+                target_topic=target_topic,
+                trigger_reason="new_blueprint",
+            )
+        )
 
         logger.info("Building new semantic space for '%s'", self.blueprint_id)
         space = VectorSpace(dim=self.engine.dim)
@@ -96,14 +98,16 @@ class SpaceBootstrapper:
 
         expansions = await self.create_expansions(target_topic, self.expansion_config)
         seeds: list[str] = expansions.get("descriptions", [])
-        await self._emit(EXP_SeedsGenerated(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            seed_count=len(seeds),
-            seed_previews=[s[:SEED_PREVIEW_CHARS] for s in seeds],
-            source="llm_expansion",
-        ))
+        await self._emit(
+            EXP_SeedsGenerated(
+                trace_id=trace_id,
+                node_id=node_id,
+                blueprint_id=self.blueprint_id,
+                seed_count=len(seeds),
+                seed_previews=[s[:SEED_PREVIEW_CHARS] for s in seeds],
+                source="llm_expansion",
+            )
+        )
 
         seed_vectors = await self._encode_seeds(seeds, trace_id, node_id)
         space.add_batch(seed_vectors)
@@ -114,14 +118,16 @@ class SpaceBootstrapper:
         )
         adopt(space, target_vec)
 
-        await self._emit(EXP_SpaceBootstrapped(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            vectors_added=len(seed_vectors) + 1,
-            space_version=space.version,
-            duration_ms=(time.monotonic() - started) * 1000,
-        ))
+        await self._emit(
+            EXP_SpaceBootstrapped(
+                trace_id=trace_id,
+                node_id=node_id,
+                blueprint_id=self.blueprint_id,
+                vectors_added=len(seed_vectors) + 1,
+                space_version=space.version,
+                duration_ms=(time.monotonic() - started) * 1000,
+            )
+        )
 
     def _bootstrap_trace(self) -> tuple[str, str]:
         """The current trace, or a new one named after the blueprint when the
@@ -146,14 +152,16 @@ class SpaceBootstrapper:
                 logger.exception(
                     "Failed to encode seed description: %r", description[:SEED_PREVIEW_CHARS]
                 )
-                await self._emit(EXP_CandidatePruned(
-                    trace_id=trace_id,
-                    node_id=node_id,
-                    blueprint_id=self.blueprint_id,
-                    seed_preview=description[:SEED_PREVIEW_CHARS],
-                    reason="error",
-                    threshold=None,
-                ))
+                await self._emit(
+                    EXP_CandidatePruned(
+                        trace_id=trace_id,
+                        node_id=node_id,
+                        blueprint_id=self.blueprint_id,
+                        seed_preview=description[:SEED_PREVIEW_CHARS],
+                        reason="error",
+                        threshold=None,
+                    )
+                )
         return seed_vectors
 
     async def create_expansions(
@@ -165,15 +173,17 @@ class SpaceBootstrapper:
 
         prompt = self.prompt_builder.build(target, expansion_config)
 
-        await self._emit(EXP_PromptBuilt(
-            trace_id=trace_id,
-            node_id=node_id,
-            blueprint_id=self.blueprint_id,
-            style=expansion_config.get("style", "balanced"),
-            num_descriptions=expansion_config.get("num_descriptions", 6),
-            prompt_len=len(prompt),
-            prompt_preview=prompt[:PROMPT_PREVIEW_CHARS],
-        ))
+        await self._emit(
+            EXP_PromptBuilt(
+                trace_id=trace_id,
+                node_id=node_id,
+                blueprint_id=self.blueprint_id,
+                style=expansion_config.get("style", "balanced"),
+                num_descriptions=expansion_config.get("num_descriptions", 6),
+                prompt_len=len(prompt),
+                prompt_preview=prompt[:PROMPT_PREVIEW_CHARS],
+            )
+        )
 
         context = ExpansionContext(
             self.llm_type,

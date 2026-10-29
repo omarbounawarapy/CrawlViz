@@ -31,8 +31,11 @@ class ScoringService:
     ):
         self.handler = llm_handler
         self.prompt_builder = PromptBuilder(
-            target_topic, strategy,
-            system_prompt=system_prompt, rules=rules, strategy_contexts=strategy_contexts,
+            target_topic,
+            strategy,
+            system_prompt=system_prompt,
+            rules=rules,
+            strategy_contexts=strategy_contexts,
         )
         self.results_mapper = ResultMapper()
         self.scoring_type = scoring_type
@@ -66,9 +69,7 @@ class ScoringService:
         if isinstance(results, dict) and "results" in results and len(results) == 1:
             results = results["results"]
         if isinstance(results, list):
-            return {
-                e["url"]: e for e in results if isinstance(e, dict) and "url" in e
-            }
+            return {e["url"]: e for e in results if isinstance(e, dict) and "url" in e}
         return results
 
     @staticmethod

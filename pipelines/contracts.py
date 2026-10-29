@@ -70,3 +70,13 @@ class Fetcher(Protocol):
     async def emit_request(self, params: dict) -> str: ...
 
     async def close(self) -> None: ...
+
+
+@runtime_checkable
+class LlmSender(Protocol):
+    """Anything that answers an LLM request (LlmHandler, CachedLlm, offline double).
+
+    ``send`` takes an ``LlmContext`` and returns the parsed JSON answer.
+    """
+
+    async def send(self, context: Any) -> dict: ...

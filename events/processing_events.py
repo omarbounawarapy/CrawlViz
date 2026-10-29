@@ -5,6 +5,7 @@ from typing import Any, Literal
 # 1. INPUT SNAPSHOT
 # =========================================================
 
+
 @dataclass
 class ExtractionInputSnapshotEvent:
     correlation_id: str
@@ -15,6 +16,7 @@ class ExtractionInputSnapshotEvent:
 # =========================================================
 # 2. START OF EXTRACTION
 # =========================================================
+
 
 @dataclass
 class ExtractionStartedEvent:
@@ -28,6 +30,7 @@ class ExtractionStartedEvent:
 # 3. LINK EXTRACTION STAGE
 # =========================================================
 
+
 @dataclass
 class LinkExtractionCompletedEvent:
     correlation_id: str
@@ -38,6 +41,7 @@ class LinkExtractionCompletedEvent:
 # =========================================================
 # 4. ITEM EXTRACTION STAGE
 # =========================================================
+
 
 @dataclass
 class ItemExtractionCompletedEvent:
@@ -50,6 +54,7 @@ class ItemExtractionCompletedEvent:
 # 5. SUCCESS OUTPUT (DOWNSTREAM INPUT)
 # =========================================================
 
+
 @dataclass
 class ContentExtractedEvent:
     correlation_id: str
@@ -61,6 +66,7 @@ class ContentExtractedEvent:
 # =========================================================
 # 6. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
+
 
 @dataclass
 class ProcessingExtractionFailedEvent:
@@ -75,12 +81,14 @@ class ProcessingExtractionFailedEvent:
 # 7. OPTIONAL DEBUG / FUTURE-GUI ENHANCEMENT
 # =========================================================
 
+
 @dataclass
 class LinkResolvedEvent:
     """Optional fine-grained observability event.
 
     Useful if you want per-link animation in the GUI.
     """
+
     correlation_id: str
     node_id: str
     original_link: str
@@ -93,6 +101,7 @@ class ItemFieldExtractedEvent:
 
     Useful for debugging selectors or blueprint issues.
     """
+
     correlation_id: str
     node_id: str
     field_name: str

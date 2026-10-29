@@ -233,9 +233,7 @@ class ExportingPipeline:
         defs = ", ".join(f"{row[1]} {row[2]}" for row in info)
         legacy = f"{table_name}__legacy"
         self.cursor.execute(f"ALTER TABLE {table_name} RENAME TO {legacy}")
-        self.cursor.execute(
-            f"CREATE TABLE {table_name} ({defs}, PRIMARY KEY (crawl_id, id))"
-        )
+        self.cursor.execute(f"CREATE TABLE {table_name} ({defs}, PRIMARY KEY (crawl_id, id))")
         self.cursor.execute(
             f"INSERT OR REPLACE INTO {table_name} ({cols}) SELECT {cols} FROM {legacy}"
         )

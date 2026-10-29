@@ -26,7 +26,11 @@ class StoragePipeline(BasePipeline):
     """
 
     def __init__(
-        self, storage, event_broker, max_queue_size: int = 0, max_concurrency: int = 1,
+        self,
+        storage,
+        event_broker,
+        max_queue_size: int = 0,
+        max_concurrency: int = 1,
         max_depth: int | None = None,
     ):
         super().__init__(max_concurrency=max_concurrency)

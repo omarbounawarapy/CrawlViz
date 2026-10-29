@@ -1,4 +1,5 @@
 """GET /status reports the running crawl's LLM call budget, so the Run page can show it."""
+
 from types import SimpleNamespace
 
 import pytest

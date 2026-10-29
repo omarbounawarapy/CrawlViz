@@ -154,9 +154,11 @@ class PriorityPipeline(BasePipeline):
             else:
                 priority = self.strategy(node, link, 1, 0)
 
-            results.append({
-                "link": link,
-                "score": getattr(link, "score", 0) or 0,
-                "priority": priority,
-            })
+            results.append(
+                {
+                    "link": link,
+                    "score": getattr(link, "score", 0) or 0,
+                    "priority": priority,
+                }
+            )
         return results

@@ -42,7 +42,7 @@ function buildWeb() {
   // A few dew nodes where threads cross; one is the relevance mark.
   const nodes = [];
   for (let r = 2; r <= RINGS; r += 2) {
-    for (let i = (r % 4 === 0 ? 1 : 0); i < SPOKES; i += 3) {
+    for (let i = r % 4 === 0 ? 1 : 0; i < SPOKES; i += 3) {
       const a = (i / SPOKES) * Math.PI * 2 - Math.PI / 2;
       const rad = (r / RINGS) ** 1.15 * R;
       nodes.push({ x: C + Math.cos(a) * rad, y: C + Math.sin(a) * rad, r });
@@ -58,7 +58,6 @@ function buildWeb() {
 const web = buildWeb();
 
 export default function SpiderLoader({ progress, done, onExit, onSkip, title = "CrawlViz" }) {
-
   const [tip, setTip] = useState(0);
   const [leaving, setLeaving] = useState(false);
   const skipRef = useRef(null);
@@ -71,12 +70,16 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
     document.body.style.overflow = "hidden";
     const self = rootRef.current;
     const hidden = Array.from(self?.parentElement?.children ?? []).filter((el) => el !== self && !el.inert);
-    hidden.forEach((el) => { el.inert = true; });
+    hidden.forEach((el) => {
+      el.inert = true;
+    });
     const before = document.activeElement;
     skipRef.current?.focus({ preventScroll: true });
     return () => {
       document.body.style.overflow = prev;
-      hidden.forEach((el) => { el.inert = false; });
+      hidden.forEach((el) => {
+        el.inert = false;
+      });
       if (before && before !== document.body && document.contains(before)) before.focus?.({ preventScroll: true });
     };
   }, []);
@@ -84,7 +87,9 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
   // Escape skips. Enter and Space reach Skip as an ordinary button press, so they never
   // activate a control hidden under the overlay.
   useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onSkip?.(); };
+    const onKey = (e) => {
+      if (e.key === "Escape") onSkip?.();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onSkip]);
@@ -98,7 +103,10 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
     if (!done) return undefined;
     const a = setTimeout(() => setLeaving(true), 450);
     const b = setTimeout(() => onExit?.(), 450 + 700);
-    return () => { clearTimeout(a); clearTimeout(b); };
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
   }, [done, onExit]);
 
   const pct = Math.round(Math.min(1, Math.max(0, done ? 1 : progress)) * 100);
@@ -120,7 +128,15 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
         </g>
         <g className="sl-spokes">
           {web.spokes.map((s, i) => (
-            <line key={i} x1={C} y1={C} x2={s.x} y2={s.y} pathLength="1" style={{ animationDelay: `${0.1 + i * 0.04}s` }} />
+            <line
+              key={i}
+              x1={C}
+              y1={C}
+              x2={s.x}
+              y2={s.y}
+              pathLength="1"
+              style={{ animationDelay: `${0.1 + i * 0.04}s` }}
+            />
           ))}
         </g>
         <g className="sl-nodes">
@@ -133,7 +149,9 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
 
       <div className="sl-center">
         <div className="sl-thread" />
-        <div className="sl-spider"><Spider size={132} /></div>
+        <div className="sl-spider">
+          <Spider size={132} />
+        </div>
       </div>
 
       <div className="sl-hud">
@@ -142,8 +160,20 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
           <div className="sl-fill" style={{ transform: `scaleX(${pct / 100})` }} />
         </div>
         <div className="sl-row">
-          <span className="sl-tip" key={tip} aria-hidden={pct < 100}>{pct >= 100 ? "Ready." : TIPS[tip]}</span>
-          <button ref={skipRef} type="button" className="sl-skip" onClick={(e) => { e.stopPropagation(); onSkip?.(); }}>Skip</button>
+          <span className="sl-tip" key={tip} aria-hidden={pct < 100}>
+            {pct >= 100 ? "Ready." : TIPS[tip]}
+          </span>
+          <button
+            ref={skipRef}
+            type="button"
+            className="sl-skip"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSkip?.();
+            }}
+          >
+            Skip
+          </button>
         </div>
       </div>
     </div>

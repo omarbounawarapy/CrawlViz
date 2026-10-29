@@ -1,4 +1,5 @@
 """The pin observer: what it records from the events it hears."""
+
 from types import SimpleNamespace
 
 from pin_observer import PinObserver
@@ -28,7 +29,10 @@ async def test_it_listens_to_every_event_the_bridge_translates() -> None:
     observer = PinObserver(OPEN_ENDED_BUDGET)
 
     assert {
-        HighScoreLinksEvent, LowScoreLinksEvent, PriorityCalculatedEvent, RequestStartedEvent,
+        HighScoreLinksEvent,
+        LowScoreLinksEvent,
+        PriorityCalculatedEvent,
+        RequestStartedEvent,
         StopCrawlEvent,
     } <= set(observer.handlers)
 
@@ -39,8 +43,14 @@ async def test_each_decision_record_names_its_kind_and_node() -> None:
     await observer.put(high_score_event(seq=3, url="u"))
 
     assert observer.link_scores() == [
-        {"decision": "high_score_links", "seq": 3, "node_id": NODE_ID,
-         "url": "u", "score": 5, "nlp_score": 0.25},
+        {
+            "decision": "high_score_links",
+            "seq": 3,
+            "node_id": NODE_ID,
+            "url": "u",
+            "score": 5,
+            "nlp_score": 0.25,
+        },
     ]
 
 

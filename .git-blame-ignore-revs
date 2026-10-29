@@ -1,0 +1,7 @@
+# Formatting-only commits. Use with: git config blame.ignoreRevsFile .git-blame-ignore-revs
+# UI: every source file is formatted with Prettier
+333247e472ea14117320235be667c0f6191ad311
+# UI styles: stylesheets pass Stylelint
+05136056367cfde9d291b6b0c1c3bfb50ab7eb8b
+# Python: ruff format formats every file
+434ba4fdaadf35da8081165386daab091e680c42

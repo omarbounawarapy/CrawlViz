@@ -86,7 +86,9 @@ def repo_relative(file_path: str, cwd: str | None = None) -> str | None:
     try:
         top = subprocess.run(
             ["git", "-C", str(anchor), "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
         return None
@@ -112,8 +114,9 @@ def agent_area(agent: str) -> tuple[list[str], list[str]]:
 
 def can_write(agent: str, rel_path: str) -> bool:
     # Agents with `memory:` keep notes under .claude/agent-memory*/<agent>/.
-    if matches_any(rel_path, [f".claude/agent-memory/{agent}/**",
-                              f".claude/agent-memory-local/{agent}/**"]):
+    if matches_any(
+        rel_path, [f".claude/agent-memory/{agent}/**", f".claude/agent-memory-local/{agent}/**"]
+    ):
         return True
     write, exclude = agent_area(agent)
     return matches_any(rel_path, write) and not matches_any(rel_path, exclude)
@@ -129,8 +132,10 @@ def owner_of(rel_path: str) -> str | None:
 def in_temp_root(absolute_path: str) -> bool:
     roots = load_ownership()["shared"]["temp_roots"]
     normalized = os.path.normpath(absolute_path)
-    return any(fnmatch.fnmatch(normalized, root) or fnmatch.fnmatch(normalized, root + "/*")
-               for root in roots)
+    return any(
+        fnmatch.fnmatch(normalized, root) or fnmatch.fnmatch(normalized, root + "/*")
+        for root in roots
+    )
 
 
 def is_method_file(rel_path: str) -> bool:

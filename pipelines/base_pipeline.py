@@ -17,6 +17,7 @@ class _ShutdownSentinel:
     returning NotImplemented for non-Node operands (see models/node.py),
     both comparison directions resolve safely.
     """
+
     __slots__ = ()
 
     def __repr__(self) -> str:
@@ -122,9 +123,7 @@ class BasePipeline:
 
     def _pool_spawn(self, count: int) -> None:
         for _ in range(count):
-            self.workers.append(
-                asyncio.create_task(self._worker_loop(self._pool_next_id))
-            )
+            self.workers.append(asyncio.create_task(self._worker_loop(self._pool_next_id)))
             self._pool_next_id += 1
 
     def resize(self, workers: int) -> None:
@@ -169,7 +168,9 @@ class BasePipeline:
                 # only catches something escaping that.
                 logger.exception(
                     "%s worker %d failed processing %s",
-                    type(self).__name__, worker_id, type(item).__name__,
+                    type(self).__name__,
+                    worker_id,
+                    type(item).__name__,
                 )
             finally:
                 self.queue.task_done()

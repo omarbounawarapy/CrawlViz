@@ -22,7 +22,13 @@ export const FETCH_GROUPS = [
   {
     title: "Look like a browser",
     hint: "What the crawler says about itself on each request.",
-    paths: ["fetch.user_agent", "fetch.accept", "fetch.accept_encoding", "fetch.accept_language", "fetch.extra_headers"],
+    paths: [
+      "fetch.user_agent",
+      "fetch.accept",
+      "fetch.accept_encoding",
+      "fetch.accept_language",
+      "fetch.extra_headers",
+    ],
   },
   {
     title: "Robots.txt",

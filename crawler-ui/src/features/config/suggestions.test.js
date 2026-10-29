@@ -30,6 +30,9 @@ describe("presetChanges", () => {
   it("lists only values that differ", () => {
     const changes = presetChanges({ fetch: { min_delay: 2, jitter_max: defaults.fetch.jitter_max } }, defaults);
     expect(changes).toHaveLength(defaults.fetch.min_delay === 2 ? 0 : 1);
-    expect(flatten({ a: { b: 1, c: [2] } })).toEqual([["a.b", 1], ["a.c", [2]]]);
+    expect(flatten({ a: { b: 1, c: [2] } })).toEqual([
+      ["a.b", 1],
+      ["a.c", [2]],
+    ]);
   });
 });

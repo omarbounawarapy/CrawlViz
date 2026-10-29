@@ -1,5 +1,6 @@
 """Applies GRAPH_RULE.md: link distance to the target and radius-2 ball size per candidate seed.
 Uses only the MediaWiki links API (titles, no page bodies)."""
+
 import asyncio
 
 import aiohttp
@@ -14,8 +15,15 @@ async def links_of(session, titles: list[str]) -> dict[str, set[str]]:
     out = {t: set() for t in titles}
     for i in range(0, len(titles), 50):
         batch = titles[i : i + 50]
-        params = {"action": "query", "prop": "links", "titles": "|".join(batch), "pllimit": "max",
-                  "plnamespace": "0", "format": "json", "redirects": "1"}
+        params = {
+            "action": "query",
+            "prop": "links",
+            "titles": "|".join(batch),
+            "pllimit": "max",
+            "plnamespace": "0",
+            "format": "json",
+            "redirects": "1",
+        }
         while True:
             async with session.get(API, params=params) as r:
                 data = await r.json()
@@ -24,7 +32,11 @@ async def links_of(session, titles: list[str]) -> dict[str, set[str]]:
             for page in data.get("query", {}).get("pages", {}).values():
                 t = page["title"]
                 src = norm.get(redir.get(t, t), redir.get(t, t))
-                src = src if src in out else next((b for b in batch if b.replace("_", " ") == src), None)
+                src = (
+                    src
+                    if src in out
+                    else next((b for b in batch if b.replace("_", " ") == src), None)
+                )
                 if src in out:
                     out[src] |= {link["title"] for link in page.get("links", [])}
             if "continue" not in data:
@@ -49,7 +61,10 @@ async def main():
         for seed in CANDIDATES:
             dist, size = await probe(s, seed)
             ok = dist == 2 and 3000 <= size <= 20000
-            print(f"{seed!r}: target distance {dist}, radius-2 ball {size} pages -> {'QUALIFIES' if ok else 'rejected'}", flush=True)
+            print(
+                f"{seed!r}: target distance {dist}, radius-2 ball {size} pages -> {'QUALIFIES' if ok else 'rejected'}",
+                flush=True,
+            )
             if ok:
                 return
 

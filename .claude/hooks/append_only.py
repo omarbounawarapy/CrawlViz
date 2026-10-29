@@ -42,8 +42,10 @@ def main() -> None:
         new = tool_input.get("content", "")
 
     if not _keeps_every_line(old, new):
-        block(f"{rel_path} is append-only: add an amendment below the existing text "
-              "instead of changing or removing lines.")
+        block(
+            f"{rel_path} is append-only: add an amendment below the existing text "
+            "instead of changing or removing lines."
+        )
 
 
 if __name__ == "__main__":

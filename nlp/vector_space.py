@@ -22,7 +22,7 @@ def _json_default(o):
 
 @dataclass
 class VectorEntry:
-    key: str          # url or sentence hash
+    key: str  # url or sentence hash
     vector: np.ndarray
     metadata: dict[str, Any] = field(default_factory=dict)
 

@@ -14,8 +14,14 @@ import sample from "./explainers/sampleData.json";
 
 afterEach(cleanup);
 
-const fraction = { path: "scoring_cascade.high_score_llm_fraction", section: "Scoring cascade", widget: "slider",
-  minimum: 0, maximum: 1, unit: "" };
+const fraction = {
+  path: "scoring_cascade.high_score_llm_fraction",
+  section: "Scoring cascade",
+  widget: "slider",
+  minimum: 0,
+  maximum: 1,
+  unit: "",
+};
 const minDelay = { path: "fetch.min_delay", section: "Fetch", widget: "number", unit: "s" };
 
 describe("saved-state banner", () => {
@@ -30,8 +36,11 @@ describe("saved-state banner", () => {
 
 describe("preset and goal diffs", () => {
   it("shows a 0-1 fraction as a percentage, as the control draws it", () => {
-    const [change] = presetChanges({ scoring_cascade: { high_score_llm_fraction: 0.1 } },
-      { scoring_cascade: { high_score_llm_fraction: 0.3 } }, [fraction]);
+    const [change] = presetChanges(
+      { scoring_cascade: { high_score_llm_fraction: 0.1 } },
+      { scoring_cascade: { high_score_llm_fraction: 0.3 } },
+      [fraction],
+    );
     expect(change.fromText).toBe("30 %");
     expect(change.toText).toBe("10 %");
   });
@@ -50,14 +59,20 @@ describe("preset and goal diffs", () => {
   });
 
   it("names pipeline stages as the Pipelines table does", () => {
-    const [change] = presetChanges({ pipelines: { requests: { workers: 2 } } },
-      { pipelines: { requests: { workers: 4 } } });
+    const [change] = presetChanges(
+      { pipelines: { requests: { workers: 2 } } },
+      { pipelines: { requests: { workers: 4 } } },
+    );
     expect(change.label).toBe("Pipelines › Fetch › Workers");
   });
 
   it("writes the same percentages into the Markdown export", () => {
-    const md = changesMarkdown({ scoring_cascade: { high_score_llm_fraction: 0.1 } },
-      { scoring_cascade: { high_score_llm_fraction: 0.3 } }, "Exported", [fraction]);
+    const md = changesMarkdown(
+      { scoring_cascade: { high_score_llm_fraction: 0.1 } },
+      { scoring_cascade: { high_score_llm_fraction: 0.3 } },
+      "Exported",
+      [fraction],
+    );
     expect(md).toContain("default 30 %, changed to 10 %");
   });
 });
@@ -83,7 +98,9 @@ describe("priority strategy cards", () => {
 
   it("shows the weights' total and that it is not divided by", () => {
     render(<StrategyCards priority={priority} defaults={priority} defaultStrategy="balanced" onChange={() => {}} />);
-    expect(screen.getByText(new RegExp(`The weights add up to ${weightTotal(priority.balanced_weights).toFixed(2)}`))).toBeTruthy();
+    expect(
+      screen.getByText(new RegExp(`The weights add up to ${weightTotal(priority.balanced_weights).toFixed(2)}`)),
+    ).toBeTruthy();
     expect(screen.getByText(/not divided by that total/)).toBeTruthy();
   });
 
@@ -109,7 +126,12 @@ describe("cascade funnel", () => {
 });
 
 describe("cost readout", () => {
-  const cfg = { scoring_cascade: defaults.scoring_cascade, nlp: defaults.nlp, llm: defaults.llm, prompts: defaults.prompts };
+  const cfg = {
+    scoring_cascade: defaults.scoring_cascade,
+    nlp: defaults.nlp,
+    llm: defaults.llm,
+    prompts: defaults.prompts,
+  };
 
   it("gives tokens for a whole crawl and says what a token is", () => {
     render(<CostReadout cascade={cfg.scoring_cascade} nlp={cfg.nlp} llm={cfg.llm} prompts={cfg.prompts} priced />);
@@ -136,8 +158,17 @@ describe("the all-advanced section", () => {
     const { default: SettingsEditor } = await import("./SettingsEditor");
     const schema = (await import("./fixtures/schema.json")).default;
     const fields = buildFields(schema).map((f) => ({ ...f, advanced: true }));
-    render(<SettingsEditor fields={fields} draft={defaults} defaults={defaults} saved={defaults} onChange={() => {}}
-                           section={fields[0].section} sectionOrder={[]} />);
+    render(
+      <SettingsEditor
+        fields={fields}
+        draft={defaults}
+        defaults={defaults}
+        saved={defaults}
+        onChange={() => {}}
+        section={fields[0].section}
+        sectionOrder={[]}
+      />,
+    );
     expect(screen.getByText(new RegExp(`Every setting in ${fields[0].section} is advanced`))).toBeTruthy();
   });
 });

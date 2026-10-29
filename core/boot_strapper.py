@@ -36,9 +36,7 @@ class BootStrapper:
 
     def load_template(self) -> dict:
         if not self.template_file.exists():
-            raise FileNotFoundError(
-                f"Blueprint template not found: {self.template_file}"
-            )
+            raise FileNotFoundError(f"Blueprint template not found: {self.template_file}")
 
         with open(self.template_file, "r", encoding="utf-8") as file:
             self.template = json.load(file)
@@ -64,6 +62,4 @@ class BootStrapper:
             node = Node(node_id, url=seed["url"], domain=domain)
             self.storage.add_node(node)
 
-            await self.event_broker.emit(
-                NodeAddedEvent(correlation_id=str(node_id), node=node)
-            )
+            await self.event_broker.emit(NodeAddedEvent(correlation_id=str(node_id), node=node))

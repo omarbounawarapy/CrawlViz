@@ -1,4 +1,5 @@
 """The committed explainer fixtures are what the Python code produces today."""
+
 import json
 
 from tools import gen_explainer_fixtures as gen

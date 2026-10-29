@@ -9,6 +9,7 @@ distance-2 pages to pages outside the ball are dropped.
     .venv/bin/python -m benchmark.record_ball --seed 'Enseignement_sup%C3%A9rieur_en_Tunisie' \\
         --out benchmark/data/ball.json
 """
+
 import argparse
 import asyncio
 import json
@@ -37,10 +38,10 @@ async def fetch_page(session, name: str, sem, retries: int = 4) -> dict | None:
                         return page
                     if resp.status == 404:
                         return None
-                    wait = float(resp.headers.get("Retry-After", 2 ** attempt))
+                    wait = float(resp.headers.get("Retry-After", 2**attempt))
                     await asyncio.sleep(wait)
             except (aiohttp.ClientError, asyncio.TimeoutError):
-                await asyncio.sleep(2 ** attempt)
+                await asyncio.sleep(2**attempt)
     raise RuntimeError(f"gave up on {name}")
 
 
@@ -51,6 +52,7 @@ async def fetch_all(names: list[str], cache: dict, cache_path: Path, workers: in
     async with aiohttp.ClientSession(
         headers={"User-Agent": USER_AGENT}, timeout=aiohttp.ClientTimeout(total=60)
     ) as session:
+
         async def one(name):
             nonlocal done
             page = await fetch_page(session, name, sem)
@@ -92,7 +94,11 @@ async def record(seed: str, cache_path: Path, workers: int) -> FrozenGraph:
     for n in ball_names:
         page = cache.get(n)
         if page:
-            canon[n] = key(page["canonical"].rsplit("/wiki/", 1)[-1]) if "/wiki/" in page["canonical"] else key(n)
+            canon[n] = (
+                key(page["canonical"].rsplit("/wiki/", 1)[-1])
+                if "/wiki/" in page["canonical"]
+                else key(n)
+            )
     members = set(canon.values())
     pages: dict[str, dict] = {}
     for n in ball_names:

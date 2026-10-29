@@ -1,4 +1,5 @@
 """How a run is compared with a golden file: floats within a rounding step, the rest exact."""
+
 import json
 import math
 from collections.abc import Sequence
@@ -45,9 +46,7 @@ def test_a_float_further_away_fails(tmp_path: Path, difference: float) -> None:
 
 
 @pytest.mark.parametrize("key", ["temperature", "threshold", "weight"])
-def test_a_float_that_is_not_a_computed_score_is_compared_exactly(
-    tmp_path: Path, key: str
-) -> None:
+def test_a_float_that_is_not_a_computed_score_is_compared_exactly(tmp_path: Path, key: str) -> None:
     failure = failure_for(tmp_path, [{key: 0.7}], [{key: 0.7 + ROUNDING_STEP}])
 
     assert failure is not None and f"record.{key}" in failure

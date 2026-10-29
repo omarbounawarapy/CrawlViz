@@ -5,6 +5,7 @@ did (page sequence and the label of each page), whether it counts (``valid``),
 and what it cost (LLM calls, tokens, timings). ``benchmark.analyze`` reads
 these files.
 """
+
 import json
 import re
 from dataclasses import dataclass, field
@@ -44,15 +45,24 @@ class RunRecord:
     manifest: dict = field(default_factory=dict)  # provenance, see benchmark.provenance.manifest
 
     @classmethod
-    def from_result(cls, graph: str, rep: int, budget: int, result: RunResult, **extra) -> "RunRecord":
+    def from_result(
+        cls, graph: str, rep: int, budget: int, result: RunResult, **extra
+    ) -> "RunRecord":
         h = result.health
         return cls(
-            graph=graph, policy=result.policy, rep=rep, budget=budget,
-            sequence=list(result.visited), labels=[int(v) for v in result.labels],
-            valid=h.valid, status=h.status, problems=list(h.problems),
+            graph=graph,
+            policy=result.policy,
+            rep=rep,
+            budget=budget,
+            sequence=list(result.visited),
+            labels=[int(v) for v in result.labels],
+            valid=h.valid,
+            status=h.status,
+            problems=list(h.problems),
             wall_seconds=round(result.wall_seconds, 3),
             absent_page_hits=result.absent_page_hits,
-            scoring_failures=h.scoring_failures, empty_results=h.empty_results,
+            scoring_failures=h.scoring_failures,
+            empty_results=h.empty_results,
             **extra,
         )
 
@@ -83,7 +93,9 @@ class ResultSink:
             self.directory.mkdir(parents=True, exist_ok=True)
             name = record.filename()
             if record.replay:  # a replay never overwrites the live run it reproduces
-                name = name.removesuffix(".json") + ("__replay-miss.json" if record.replay_misses else "__replay.json")
+                name = name.removesuffix(".json") + (
+                    "__replay-miss.json" if record.replay_misses else "__replay.json"
+                )
             (self.directory / name).write_text(
                 json.dumps(record.to_json(), ensure_ascii=False, indent=1)
             )

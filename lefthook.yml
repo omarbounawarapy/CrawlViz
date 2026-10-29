@@ -1,0 +1,29 @@
+# Fast checks on the files being committed. `make check` stays the full gate.
+# Install once with `make hooks`. It refuses to run when core.hooksPath is set globally;
+# run these commands by hand (or `make check-changed`) in that case.
+pre-commit:
+  parallel: true
+  commands:
+    ruff-check:
+      glob: "*.py"
+      run: uv run ruff check {staged_files}
+    ruff-format:
+      glob: "*.py"
+      run: uv run ruff format --check {staged_files}
+    prettier:
+      root: crawler-ui/
+      glob: "*.{js,jsx,ts,tsx,css,json,md}"
+      run: npx prettier --check {staged_files}
+    eslint:
+      root: crawler-ui/
+      glob: "*.{js,jsx,ts,tsx}"
+      run: npx eslint {staged_files}
+    stylelint:
+      root: crawler-ui/
+      glob: "*.css"
+      run: npx stylelint {staged_files}
+
+commit-msg:
+  commands:
+    title:
+      run: python3 .claude/hooks/commit_msg_check.py {1}

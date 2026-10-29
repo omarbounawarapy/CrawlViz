@@ -1,13 +1,26 @@
 // Pure helpers behind the settings editor. The backend's JSON Schema is the
 // only description of what can be edited; nothing here names a setting.
 
-const ACRONYMS = { llm: "LLM", nlp: "NLP", ui: "UI", url: "URL", api: "API", ws: "WS", http: "HTTP", nlp_bias: "NLP bias" };
+const ACRONYMS = {
+  llm: "LLM",
+  nlp: "NLP",
+  ui: "UI",
+  url: "URL",
+  api: "API",
+  ws: "WS",
+  http: "HTTP",
+  nlp_bias: "NLP bias",
+};
 
 export function humanize(key = "") {
-  const words = key.replace(/[_-]+/g, " ").trim().split(/\s+/).map((w, i) => {
-    const lower = w.toLowerCase();
-    return ACRONYMS[lower] ?? (i === 0 ? lower[0]?.toUpperCase() + lower.slice(1) : lower);
-  });
+  const words = key
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .map((w, i) => {
+      const lower = w.toLowerCase();
+      return ACRONYMS[lower] ?? (i === 0 ? lower[0]?.toUpperCase() + lower.slice(1) : lower);
+    });
   return words.join(" ");
 }
 
@@ -51,7 +64,10 @@ export function buildFields(schema) {
         return;
       }
       fields.push({
-        path, key, topKey, group,
+        path,
+        key,
+        topKey,
+        group,
         title: humanize(key),
         description: (raw.description ?? node.description ?? "").replace(/\s*--\s*/g, ". "),
         type: node.type,
@@ -90,11 +106,18 @@ export function groupBySection(fields, order = []) {
     if (!out.has(f.section)) out.set(f.section, []);
     out.get(f.section).push(f);
   });
-  const rank = (name) => { const i = order.indexOf(name); return i < 0 ? order.length : i; };
+  const rank = (name) => {
+    const i = order.indexOf(name);
+    return i < 0 ? order.length : i;
+  };
   return [...out.entries()].sort((a, b) => rank(a[0]) - rank(b[0]));
 }
 
-export const sectionSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+export const sectionSlug = (name) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
 /** The sibling path a pair/active-when hint names, relative to `field`'s own object. */
 export const siblingPath = (field, key) => field.path.split(".").slice(0, -1).concat(key).join(".");
@@ -153,8 +176,13 @@ export const isEmptyPatch = (patch) => Object.keys(patch).length === 0;
 /** The sections holding a changed field, in `order`: what the save bar says is unsaved, and where. */
 export function changedSections(fields, patch, order = []) {
   const names = new Set();
-  fields.forEach((f) => { if (getIn(patch, f.path) !== undefined) names.add(f.section); });
-  const rank = (name) => { const i = order.indexOf(name); return i < 0 ? order.length : i; };
+  fields.forEach((f) => {
+    if (getIn(patch, f.path) !== undefined) names.add(f.section);
+  });
+  const rank = (name) => {
+    const i = order.indexOf(name);
+    return i < 0 ? order.length : i;
+  };
   return [...names].sort((a, b) => rank(a) - rank(b));
 }
 

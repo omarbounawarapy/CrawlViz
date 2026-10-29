@@ -7,6 +7,7 @@ lived (the priority_strategy/scoring_strategy naming conflation this
 suite guards against by testing each strategy's actual weighting, not
 just that it runs).
 """
+
 import pytest
 
 from priority.strategy import (
@@ -106,10 +107,18 @@ class TestStrategiesShareContract:
         with identical link signals should never score higher than a
         shallow one.
         """
-        link = FakeLink(nlp_vector={"target_similarity": 0.8, "novelty_injection": 0.8,
-                                     "coverage_gap": 0.8, "contextual_consistency": 0.8,
-                                     "cluster_distance": 0.8, "semantic_delta": 0.8,
-                                     "lexical_overlap": 0.8}, score=80)
+        link = FakeLink(
+            nlp_vector={
+                "target_similarity": 0.8,
+                "novelty_injection": 0.8,
+                "coverage_gap": 0.8,
+                "contextual_consistency": 0.8,
+                "cluster_distance": 0.8,
+                "semantic_delta": 0.8,
+                "lexical_overlap": 0.8,
+            },
+            score=80,
+        )
         shallow = strategy(FakeNode(depth=0), link, nlp_bias=1.0, llm_bias=1.0)
         deep = strategy(FakeNode(depth=10), link, nlp_bias=1.0, llm_bias=1.0)
         assert deep <= shallow
@@ -163,8 +172,11 @@ class TestBalancedWeighting:
         node = FakeNode(depth=0)
         baseline = balanced(node, FakeLink(nlp_vector={}, score=None), 1.0, 0.0)
         for key in (
-            "target_similarity", "novelty_injection", "coverage_gap",
-            "contextual_consistency", "lexical_overlap",
+            "target_similarity",
+            "novelty_injection",
+            "coverage_gap",
+            "contextual_consistency",
+            "lexical_overlap",
         ):
             bumped = balanced(node, FakeLink(nlp_vector={key: 1.0}, score=None), 1.0, 0.0)
             assert bumped > baseline, f"{key} did not contribute to balanced's score"
@@ -176,6 +188,7 @@ class TestPipelinePriorityScale:
     @staticmethod
     def _pipe():
         from pipelines import PriorityPipeline
+
         return PriorityPipeline(storage=None, event_broker=None)
 
     @staticmethod

@@ -246,9 +246,22 @@ class TestParseMypyModules:
 
 def git(repo: Path, *args: str) -> None:
     subprocess.run(
-        ["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
-         "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main", *args],
-        cwd=repo, check=True, capture_output=True, text=True,
+        [
+            "git",
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "-c",
+            "init.defaultBranch=main",
+            *args,
+        ],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
     )
 
 

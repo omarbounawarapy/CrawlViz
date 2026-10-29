@@ -1,4 +1,5 @@
 """The benchmark routes read experiment files, annotate the audit and whitelist CLI flags."""
+
 import csv
 import json
 
@@ -18,27 +19,50 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setattr(bm, "DATA_DIR", data)
     monkeypatch.setattr(bm, "RESULTS_DIR", results)
     bm._graph_cache.clear()
-    (data / "g.json").write_text(json.dumps({
-        "seed": "A", "topic": "t",
-        "pages": {
-            "A": {"title": "A", "label": 0, "links": [{"to": "B", "anchor": "b"}]},
-            "B": {"title": "B", "label": 1, "links": []},
-        },
-    }))
+    (data / "g.json").write_text(
+        json.dumps(
+            {
+                "seed": "A",
+                "topic": "t",
+                "pages": {
+                    "A": {"title": "A", "label": 0, "links": [{"to": "B", "anchor": "b"}]},
+                    "B": {"title": "B", "label": 1, "links": []},
+                },
+            }
+        )
+    )
     for i, labels in enumerate([[1, 0, 1], [0, 1, 1]]):
-        (results / f"g.json__bfs__rep{i}.json").write_text(json.dumps({
-            "format": 1, "graph": "g.json", "policy": "bfs", "rep": i, "budget": 3,
-            "sequence": ["A", "B", "C"], "labels": labels, "valid": True, "status": "completed",
-        }))
+        (results / f"g.json__bfs__rep{i}.json").write_text(
+            json.dumps(
+                {
+                    "format": 1,
+                    "graph": "g.json",
+                    "policy": "bfs",
+                    "rep": i,
+                    "budget": 3,
+                    "sequence": ["A", "B", "C"],
+                    "labels": labels,
+                    "valid": True,
+                    "status": "completed",
+                }
+            )
+        )
     with (data / "audit.tsv").open("w", newline="") as f:
         w = csv.writer(f, delimiter="\t")
         w.writerow(["id", "title", "excerpt", "human_label"])
         w.writerow(["1", "A", "text a", ""])
         w.writerow(["2", "B", "text b", ""])
-    (data / "audit_key.json").write_text(json.dumps({
-        "graph_label_counts": {"0": 1, "1": 1, "2": 0},
-        "items": {"1": {"page": "A", "judge_label": 0}, "2": {"page": "B", "judge_label": 1}},
-    }))
+    (data / "audit_key.json").write_text(
+        json.dumps(
+            {
+                "graph_label_counts": {"0": 1, "1": 1, "2": 0},
+                "items": {
+                    "1": {"page": "A", "judge_label": 0},
+                    "2": {"page": "B", "judge_label": 1},
+                },
+            }
+        )
+    )
     app = FastAPI()
     app.include_router(bm.router)
     return TestClient(app)
@@ -71,10 +95,16 @@ def test_audit_is_blind_and_annotation_persists(client, tmp_path):
 
 
 def test_job_flags_are_whitelisted():
-    cmd = jobs.build_command("run", {"graph": "benchmark/data/isi.json", "budget": 50, "cascade": True})
+    cmd = jobs.build_command(
+        "run", {"graph": "benchmark/data/isi.json", "budget": 50, "cascade": True}
+    )
     assert "--cascade" in cmd and cmd[cmd.index("--budget") + 1] == "50"
-    for kind, args in [("run", {"rm": 1}), ("run", {"graph": "../x.json"}),
-                       ("run", {"model": "a; ls"}), ("shell", {})]:
+    for kind, args in [
+        ("run", {"rm": 1}),
+        ("run", {"graph": "../x.json"}),
+        ("run", {"model": "a; ls"}),
+        ("shell", {}),
+    ]:
         with pytest.raises(HTTPException):
             jobs.build_command(kind, args)
 
@@ -95,21 +125,37 @@ def test_protocol_is_read_from_the_file(client, tmp_path, monkeypatch):
         "## 1. Question\n\n| | Hypothesis | Comparison |\n|---|---|---|\n"
         "| H1 | A beats B. | `a` vs `b` |\n\n## 5. Arms\n\nBudgets (fetched pages, seed included): 50, 100.\n\n"
         "| Arm | Repeats | Seeds | LLM |\n|---|---|---|---|\n| `cascade` | 10 | rep | yes |\n\n"
-        "## Amendments\n\n**2026-01-01, a change.** Body text.\n")
+        "## Amendments\n\n**2026-01-01, a change.** Body text.\n"
+    )
     monkeypatch.setattr(bm, "PROTOCOL_FILE", md)
     p = client.get("/benchmark/overview").json()["protocol"]
     assert p["hypotheses"][0]["text"] == "A beats B."
     assert p["budgets"] == [50, 100] and p["arms"][0]["arm"] == "cascade"
-    assert p["amendments"][0]["title"].startswith("2026-01-01") and p["amendments"][0]["body"] == "Body text."
+    assert (
+        p["amendments"][0]["title"].startswith("2026-01-01")
+        and p["amendments"][0]["body"] == "Body text."
+    )
 
 
 def test_estimate_comes_from_recorded_runs(client):
     assert client.get("/benchmark/estimate").json()["arms"] == {}
-    (bm.RESULTS_DIR / "c.json").write_text(json.dumps({
-        "format": 1, "graph": "g.json", "policy": "cascade", "rep": 0, "budget": 4,
-        "sequence": ["A", "B"], "labels": [0, 1], "valid": True, "status": "completed",
-        "input_tokens": 600, "output_tokens": 400,
-    }))
+    (bm.RESULTS_DIR / "c.json").write_text(
+        json.dumps(
+            {
+                "format": 1,
+                "graph": "g.json",
+                "policy": "cascade",
+                "rep": 0,
+                "budget": 4,
+                "sequence": ["A", "B"],
+                "labels": [0, 1],
+                "valid": True,
+                "status": "completed",
+                "input_tokens": 600,
+                "output_tokens": 400,
+            }
+        )
+    )
     arm = client.get("/benchmark/estimate?budget=50").json()["arms"]["cascade"]
     assert arm["tokens_per_page"] == 500 and arm["tokens_for_budget"] == 25000
 

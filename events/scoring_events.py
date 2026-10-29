@@ -5,6 +5,7 @@ from typing import Any, Literal
 # 1. ENQUEUE / BACKPRESSURE
 # =========================================================
 
+
 @dataclass
 class ScoringEnqueuedEvent:
     correlation_id: str
@@ -15,6 +16,7 @@ class ScoringEnqueuedEvent:
 # =========================================================
 # 2. INPUT READINESS SNAPSHOT
 # =========================================================
+
 
 @dataclass
 class ScoringInputSnapshotEvent:
@@ -27,6 +29,7 @@ class ScoringInputSnapshotEvent:
 # 3. EXECUTION START
 # =========================================================
 
+
 @dataclass
 class ScoringStartedEvent:
     correlation_id: str
@@ -37,6 +40,7 @@ class ScoringStartedEvent:
 # =========================================================
 # 4. SUCCESS INTERNAL COMPLETION
 # =========================================================
+
 
 @dataclass
 class ScoringCompletedEvent:
@@ -50,6 +54,7 @@ class ScoringCompletedEvent:
 # 5. EMPTY RESULT (RETRY TRIGGER)
 # =========================================================
 
+
 @dataclass
 class EmptyScoreResultsEvent:
     correlation_id: str
@@ -59,6 +64,7 @@ class EmptyScoreResultsEvent:
 # =========================================================
 # 6. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
+
 
 @dataclass
 class ScoringFailedEvent:
@@ -72,6 +78,7 @@ class ScoringFailedEvent:
 # =========================================================
 # 7. DOWNSTREAM (PIPELINE COMPATIBILITY)
 # =========================================================
+
 
 @dataclass
 class LinksScoredEvent:

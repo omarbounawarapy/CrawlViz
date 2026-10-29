@@ -31,40 +31,82 @@ const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
 const PAGE_ROUTES = new Set(["graph", "run", "blueprints", "data", "config", "benchmark"]);
 const LEGACY_ROUTES = new Set(["overview", "pipeline", "timeline"]);
 const SECTION_TITLES = {
-  graph: "Graph", run: "Run a crawl", blueprints: "Blueprints", data: "Extracted data",
-  config: "Configuration", benchmark: "Benchmark",
+  graph: "Graph",
+  run: "Run a crawl",
+  blueprints: "Blueprints",
+  data: "Extracted data",
+  config: "Configuration",
+  benchmark: "Benchmark",
 };
 
 function initialDemo() {
-  try { return new URLSearchParams(window.location.search).has("demo"); } catch { return false; }
+  try {
+    return new URLSearchParams(window.location.search).has("demo");
+  } catch {
+    return false;
+  }
 }
 
 function EmptyCanvas({ onRun, onDemo }) {
   const btn = {
-    minHeight: 36, padding: "0 16px", borderRadius: theme.radii.md, fontSize: 14, fontWeight: 600,
+    minHeight: 36,
+    padding: "0 16px",
+    borderRadius: theme.radii.md,
+    fontSize: 14,
+    fontWeight: 600,
     border: `1px solid ${theme.colors.text.primary}`,
   };
   return (
-    <div style={{
-      position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 32, pointerEvents: "none",
-    }}>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 32,
+        pointerEvents: "none",
+      }}
+    >
       <div style={{ maxWidth: 520, pointerEvents: "auto" }}>
-        <h1 style={{
-          fontFamily: theme.typography.fontDisplay, fontWeight: 600, fontSize: 34, lineHeight: 1.15,
-          color: theme.colors.text.primary, textWrap: "balance", marginBottom: 14,
-        }}>
+        <h1
+          style={{
+            fontFamily: theme.typography.fontDisplay,
+            fontWeight: 600,
+            fontSize: 34,
+            lineHeight: 1.15,
+            color: theme.colors.text.primary,
+            textWrap: "balance",
+            marginBottom: 14,
+          }}
+        >
           No crawl on the plate yet.
         </h1>
-        <p style={{ fontSize: 15, lineHeight: 1.55, color: theme.colors.text.secondary, marginBottom: 22, maxWidth: "60ch" }}>
-          CrawlViz scores every link before it fetches it. Start a crawl to watch the graph grow, then select a
-          page to read why the crawler followed it. Vermilion marks the links it judged most promising.
+        <p
+          style={{
+            fontSize: 15,
+            lineHeight: 1.55,
+            color: theme.colors.text.secondary,
+            marginBottom: 22,
+            maxWidth: "60ch",
+          }}
+        >
+          CrawlViz scores every link before it fetches it. Start a crawl to watch the graph grow, then select a page to
+          read why the crawler followed it. Vermilion marks the links it judged most promising.
         </p>
         <div style={{ display: "flex", gap: 12 }}>
-          <button type="button" onClick={onRun} style={{ ...btn, background: theme.colors.text.primary, color: theme.colors.background.panel }}>
+          <button
+            type="button"
+            onClick={onRun}
+            style={{ ...btn, background: theme.colors.text.primary, color: theme.colors.background.panel }}
+          >
             Start a crawl
           </button>
-          <button type="button" onClick={onDemo} style={{ ...btn, background: "transparent", color: theme.colors.text.primary }}>
+          <button
+            type="button"
+            onClick={onDemo}
+            style={{ ...btn, background: "transparent", color: theme.colors.text.primary }}
+          >
             Load a synthetic sample
           </button>
         </div>
@@ -87,7 +129,7 @@ export default function App() {
   const [eventsOpen, setEventsOpen] = useState(route === "timeline");
 
   const [selectedNodeId, setSelectedNodeId] = useState(null);
-  const selectedNode = selectedNodeId ? state.nodes.get(selectedNodeId) ?? null : null;
+  const selectedNode = selectedNodeId ? (state.nodes.get(selectedNodeId) ?? null) : null;
   const handleNodeClick = useCallback((node) => setSelectedNodeId(node.node_id), []);
   const handleClearSelection = useCallback(() => setSelectedNodeId(null), []);
   // Closing the annotation panel hands focus back to the page it described, not to <body>.
@@ -102,7 +144,7 @@ export default function App() {
 
   // Each section is its own page to the browser and to assistive tech (WCAG 2.4.2).
   useEffect(() => {
-    const name = notFound ? "Page not found" : SECTION_TITLES[activeSection] ?? "Graph";
+    const name = notFound ? "Page not found" : (SECTION_TITLES[activeSection] ?? "Graph");
     document.title = `${name} · CrawlViz`;
   }, [activeSection, notFound]);
 
@@ -129,55 +171,86 @@ export default function App() {
 
   const onGraph = activeSection === "graph";
 
-  const inspector = onGraph && selectedNode ? (
-    <NodeInspector
-      node={selectedNode}
-      detail={state.nodeDetails[selectedNode.node_id]}
-      allNodes={state.nodes}
-      errors={state.errors}
-      eventLog={state.eventLog}
-      onSelectNode={setSelectedNodeId}
-      onClose={handleCloseInspector}
-    />
-  ) : null;
+  const inspector =
+    onGraph && selectedNode ? (
+      <NodeInspector
+        node={selectedNode}
+        detail={state.nodeDetails[selectedNode.node_id]}
+        allNodes={state.nodes}
+        errors={state.errors}
+        eventLog={state.eventLog}
+        onSelectNode={setSelectedNodeId}
+        onClose={handleCloseInspector}
+      />
+    ) : null;
 
-  const summary = state.nodes.size > 0
-    ? `${state.nodes.size} pages · ${metrics.candidatesDropped} links skipped`
-    : null;
+  const summary =
+    state.nodes.size > 0 ? `${state.nodes.size} pages · ${metrics.candidatesDropped} links skipped` : null;
 
-  const offline = apiDown && !demoMode ? (
-    <div role="alert" style={{
-      padding: "8px 16px", fontSize: 13, background: theme.colors.background.panel, color: theme.colors.text.primary,
-      borderBottom: `1px solid ${theme.colors.accent.red}`,
-      display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap",
-    }}>
-      <span>
-        The backend is not answering. Pages that load data will show errors until it is back;
-        start it with <code>uvicorn main:app</code> from the repository root.
-      </span>
-      <button type="button" onClick={() => window.location.reload()} style={{
-        minHeight: 26, padding: "0 10px", fontSize: 12, fontWeight: 600, borderRadius: theme.radii.md,
-        background: "transparent", color: theme.colors.text.primary, border: `1px solid ${theme.colors.text.primary}`,
-      }}>Retry</button>
-    </div>
-  ) : null;
-
-  const banner = offline ?? (demoMode ? (
-    <div role="status" style={{
-      flexShrink: 0, padding: "8px 20px", fontSize: 13, fontWeight: 500,
-      background: theme.colors.background.panel, color: theme.colors.text.primary,
-      borderBottom: `1px solid ${theme.colors.background.border}`,
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-    }}>
-      <span>Synthetic sample: generated in the browser, not a real crawl.</span>
-      <a
-        href={window.location.pathname}
-        style={{ color: theme.colors.text.primary, fontWeight: 600 }}
+  const offline =
+    apiDown && !demoMode ? (
+      <div
+        role="alert"
+        style={{
+          padding: "8px 16px",
+          fontSize: 13,
+          background: theme.colors.background.panel,
+          color: theme.colors.text.primary,
+          borderBottom: `1px solid ${theme.colors.accent.red}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
       >
-        Leave sample
-      </a>
-    </div>
-  ) : null);
+        <span>
+          The backend is not answering. Pages that load data will show errors until it is back; start it with{" "}
+          <code>uvicorn main:app</code> from the repository root.
+        </span>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          style={{
+            minHeight: 26,
+            padding: "0 10px",
+            fontSize: 12,
+            fontWeight: 600,
+            borderRadius: theme.radii.md,
+            background: "transparent",
+            color: theme.colors.text.primary,
+            border: `1px solid ${theme.colors.text.primary}`,
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    ) : null;
+
+  const banner =
+    offline ??
+    (demoMode ? (
+      <div
+        role="status"
+        style={{
+          flexShrink: 0,
+          padding: "8px 20px",
+          fontSize: 13,
+          fontWeight: 500,
+          background: theme.colors.background.panel,
+          color: theme.colors.text.primary,
+          borderBottom: `1px solid ${theme.colors.background.border}`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span>Synthetic sample: generated in the browser, not a real crawl.</span>
+        <a href={window.location.pathname} style={{ color: theme.colors.text.primary, fontWeight: 600 }}>
+          Leave sample
+        </a>
+      </div>
+    ) : null);
 
   return (
     <Shell
@@ -189,9 +262,14 @@ export default function App() {
       summary={onGraph ? summary : null}
       errorCount={state.errors.length}
       measuresOpen={onGraph ? measuresOpen : undefined}
-      onToggleMeasures={onGraph ? () => setMeasuresOpen(o => !o) : undefined}
-      onShowErrors={() => { navigate("/graph"); setMeasuresOpen(true); }}
-      onStop={() => { stopCrawl().catch(() => {}); }}
+      onToggleMeasures={onGraph ? () => setMeasuresOpen((o) => !o) : undefined}
+      onShowErrors={() => {
+        navigate("/graph");
+        setMeasuresOpen(true);
+      }}
+      onStop={() => {
+        stopCrawl().catch(() => {});
+      }}
       banner={banner}
       inspector={inspector}
     >
@@ -218,11 +296,20 @@ export default function App() {
                 <EmptyCanvas onRun={() => navigate("/run")} onDemo={() => setDemoMode(true)} />
               )}
               {state.nodes.size === 0 && replayIndex != null && (
-                <p style={{
-                  position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                  pointerEvents: "none", fontFamily: theme.typography.fontDisplay, fontSize: 17,
-                  color: theme.colors.text.secondary, margin: 0,
-                }}>
+                <p
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    pointerEvents: "none",
+                    fontFamily: theme.typography.fontDisplay,
+                    fontSize: 17,
+                    color: theme.colors.text.secondary,
+                    margin: 0,
+                  }}
+                >
                   Nothing found yet at this point. Drag the scrubber forward.
                 </p>
               )}
@@ -233,13 +320,20 @@ export default function App() {
                 aria-label="Measurements"
                 className="measures-drawer"
                 style={{
-                  width: 460, flexShrink: 0, overflowY: "auto",
-                  background: theme.colors.background.panel, borderLeft: `1px solid ${theme.colors.background.border}`,
+                  width: 460,
+                  flexShrink: 0,
+                  overflowY: "auto",
+                  background: theme.colors.background.panel,
+                  borderLeft: `1px solid ${theme.colors.background.border}`,
                 }}
               >
                 <OverviewPage state={state} metrics={metrics} />
                 <div style={{ borderTop: `1px solid ${theme.colors.background.border}` }}>
-                  <PipelineMonitor pipelineStats={state.pipelineStats} eventLog={state.eventLog} errors={state.errors} />
+                  <PipelineMonitor
+                    pipelineStats={state.pipelineStats}
+                    eventLog={state.eventLog}
+                    errors={state.errors}
+                  />
                 </div>
               </aside>
             )}
@@ -251,19 +345,20 @@ export default function App() {
             onSeek={handleSeek}
             onExitReplay={handleExitReplay}
             expanded={eventsOpen}
-            onToggleExpanded={() => setEventsOpen(o => !o)}
+            onToggleExpanded={() => setEventsOpen((o) => !o)}
           />
         </div>
       )}
 
-      {activeSection === "run" && (
-        <RunPage onNavigate={navigateSection} state={state} metrics={metrics} />
-      )}
+      {activeSection === "run" && <RunPage onNavigate={navigateSection} state={state} metrics={metrics} />}
       {activeSection === "blueprints" && <BlueprintManager onNavigate={navigateSection} />}
       {activeSection === "data" && (
         <DataExplorer
           graphNodes={state.nodes}
-          onOpenNode={(node) => { setSelectedNodeId(node.node_id); navigate("/graph"); }}
+          onOpenNode={(node) => {
+            setSelectedNodeId(node.node_id);
+            navigate("/graph");
+          }}
         />
       )}
       {activeSection === "config" && <ConfigPage />}

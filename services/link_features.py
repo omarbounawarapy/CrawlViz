@@ -33,9 +33,22 @@ if TYPE_CHECKING:
 # Navigation / legal page phrases; a link that embeds close to one of these is
 # almost never topical content (see FeatureExtractor.boilerplate_score).
 BOILERPLATE_PROTOTYPES = [
-    "contact us", "privacy policy", "copyright", "disclaimers", "about us",
-    "terms of use", "log in", "sign up", "main page", "site map", "current events",
-    "recent changes", "random page", "donate", "help", "cookie policy",
+    "contact us",
+    "privacy policy",
+    "copyright",
+    "disclaimers",
+    "about us",
+    "terms of use",
+    "log in",
+    "sign up",
+    "main page",
+    "site map",
+    "current events",
+    "recent changes",
+    "random page",
+    "donate",
+    "help",
+    "cookie policy",
 ]
 
 # Density radius until the first space statistics are derived.
@@ -143,7 +156,9 @@ class LinkFeatureScorer:
             e.metadata.get("text", "") for e in space.entries if e.metadata.get("text")
         ]
         self._vocab = {
-            t for text in texts for t in re.findall(r"\w+", text.lower())
+            t
+            for text in texts
+            for t in re.findall(r"\w+", text.lower())
             if len(t) >= MIN_VOCAB_WORD_CHARS
         }
         self._density_radius = self.extractor.adaptive_radius(space.get_matrix())
@@ -167,26 +182,30 @@ class LinkFeatureScorer:
 
     async def score_link(self, link: Link, parent: ParentContext) -> None:
         """Set ``link.nlp_vector`` and ``link._nlp_score``."""
-        await self._emit(NLP_InputReceived(
-            trace_id=parent.trace_id,
-            node_id=parent.node_id,
-            link_url=link.url,
-            anchor_preview=(link.anchor or "")[:ANCHOR_PREVIEW_CHARS],
-            context_preview=(link.context or "")[:CONTEXT_PREVIEW_CHARS],
-            parent_content_len=len(parent.content),
-            space_size=len(parent.space),
-        ))
+        await self._emit(
+            NLP_InputReceived(
+                trace_id=parent.trace_id,
+                node_id=parent.node_id,
+                link_url=link.url,
+                anchor_preview=(link.anchor or "")[:ANCHOR_PREVIEW_CHARS],
+                context_preview=(link.context or "")[:CONTEXT_PREVIEW_CHARS],
+                parent_content_len=len(parent.content),
+                space_size=len(parent.space),
+            )
+        )
         link.nlp_vector = await self.generate_vector(link, parent)
         link._nlp_score = await self.composite_score(
             link.nlp_vector, link_url=link.url, trace_id=parent.trace_id, node_id=parent.node_id
         )
-        await self._emit(NLP_ScoreEmitted(
-            trace_id=parent.trace_id,
-            node_id=parent.node_id,
-            link_url=link.url,
-            nlp_score=link._nlp_score,
-            space_version=parent.space.version,
-        ))
+        await self._emit(
+            NLP_ScoreEmitted(
+                trace_id=parent.trace_id,
+                node_id=parent.node_id,
+                link_url=link.url,
+                nlp_score=link._nlp_score,
+                space_version=parent.space.version,
+            )
+        )
 
     async def generate_vector(self, link: Link, parent: ParentContext) -> dict[str, float]:
         anchor_text = (link.anchor or "").strip()
@@ -224,26 +243,30 @@ class LinkFeatureScorer:
     async def _emit_feature_traces(
         self, link: Link, parent: ParentContext, features: dict[str, float]
     ) -> None:
-        await self._emit(NLP_FeaturesExtracted(
-            trace_id=parent.trace_id,
-            node_id=parent.node_id,
-            link_url=link.url,
-            features=features,
-            embedding_dim=self.engine.dim,
-            space_size=len(parent.space),
-            cluster_count=len(parent.cluster_centroids),
-        ))
-        await self._emit(NLP_SimilarityScored(
-            trace_id=parent.trace_id,
-            node_id=parent.node_id,
-            link_url=link.url,
-            target_similarity=features.get("target_similarity", 0.0),
-            contextual_consistency=features.get("contextual_consistency", 0.0),
-            novelty_injection=features.get("novelty_injection", 0.0),
-            region_density=features.get("region_density", 0.0),
-            cluster_distance=features.get("cluster_distance", 0.0),
-            coverage_gap=features.get("coverage_gap", 0.0),
-        ))
+        await self._emit(
+            NLP_FeaturesExtracted(
+                trace_id=parent.trace_id,
+                node_id=parent.node_id,
+                link_url=link.url,
+                features=features,
+                embedding_dim=self.engine.dim,
+                space_size=len(parent.space),
+                cluster_count=len(parent.cluster_centroids),
+            )
+        )
+        await self._emit(
+            NLP_SimilarityScored(
+                trace_id=parent.trace_id,
+                node_id=parent.node_id,
+                link_url=link.url,
+                target_similarity=features.get("target_similarity", 0.0),
+                contextual_consistency=features.get("contextual_consistency", 0.0),
+                novelty_injection=features.get("novelty_injection", 0.0),
+                region_density=features.get("region_density", 0.0),
+                cluster_distance=features.get("cluster_distance", 0.0),
+                coverage_gap=features.get("coverage_gap", 0.0),
+            )
+        )
 
     async def composite_score(
         self,
@@ -263,14 +286,16 @@ class LinkFeatureScorer:
         score = float(max(0.0, min(1.0, raw_sum)))
 
         if trace_id:
-            await self._emit(NLP_VectorComposed(
-                trace_id=trace_id,
-                node_id=node_id,
-                link_url=link_url,
-                weights_used=weights,
-                weighted_contributions=contributions,
-                raw_sum=raw_sum,
-                final_score=score,
-            ))
+            await self._emit(
+                NLP_VectorComposed(
+                    trace_id=trace_id,
+                    node_id=node_id,
+                    link_url=link_url,
+                    weights_used=weights,
+                    weighted_contributions=contributions,
+                    raw_sum=raw_sum,
+                    final_score=score,
+                )
+            )
 
         return score

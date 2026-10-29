@@ -1,6 +1,7 @@
 """Unit tests for services/results_mapper.py -- pure logic, no I/O,
 responsible for defensively parsing LLM JSON output onto Link objects.
 """
+
 from models import Link
 from services.results_mapper import ResultMapper
 from services.scoring_service import ScoringService
@@ -35,7 +36,9 @@ class TestMapResults:
         # test below), so this needs a populated dict to actually
         # exercise the per-missing-link default path.
         links = [FakeLink("https://missing.com"), FakeLink("https://present.com")]
-        results = {"https://present.com": {"score": 10, "relevance_type": "direct", "expansions": []}}
+        results = {
+            "https://present.com": {"score": 10, "relevance_type": "direct", "expansions": []}
+        }
         mapped = ResultMapper().map_results(results, links)
         assert mapped[0].score == 0
         assert mapped[0].relevance_type == "irrelevant"
@@ -45,7 +48,9 @@ class TestMapResults:
         # `link.score = link.score or 0` -- an existing truthy score
         # survives a missing LLM entry rather than being reset to 0.
         links = [FakeLink("https://missing.com", score=42), FakeLink("https://present.com")]
-        results = {"https://present.com": {"score": 10, "relevance_type": "direct", "expansions": []}}
+        results = {
+            "https://present.com": {"score": 10, "relevance_type": "direct", "expansions": []}
+        }
         mapped = ResultMapper().map_results(results, links)
         assert mapped[0].score == 42
 
@@ -158,14 +163,19 @@ class TestParseExpansions:
 
 
 def test_common_url_prefix_stops_at_path_boundary():
-    links = [Link(url=f"https://h.org/wiki/{n}", anchor="", context="") for n in ("Insulin", "Insight")]
+    links = [
+        Link(url=f"https://h.org/wiki/{n}", anchor="", context="") for n in ("Insulin", "Insight")
+    ]
     assert ScoringService.common_url_prefix(links) == "https://h.org/wiki/"
     assert ScoringService.common_url_prefix(links[:1]) == ""
 
 
 def test_list_response_with_shortened_urls_maps_back_onto_links():
     prefix = "https://h.org/wiki/"
-    links = [Link(url=prefix + "A", anchor="", context=""), Link(url=prefix + "B", anchor="", context="")]
+    links = [
+        Link(url=prefix + "A", anchor="", context=""),
+        Link(url=prefix + "B", anchor="", context=""),
+    ]
     raw = {"results": [{"url": "A", "score": 90, "relevance_type": "direct", "expansions": ["x"]}]}
     restored = ScoringService._restore_urls(raw, prefix)
     ResultMapper().map_results(restored, links)

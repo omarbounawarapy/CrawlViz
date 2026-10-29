@@ -27,7 +27,9 @@ export function useLoad(fn, deps = []) {
       (data) => live && setState({ data, error: null, loading: false }),
       (e) => live && setState({ data: null, error: e.message, loading: false }),
     );
-    return () => { live = false; };
+    return () => {
+      live = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
   useEffect(() => run(), [run]);

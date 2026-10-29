@@ -38,6 +38,5 @@ class LlmContext:
 
     def __repr__(self) -> str:
         return (
-            f"<{type(self).__name__} type={self.get_llm_type()} "
-            f"model={self.model_information!r}>"
+            f"<{type(self).__name__} type={self.get_llm_type()} model={self.model_information!r}>"
         )

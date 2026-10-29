@@ -5,6 +5,7 @@ from typing import Any
 # 1. ENQUEUE / BACKPRESSURE
 # =========================================================
 
+
 @dataclass
 class RequestEnqueuedEvent:
     correlation_id: str
@@ -15,6 +16,7 @@ class RequestEnqueuedEvent:
 # =========================================================
 # 2. REQUEST START
 # =========================================================
+
 
 @dataclass
 class RequestStartedEvent:
@@ -28,6 +30,7 @@ class RequestStartedEvent:
 # 3. RESPONSE METADATA (NETWORK OBSERVABILITY)
 # =========================================================
 
+
 @dataclass
 class RequestResponseReceivedEvent:
     correlation_id: str
@@ -38,6 +41,7 @@ class RequestResponseReceivedEvent:
 # =========================================================
 # 4. SUCCESS OUTPUT (DOWNSTREAM INPUT)
 # =========================================================
+
 
 @dataclass
 class PageFetchedEvent:
@@ -55,6 +59,7 @@ class PageFetchedEvent:
 # 5. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
+
 @dataclass
 class RequestFailedEvent:
     correlation_id: str
@@ -67,9 +72,11 @@ class RequestFailedEvent:
 # 6. OPTIONAL (HIGH VALUE FOR PERFORMANCE ANALYSIS)
 # =========================================================
 
+
 @dataclass
 class RequestTimingEvent:
     """Optional event for latency analysis (GUI charts, SLA tracking)."""
+
     correlation_id: str
     node_id: str
     url: str

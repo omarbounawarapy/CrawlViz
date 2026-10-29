@@ -10,7 +10,10 @@ export function radialTreeTargets(nodes, aspect = 1.5) {
   const roots = [];
   for (const n of nodes.values()) {
     const p = n.parent_id && n.parent_id !== n.node_id && nodes.has(n.parent_id) ? n.parent_id : null;
-    if (p) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(n.node_id); } else roots.push(n.node_id);
+    if (p) {
+      if (!kids.has(p)) kids.set(p, []);
+      kids.get(p).push(n.node_id);
+    } else roots.push(n.node_id);
   }
   const leavesOf = new Map();
   const depthOf = new Map();
@@ -56,11 +59,19 @@ export function radialTreeTargets(nodes, aspect = 1.5) {
     const cs = (kids.get(id) || []).filter((c) => depthOf.get(c) === d + 1);
     const total = cs.reduce((sum, c) => sum + weight(c), 0) || 1;
     let a = a0;
-    for (const c of cs) { const w = ((a1 - a0) * weight(c)) / total; place(c, a, a + w); a += w; }
+    for (const c of cs) {
+      const w = ((a1 - a0) * weight(c)) / total;
+      place(c, a, a + w);
+      a += w;
+    }
   };
   const rootTotal = roots.reduce((sum, r) => sum + weight(r), 0) || 1;
   let a = 0;
-  for (const r of roots) { const w = (2 * Math.PI * weight(r)) / rootTotal; place(r, a, a + w); a += w; }
+  for (const r of roots) {
+    const w = (2 * Math.PI * weight(r)) / rootTotal;
+    place(r, a, a + w);
+    a += w;
+  }
   return out;
 }
 
@@ -74,12 +85,23 @@ export function radialTreeTargets(nodes, aspect = 1.5) {
 // A plate is *legible* when its whole-plate zoom keeps pages MIN_PITCH_PX apart. When it is not,
 // the least important pages fold into counted nodes until it is.
 // The aspect the layout is stretched to: the canvas is wider than tall, and labels need horizontal room.
-export function aspectOf(w, h) { return Math.min(2.2, Math.max(1.2, (w || 1) / Math.max(h || 1, 1))); }
+export function aspectOf(w, h) {
+  return Math.min(2.2, Math.max(1.2, (w || 1) / Math.max(h || 1, 1)));
+}
 
 export const PITCH_PX = 30;
 export const MIN_PITCH_PX = 20;
 export const LABEL = { w: 84, h: 14, fill: 0.25, size: 11 };
-export const FIT = { padX: 48, padTop: 64, padBottom: 56, marginX: 70, marginTop: 34, marginBottom: 40, maxK: 1.6, minK: 0.02 };
+export const FIT = {
+  padX: 48,
+  padTop: 64,
+  padBottom: 56,
+  marginX: 70,
+  marginTop: 34,
+  marginBottom: 40,
+  maxK: 1.6,
+  minK: 0.02,
+};
 
 // How many labels the viewport can carry before they stop being readable.
 export function labelCapacity(w, h) {
@@ -89,9 +111,20 @@ export function labelCapacity(w, h) {
 // The zoom and offset that show every point (with room for labels) inside the viewport.
 export function fitTransform(points, w, h) {
   if (!points.length) return { k: 1, tx: w / 2, ty: h / 2 };
-  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const p of points) { if (p.x < x0) x0 = p.x; if (p.x > x1) x1 = p.x; if (p.y < y0) y0 = p.y; if (p.y > y1) y1 = p.y; }
-  x0 -= FIT.marginX; x1 += FIT.marginX; y0 -= FIT.marginTop; y1 += FIT.marginBottom;
+  let x0 = Infinity,
+    x1 = -Infinity,
+    y0 = Infinity,
+    y1 = -Infinity;
+  for (const p of points) {
+    if (p.x < x0) x0 = p.x;
+    if (p.x > x1) x1 = p.x;
+    if (p.y < y0) y0 = p.y;
+    if (p.y > y1) y1 = p.y;
+  }
+  x0 -= FIT.marginX;
+  x1 += FIT.marginX;
+  y0 -= FIT.marginTop;
+  y1 += FIT.marginBottom;
   const availH = h - FIT.padTop - FIT.padBottom;
   const k = Math.min(FIT.maxK, Math.max(FIT.minK, Math.min((w - FIT.padX * 2) / (x1 - x0), availH / (y1 - y0))));
   return { k, tx: w / 2 - (k * (x0 + x1)) / 2, ty: FIT.padTop + availH / 2 - (k * (y0 + y1)) / 2 };
@@ -126,7 +159,14 @@ export function foldTo(nodes, edges, keep, parentOf) {
   }
   for (const [parent, count] of hiddenUnder) {
     const id = `agg:${parent}`;
-    vNodes.set(id, { node_id: id, parent_id: parent, state: "AGGREGATE", isAggregate: true, count, url: `+${count} pages` });
+    vNodes.set(id, {
+      node_id: id,
+      parent_id: parent,
+      state: "AGGREGATE",
+      isAggregate: true,
+      count,
+      url: `+${count} pages`,
+    });
     vEdges.add(`${parent}→${id}`);
   }
   return { nodes: vNodes, edges: vEdges, hidden };
@@ -155,7 +195,11 @@ export function depthsOf(nodes) {
  * branches they opened, the seeds) plus as many of the most important others as still leave the
  * plate legible, found by bisection. Kept pages keep their path to the seed.
  */
-export function chooseView(nodes, edges, { showAll, expanded, selectedId, neighborhood, search, maxPriority, viewport, aspect = 1.5 }) {
+export function chooseView(
+  nodes,
+  edges,
+  { showAll, expanded, selectedId, neighborhood, search, maxPriority, viewport, aspect = 1.5 },
+) {
   const pitchOf = (view) => {
     const t = radialTreeTargets(view.nodes, aspect);
     return fitTransform(Array.from(t.values()), viewport.w, viewport.h).k * PITCH_PX;
@@ -175,9 +219,13 @@ export function chooseView(nodes, edges, { showAll, expanded, selectedId, neighb
     const id = n.node_id;
     const d = depth.get(id) ?? 0;
     if (
-      d === 0 || id === selectedId || (neighborhood && neighborhood.has(id)) ||
-      (n.parent_id && expanded.has(n.parent_id)) || (search && (n.url || "").toLowerCase().includes(search))
-    ) pinned.add(id);
+      d === 0 ||
+      id === selectedId ||
+      (neighborhood && neighborhood.has(id)) ||
+      (n.parent_id && expanded.has(n.parent_id)) ||
+      (search && (n.url || "").toLowerCase().includes(search))
+    )
+      pinned.add(id);
     else ranked.push([importanceOf(n, d, maxPriority), id]);
   }
   ranked.sort((a, b) => b[0] - a[0]);
@@ -185,18 +233,24 @@ export function chooseView(nodes, edges, { showAll, expanded, selectedId, neighb
   const viewWith = (m) => {
     const keep = new Set(pinned);
     for (let i = 0; i < m; i++) keep.add(ranked[i][1]);
-    for (const id of Array.from(keep)) {          // a kept page keeps its path to the seed
+    for (const id of Array.from(keep)) {
+      // a kept page keeps its path to the seed
       let cur = parentOf(nodes.get(id));
-      while (cur != null && !keep.has(cur)) { keep.add(cur); cur = parentOf(nodes.get(cur)); }
+      while (cur != null && !keep.has(cur)) {
+        keep.add(cur);
+        cur = parentOf(nodes.get(cur));
+      }
     }
     return { ...foldTo(nodes, edges, keep, parentOf), folded: true };
   };
 
   // Largest m that is still legible. Legibility only gets worse as m grows, so bisect.
-  let lo = 0, hi = ranked.length;
+  let lo = 0,
+    hi = ranked.length;
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);
-    if (legible(viewWith(mid))) lo = mid; else hi = mid - 1;
+    if (legible(viewWith(mid))) lo = mid;
+    else hi = mid - 1;
   }
   const chosen = viewWith(lo);
   return { ...chosen, pitchPx: pitchOf(chosen) };
@@ -211,7 +265,6 @@ export function relevanceOf(d, maxPriority) {
   return null;
 }
 
-
 // A link drawn the way a radial tree is drawn: out along the parent's spoke, across at the middle
 // ring, in along the child's spoke. Siblings share the start of their path and then fan out, so
 // edges read as branches instead of piling up as near-parallel straight lines. The spokes are read
@@ -219,20 +272,28 @@ export function relevanceOf(d, maxPriority) {
 // stretch undone), so a link is always consistent with its endpoints, including while pages are
 // moving. Returns [x0, y0, cx1, cy1, cx2, cy2, x1, y1] in container coordinates.
 export function edgeCurve(s, g, cx, cy, aspect) {
-  const sr = Math.hypot((s.x - cx) / aspect, s.y - cy), gr = Math.hypot((g.x - cx) / aspect, g.y - cy);
+  const sr = Math.hypot((s.x - cx) / aspect, s.y - cy),
+    gr = Math.hypot((g.x - cx) / aspect, g.y - cy);
   const gA = Math.atan2(g.y - cy, (g.x - cx) / aspect);
   const sA = sr < 1 ? gA : Math.atan2(s.y - cy, (s.x - cx) / aspect);
   const rm = (sr + gr) / 2;
   return [
-    s.x, s.y,
-    cx + Math.cos(sA) * rm * aspect, cy + Math.sin(sA) * rm,
-    cx + Math.cos(gA) * rm * aspect, cy + Math.sin(gA) * rm,
-    g.x, g.y,
+    s.x,
+    s.y,
+    cx + Math.cos(sA) * rm * aspect,
+    cy + Math.sin(sA) * rm,
+    cx + Math.cos(gA) * rm * aspect,
+    cy + Math.sin(gA) * rm,
+    g.x,
+    g.y,
   ];
 }
 
 export function bezierPoint(c, t) {
   const u = 1 - t;
-  const a = u * u * u, b = 3 * u * u * t, d = 3 * u * t * t, e = t * t * t;
+  const a = u * u * u,
+    b = 3 * u * u * t,
+    d = 3 * u * t * t,
+    e = t * t * t;
   return [a * c[0] + b * c[2] + d * c[4] + e * c[6], a * c[1] + b * c[3] + d * c[5] + e * c[7]];
 }

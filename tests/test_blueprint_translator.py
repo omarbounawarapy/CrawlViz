@@ -6,6 +6,7 @@ dropped (fixed by sourcing ALLOWED_PRIORITY_STRATEGIES from
 priority.strategy.STRATEGY_REGISTRY instead of a hand-copied set), and
 the general "required key missing / invalid enum value" validation path.
 """
+
 import copy
 
 import pytest
@@ -28,9 +29,7 @@ def base_user_input():
         "id": "run_1",
         "target_topic": "test topic",
         "seeds": [{"url": "https://example.com/a", "domain": "https://example.com"}],
-        "domains": {
-            "example": {"base_url": "https://example.com", "link_selector": "//a"}
-        },
+        "domains": {"example": {"base_url": "https://example.com", "link_selector": "//a"}},
         "scoring": {
             "strategy": "TOPICAL",
             "params": {"scoring_type": "openrouter", "model_information": "gpt"},
@@ -97,6 +96,7 @@ class TestPriorityStrategy:
         # Guards against the exact bug class: this set must be *sourced
         # from*, not hand-copied from, priority.strategy.STRATEGY_REGISTRY.
         from priority.strategy import STRATEGY_REGISTRY
+
         assert ALLOWED_PRIORITY_STRATEGIES == frozenset(STRATEGY_REGISTRY)
 
     @pytest.mark.parametrize("strategy", sorted(ALLOWED_PRIORITY_STRATEGIES))
@@ -131,7 +131,16 @@ class TestScoringStrategy:
 class TestRequiredTopLevelFields:
     @pytest.mark.parametrize(
         "missing_key",
-        ["blueprint_id", "id", "target_topic", "seeds", "domains", "scoring", "expansion", "stop_conditions"],
+        [
+            "blueprint_id",
+            "id",
+            "target_topic",
+            "seeds",
+            "domains",
+            "scoring",
+            "expansion",
+            "stop_conditions",
+        ],
     )
     def test_missing_required_key_rejected(self, missing_key):
         ui = base_user_input()
@@ -155,12 +164,16 @@ class TestStopConditions:
 class TestManualFieldExportType:
     @pytest.mark.parametrize("export_type", sorted(ALLOWED_EXPORT_TYPES))
     def test_every_allowed_export_type_accepted(self, export_type):
-        fields = {"f": {"selector": "//x", "type": "scalar", "transform": [], "export_type": export_type}}
+        fields = {
+            "f": {"selector": "//x", "type": "scalar", "transform": [], "export_type": export_type}
+        }
         result = translate(fields=fields)
         assert result["extraction"]["fields"]["f"]["export_type"] == export_type
 
     def test_invalid_export_type_rejected(self):
-        fields = {"f": {"selector": "//x", "type": "scalar", "transform": [], "export_type": "not_a_type"}}
+        fields = {
+            "f": {"selector": "//x", "type": "scalar", "transform": [], "export_type": "not_a_type"}
+        }
         with pytest.raises(BlueprintValidationError):
             translate(fields=fields)
 
@@ -168,8 +181,17 @@ class TestManualFieldExportType:
 class TestBlueprintStructureIsPreserved:
     def test_full_translation_produces_expected_top_level_keys(self):
         result = translate()
-        for key in ("blueprint_id", "id", "target_topic", "seeds", "domains",
-                    "scoring", "expansion", "extraction", "stop_conditions"):
+        for key in (
+            "blueprint_id",
+            "id",
+            "target_topic",
+            "seeds",
+            "domains",
+            "scoring",
+            "expansion",
+            "extraction",
+            "stop_conditions",
+        ):
             assert key in result
 
     def test_does_not_mutate_input_user_input(self):

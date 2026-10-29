@@ -42,24 +42,26 @@ class TracedNetworkClient:
         headers = params.get("headers") or {}
         has_auth = any(k.lower() in ("authorization", "x-api-key") for k in headers)
 
-        await self._tracer.emit(NET_RequestCreated(
-            trace_id=trace_id,
-            node_id=node_id,
-            request_id=request_id,
-            method=method,
-            url=url,
-            has_auth_header=has_auth,
-        ))
-
-        strategy_name = (
-            "PostRequestStrategy" if method == "POST" else "GetRequestStrategy"
+        await self._tracer.emit(
+            NET_RequestCreated(
+                trace_id=trace_id,
+                node_id=node_id,
+                request_id=request_id,
+                method=method,
+                url=url,
+                has_auth_header=has_auth,
+            )
         )
-        await self._tracer.emit(NET_RequestDispatched(
-            trace_id=trace_id,
-            node_id=node_id,
-            request_id=request_id,
-            strategy_class=strategy_name,
-        ))
+
+        strategy_name = "PostRequestStrategy" if method == "POST" else "GetRequestStrategy"
+        await self._tracer.emit(
+            NET_RequestDispatched(
+                trace_id=trace_id,
+                node_id=node_id,
+                request_id=request_id,
+                strategy_class=strategy_name,
+            )
+        )
 
         t0 = time.monotonic()
         try:
@@ -74,14 +76,16 @@ class TracedNetworkClient:
             else:
                 size = 0
 
-            await self._tracer.emit(NET_ResponseReceived(
-                trace_id=trace_id,
-                node_id=node_id,
-                request_id=request_id,
-                status_code=200,            # aiohttp already raised on non-2xx
-                response_size_bytes=size,
-                latency_ms=latency_ms,
-            ))
+            await self._tracer.emit(
+                NET_ResponseReceived(
+                    trace_id=trace_id,
+                    node_id=node_id,
+                    request_id=request_id,
+                    status_code=200,  # aiohttp already raised on non-2xx
+                    response_size_bytes=size,
+                    latency_ms=latency_ms,
+                )
+            )
             return response
 
         except Exception as exc:
@@ -98,14 +102,16 @@ class TracedNetworkClient:
 
             status_code = getattr(exc, "status", None)
 
-            await self._tracer.emit(NET_RequestFailed(
-                trace_id=trace_id,
-                node_id=node_id,
-                request_id=request_id,
-                error_type=error_type,
-                error_message=str(exc),
-                status_code=status_code,
-            ))
+            await self._tracer.emit(
+                NET_RequestFailed(
+                    trace_id=trace_id,
+                    node_id=node_id,
+                    request_id=request_id,
+                    error_type=error_type,
+                    error_message=str(exc),
+                    status_code=status_code,
+                )
+            )
             raise
 
     async def close(self) -> None:

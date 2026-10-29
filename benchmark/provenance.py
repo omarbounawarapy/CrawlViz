@@ -1,4 +1,5 @@
 """What a benchmark result was produced from: code, data, prompts and settings."""
+
 import hashlib
 import json
 import subprocess
@@ -20,9 +21,15 @@ def prompt_version(strategy: str) -> str:
 def git_commit() -> str:
     """HEAD, with ``+dirty`` when tracked files have uncommitted changes."""
     try:
+
         def run(*args: str) -> str:
-            return subprocess.run(["git", *args], capture_output=True, text=True, check=True,
-                                  cwd=Path(__file__).parent).stdout.strip()
+            return subprocess.run(
+                ["git", *args],
+                capture_output=True,
+                text=True,
+                check=True,
+                cwd=Path(__file__).parent,
+            ).stdout.strip()
 
         return run("rev-parse", "HEAD") + ("+dirty" if run("status", "--porcelain", "-uno") else "")
     except (OSError, subprocess.CalledProcessError):
@@ -44,8 +51,16 @@ def rubric_sha256(graph_path: Path | None) -> str | None:
 
 
 def manifest(
-    graph_path: Path | None, graph, result, *, budget: int, seed: int, rep: int,
-    model: str | None = None, provider: str | None = None, prompt: str | None = None,
+    graph_path: Path | None,
+    graph,
+    result,
+    *,
+    budget: int,
+    seed: int,
+    rep: int,
+    model: str | None = None,
+    provider: str | None = None,
+    prompt: str | None = None,
 ) -> dict:
     """Everything needed to say what produced a result and to reproduce it."""
     return {

@@ -41,28 +41,24 @@ __all__ = [
     "get_trace",
     "new_trace_id",
     "set_trace",
-
     # NLP pipeline trace events (chronological within scoring one link)
     "NLP_InputReceived",
     "NLP_FeaturesExtracted",
     "NLP_SimilarityScored",
     "NLP_VectorComposed",
     "NLP_ScoreEmitted",
-
     # LLM handler trace events (chronological within one request)
     "LLM_PromptBuilt",
     "LLM_RequestDispatched",
     "LLM_ResponseReceived",
     "LLM_ResponseParsed",
     "LLM_RequestFailed",
-
     # Network client trace events (chronological within one request)
     "NET_RequestCreated",
     "NET_RequestDispatched",
     "NET_ResponseReceived",
     "NET_RequestFailed",
     "NET_RetryAttempted",
-
     # Expansion/bootstrap trace events (chronological within space bootstrap)
     "EXP_Triggered",
     "EXP_PromptBuilt",

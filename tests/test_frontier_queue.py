@@ -1,8 +1,6 @@
-
 from models.node import Node
 from pipelines.base_pipeline import SHUTDOWN
 from pipelines.frontier_queue import FrontierQueue
-
 
 
 def _node(node_id: int, priority: float) -> Node:

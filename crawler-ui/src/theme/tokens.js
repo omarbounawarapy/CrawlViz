@@ -19,57 +19,57 @@
 export const tokenShape = {
   colors: {
     background: {
-      primary: null,  // root app background
-      panel:   null,  // sidebar / panel surfaces
-      border:  null,  // dividers and borders
+      primary: null, // root app background
+      panel: null, // sidebar / panel surfaces
+      border: null, // dividers and borders
     },
-    control: null,    // borders and marks that must reach 3:1 (WCAG 1.4.11)
+    control: null, // borders and marks that must reach 3:1 (WCAG 1.4.11)
     text: {
-      primary:   null,
+      primary: null,
       secondary: null,
-      muted:     null,
+      muted: null,
     },
     accent: {
-      blue:   null,
+      blue: null,
       blueDim: null,
-      gold:   null,
-      green:  null,
-      red:    null,
+      gold: null,
+      green: null,
+      red: null,
       purple: null,
     },
     state: {
       // node state colors (fill)
-      CREATED:  null,
-      FETCHED:  null,
+      CREATED: null,
+      FETCHED: null,
       FILTERED: null,
-      SCORED:   null,
+      SCORED: null,
       EXPANDED: null,
       // cascade candidate pseudo-states (never full nodes -- see above)
-      DROPPED:  null,
-      TRUSTED:  null,
+      DROPPED: null,
+      TRUSTED: null,
       // indicator, not a lifecycle state (see module docstring)
-      ERROR:    null,
+      ERROR: null,
       // node state label / stroke colors
       label: {
-        CREATED:  null,
-        FETCHED:  null,
+        CREATED: null,
+        FETCHED: null,
         FILTERED: null,
-        SCORED:   null,
+        SCORED: null,
         EXPANDED: null,
-        DROPPED:  null,
-        TRUSTED:  null,
-        ERROR:    null,
+        DROPPED: null,
+        TRUSTED: null,
+        ERROR: null,
       },
       // node glow colors
       glow: {
-        CREATED:  null,
-        FETCHED:  null,
+        CREATED: null,
+        FETCHED: null,
         FILTERED: null,
-        SCORED:   null,
+        SCORED: null,
         EXPANDED: null,
-        DROPPED:  null,
-        TRUSTED:  null,
-        ERROR:    null,
+        DROPPED: null,
+        TRUSTED: null,
+        ERROR: null,
       },
     },
     // pipeline stage lifecycle indicators (Pipeline Monitor) -- reuses the
@@ -77,20 +77,20 @@ export const tokenShape = {
     // per-stage hues, consistent with "pick one accent, don't multiply
     // colors".
     pipeline: {
-      idle:      null,
-      active:    null,
+      idle: null,
+      active: null,
       completed: null,
-      failed:    null,
+      failed: null,
     },
     status: {
       running: { bg: null, border: null, dot: null },
       stopped: { bg: null, border: null, dot: null },
-      idle:    { bg: null, border: null, dot: null },
+      idle: { bg: null, border: null, dot: null },
     },
     replay: {
-      bg:         null,
-      border:     null,
-      text:       null,
+      bg: null,
+      border: null,
+      text: null,
       currentRow: null,
     },
   },
@@ -102,48 +102,48 @@ export const tokenShape = {
     xl: null,
   },
   typography: {
-    fontMono:    null,
+    fontMono: null,
     fontDisplay: null,
     size: {
       xxs: null,
-      xs:  null,
-      sm:  null,
-      md:  null,
-      lg:  null,
-      xl:  null,
+      xs: null,
+      sm: null,
+      md: null,
+      lg: null,
+      xl: null,
     },
     weight: {
-      normal:   null,
-      medium:   null,
+      normal: null,
+      medium: null,
       semibold: null,
-      bold:     null,
+      bold: null,
     },
     letterSpacing: {
-      tight:  null,
+      tight: null,
       normal: null,
-      wide:   null,
-      wider:  null,
+      wide: null,
+      wider: null,
     },
   },
   radii: {
-    sm:   null,
-    md:   null,
-    lg:   null,
+    sm: null,
+    md: null,
+    lg: null,
     full: null,
   },
   shadows: {
-    panel:  null,
-    glow:   null,
+    panel: null,
+    glow: null,
   },
   shell: {
-    background:  null,
-    surface:     null,
-    border:      null,
+    background: null,
+    surface: null,
+    border: null,
     scrollTrack: null,
     textPrimary: null,
-    textBright:  null,
-    textMuted:   null,
-    textDim:     null,
-    accentTeal:  null,
+    textBright: null,
+    textMuted: null,
+    textDim: null,
+    accentTeal: null,
   },
 };

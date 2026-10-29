@@ -5,6 +5,7 @@ from typing import Any, Literal
 # 1. ENQUEUE / BACKPRESSURE
 # =========================================================
 
+
 @dataclass
 class FilteringEnqueuedEvent:
     correlation_id: str
@@ -15,6 +16,7 @@ class FilteringEnqueuedEvent:
 # =========================================================
 # 2. WORKER LIFECYCLE
 # =========================================================
+
 
 @dataclass
 class FilteringWorkerCycleStartedEvent:
@@ -27,6 +29,7 @@ class FilteringWorkerCycleStartedEvent:
 # 3. INPUT OBSERVABILITY
 # =========================================================
 
+
 @dataclass
 class FilteringInputSnapshotEvent:
     correlation_id: str
@@ -37,6 +40,7 @@ class FilteringInputSnapshotEvent:
 # =========================================================
 # 4. LINK FILTERING TRACE
 # =========================================================
+
 
 @dataclass
 class LinkFilteringCompletedEvent:
@@ -49,16 +53,18 @@ class LinkFilteringCompletedEvent:
 # 5. ITEM FILTERING TRACE
 # =========================================================
 
+
 @dataclass
 class ItemFilteringCompletedEvent:
     correlation_id: str
-    accepted: list[Any]          # (item, hash)
+    accepted: list[Any]  # (item, hash)
     rejected_count: int
 
 
 # =========================================================
 # 6. SUCCESS OUTPUT (DOWNSTREAM INPUT)
 # =========================================================
+
 
 @dataclass
 class ContentFilteredEvent:
@@ -75,6 +81,7 @@ class ContentFilteredEvent:
 # =========================================================
 # 7. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
+
 
 @dataclass
 class FilteringPipelineErrorEvent:

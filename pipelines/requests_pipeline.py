@@ -93,9 +93,9 @@ class RequestsPipeline:
             NodeAddedEvent: self._on_node_added,
         }
 
-        self.min_delay = min_delay    # minimum seconds between requests
+        self.min_delay = min_delay  # minimum seconds between requests
         self.last_request_time = 0.0
-        self.backoff_delay = 0.0      # dynamic (grows on 429)
+        self.backoff_delay = 0.0  # dynamic (grows on 429)
         self.max_backoff = max_backoff
         self.jitter_max = jitter_max
         self.backoff_start = backoff_start
@@ -251,9 +251,7 @@ class RequestsPipeline:
                         node=node,
                         content=response,
                         node_id=str(node.get_id()),
-                        parent_id=(
-                            str(node.parent.get_id()) if node.parent else None
-                        ),
+                        parent_id=(str(node.parent.get_id()) if node.parent else None),
                         url=node.link.url if node.link else None,
                     )
                 )

@@ -2,12 +2,28 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import Scrubber from "./Scrubber";
 
-const describeAt = (i) => ({ title: `Event ${i + 1} of 100`, detail: "12:00:00 · 3 pages", spoken: `Event ${i + 1} of 100, 3 pages found, at 12:00:00` });
+const describeAt = (i) => ({
+  title: `Event ${i + 1} of 100`,
+  detail: "12:00:00 · 3 pages",
+  spoken: `Event ${i + 1} of 100, 3 pages found, at 12:00:00`,
+});
 
 function setup(props = {}) {
-  const onSeek = vi.fn(), onLive = vi.fn(), onUserSeek = vi.fn();
-  render(<Scrubber total={100} position={40} types={Array.from({ length: 100 }, (_, i) => (i === 60 ? "NODE_ERROR" : "NODE_ADDED"))} describe={describeAt}
-    onSeek={onSeek} onLive={onLive} onUserSeek={onUserSeek} {...props} />);
+  const onSeek = vi.fn(),
+    onLive = vi.fn(),
+    onUserSeek = vi.fn();
+  render(
+    <Scrubber
+      total={100}
+      position={40}
+      types={Array.from({ length: 100 }, (_, i) => (i === 60 ? "NODE_ERROR" : "NODE_ADDED"))}
+      describe={describeAt}
+      onSeek={onSeek}
+      onLive={onLive}
+      onUserSeek={onUserSeek}
+      {...props}
+    />,
+  );
   return { onSeek, onLive, onUserSeek, slider: screen.getByRole("slider", { name: "Replay position" }) };
 }
 

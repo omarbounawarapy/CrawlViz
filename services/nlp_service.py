@@ -120,7 +120,9 @@ class NLPService:
         self.start_version = self.space.version
         logger.info(
             "Run starts from space v%s (%d vectors), persist_space=%s",
-            self.start_version, len(self.space), self.persist_space,
+            self.start_version,
+            len(self.space),
+            self.persist_space,
         )
 
     async def build_space(self) -> None:
@@ -206,11 +208,13 @@ class NLPService:
             expansions = getattr(link, "expansions", []) or []
             for i, sentence in enumerate(expansions):
                 vec = self.engine.encode(sentence)
-                items.append((
-                    f"{link.url}::exp::{i}",
-                    vec,
-                    {"type": "expansion", "source_url": link.url, "text": sentence},
-                ))
+                items.append(
+                    (
+                        f"{link.url}::exp::{i}",
+                        vec,
+                        {"type": "expansion", "source_url": link.url, "text": sentence},
+                    )
+                )
 
         if not items:
             return
@@ -235,7 +239,8 @@ class NLPService:
         self.space.add_batch(self._buffer)
         logger.info(
             "Flushed %d vectors to space (space size now %d)",
-            len(self._buffer), len(self.space),
+            len(self._buffer),
+            len(self.space),
         )
         self._buffer.clear()
         self.save_space()

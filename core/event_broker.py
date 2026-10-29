@@ -83,7 +83,10 @@ class EventBroker:
     async def _handle_stop(self, event: StopCrawlEvent) -> None:
         logger.info(
             "Stop condition reached: reason=%s nodes=%d depth=%d duration=%.2fs",
-            event.reason, event.node_count, event.max_depth, event.duration,
+            event.reason,
+            event.node_count,
+            event.max_depth,
+            event.duration,
         )
         self.running = False  # stop accepting new events
 
@@ -107,8 +110,6 @@ class EventBroker:
                 if asyncio.iscoroutine(result):
                     await result
             except Exception:
-                logger.exception(
-                    "%s failed to stop cleanly", type(consumer).__name__
-                )
+                logger.exception("%s failed to stop cleanly", type(consumer).__name__)
 
         logger.info("Broker shutdown complete")

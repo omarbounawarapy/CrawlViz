@@ -5,6 +5,7 @@ from typing import Literal
 # NETWORK CLIENT TRACE EVENTS
 # =========================================================
 
+
 @dataclass
 class NET_RequestCreated:
     trace_id: str
@@ -12,7 +13,7 @@ class NET_RequestCreated:
     request_id: str
     method: str
     url: str
-    has_auth_header: bool        # boolean only -- never log key values
+    has_auth_header: bool  # boolean only -- never log key values
 
 
 @dataclass

@@ -33,8 +33,19 @@ describe("header sets", () => {
 
 describe("NLP/LLM split", () => {
   const f = (key, other) => ({
-    path: `priority.${key}`, key, topKey: "priority", title: key, description: "", widget: "split", pair: other,
-    type: "number", nullable: false, section: "Priority", apply: "next_run", advanced: false, minimum: 0,
+    path: `priority.${key}`,
+    key,
+    topKey: "priority",
+    title: key,
+    description: "",
+    widget: "split",
+    pair: other,
+    type: "number",
+    nullable: false,
+    section: "Priority",
+    apply: "next_run",
+    advanced: false,
+    minimum: 0,
   });
   const fields = [f("nlp_bias", "llm_bias"), f("llm_bias", "nlp_bias")];
   const draft = { priority: { nlp_bias: 60, llm_bias: 40 } };

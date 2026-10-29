@@ -111,9 +111,7 @@ class ScoringPipeline(BasePipeline):
             return node.ready.result()
         stopped = asyncio.ensure_future(self._stopping.wait())
         try:
-            await asyncio.wait(
-                {node.ready, stopped}, return_when=asyncio.FIRST_COMPLETED
-            )
+            await asyncio.wait({node.ready, stopped}, return_when=asyncio.FIRST_COMPLETED)
         finally:
             stopped.cancel()  # never cancel node.ready: others wait on it
         return node.ready.result() if node.ready.done() else None
@@ -188,7 +186,10 @@ class ScoringPipeline(BasePipeline):
                 sampled, llm_skip = self._take_llm_calls(sampled, llm_skip)
                 logger.debug(
                     "Node %s: %d sampled, %d high-confidence, %d dropped",
-                    node.get_id(), len(sampled), len(llm_skip), len(drop),
+                    node.get_id(),
+                    len(sampled),
+                    len(llm_skip),
+                    len(drop),
                 )
 
                 await self.event_broker.emit(
@@ -344,7 +345,7 @@ class ScoringPipeline(BasePipeline):
         # trusted on their NLP score alone (like the high-confidence skips).
         if self.max_llm_links is not None and len(sampled) > self.max_llm_links:
             sampled.sort(key=lambda link: link._nlp_score, reverse=True)
-            skip_llm = skip_llm + sampled[self.max_llm_links:]
+            skip_llm = skip_llm + sampled[self.max_llm_links :]
             sampled = sampled[: self.max_llm_links]
 
         return sampled, skip_llm, dropped

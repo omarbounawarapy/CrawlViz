@@ -1,4 +1,5 @@
 """The golden-file helper: what it normalises, when it writes, how it fails."""
+
 from pathlib import Path
 
 import numpy as np
@@ -102,7 +103,6 @@ def test_a_long_diff_is_cut_with_a_count_of_what_was_left_out(tmp_path: Path) ->
 
     assert "more diff lines" in str(failure.value)
     assert len(str(failure.value).splitlines()) <= MAX_DIFF_LINES + 2 * MAX_CHANGED_VALUES + 4
-
 
 
 def test_rewritten_files_are_listed_once_each_relative_to_the_golden_folder() -> None:

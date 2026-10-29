@@ -13,14 +13,21 @@ import GraphTab from "./GraphTab";
 import AuditTab from "./AuditTab";
 
 const TABS = [
-  ["overview", "Overview"], ["results", "Results"], ["runs", "Runs"], ["graph", "Graph"], ["audit", "Audit"],
+  ["overview", "Overview"],
+  ["results", "Results"],
+  ["runs", "Runs"],
+  ["graph", "Graph"],
+  ["audit", "Audit"],
 ];
 
 export default function BenchmarkPage() {
   const [tab, setTab] = useState("overview");
   return (
-    <Page title="Benchmark" width={820}
-      lead="Does the cascade find more relevant pages per fetch than the baselines, and at what token cost? Results, runs, the labelled graph and the human audit of the judge.">
+    <Page
+      title="Benchmark"
+      width={820}
+      lead="Does the cascade find more relevant pages per fetch than the baselines, and at what token cost? Results, runs, the labelled graph and the human audit of the judge."
+    >
       <Tabs id="bench" label="Benchmark sections" value={tab} onChange={setTab} options={TABS} />
       <div style={{ marginTop: 8 }}>
         <TabPanel tabsId="bench" value={tab}>

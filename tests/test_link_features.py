@@ -1,4 +1,5 @@
 """LinkFeatureScorer: the parent context and the composite score."""
+
 import asyncio
 import warnings
 from types import SimpleNamespace

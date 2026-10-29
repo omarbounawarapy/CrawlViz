@@ -15,10 +15,10 @@
 // it lives in the same registry rather than a parallel one.
 
 export const NODE_STATES = Object.freeze({
-  CREATED:  "CREATED",
-  FETCHED:  "FETCHED",
+  CREATED: "CREATED",
+  FETCHED: "FETCHED",
   FILTERED: "FILTERED",
-  SCORED:   "SCORED",
+  SCORED: "SCORED",
   EXPANDED: "EXPANDED",
 });
 
@@ -39,17 +39,23 @@ export const CANDIDATE_DECISIONS = Object.freeze({
 
 // Pipeline stages, in traversal order -- mirrors backend PIPELINE_STAGES.
 export const PIPELINE_STAGES = Object.freeze([
-  "request", "extraction", "filtering", "scoring", "priority", "transformation", "export",
+  "request",
+  "extraction",
+  "filtering",
+  "scoring",
+  "priority",
+  "transformation",
+  "export",
 ]);
 
 export const PIPELINE_STAGE_LABELS = Object.freeze({
-  request:        "Request",
-  extraction:     "Extraction",
-  filtering:      "Filtering",
-  scoring:        "Scoring",
-  priority:       "Priority",
+  request: "Request",
+  extraction: "Extraction",
+  filtering: "Filtering",
+  scoring: "Scoring",
+  priority: "Priority",
   transformation: "Transform",
-  export:         "Export",
+  export: "Export",
 });
 
 export function isKnownNodeState(state) {

@@ -22,7 +22,11 @@ PYTEST_NO_TESTS_COLLECTED = 5
 # A change to any of these can alter the result for every Python file, so the whole
 # Python side is checked instead of only the changed files.
 PYTHON_TOOLING_FILES = {
-    "pyproject.toml", "pytest.ini", "uv.lock", "Makefile", ".github/workflows/ci.yml",
+    "pyproject.toml",
+    "pytest.ini",
+    "uv.lock",
+    "Makefile",
+    ".github/workflows/ci.yml",
     ".claude/ownership.toml",  # decides which files count as method files
 }
 # The same glob matcher the guard hooks use, so the method file list has one source:
@@ -57,8 +61,11 @@ def changed_files(base: str) -> list[Path]:
     names.update(_changed_names())
     names.update(_changed_names("--cached"))
     names.update(_git("ls-files", "--others", "--exclude-standard"))
-    kept = {name for name in names
-            if (ROOT / name).is_file() or (name.endswith(".py") and not (ROOT / name).exists())}
+    kept = {
+        name
+        for name in names
+        if (ROOT / name).is_file() or (name.endswith(".py") and not (ROOT / name).exists())
+    }
     return sorted(ROOT / name for name in kept)
 
 
@@ -114,8 +121,13 @@ def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
 
 
 def dotted_name(path: Path) -> str:
-    return path.relative_to(ROOT).with_suffix("").as_posix().replace("/", ".").removesuffix(
-        ".__init__")
+    return (
+        path.relative_to(ROOT)
+        .with_suffix("")
+        .as_posix()
+        .replace("/", ".")
+        .removesuffix(".__init__")
+    )
 
 
 def python_tests_for(sources: list[Path]) -> list[Path]:
@@ -132,8 +144,9 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
     reached: set[Path] = set()
     pending = list(sources)
     # A deleted or renamed-away file is in no module index: find its importers by name.
-    removed = {dotted_name(source) for source in sources
-               if source.suffix == ".py" and not source.exists()}
+    removed = {
+        dotted_name(source) for source in sources if source.suffix == ".py" and not source.exists()
+    }
     if removed:
         pending.extend(path for path in modules.values() if removed & import_names_of(path))
     while pending:
@@ -143,8 +156,10 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
             pending.extend(importers.get(current, ()))
     conftest_dirs = [source.parent for source in sources if source.name == "conftest.py"]
     return sorted(
-        path for path in modules.values()
-        if path.name.startswith("test_") and "tests" in path.relative_to(ROOT).parts
+        path
+        for path in modules.values()
+        if path.name.startswith("test_")
+        and "tests" in path.relative_to(ROOT).parts
         and (path in reached or any(directory in path.parents for directory in conftest_dirs))
     )
 
@@ -178,8 +193,11 @@ def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
         # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
         # Exit code 5 means every selected test was slow, which is not a failure.
         selected = [str(t.relative_to(ROOT)) for t in tests]
-        ok &= run(["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
-                  ROOT, accepted=(0, PYTEST_NO_TESTS_COLLECTED))
+        ok &= run(
+            ["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
+            ROOT,
+            accepted=(0, PYTEST_NO_TESTS_COLLECTED),
+        )
     return ok
 
 
@@ -197,11 +215,16 @@ def main() -> int:
 
     files = changed_files(args.base)
     python_files = [path for path in files if path.suffix in PYTHON_SUFFIXES]
-    ui_files = [path for path in files
-                if path.suffix in UI_SUFFIXES and UI_DIR in path.parents
-                and "node_modules" not in path.parts]
-    tooling_changed = any(path.relative_to(ROOT).as_posix() in PYTHON_TOOLING_FILES
-                          for path in files)
+    ui_files = [
+        path
+        for path in files
+        if path.suffix in UI_SUFFIXES
+        and UI_DIR in path.parents
+        and "node_modules" not in path.parts
+    ]
+    tooling_changed = any(
+        path.relative_to(ROOT).as_posix() in PYTHON_TOOLING_FILES for path in files
+    )
     method_changed = touches_method(files)
     if not (python_files or ui_files or tooling_changed or method_changed):
         print("check-changed: no Python or UI source changes")
@@ -212,8 +235,11 @@ def main() -> int:
         ok &= check_python(python_files, tooling_changed)
     if method_changed:
         # The method guards must hold even when slow: no `not slow` filter here.
-        ok &= run(["uv", "run", "pytest", "-q", "-m", "pins or method_guard"], ROOT,
-                  accepted=(0, PYTEST_NO_TESTS_COLLECTED))
+        ok &= run(
+            ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"],
+            ROOT,
+            accepted=(0, PYTEST_NO_TESTS_COLLECTED),
+        )
     if ui_files:
         ok &= check_ui(ui_files)
     return 0 if ok else 1

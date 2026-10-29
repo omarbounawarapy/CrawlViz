@@ -1,4 +1,5 @@
 """The frozen-graph benchmark runs policies through the real pipelines."""
+
 import pytest
 
 from benchmark import POLICIES, run_policy, synthetic_graph
@@ -40,8 +41,12 @@ async def test_recorded_pages_are_served_as_the_markup_extraction_expects():
     graph = FrozenGraph(
         seed="A",
         pages={
-            "A": {"relevant": None, "title": "Alpha", "text": "About <alpha>.",
-                  "links": [{"to": "B", "anchor": "Beta & co"}]},
+            "A": {
+                "relevant": None,
+                "title": "Alpha",
+                "text": "About <alpha>.",
+                "links": [{"to": "B", "anchor": "Beta & co"}],
+            },
             "B": {"relevant": None, "title": "Beta", "text": "More.", "links": []},
         },
     )
@@ -73,6 +78,7 @@ async def test_llm_cache_answers_a_repeat_without_calling_the_model(tmp_path):
             return {"labels": {"1": True}}
 
     inner = Inner()
+
     def ctx():
         return LlmContext("groq", "m", "prompt")
 
@@ -96,6 +102,7 @@ async def test_llm_cache_scopes_give_independent_realizations_and_replay_each(tm
             return {"answer": self.calls}  # a different realization every live call
 
     inner, path = Inner(), tmp_path / "c.jsonl"
+
     def ctx():
         return LlmContext("groq", "m", "same prompt")
 
@@ -115,11 +122,12 @@ def test_unscoped_cache_key_is_the_original_one(tmp_path):
 
     ctx = LlmContext("groq", "m", "p")
     assert CachedLlm(None, tmp_path / "c").key(ctx) == hashlib.sha256(b"groq\0m\0p").hexdigest()
-    assert CachedLlm(None, tmp_path / "c", scope="rep0").key(ctx) != CachedLlm(None, tmp_path / "c").key(ctx)
+    assert CachedLlm(None, tmp_path / "c", scope="rep0").key(ctx) != CachedLlm(
+        None, tmp_path / "c"
+    ).key(ctx)
 
 
 # --- Threats to the validity of a measurement -------------------------------
-
 
 
 @pytest.mark.slow
@@ -218,8 +226,12 @@ def test_invalid_repeats_stay_out_of_the_statistics(capsys):
     from benchmark.runner import RunHealth, RunResult
 
     def run(found, problems=()):
-        return RunResult("cascade", ["p"] * 10, [True] * found + [False] * (10 - found),
-                         RunHealth(problems=list(problems)))
+        return RunResult(
+            "cascade",
+            ["p"] * 10,
+            [True] * found + [False] * (10 - found),
+            RunHealth(problems=list(problems)),
+        )
 
     report("cascade", [run(8), run(6), run(0, ["ended after 3 of 10 pages"])], 10)
     out = capsys.readouterr().out
@@ -244,7 +256,9 @@ async def test_replay_only_never_calls_the_model_and_fails_loudly(tmp_path):
     with pytest.raises(ReplayMiss):
         await replay.send(LlmContext("groq", "m", "other prompt"))
     with pytest.raises(ReplayMiss):  # another repeat's answers are not this repeat's
-        await CachedLlm(Inner(), path, scope="rep1", replay_only=True).send(LlmContext("groq", "m", "p"))
+        await CachedLlm(Inner(), path, scope="rep1", replay_only=True).send(
+            LlmContext("groq", "m", "p")
+        )
     assert Inner.calls == 1 and len(replay.replay_misses) == 1
 
 
@@ -284,8 +298,12 @@ def test_an_exhausted_frontier_is_a_valid_early_finish_but_a_stall_is_not():
         _scoring_retry_counts = {}
 
     early = assess(100, list(range(40)), HealthMonitor(), Retry(), _ErrorLog(), frontier_empty=True)
-    assert early.valid and early.status == "completed_early" and early.reason == "frontier_exhausted"
-    stalled = assess(100, list(range(40)), HealthMonitor(), Retry(), _ErrorLog(), frontier_empty=False)
+    assert (
+        early.valid and early.status == "completed_early" and early.reason == "frontier_exhausted"
+    )
+    stalled = assess(
+        100, list(range(40)), HealthMonitor(), Retry(), _ErrorLog(), frontier_empty=False
+    )
     assert not stalled.valid and stalled.status == "failed"
 
 
@@ -295,15 +313,21 @@ async def test_graph_names_are_encoded_the_way_the_crawler_asks_for_them():
     graph = FrozenGraph(
         seed="Université",
         pages={
-            "Université": {"relevant": False, "title": "U", "text": "t",
-                           "links": [{"to": "Économie_(discipline)", "anchor": "eco"}]},
+            "Université": {
+                "relevant": False,
+                "title": "U",
+                "text": "t",
+                "links": [{"to": "Économie_(discipline)", "anchor": "eco"}],
+            },
             "Économie_(discipline)": {"relevant": False, "title": "E", "text": "t", "links": []},
         },
     )
     assert graph.seed == "Universit%C3%A9"
     assert set(graph.pages) == {"Universit%C3%A9", "%C3%89conomie_(discipline)"}
     assert graph.pages["Universit%C3%A9"]["links"][0]["to"] == "%C3%89conomie_(discipline)"
-    body = await graph.fetcher().emit_request({"url": "https://frozen.test/%C3%89conomie_(discipline)"})
+    body = await graph.fetcher().emit_request(
+        {"url": "https://frozen.test/%C3%89conomie_(discipline)"}
+    )
     assert "E" in body
 
 
@@ -311,13 +335,22 @@ def test_duplicate_titles_are_reported_and_can_be_merged():
     from benchmark import FrozenGraph
 
     def page(title, *targets):
-        return {"relevant": False, "title": title, "text": "t",
-                "links": [{"to": t, "anchor": t} for t in targets]}
+        return {
+            "relevant": False,
+            "title": title,
+            "text": "t",
+            "links": [{"to": t, "anchor": t} for t in targets],
+        }
 
     graph = FrozenGraph(
         seed="A",
-        pages={"A": page("A", "B", "C"), "B": page("Beta", "D"), "C": page("Beta", "E"),
-               "D": page("D"), "E": page("E")},
+        pages={
+            "A": page("A", "B", "C"),
+            "B": page("Beta", "D"),
+            "C": page("Beta", "E"),
+            "D": page("D"),
+            "E": page("E"),
+        },
     )
     assert graph.duplicate_titles() == {"Beta": ["B", "C"]}
     graph.merge("B", "C")
@@ -367,8 +400,12 @@ async def test_oracle_ranks_direct_targets_before_the_neighbourhood():
     from benchmark import FrozenGraph
 
     def page(label, *targets):
-        return {"label": label, "title": "t", "text": "t",
-                "links": [{"to": t, "anchor": t} for t in targets]}
+        return {
+            "label": label,
+            "title": "t",
+            "text": "t",
+            "links": [{"to": t, "anchor": t} for t in targets],
+        }
 
     graph = FrozenGraph(
         seed="S",
@@ -413,7 +450,12 @@ async def test_every_run_leaves_a_result_file_and_a_sequence_entry(tmp_path):
     records = load_records(tmp_path / "results")
     assert len(records) == 4
     first = next(r for r in records if r.policy == "oracle" and r.rep == 1)
-    assert len(first.sequence) == 20 and first.valid and first.llm_calls == 3 and first.input_tokens == 9
+    assert (
+        len(first.sequence) == 20
+        and first.valid
+        and first.llm_calls == 3
+        and first.input_tokens == 9
+    )
     import json
 
     saved = json.loads((tmp_path / "seq.json").read_text())
@@ -424,8 +466,16 @@ async def test_every_run_leaves_a_result_file_and_a_sequence_entry(tmp_path):
 def _record(policy, rep, labels, valid=True):
     from benchmark.results import RunRecord
 
-    return RunRecord(graph="g", policy=policy, rep=rep, budget=len(labels), sequence=["p"] * len(labels),
-                     labels=labels, valid=valid, status="completed" if valid else "failed")
+    return RunRecord(
+        graph="g",
+        policy=policy,
+        rep=rep,
+        budget=len(labels),
+        sequence=["p"] * len(labels),
+        labels=labels,
+        valid=valid,
+        status="completed" if valid else "failed",
+    )
 
 
 def test_analysis_excludes_invalid_runs_and_pairs_the_wilcoxon_test():
@@ -478,15 +528,30 @@ async def test_waiting_on_a_rate_limit_does_not_count_as_a_stall():
                 state["waiting"] = False
             return await super().score_links(links, parent)
 
-    kwargs = dict(low_threshold=-1.0, high_threshold=2.0, high_score_llm_fraction=0.0,
-                  low_score_sample_fraction=0.0, high_score_random_fraction=0.0,
-                  percentile_bucketing=False, max_llm_links=None)
+    kwargs = dict(
+        low_threshold=-1.0,
+        high_threshold=2.0,
+        high_score_llm_fraction=0.0,
+        low_score_sample_fraction=0.0,
+        high_score_random_fraction=0.0,
+        percentile_bucketing=False,
+        max_llm_links=None,
+    )
     graph = synthetic_graph(n_pages=100, seed=1)
 
     def run(**extra):
         state.update(waiting=False, slept=False)
-        return runner._run(graph, "x", 15, 0, (runner._NoLlm(), RateLimited(graph, 0)), kwargs,
-                           runner._passthrough, [], **extra)
+        return runner._run(
+            graph,
+            "x",
+            15,
+            0,
+            (runner._NoLlm(), RateLimited(graph, 0)),
+            kwargs,
+            runner._passthrough,
+            [],
+            **extra,
+        )
 
     stalled = await run()
     assert len(stalled.visited) < 15  # without the signal the same wait ends the run
@@ -563,13 +628,22 @@ async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monk
             prompt = ctx.get_prompt()
             match = re.search(r"CANDIDATES:\n(\[.*?\])\n", prompt, re.S)
             if not match:
-                return {"target": "t", "descriptions": ["diabetes insulin glucose", "pancreas care"]}
+                return {
+                    "target": "t",
+                    "descriptions": ["diabetes insulin glucose", "pancreas care"],
+                }
             urls = [c["url"] for c in json.loads(match.group(1))]
-            return {"results": [
-                {"url": u, "score": zlib.crc32(u.encode()) % 100, "relevance_type": "direct",
-                 "expansions": [f"insulin {u}"] if zlib.crc32(u.encode()) % 5 == 0 else []}
-                for u in urls
-            ]}
+            return {
+                "results": [
+                    {
+                        "url": u,
+                        "score": zlib.crc32(u.encode()) % 100,
+                        "relevance_type": "direct",
+                        "expansions": [f"insulin {u}"] if zlib.crc32(u.encode()) % 5 == 0 else [],
+                    }
+                    for u in urls
+                ]
+            }
 
     graph = synthetic_graph(n_pages=200, seed=4)
     graph.topic = "diabetes insulin"
@@ -578,9 +652,17 @@ async def test_a_replay_makes_exactly_the_calls_the_live_run_made(tmp_path, monk
 
     async def run(replay_only):
         llm = CachedLlm(FakeLlm(), tmp_path / "c.jsonl", scope="rep0", replay_only=replay_only)
-        result = await run_cascade(graph, 25, 0, llm, bp["extraction"], expansion,
-                                   bp["scoring"]["strategy"], ("groq", "m"),
-                                   tmp_path / f"store-{replay_only}")
+        result = await run_cascade(
+            graph,
+            25,
+            0,
+            llm,
+            bp["extraction"],
+            expansion,
+            bp["scoring"]["strategy"],
+            ("groq", "m"),
+            tmp_path / f"store-{replay_only}",
+        )
         return result, llm
 
     live, live_llm = await run(False)
@@ -620,13 +702,23 @@ class _RecordingLlm:
             return {"target": "t", "descriptions": ["diabetes insulin glucose", "pancreas care"]}
         urls = [c["url"] for c in json.loads(match.group(1))]
         self.batches.append(len(urls))
-        return {"results": [{"url": u, "score": 50, "relevance_type": "direct", "expansions": []} for u in urls]}
+        return {
+            "results": [
+                {"url": u, "score": 50, "relevance_type": "direct", "expansions": []} for u in urls
+            ]
+        }
 
 
 def _fan_out_graph(links: int = 130):
-    leaves = {f"L{i}": {"label": 0, "title": f"L{i}", "text": "t", "links": []} for i in range(links)}
-    seed = {"label": 0, "title": "S", "text": "t",
-            "links": [{"to": f"L{i}", "anchor": f"leaf {i}"} for i in range(links)]}
+    leaves = {
+        f"L{i}": {"label": 0, "title": f"L{i}", "text": "t", "links": []} for i in range(links)
+    }
+    seed = {
+        "label": 0,
+        "title": "S",
+        "text": "t",
+        "links": [{"to": f"L{i}", "anchor": f"leaf {i}"} for i in range(links)],
+    }
     from benchmark import FrozenGraph
 
     return FrozenGraph(seed="S", pages={"S": seed, **leaves}, topic="diabetes insulin")
@@ -641,9 +733,24 @@ async def _arm(tmp_path, arm, llm, **kw):
 
     bp = json.loads(Path("templates/isi.json").read_text())
     expansion = {**bp["expansion"], "llm_type": "groq", "llm_model": "m"}
-    cached = llm if isinstance(llm, CachedLlm) else CachedLlm(llm, tmp_path / f"{arm}.jsonl", scope="rep0")
-    result = await run_cascade(_fan_out_graph(), 4, 0, cached, bp["extraction"], expansion,
-                               bp["scoring"]["strategy"], ("groq", "m"), tmp_path / f"s-{arm}-{id(cached)}", arm=arm, **kw)
+    cached = (
+        llm
+        if isinstance(llm, CachedLlm)
+        else CachedLlm(llm, tmp_path / f"{arm}.jsonl", scope="rep0")
+    )
+    result = await run_cascade(
+        _fan_out_graph(),
+        4,
+        0,
+        cached,
+        bp["extraction"],
+        expansion,
+        bp["scoring"]["strategy"],
+        ("groq", "m"),
+        tmp_path / f"s-{arm}-{id(cached)}",
+        arm=arm,
+        **kw,
+    )
     return result, cached
 
 
@@ -656,9 +763,15 @@ async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, 
     cascade_llm, all_llm = _RecordingLlm(), _RecordingLlm()
     await _arm(tmp_path, "cascade", cascade_llm)
     result, _ = await _arm(tmp_path, "llm_all", all_llm)
-    assert cascade_llm.batches[0] == MAX_LLM_LINKS_PER_NODE  # the cascade truncates the node's 130 links
+    assert (
+        cascade_llm.batches[0] == MAX_LLM_LINKS_PER_NODE
+    )  # the cascade truncates the node's 130 links
     first_node = all_llm.batches[:3]
-    assert first_node == [MAX_LLM_LINKS_PER_NODE, MAX_LLM_LINKS_PER_NODE, 130 - 2 * MAX_LLM_LINKS_PER_NODE]
+    assert first_node == [
+        MAX_LLM_LINKS_PER_NODE,
+        MAX_LLM_LINKS_PER_NODE,
+        130 - 2 * MAX_LLM_LINKS_PER_NODE,
+    ]
     assert result.policy == "llm_all" and result.health.valid
     assert result.thresholds["mode"] == "none"
     plain, _ = await _arm(tmp_path, "cascade", _RecordingLlm())
@@ -672,7 +785,9 @@ async def test_llm_all_sends_every_link_in_calls_of_the_cascades_size(tmp_path, 
 
 @pytest.mark.slow
 @pytest.mark.method_guard
-async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(tmp_path, monkeypatch):
+async def test_no_llm_makes_no_scoring_call_and_reuses_the_recorded_expansion(
+    tmp_path, monkeypatch
+):
     from benchmark.llm_cache import CachedLlm
 
     _hashing_config(monkeypatch)
@@ -702,9 +817,14 @@ def test_analysis_counts_each_title_once(tmp_path):
 
     from benchmark.analyze import dedupe_records
 
-    graph = {"seed": "A", "pages": {
-        "A": {"title": "Alpha", "links": []}, "A2": {"title": "Alpha", "links": []},
-        "B": {"title": "Beta", "links": []}}}
+    graph = {
+        "seed": "A",
+        "pages": {
+            "A": {"title": "Alpha", "links": []},
+            "A2": {"title": "Alpha", "links": []},
+            "B": {"title": "Beta", "links": []},
+        },
+    }
     (tmp_path / "g.json").write_text(json.dumps(graph))
     run = _record("bfs", 0, [1, 1, 0])
     run.sequence = ["A", "A2", "B"]
@@ -748,12 +868,18 @@ def test_merge_writes_graded_labels_the_rubric_hash_and_a_derived_relevant(tmp_p
 
     from benchmark import FrozenGraph, label_graph
 
-    graph = FrozenGraph(seed="A", pages={
-        n: {"title": n, "text": "t", "relevant": None, "links": []} for n in ("A", "B", "C")})
+    graph = FrozenGraph(
+        seed="A",
+        pages={
+            n: {"title": n, "text": "t", "relevant": None, "links": []} for n in ("A", "B", "C")
+        },
+    )
     path = tmp_path / "g.json"
     graph.save(path)
     labels = tmp_path / "labels.jsonl"
-    labels.write_text("".join(json.dumps({"page": n, "label": v}) + "\n" for n, v in zip("ABC", (2, 1, 0))))
+    labels.write_text(
+        "".join(json.dumps({"page": n, "label": v}) + "\n" for n, v in zip("ABC", (2, 1, 0)))
+    )
     label_graph.merge(FrozenGraph.load(path), path, labels)
     data = json.loads(path.read_text())
     assert {n: data["pages"][n]["label"] for n in "ABC"} == {"A": 2, "B": 1, "C": 0}
@@ -769,8 +895,12 @@ def _audit_graph(n=120):
     for i in range(n):
         label = 2 if i < 8 else 1 if i < 40 else 0
         where = "en Tunisie" if i % 3 == 0 else "ailleurs"
-        pages[f"P{i}"] = {"label": label, "title": f"Page {i}", "text": f"Texte {i} {where}. " * 40,
-                          "links": []}
+        pages[f"P{i}"] = {
+            "label": label,
+            "title": f"Page {i}",
+            "text": f"Texte {i} {where}. " * 40,
+            "links": [],
+        }
     return FrozenGraph(seed="P0", pages=pages)
 
 
@@ -799,8 +929,12 @@ def test_audit_sample_is_stratified_blind_and_seeded(tmp_path):
     assert all(v["judge_label"] == 2 for v in k["items"].values() if v["stratum"] == "label2")
     assert [r["id"] for r in rows] == [str(i) for i in range(1, 41)]
     first = [v["page"] for v in k["items"].values()]
-    audit.sample(path, tmp_path / "b.tsv", tmp_path / "k2.json", total=40, seed=3, exclude_files=[pilot])
-    assert first == [v["page"] for v in json.loads((tmp_path / "k2.json").read_text())["items"].values()]
+    audit.sample(
+        path, tmp_path / "b.tsv", tmp_path / "k2.json", total=40, seed=3, exclude_files=[pilot]
+    )
+    assert first == [
+        v["page"] for v in json.loads((tmp_path / "k2.json").read_text())["items"].values()
+    ]
 
 
 def test_audit_kappa_and_reweighting():
@@ -825,12 +959,16 @@ def test_audit_score_with_two_annotators(tmp_path, capsys):
 
     from benchmark import audit
 
-    items = {str(i): {"page": f"P{i}", "stratum": "uniform", "judge_label": i % 3} for i in range(1, 31)}
-    (tmp_path / "k.json").write_text(json.dumps(
-        {"graph_label_counts": {"0": 60, "1": 30, "2": 10}, "items": items}))
+    items = {
+        str(i): {"page": f"P{i}", "stratum": "uniform", "judge_label": i % 3} for i in range(1, 31)
+    }
+    (tmp_path / "k.json").write_text(
+        json.dumps({"graph_label_counts": {"0": 60, "1": 30, "2": 10}, "items": items})
+    )
     for name, shift in (("h1.tsv", 0), ("h2.tsv", 1)):
         rows = ["id\ttitle\texcerpt\thuman_label"] + [
-            f"{i}\tt\te\t{(i % 3 + (shift if i % 5 == 0 else 0)) % 3}" for i in range(1, 31)]
+            f"{i}\tt\te\t{(i % 3 + (shift if i % 5 == 0 else 0)) % 3}" for i in range(1, 31)
+        ]
         (tmp_path / name).write_text("\n".join(rows))
     audit.score(tmp_path / "h1.tsv", tmp_path / "k.json", tmp_path / "h2.tsv")
     out = capsys.readouterr().out
@@ -869,10 +1007,17 @@ async def test_absent_page_hits_are_counted_and_the_mode_decides_the_cost():
     from benchmark import FrozenGraph, graph as graph_module
 
     def build():
-        return FrozenGraph(seed="A", pages={
-            "A": {"label": 0, "links": [{"to": "GONE", "anchor": "gone"}, {"to": "B", "anchor": "b"}]},
-            "B": {"label": 1, "links": [{"to": "C", "anchor": "c"}]},
-            "C": {"label": 2, "links": []}})
+        return FrozenGraph(
+            seed="A",
+            pages={
+                "A": {
+                    "label": 0,
+                    "links": [{"to": "GONE", "anchor": "gone"}, {"to": "B", "anchor": "b"}],
+                },
+                "B": {"label": 1, "links": [{"to": "C", "anchor": "c"}]},
+                "C": {"label": 2, "links": []},
+            },
+        )
 
     assert graph_module.ABSENT_PAGE_HITS == "fail"  # the documented default
     failed = await run_policy(build(), "bfs", 3)
@@ -908,14 +1053,29 @@ async def test_every_result_carries_a_manifest(tmp_path):
     path.write_text(json.dumps(data))
     result = await run_policy(graph, "bfs", 10)
     assert result.thresholds["mode"] == "none"
-    m = manifest(path, graph, result, budget=10, seed=2, rep=2, model="m", provider="p", prompt="TOPICAL:1")
-    assert set(m) == {"git_commit", "graph_sha256", "rubric_sha256", "model", "provider", "prompt_version",
-                      "budget", "thresholds", "seed", "repeat", "absent_page_mode"}
+    m = manifest(
+        path, graph, result, budget=10, seed=2, rep=2, model="m", provider="p", prompt="TOPICAL:1"
+    )
+    assert set(m) == {
+        "git_commit",
+        "graph_sha256",
+        "rubric_sha256",
+        "model",
+        "provider",
+        "prompt_version",
+        "budget",
+        "thresholds",
+        "seed",
+        "repeat",
+        "absent_page_mode",
+    }
     assert m["rubric_sha256"] == "abc" and len(m["graph_sha256"]) == 64 and m["git_commit"]
     RunRecord.from_result("g.json", 2, 10, result, manifest=m).filename()
     out = tmp_path / "r"
     out.mkdir()
-    (out / "x.json").write_text(json.dumps(RunRecord.from_result("g.json", 2, 10, result, manifest=m).to_json()))
+    (out / "x.json").write_text(
+        json.dumps(RunRecord.from_result("g.json", 2, 10, result, manifest=m).to_json())
+    )
     assert load_records(out)[0].manifest == m
     # a result written before manifests existed still loads
     old = RunRecord.from_result("g.json", 0, 10, result).to_json()
@@ -930,13 +1090,16 @@ def test_graph_stats_counts_depths_labels_and_absent_links():
     def link(to):
         return {"to": to, "anchor": to}
 
-    graph = FrozenGraph(seed="A", pages={
-        "A": {"label": 0, "links": [link("B"), link("C"), link("GONE")]},
-        "B": {"label": 1, "links": [link("D")]},
-        "C": {"label": 0, "links": [link("D")]},
-        "D": {"label": 2, "links": []},
-        "E": {"label": 2, "links": [link("A")]},  # relevant, not reachable from the seed
-    })
+    graph = FrozenGraph(
+        seed="A",
+        pages={
+            "A": {"label": 0, "links": [link("B"), link("C"), link("GONE")]},
+            "B": {"label": 1, "links": [link("D")]},
+            "C": {"label": 0, "links": [link("D")]},
+            "D": {"label": 2, "links": []},
+            "E": {"label": 2, "links": [link("A")]},  # relevant, not reachable from the seed
+        },
+    )
     s = stats(graph)
     assert (s["pages"], s["edges"], s["absent_links"], s["reachable"]) == (5, 6, 1, 4)
     assert s["out_degree"] == {"mean": 1.2, "median": 1, "max": 3}
@@ -951,8 +1114,17 @@ def test_graph_stats_counts_depths_labels_and_absent_links():
 def _record(policy, rep, labels, graph="g.json", valid=True, status="completed", **kw):
     from benchmark.results import RunRecord
 
-    return RunRecord(graph=graph, policy=policy, rep=rep, budget=len(labels), sequence=[f"p{i}" for i in labels],
-                     labels=labels, valid=valid, status=status, **kw)
+    return RunRecord(
+        graph=graph,
+        policy=policy,
+        rep=rep,
+        budget=len(labels),
+        sequence=[f"p{i}" for i in labels],
+        labels=labels,
+        valid=valid,
+        status=status,
+        **kw,
+    )
 
 
 def test_analyze_metrics_on_known_runs(tmp_path):
@@ -971,21 +1143,41 @@ def test_analyze_metrics_on_known_runs(tmp_path):
     assert abs(analyze.ndcg_at(labels, 3, grades) - got / ideal) < 1e-9
     assert analyze.ndcg_at([2, 1, 1], 3, grades) == 1.0
 
-    run = _record("cascade", 0, [1, 1, 0, 2], llm_calls=3, llm_replayed=1, input_tokens=1500, output_tokens=500)
+    run = _record(
+        "cascade",
+        0,
+        [1, 1, 0, 2],
+        llm_calls=3,
+        llm_replayed=1,
+        input_tokens=1500,
+        output_tokens=500,
+    )
     assert analyze.efficiency(run) == (3 / 4, 3 / 2.0)
     assert math.isnan(analyze.efficiency(_record("bfs", 0, [1]))[0])
 
-    records = [run, _record("cascade", 1, [0, 0], valid=False, status="failed"),
-               _record("bfs", 0, [1], status="completed_early"),
-               _record("cascade", 2, [1], replay=True, replay_misses=2, valid=False, status="failed")]
+    records = [
+        run,
+        _record("cascade", 1, [0, 0], valid=False, status="failed"),
+        _record("bfs", 0, [1], status="completed_early"),
+        _record("cascade", 2, [1], replay=True, replay_misses=2, valid=False, status="failed"),
+    ]
     assert analyze.validity_counts(records) == {
-        "cascade": {"valid": 1, "invalid": 1, "early": 0}, "bfs": {"valid": 1, "invalid": 0, "early": 1}}
-    assert analyze.replay_counts(records) == {"cascade": {"replays": 1, "with_misses": 1, "misses": 2}}
-    for tex in (analyze.validity_table_tex(records), analyze.replay_table_tex(records),
-                analyze.efficiency_table_tex(analyze.by_policy(records))):
+        "cascade": {"valid": 1, "invalid": 1, "early": 0},
+        "bfs": {"valid": 1, "invalid": 0, "early": 1},
+    }
+    assert analyze.replay_counts(records) == {
+        "cascade": {"replays": 1, "with_misses": 1, "misses": 2}
+    }
+    for tex in (
+        analyze.validity_table_tex(records),
+        analyze.replay_table_tex(records),
+        analyze.efficiency_table_tex(analyze.by_policy(records)),
+    ):
         assert tex.count(r"\begin{tabular}") == 1 and r"\end{tabular}" in tex
 
-    (tmp_path / "g.json").write_text('{"seed": "a", "pages": {"a": {"label": 2}, "b": {"relevant": true}, "c": {"label": 0}}}')
+    (tmp_path / "g.json").write_text(
+        '{"seed": "a", "pages": {"a": {"label": 2}, "b": {"relevant": true}, "c": {"label": 0}}}'
+    )
     assert analyze.graph_grades(tmp_path, "g.json") == {0: 1, 1: 1, 2: 1}
     assert analyze.graph_grades(tmp_path, "missing.json") is None
 
@@ -995,11 +1187,16 @@ def test_failed_replay_does_not_overwrite_the_live_record(tmp_path):
 
     sink = ResultSink(tmp_path)
     sink.add(_record("cascade", 0, [1, 2]))
-    sink.add(_record("cascade", 0, [1, 2], replay=True, replay_misses=3, valid=False, status="failed"))
+    sink.add(
+        _record("cascade", 0, [1, 2], replay=True, replay_misses=3, valid=False, status="failed")
+    )
     sink.add(_record("cascade", 0, [1, 2], replay=True, llm_replayed=9))
     recs = load_records(tmp_path)
     assert sorted((r.replay, r.replay_misses, r.valid) for r in recs) == [
-        (False, 0, True), (True, 0, True), (True, 3, False)]
+        (False, 0, True),
+        (True, 0, True),
+        (True, 3, False),
+    ]
     live = [r for r in recs if not r.replay]
     assert len(live) == 1 and live[0].llm_replayed == 0  # the live record is intact
     from benchmark import analyze
@@ -1015,33 +1212,79 @@ def test_analyze_main_writes_every_table(tmp_path, monkeypatch, capsys):
     from benchmark import analyze
     from benchmark.results import ResultSink
 
-    (tmp_path / "g.json").write_text(json.dumps({"seed": "a", "pages": {
-        f"p{i}": {"label": 2 if i < 3 else 1 if i < 8 else 0, "links": []} for i in range(30)}}))
+    (tmp_path / "g.json").write_text(
+        json.dumps(
+            {
+                "seed": "a",
+                "pages": {
+                    f"p{i}": {"label": 2 if i < 3 else 1 if i < 8 else 0, "links": []}
+                    for i in range(30)
+                },
+            }
+        )
+    )
     sink = ResultSink(tmp_path / "res")
     for rep in range(6):
-        sink.add(_record("cascade", rep, [2, 1, 1, 0, 1] * 8, llm_calls=10, input_tokens=4000, output_tokens=1000))
+        sink.add(
+            _record(
+                "cascade",
+                rep,
+                [2, 1, 1, 0, 1] * 8,
+                llm_calls=10,
+                input_tokens=4000,
+                output_tokens=1000,
+            )
+        )
         sink.add(_record("bfs", rep, [0, 1, 0, 0, 0] * 8 if rep % 2 else [0, 0, 0, 1, 0] * 8))
     sink.add(_record("cascade", 9, [0], valid=False, status="failed"))
     out = tmp_path / "out"
-    monkeypatch.setattr(sys, "argv", ["analyze", "--results", str(tmp_path / "res"), "--out", str(out),
-                                      "--graphs-dir", str(tmp_path), "--no-dedupe", "--ndcg"])
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "analyze",
+            "--results",
+            str(tmp_path / "res"),
+            "--out",
+            str(out),
+            "--graphs-dir",
+            str(tmp_path),
+            "--no-dedupe",
+            "--ndcg",
+        ],
+    )
     analyze.main()
     names = {p.name for p in out.iterdir()}
-    assert {"curves.csv", "harvest_table.tex", "harvest_label2_table.tex", "recall_table.tex",
-            "efficiency_table.tex", "validity_table.tex", "replay_table.tex", "ndcg_table.tex",
-            "wilcoxon_table.tex"} <= names
+    assert {
+        "curves.csv",
+        "harvest_table.tex",
+        "harvest_label2_table.tex",
+        "recall_table.tex",
+        "efficiency_table.tex",
+        "validity_table.tex",
+        "replay_table.tex",
+        "ndcg_table.tex",
+        "wilcoxon_table.tex",
+    } <= names
     printed = capsys.readouterr().out
     assert "cascade vs bfs" in printed and "6/1/0" in printed
-    assert "--" not in (out / "recall_table.tex").read_text().split(r"\midrule")[1].split(r"\bottomrule")[0]
+    assert (
+        "--"
+        not in (out / "recall_table.tex").read_text().split(r"\midrule")[1].split(r"\bottomrule")[0]
+    )
 
 
 def test_grading_problems_flag_ungraded_and_sparse_graphs():
     from benchmark import FrozenGraph
 
     def graph(labels):
-        return FrozenGraph(seed="p0", pages={
-            f"p{i}": {**({"label": v} if v is not None else {"relevant": False}), "links": []}
-            for i, v in enumerate(labels)})
+        return FrozenGraph(
+            seed="p0",
+            pages={
+                f"p{i}": {**({"label": v} if v is not None else {"relevant": False}), "links": []}
+                for i, v in enumerate(labels)
+            },
+        )
 
     assert "no 0/1/2 label" in graph([None, 0, 1]).grading_problems()[0]
     assert "no label-2" in " ".join(graph([0] * 5 + [1] * 40).grading_problems())
@@ -1055,9 +1298,13 @@ def test_audit_sample_refuses_a_graph_without_judge_labels(tmp_path):
     from benchmark import FrozenGraph, audit
 
     path = tmp_path / "g.json"
-    FrozenGraph(seed="a", pages={"a": {"relevant": None, "title": "A", "text": "t", "links": []}}).save(path)
+    FrozenGraph(
+        seed="a", pages={"a": {"relevant": None, "title": "A", "text": "t", "links": []}}
+    ).save(path)
     with pytest.raises(SystemExit, match="no judge label"):
-        audit.sample(path, tmp_path / "o.tsv", tmp_path / "k.json", total=None, seed=0, exclude_files=[])
+        audit.sample(
+            path, tmp_path / "o.tsv", tmp_path / "k.json", total=None, seed=0, exclude_files=[]
+        )
 
 
 @pytest.mark.slow  # child process imports the whole crawler: 2 s warm, over 15 s cold
@@ -1069,8 +1316,12 @@ def test_cli_refuses_an_ungraded_graph_before_running_anything(tmp_path):
 
     path = tmp_path / "g.json"
     FrozenGraph(seed="a", pages={"a": {"relevant": True, "links": []}}).save(path)
-    run = subprocess.run([sys.executable, "-m", "benchmark", "--graph", str(path), "--budget", "1"],
-                         capture_output=True, text=True, timeout=60)
+    run = subprocess.run(
+        [sys.executable, "-m", "benchmark", "--graph", str(path), "--budget", "1"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
     assert run.returncode != 0 and "cannot support a graded comparison" in run.stderr
 
 
@@ -1083,8 +1334,12 @@ def test_label_log_is_per_graph(tmp_path):
 async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monkeypatch):
     from benchmark import FrozenGraph, label_graph
 
-    graph = FrozenGraph(seed="a", pages={
-        f"p{i}": {"title": "t", "text": "x", "relevant": None, "links": []} for i in range(100)})
+    graph = FrozenGraph(
+        seed="a",
+        pages={
+            f"p{i}": {"title": "t", "text": "x", "relevant": None, "links": []} for i in range(100)
+        },
+    )
     calls = []
 
     async def failing_judge(llm, rows):
@@ -1125,4 +1380,4 @@ def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_pat
     assert "A \\u003c/script> B" in page and "<!--" not in page
     items = json.loads(page.split("const ITEMS = ", 1)[1].split(";\nconst KEY", 1)[0])
     assert items == [{"id": "1", "title": "A </script> B", "excerpt": "x <!-- y"}]
-    assert r'/[\t\r\n]+/g' in page and '"id\\ttitle' in page  # escapes reach the script unchanged
+    assert r"/[\t\r\n]+/g" in page and '"id\\ttitle' in page  # escapes reach the script unchanged

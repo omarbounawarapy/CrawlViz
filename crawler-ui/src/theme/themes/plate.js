@@ -11,15 +11,15 @@
 //     (see features/graph/GraphView.jsx).
 // Text pairs below are >= 4.5:1 on `background.primary`.
 
-const paper  = "#f3f5f7";
-const sheet  = "#fbfcfd";
-const rule   = "#d3d9e0";
-const ink    = "#0f1b2d";
-const ink2   = "#33435a";    // 8.6:1 on paper
-const muted  = "#566478";    // 5.4:1 on paper
+const paper = "#f3f5f7";
+const sheet = "#fbfcfd";
+const rule = "#d3d9e0";
+const ink = "#0f1b2d";
+const ink2 = "#33435a"; // 8.6:1 on paper
+const muted = "#566478"; // 5.4:1 on paper
 const vermilion = "#c7311a"; // 4.9:1 on paper
 // Non-text marks that must be seen (control borders, graph edges, chart lines) are >= 3:1.
-const control = "#707d90";   // 3.8:1 on paper, 4.1:1 on sheet
+const control = "#707d90"; // 3.8:1 on paper, 4.1:1 on sheet
 
 const plate = {
   colors: {
@@ -28,8 +28,12 @@ const plate = {
     text: { primary: ink, secondary: ink2, muted },
 
     accent: {
-      blue: ink, blueDim: ink2, gold: ink2,
-      green: ink, red: "#7a1f5c", purple: ink2,
+      blue: ink,
+      blueDim: ink2,
+      gold: ink2,
+      green: ink,
+      red: "#7a1f5c",
+      purple: ink2,
     },
 
     relevance: {
@@ -40,29 +44,34 @@ const plate = {
 
     state: {
       // Fills: one neutral ramp, lightness = progress through the lifecycle.
-      CREATED:  "#e3e8ee",
-      FETCHED:  "#b7c1cd",
+      CREATED: "#e3e8ee",
+      FETCHED: "#b7c1cd",
       FILTERED: "#8794a5",
-      SCORED:   "#56657a",
+      SCORED: "#56657a",
       EXPANDED: ink,
       // Candidate decisions (never full nodes) -- drawn as squares.
-      DROPPED:  "transparent",
-      TRUSTED:  ink2,
-      ERROR:    "#7a1f5c",
+      DROPPED: "transparent",
+      TRUSTED: ink2,
+      ERROR: "#7a1f5c",
       label: {
-        CREATED:  "#7b889a",
-        FETCHED:  "#56657a",
+        CREATED: "#7b889a",
+        FETCHED: "#56657a",
         FILTERED: "#3d4c62",
-        SCORED:   "#26364d",
+        SCORED: "#26364d",
         EXPANDED: ink,
-        DROPPED:  muted,
-        TRUSTED:  ink2,
-        ERROR:    "#7a1f5c",
+        DROPPED: muted,
+        TRUSTED: ink2,
+        ERROR: "#7a1f5c",
       },
       glow: {
-        CREATED: "transparent", FETCHED: "transparent", FILTERED: "transparent",
-        SCORED: "transparent", EXPANDED: "transparent", DROPPED: "transparent",
-        TRUSTED: "transparent", ERROR: "transparent",
+        CREATED: "transparent",
+        FETCHED: "transparent",
+        FILTERED: "transparent",
+        SCORED: "transparent",
+        EXPANDED: "transparent",
+        DROPPED: "transparent",
+        TRUSTED: "transparent",
+        ERROR: "transparent",
       },
     },
 
@@ -71,23 +80,28 @@ const plate = {
     status: {
       running: { bg: "rgba(15,27,45,0.06)", border: "rgba(15,27,45,0.35)", dot: ink },
       stopped: { bg: "rgba(15,27,45,0.04)", border: "rgba(15,27,45,0.25)", dot: ink2 },
-      idle:    { bg: "rgba(15,27,45,0.04)", border: "rgba(15,27,45,0.25)", dot: muted },
+      idle: { bg: "rgba(15,27,45,0.04)", border: "rgba(15,27,45,0.25)", dot: muted },
     },
 
     replay: {
-      bg: "rgba(15,27,45,0.06)", border: "rgba(15,27,45,0.45)",
-      text: ink, currentRow: "rgba(15,27,45,0.07)",
+      bg: "rgba(15,27,45,0.06)",
+      border: "rgba(15,27,45,0.45)",
+      text: ink,
+      currentRow: "rgba(15,27,45,0.07)",
     },
 
-    edge: control, arrow: "#56657a", nodeText: ink2,
-    rowBorder: "#e3e8ee", scrubber: control,
+    edge: control,
+    arrow: "#56657a",
+    nodeText: ink2,
+    rowBorder: "#e3e8ee",
+    scrubber: control,
   },
 
   spacing: { xs: "4px", sm: "8px", md: "12px", lg: "16px", xl: "24px" },
 
   typography: {
-    fontMono:    "'Public Sans', system-ui, sans-serif",   // legacy key: the UI face
-    fontData:    "'JetBrains Mono', ui-monospace, monospace",
+    fontMono: "'Public Sans', system-ui, sans-serif", // legacy key: the UI face
+    fontData: "'JetBrains Mono', ui-monospace, monospace",
     fontDisplay: "'Source Serif 4', Georgia, serif",
     size: { xxs: "11px", xs: "12px", sm: "12px", md: "13px", lg: "15px", xl: "22px", xxl: "30px" },
     weight: { normal: 400, medium: 500, semibold: 600, bold: 700 },
@@ -98,12 +112,18 @@ const plate = {
 
   shadows: {
     panel: "0 1px 2px rgba(15,27,45,0.08), 0 8px 24px rgba(15,27,45,0.10)",
-    glow:  "0 0 0",
+    glow: "0 0 0",
   },
 
   shell: {
-    background: paper, surface: sheet, border: rule, scrollTrack: paper,
-    textPrimary: ink2, textBright: ink, textMuted: muted, textDim: muted,
+    background: paper,
+    surface: sheet,
+    border: rule,
+    scrollTrack: paper,
+    textPrimary: ink2,
+    textBright: ink,
+    textMuted: muted,
+    textDim: muted,
     accentTeal: ink,
   },
 };

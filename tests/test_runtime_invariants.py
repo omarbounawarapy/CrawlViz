@@ -10,6 +10,7 @@ Every test here currently fails against the code it describes and is marked
 ``xfail(strict=True)``: the marker documents a known defect, and the strict
 flag turns the fix into a visible XPASS that forces the marker's removal.
 """
+
 import asyncio
 import json
 import logging
@@ -63,6 +64,7 @@ EXTRACTION = {"mode": "document", "fields": {}}
 # =========================================================
 # FAKES
 # =========================================================
+
 
 class SyntheticSite:
     """Fake fetcher: serves `graph` (page -> outgoing pages) as HTML.
@@ -131,6 +133,7 @@ class Recorder:
 # HARNESS
 # =========================================================
 
+
 def make_scoring(broker, nlp, llm, rng=None) -> ScoringPipeline:
     """ScoringPipeline built with the same arguments core.Crawler passes."""
     return ScoringPipeline(
@@ -191,7 +194,11 @@ class Crawl:
         self.recorder = Recorder()
 
         b, s = self.broker, self.storage
-        self.requests = RequestsPipeline(b, max_concurrency=1, fetcher=site, min_delay=0,
+        self.requests = RequestsPipeline(
+            b,
+            max_concurrency=1,
+            fetcher=site,
+            min_delay=0,
             rng=random.Random(f"{seed}:requests"),
         )
         self.scoring = make_scoring(b, nlp, llm, rng=random.Random(f"{seed}:scoring"))
@@ -210,8 +217,13 @@ class Crawl:
             b.subscribe(pipeline, pipeline.event_types)
         b.subscribe(
             self.recorder,
-            [PageFetchedEvent, LinksScoredEvent, NoLinksToScoreEvent, EmptyScoreResultsEvent,
-             PriorityCalculatedEvent],
+            [
+                PageFetchedEvent,
+                LinksScoredEvent,
+                NoLinksToScoreEvent,
+                EmptyScoreResultsEvent,
+                PriorityCalculatedEvent,
+            ],
         )
         self.tasks: list[asyncio.Task] = []
 
@@ -239,6 +251,7 @@ class Crawl:
 # 1. FRONTIER ORDER
 # =========================================================
 
+
 async def test_higher_priority_node_is_fetched_first():
     site = SyntheticSite({})
     requests = RequestsPipeline(EventBroker(), max_concurrency=1, fetcher=site, min_delay=0)
@@ -262,6 +275,7 @@ async def test_higher_priority_node_is_fetched_first():
 # 2. A DEAD LINK MUST NOT FREEZE SCORING
 # =========================================================
 
+
 async def test_dead_link_does_not_stop_other_nodes_being_scored():
     site = SyntheticSite({"good": ["x", "y"]}, dead=frozenset({"dead"}))
     crawl = Crawl(site, FixedRelevance(0.5), FixedLlm())
@@ -283,6 +297,7 @@ async def test_dead_link_does_not_stop_other_nodes_being_scored():
 # =========================================================
 # 3. AN EMPTY LLM SAMPLE IS NOT A FAILURE
 # =========================================================
+
 
 async def _score_one_ready_node(nlp_score: float, run_for: float):
     """Score one already-fetched node whose 3 links all get `nlp_score`.
@@ -349,6 +364,7 @@ async def test_empty_llm_sample_raises_no_errors(caplog):
 # =========================================================
 # 4. A STOPPED CRAWL ACTUALLY ENDS
 # =========================================================
+
 
 async def test_scoring_finishes_after_stop_with_a_node_in_flight():
     broker, storage = EventBroker(), Storage()
@@ -479,7 +495,9 @@ async def test_decision_events_keep_values_after_rescore():
     link = Link("http://x/a", "a", "ctx")
     link.score, link._nlp_score = 7, 0.4
     event = HighScoreLinksEvent(
-        "1", node=None, links=[link],
+        "1",
+        node=None,
+        links=[link],
         records=[{"url": link.url, "score": 7, "nlp_score": 0.4}],
     )
     await broker.emit(event)
@@ -521,6 +539,7 @@ async def test_scoring_runs_under_a_trace_bound_to_the_node():
 # =========================================================
 # 7. SEEDED RUNS ARE REPRODUCIBLE (P3.2)
 # =========================================================
+
 
 async def _run_seeded(seed: int) -> tuple[list[str], str]:
     tree = {"root": [f"a{i}" for i in range(12)]}

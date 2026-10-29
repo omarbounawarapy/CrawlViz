@@ -37,8 +37,7 @@ No explanation outside JSON.
 STRATEGIES: dict[str, dict[str, str]] = {
     "TOPICAL": {
         "context": (
-            "Focus on direct semantic relevance to the target topic. "
-            "Penalize navigation pages."
+            "Focus on direct semantic relevance to the target topic. Penalize navigation pages."
         )
     },
     "PATHFINDING": {
@@ -46,18 +45,12 @@ STRATEGIES: dict[str, dict[str, str]] = {
             "Prefer links that are useful intermediate steps toward reaching the target topic."
         )
     },
-    "EXPLORATION": {
-        "context": "Prefer semantically diverse links to broaden coverage."
-    },
-    "GOAL_ORIENTED": {
-        "context": "Prefer links that directly help achieve the target objective."
-    },
+    "EXPLORATION": {"context": "Prefer semantically diverse links to broaden coverage."},
+    "GOAL_ORIENTED": {"context": "Prefer links that directly help achieve the target objective."},
     "DENSITY_FOCUSED": {
         "context": "Prefer content-rich links such as definitions and explanations."
     },
-    "UNCERTAINTY_BIASED": {
-        "context": "Prefer ambiguous links that may reveal new semantic areas."
-    },
+    "UNCERTAINTY_BIASED": {"context": "Prefer ambiguous links that may reveal new semantic areas."},
 }
 
 
@@ -116,9 +109,7 @@ class PromptBuilder:
         """
         return "\n\n".join(text for _, text in self.build_blocks(candidates, url_prefix))
 
-    def build_blocks(
-        self, candidates: list[Any], url_prefix: str = ""
-    ) -> list[tuple[str, str]]:
+    def build_blocks(self, candidates: list[Any], url_prefix: str = "") -> list[tuple[str, str]]:
         """The prompt as ordered (block name, text) pairs.
 
         Names: system, task, context, candidates, rules, output, constraints.

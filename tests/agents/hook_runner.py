@@ -15,13 +15,19 @@ BLOCKED = 2
 def run_hook(script: str, payload: dict, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(HOOKS / script), *args],
-        input=json.dumps(payload), capture_output=True, text=True, check=False,
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        check=False,
     )
 
 
 def edit(agent: str, rel_path: str) -> subprocess.CompletedProcess[str]:
-    payload = {"tool_name": "Edit", "cwd": str(ROOT),
-               "tool_input": {"file_path": str(ROOT / rel_path)}}
+    payload = {
+        "tool_name": "Edit",
+        "cwd": str(ROOT),
+        "tool_input": {"file_path": str(ROOT / rel_path)},
+    }
     return run_hook("guard_paths.py", payload, "--agent", agent)
 
 

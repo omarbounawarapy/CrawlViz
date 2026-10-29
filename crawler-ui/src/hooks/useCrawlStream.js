@@ -2,9 +2,9 @@ import { useRef, useEffect, useCallback } from "react";
 import { normalizeEvent } from "../state/eventNormalizer";
 
 export function useCrawlStream(dispatch, wsUrl = "ws://localhost:8765") {
-  const wsRef      = useRef(null);
+  const wsRef = useRef(null);
   const retryDelay = useRef(1000);
-  const alive      = useRef(true);
+  const alive = useRef(true);
   // Reconnect-with-backoff calls connect() from within connect()'s own
   // onclose handler. Holding the latest connect in a ref (rather than
   // referencing the `connect` binding directly) keeps that recursive call

@@ -3,6 +3,7 @@
 Uses real HTML strings through the real lxml-backed apply_selector, since
 that's the actual behavior contract (mocking it would just test the mock).
 """
+
 import pytest
 
 from models.item_extractor import (
@@ -33,7 +34,10 @@ CONTAINER_HTML = """
 
 class TestItemExtractorModeDispatch:
     def test_document_mode_dispatches_to_document_strategy(self):
-        blueprint = {"mode": "document", "fields": {"title": {"selector": "//h1/text()", "type": "scalar"}}}
+        blueprint = {
+            "mode": "document",
+            "fields": {"title": {"selector": "//h1/text()", "type": "scalar"}},
+        }
         items = ItemExtractor(blueprint).extract_items(DOCUMENT_HTML, node=None)
         assert len(items) == 1
         assert items[0]["title"] == "Page Title"
@@ -120,7 +124,9 @@ class TestFieldExtractor:
         assert FieldExtractor.extract(DOCUMENT_HTML, {"type": "list"}) == []
 
     def test_extracts_scalar(self):
-        result = FieldExtractor.extract(DOCUMENT_HTML, {"selector": "//h1/text()", "type": "scalar"})
+        result = FieldExtractor.extract(
+            DOCUMENT_HTML, {"selector": "//h1/text()", "type": "scalar"}
+        )
         assert result == "Page Title"
 
     def test_extracts_list(self):

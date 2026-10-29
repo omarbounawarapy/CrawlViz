@@ -5,6 +5,7 @@ from typing import Any
 # 1. ENQUEUE / BACKPRESSURE
 # =========================================================
 
+
 @dataclass
 class TransformationEnqueuedEvent:
     correlation_id: str
@@ -15,6 +16,7 @@ class TransformationEnqueuedEvent:
 # =========================================================
 # 2. INPUT SNAPSHOT
 # =========================================================
+
 
 @dataclass
 class TransformationInputSnapshotEvent:
@@ -28,6 +30,7 @@ class TransformationInputSnapshotEvent:
 # 3. EXECUTION START
 # =========================================================
 
+
 @dataclass
 class TransformationStartedEvent:
     correlation_id: str
@@ -39,6 +42,7 @@ class TransformationStartedEvent:
 # =========================================================
 # 4. SUCCESS COMPLETION
 # =========================================================
+
 
 @dataclass
 class TransformationCompletedEvent:
@@ -53,6 +57,7 @@ class TransformationCompletedEvent:
 # 5. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
+
 @dataclass
 class TransformationFailedEvent:
     correlation_id: str
@@ -64,6 +69,7 @@ class TransformationFailedEvent:
 # =========================================================
 # 6. DOWNSTREAM (PIPELINE OUTPUT)
 # =========================================================
+
 
 @dataclass
 class ItemsTransformedEvent:

@@ -3,8 +3,13 @@ import { getTheme } from "../../theme";
 import { Page } from "../common/Page";
 import { Button, Chip, ConfirmButton, TextInput } from "../common/Form";
 import {
-  fetchConfigSchema, fetchConfig, fetchConfigDefaults, saveConfig, resetConfig,
-  crawlStatus, patchLiveConfig,
+  fetchConfigSchema,
+  fetchConfig,
+  fetchConfigDefaults,
+  saveConfig,
+  resetConfig,
+  crawlStatus,
+  patchLiveConfig,
 } from "../../api/client";
 import PresetsPanel from "./PresetsPanel";
 import CascadeFunnel from "./explainers/CascadeFunnel";
@@ -25,8 +30,19 @@ import SettingsEditor from "./SettingsEditor";
 import KeysPanel from "./KeysPanel";
 import { useRoute } from "../../hooks/useRoute";
 import {
-  buildFields, buildPatch, buildSections, changedSections, getIn, groupBySection, isEmptyPatch, livePatch, matches, schemaGaps,
-  sectionSlug, setIn, validateField,
+  buildFields,
+  buildPatch,
+  buildSections,
+  changedSections,
+  getIn,
+  groupBySection,
+  isEmptyPatch,
+  livePatch,
+  matches,
+  schemaGaps,
+  sectionSlug,
+  setIn,
+  validateField,
 } from "./configModel";
 import { primeGlossary } from "./glossary";
 
@@ -35,9 +51,13 @@ const theme = getTheme();
 // Edited inside StrategyCards (or PromptStudio) instead of as plain rows: the default strategy is chosen
 // by its card, so a second dropdown for the same setting would be two controls for one value.
 const HIDDEN = [
-  "priority.aggressive_weights", "priority.balanced_weights", "priority.exploration_weights",
+  "priority.aggressive_weights",
+  "priority.balanced_weights",
+  "priority.exploration_weights",
   "scoring_cascade.default_priority_strategy",
-  "prompts.scoring_system", "prompts.scoring_rules", "prompts.strategy_contexts",
+  "prompts.scoring_system",
+  "prompts.scoring_rules",
+  "prompts.strategy_contexts",
 ];
 
 const START = { name: "Start here", slug: "start" };
@@ -63,14 +83,20 @@ export default function ConfigPage() {
 
   useEffect(() => {
     let cancelled = false;
-    const poll = () => crawlStatus().then((s) => {
-      if (cancelled) return;
-      setRunning(Boolean(s.running));
-      setQueues(s.queues ?? null);
-    }).catch(() => {});
+    const poll = () =>
+      crawlStatus()
+        .then((s) => {
+          if (cancelled) return;
+          setRunning(Boolean(s.running));
+          setQueues(s.queues ?? null);
+        })
+        .catch(() => {});
     poll();
     const t = setInterval(poll, 4000);
-    return () => { cancelled = true; clearInterval(t); };
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
   }, []);
 
   useEffect(() => {
@@ -85,7 +111,9 @@ export default function ConfigPage() {
         setDefaults(defaultsRes);
       })
       .catch((err) => !cancelled && setError(err.message));
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const fields = useMemo(() => (schema ? buildFields(schema) : []), [schema]);
@@ -111,7 +139,10 @@ export default function ConfigPage() {
 
   useEffect(() => {
     if (!dirty) return undefined;
-    const warn = (e) => { e.preventDefault(); e.returnValue = ""; };
+    const warn = (e) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
@@ -134,7 +165,9 @@ export default function ConfigPage() {
       setStatus({ ok: true, text: "Saved. New values apply from the next crawl." });
     } catch (e) {
       const byPath = {};
-      (e.errors ?? []).forEach((x) => { byPath[x.path] = x.message; });
+      (e.errors ?? []).forEach((x) => {
+        byPath[x.path] = x.message;
+      });
       setErrors(byPath);
       setStatus({ ok: false, text: e.message });
     } finally {
@@ -152,7 +185,9 @@ export default function ConfigPage() {
       setStatus({ ok: true, text: "Saved and applied to the running crawl." });
     } catch (e) {
       const byPath = {};
-      (e.errors ?? []).forEach((x) => { byPath[x.path] = x.message; });
+      (e.errors ?? []).forEach((x) => {
+        byPath[x.path] = x.message;
+      });
       setErrors(byPath);
       setStatus({ ok: false, text: e.message });
     }
@@ -188,37 +223,78 @@ export default function ConfigPage() {
   );
   const current = entries.find((e) => e.slug === wanted) ?? entries[0];
   const open = (entry) => navigate(`/config/${entry.slug}`);
-  const openSection = (name) => { setQuery(""); navigate(`/config/${sectionSlug(name)}`); };
+  const openSection = (name) => {
+    setQuery("");
+    navigate(`/config/${sectionSlug(name)}`);
+  };
 
   // Narrow screens swap the side index for this select. Choosing opens the section, and the hint
   // says so before the choice is made (WCAG 3.2.2).
   const sectionPicker = (
     <div className="config-section-select" style={{ marginBottom: 16 }}>
-      <label htmlFor="config-section" style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Section</label>
-      <select id="config-section" aria-describedby="config-section-hint" value={current.slug}
-              onChange={(e) => { setQuery(""); navigate(`/config/${e.target.value}`); }}
-              style={{ minHeight: 44, width: "100%", fontSize: 15, padding: "0 10px", borderRadius: theme.radii.sm,
-                       border: `1px solid ${theme.colors.control}`, background: theme.colors.background.panel, color: theme.colors.text.primary }}>
-        {entries.map((entry) => <option key={entry.slug} value={entry.slug}>{entry.name}</option>)}
+      <label htmlFor="config-section" style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+        Section
+      </label>
+      <select
+        id="config-section"
+        aria-describedby="config-section-hint"
+        value={current.slug}
+        onChange={(e) => {
+          setQuery("");
+          navigate(`/config/${e.target.value}`);
+        }}
+        style={{
+          minHeight: 44,
+          width: "100%",
+          fontSize: 15,
+          padding: "0 10px",
+          borderRadius: theme.radii.sm,
+          border: `1px solid ${theme.colors.control}`,
+          background: theme.colors.background.panel,
+          color: theme.colors.text.primary,
+        }}
+      >
+        {entries.map((entry) => (
+          <option key={entry.slug} value={entry.slug}>
+            {entry.name}
+          </option>
+        ))}
       </select>
-      <div id="config-section-hint" style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 4 }}>Choosing a section opens it.</div>
+      <div id="config-section-hint" style={{ fontSize: 13, color: theme.colors.text.muted, marginTop: 4 }}>
+        Choosing a section opens it.
+      </div>
     </div>
   );
 
   const index = sections.length > 0 && (
-    <nav aria-label="Configuration sections" style={{ width: 200, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}>
+    <nav
+      aria-label="Configuration sections"
+      style={{ width: 200, flexShrink: 0, position: "sticky", top: 0, alignSelf: "flex-start", paddingTop: 76 }}
+    >
       <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
         {entries.map((entry) => {
           const active = !query && entry.slug === current.slug;
           return (
             <li key={entry.slug}>
-              <a href={`#/config/${entry.slug}`} aria-current={active ? "page" : undefined}
-                 onClick={(e) => { e.preventDefault(); setQuery(""); open(entry); }}
-                 style={{
-                   display: "inline-block", minHeight: 24, fontSize: active ? 16 : 14, fontWeight: active ? 700 : 400,
-                   color: active ? theme.colors.text.primary : theme.colors.text.secondary, textDecoration: "none",
-                   paddingBottom: 2, borderBottom: `2px solid ${active ? theme.colors.accent.blue : "transparent"}`,
-                 }}>
+              <a
+                href={`#/config/${entry.slug}`}
+                aria-current={active ? "page" : undefined}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setQuery("");
+                  open(entry);
+                }}
+                style={{
+                  display: "inline-block",
+                  minHeight: 24,
+                  fontSize: active ? 16 : 14,
+                  fontWeight: active ? 700 : 400,
+                  color: active ? theme.colors.text.primary : theme.colors.text.secondary,
+                  textDecoration: "none",
+                  paddingBottom: 2,
+                  borderBottom: `2px solid ${active ? theme.colors.accent.blue : "transparent"}`,
+                }}
+              >
                 {entry.name}
               </a>
             </li>
@@ -235,24 +311,35 @@ export default function ConfigPage() {
         <CascadeFunnel cfg={d.scoring_cascade} />
         <CostReadout cascade={d.scoring_cascade} nlp={d.nlp} llm={d.llm} prompts={d.prompts} />
         <p style={{ fontSize: 13, color: theme.colors.text.secondary, margin: "0 0 12px", maxWidth: "62ch" }}>
-          Queue order when a blueprint picks no strategy: <strong style={{ color: theme.colors.text.primary }}>{d.scoring_cascade.default_priority_strategy}</strong>.
+          Queue order when a blueprint picks no strategy:{" "}
+          <strong style={{ color: theme.colors.text.primary }}>{d.scoring_cascade.default_priority_strategy}</strong>.
           It is chosen with the cards on the Priority page.{" "}
-          <Button variant="quiet" style={{ padding: 0 }} onClick={() => openSection("Priority")}>Open Priority</Button>
+          <Button variant="quiet" style={{ padding: 0 }} onClick={() => openSection("Priority")}>
+            Open Priority
+          </Button>
         </p>
         <ExploreLevers onOpen={openSection} />
       </>
     ),
     LLM: (d) => <CostReadout cascade={d.scoring_cascade} nlp={d.nlp} llm={d.llm} prompts={d.prompts} priced />,
     Fetch: (d) => (
-      <FetchExplainers cfg={d.fetch} workers={d.pipelines.requests.workers} maxRetries={d.retries.max_request_retries}
-                       onChange={change} />
+      <FetchExplainers
+        cfg={d.fetch}
+        workers={d.pipelines.requests.workers}
+        maxRetries={d.retries.max_request_retries}
+        onChange={change}
+      />
     ),
     Pipelines: (d) => <PipelineFlow pipelines={d.pipelines} batchSize={d.export.batch_size} queues={queues} />,
     Providers: (d) => <ProviderTable endpoints={d.providers.endpoints} />,
     Prompts: (d) => <PromptStudio prompts={d.prompts} defaults={defaults?.prompts ?? d.prompts} onChange={change} />,
     Priority: (d) => (
-      <StrategyCards priority={d.priority} defaults={defaults?.priority}
-                     defaultStrategy={d.scoring_cascade.default_priority_strategy} onChange={change} />
+      <StrategyCards
+        priority={d.priority}
+        defaults={defaults?.priority}
+        defaultStrategy={d.scoring_cascade.default_priority_strategy}
+        onChange={change}
+      />
     ),
   };
   const applyHeaders = (values) => Object.entries(values).forEach(([k, v]) => change(`fetch.${k}`, v));
@@ -272,7 +359,8 @@ export default function ConfigPage() {
       {error && (
         <div role="alert" style={{ maxWidth: "60ch" }}>
           <p style={{ fontSize: 14, color: theme.colors.accent.red, marginBottom: 12 }}>
-            Could not load the configuration. The control API did not answer ({error}). Start it with make dev-backend, then try again.
+            Could not load the configuration. The control API did not answer ({error}). Start it with make dev-backend,
+            then try again.
           </p>
           <Button onClick={() => window.location.reload()}>Try again</Button>
         </div>
@@ -280,30 +368,62 @@ export default function ConfigPage() {
       {!error && !schema && <p style={{ fontSize: 14, color: theme.colors.text.muted }}>Loading configuration…</p>}
       {gaps.length > 0 && (
         <p role="alert" style={{ fontSize: 14, color: theme.colors.accent.red, maxWidth: "62ch", margin: "0 0 12px" }}>
-          The API server is older than this page and is missing {gaps.join(", ")}. Restart it (make dev-backend) and reload; until then some controls and explanations are missing.
+          The API server is older than this page and is missing {gaps.join(", ")}. Restart it (make dev-backend) and
+          reload; until then some controls and explanations are missing.
         </p>
       )}
       {schema && draft && (
         <>
           {sectionPicker}
-          <div style={{ position: "sticky", top: 0, zIndex: 2, background: theme.colors.background.primary,
-                        padding: "8px 0", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap",
-                        borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
-            <label htmlFor="config-search" style={{ fontSize: 13, fontWeight: 600 }}>Search settings</label>
-            <TextInput id="config-search" type="search" placeholder="e.g. user agent" value={query}
-                       aria-describedby={query ? "config-search-count" : undefined}
-                       onChange={(e) => setQuery(e.target.value)} style={{ width: "min(220px, 100%)" }} />
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 2,
+              background: theme.colors.background.primary,
+              padding: "8px 0",
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+              flexWrap: "wrap",
+              borderBottom: `1px solid ${theme.colors.rowBorder}`,
+            }}
+          >
+            <label htmlFor="config-search" style={{ fontSize: 13, fontWeight: 600 }}>
+              Search settings
+            </label>
+            <TextInput
+              id="config-search"
+              type="search"
+              placeholder="e.g. user agent"
+              value={query}
+              aria-describedby={query ? "config-search-count" : undefined}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ width: "min(220px, 100%)" }}
+            />
             <span id="config-search-count" role="status" className="sr-only">
               {query ? `${searchCount} ${searchCount === 1 ? "setting matches" : "settings match"}` : ""}
             </span>
-            <Chip pressed={showAdvanced} onClick={() => setShowAdvanced((v) => !v)}>Advanced</Chip>
+            <Chip pressed={showAdvanced} onClick={() => setShowAdvanced((v) => !v)}>
+              Advanced
+            </Chip>
             <span style={{ flex: 1 }} />
             {dirty && (
               <span style={{ fontSize: 13, color: theme.colors.text.secondary }}>
                 Unsaved in {unsavedIn.join(", ")}. Changes in every section are saved together.
               </span>
             )}
-            <Button variant="quiet" disabled={!dirty} onClick={() => { setDraft(saved); setErrors({}); setStatus(null); }}>Revert</Button>
+            <Button
+              variant="quiet"
+              disabled={!dirty}
+              onClick={() => {
+                setDraft(saved);
+                setErrors({});
+                setStatus(null);
+              }}
+            >
+              Revert
+            </Button>
             {running && (
               <Button disabled={!hasLive || blocked || saving} onClick={applyLive}>
                 Apply live
@@ -315,40 +435,73 @@ export default function ConfigPage() {
           </div>
           {running && (
             <p style={{ fontSize: 13, color: theme.colors.text.secondary, margin: "8px 0 0", maxWidth: "62ch" }}>
-              A crawl is running. Settings marked live can be applied to it now with Apply live; the rest apply from the next crawl.
+              A crawl is running. Settings marked live can be applied to it now with Apply live; the rest apply from the
+              next crawl.
             </p>
           )}
           {status && (
-            <p role="status" style={{ fontSize: 13, margin: "8px 0", color: status.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>
+            <p
+              role="status"
+              style={{
+                fontSize: 13,
+                margin: "8px 0",
+                color: status.ok ? theme.colors.text.secondary : theme.colors.accent.red,
+              }}
+            >
               {status.text}
             </p>
           )}
           {!query && (
             <SuggestionsStrip
               items={suggest(draft, dismissed).filter((s) => s.section === current.name)}
-              onApply={(s) => { s.fix.set.forEach(([p, v]) => change(p, v)); setDismissed((d) => [...d, s.id]); }}
+              onApply={(s) => {
+                s.fix.set.forEach(([p, v]) => change(p, v));
+                setDismissed((d) => [...d, s.id]);
+              }}
               onDismiss={(id) => setDismissed((d) => [...d, id])}
             />
           )}
           {current.slug === START.slug && !query && <GoalGuide draft={draft} fields={fields} onChange={change} />}
           {(query || (current.slug !== START.slug && current.slug !== PRESETS.slug && current.slug !== KEYS.slug)) && (
-          <SettingsEditor
-            fields={fields} draft={draft} defaults={defaults} saved={saved} onChange={change}
-            errors={errors} query={query} showAdvanced={showAdvanced} groups={SECTION_GROUPS}
-            onResetSection={resetSection} sectionExtras={extras} fieldExtras={fieldExtras}
-            hiddenPaths={HIDDEN}
-            section={current.name} sectionOrder={order} sectionHelp={help} onOpenSection={openSection}
-          />
+            <SettingsEditor
+              fields={fields}
+              draft={draft}
+              defaults={defaults}
+              saved={saved}
+              onChange={change}
+              errors={errors}
+              query={query}
+              showAdvanced={showAdvanced}
+              groups={SECTION_GROUPS}
+              onResetSection={resetSection}
+              sectionExtras={extras}
+              fieldExtras={fieldExtras}
+              hiddenPaths={HIDDEN}
+              section={current.name}
+              sectionOrder={order}
+              sectionHelp={help}
+              onOpenSection={openSection}
+            />
           )}
           {!query && current.slug === PRESETS.slug && (
-            <PresetsPanel dirty={dirty} fields={fields}
-                          onChanged={(cfg) => { setSaved(cfg); setDraft(cfg); setErrors({}); }} />
+            <PresetsPanel
+              dirty={dirty}
+              fields={fields}
+              onChanged={(cfg) => {
+                setSaved(cfg);
+                setDraft(cfg);
+                setErrors({});
+              }}
+            />
           )}
           {!query && current.slug === KEYS.slug && <KeysPanel />}
           {!query && current.slug === PRESETS.slug && (
             <div style={{ marginTop: 40 }}>
-              <ConfirmButton label="Reset every setting to defaults" confirmLabel="Confirm: reset every setting"
-                             onConfirm={resetAll} />
+              <ConfirmButton
+                label="Reset every setting to defaults"
+                confirmLabel="Confirm: reset every setting"
+                onConfirm={resetAll}
+              />
             </div>
           )}
         </>

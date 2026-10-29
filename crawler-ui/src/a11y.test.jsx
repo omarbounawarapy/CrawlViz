@@ -13,47 +13,141 @@ vi.mock("./api/client", () => {
   return {
     API_STATUS_EVENT: "crawlviz:api-status",
     fetchTemplates: ok({ templates: ["wikiMD.json", "isi.json"] }),
-    fetchTemplate: ok({ content: { blueprint_id: "wiki", id: "run_1", target_topic: "Type 2 diabetes", scoring: { strategy: "TOPICAL" }, stop_conditions: { max_nodes: 100 }, domains: {}, extraction: { fields: {} } } }),
-    createTemplate: ok({}), updateTemplate: ok({}), deleteTemplate: ok({}),
-    runCrawl: ok({}), stopCrawl: ok({ stopped: true }),
+    fetchTemplate: ok({
+      content: {
+        blueprint_id: "wiki",
+        id: "run_1",
+        target_topic: "Type 2 diabetes",
+        scoring: { strategy: "TOPICAL" },
+        stop_conditions: { max_nodes: 100 },
+        domains: {},
+        extraction: { fields: {} },
+      },
+    }),
+    createTemplate: ok({}),
+    updateTemplate: ok({}),
+    deleteTemplate: ok({}),
+    runCrawl: ok({}),
+    stopCrawl: ok({ stopped: true }),
     crawlStatus: ok({ running: false, llm_calls: null }),
     fetchValidationTables: ok({ tables: ["pages"] }),
     fetchValidationCrawls: ok({ crawls: [{ crawl_id: "c1", last_seen: "2026-10-01T10:00:00Z", count: 1 }] }),
-    fetchValidationSample: ok({ rows: [{ id: 1, url: "https://example.org/a", title: "Page A", body: "Some text." }], count: 1 }),
-    fetchConfigSchema: ok(schema), fetchConfig: ok(defaults), fetchConfigDefaults: ok(defaults),
-    saveConfig: ok(defaults), replaceConfig: ok(defaults), validateConfig: ok({ valid: true, errors: [] }),
-    exportConfig: ok({}), resetConfig: ok(defaults), patchLiveConfig: ok({}),
+    fetchValidationSample: ok({
+      rows: [{ id: 1, url: "https://example.org/a", title: "Page A", body: "Some text." }],
+      count: 1,
+    }),
+    fetchConfigSchema: ok(schema),
+    fetchConfig: ok(defaults),
+    fetchConfigDefaults: ok(defaults),
+    saveConfig: ok(defaults),
+    replaceConfig: ok(defaults),
+    validateConfig: ok({ valid: true, errors: [] }),
+    exportConfig: ok({}),
+    resetConfig: ok(defaults),
+    patchLiveConfig: ok({}),
     fetchPresets: ok({
-      builtin: { polite: {} }, user: { mine: {} }, descriptions: { polite: "Slow." },
-      goals: { gentler: { label: "Gentler on a site", description: "Waits longer.", values: { fetch: { min_delay: 2 } } } },
+      builtin: { polite: {} },
+      user: { mine: {} },
+      descriptions: { polite: "Slow." },
+      goals: {
+        gentler: { label: "Gentler on a site", description: "Waits longer.", values: { fetch: { min_delay: 2 } } },
+      },
     }),
-    savePreset: ok({}), deletePreset: ok({}), applyPreset: ok(defaults),
+    savePreset: ok({}),
+    deletePreset: ok({}),
+    applyPreset: ok(defaults),
     fetchProviders: ok({ groq: { models: ["m1"], keys: 1 } }),
-    fetchKeys: ok({ groq: [{ id: "k1", last4: "1234" }] }), addKey: ok({}), removeKey: ok({}),
+    fetchKeys: ok({ groq: [{ id: "k1", last4: "1234" }] }),
+    addKey: ok({}),
+    removeKey: ok({}),
     fetchBenchmarkOverview: ok({
-      protocol: { hypotheses: [{ id: "H1", text: "Cascade beats bfs.", comparison: "x" }], primary_metric: "harvest@30", budgets: [50], arms: [], models: [], amendments: [] },
-      graphs: { "isi.json": { pages: 3, edges: 2, labels: { 0: 1, 1: 1, 2: 1 }, out_degree: { mean: 1, median: 1, max: 2 }, absent_links: 0, relevant_unreachable: 0, depth: [{ depth: 0, pages: 1, label1: 0, label2: 1 }] } },
-      audit: null, runs: 1,
+      protocol: {
+        hypotheses: [{ id: "H1", text: "Cascade beats bfs.", comparison: "x" }],
+        primary_metric: "harvest@30",
+        budgets: [50],
+        arms: [],
+        models: [],
+        amendments: [],
+      },
+      graphs: {
+        "isi.json": {
+          pages: 3,
+          edges: 2,
+          labels: { 0: 1, 1: 1, 2: 1 },
+          out_degree: { mean: 1, median: 1, max: 2 },
+          absent_links: 0,
+          relevant_unreachable: 0,
+          depth: [{ depth: 0, pages: 1, label1: 0, label2: 1 }],
+        },
+      },
+      audit: null,
+      runs: 1,
     }),
-    fetchBenchmarkRuns: ok([{ name: "r1", policy: "cascade", rep: 0, budget: 50, fetched: 3, found: 2, harvest30: 0.5, input_tokens: 10, output_tokens: 5, valid: true, short: false, status: "ok", replay: false }]),
+    fetchBenchmarkRuns: ok([
+      {
+        name: "r1",
+        policy: "cascade",
+        rep: 0,
+        budget: 50,
+        fetched: 3,
+        found: 2,
+        harvest30: 0.5,
+        input_tokens: 10,
+        output_tokens: 5,
+        valid: true,
+        short: false,
+        status: "ok",
+        replay: false,
+      },
+    ]),
     fetchBenchmarkRun: ok({ labels: [2, 0, 1], sequence: ["/a", "/b", "/c"], manifest: {}, settings: {} }),
     fetchBenchmarkCurves: ok({
       series: {
-        cascade: { points: Array.from({ length: 20 }, (_, i) => ({ k: i + 1, mean: 0.5, ci95: 0.1 })), runs: 3, rel_per_call: 1, rel_per_1k_tokens: 2, short: 0 },
-        random: { points: Array.from({ length: 20 }, (_, i) => ({ k: i + 1, mean: 0.1 })), runs: 3, rel_per_call: null, rel_per_1k_tokens: null, short: 0 },
+        cascade: {
+          points: Array.from({ length: 20 }, (_, i) => ({ k: i + 1, mean: 0.5, ci95: 0.1 })),
+          runs: 3,
+          rel_per_call: 1,
+          rel_per_1k_tokens: 2,
+          short: 0,
+        },
+        random: {
+          points: Array.from({ length: 20 }, (_, i) => ({ k: i + 1, mean: 0.1 })),
+          runs: 3,
+          rel_per_call: null,
+          rel_per_1k_tokens: null,
+          short: 0,
+        },
       },
       validity: { cascade: { valid: 3, invalid: 0 } },
     }),
-    fetchBenchmarkGraph: ok({ nodes: [{ id: "s", parent: null, title: "Seed", label: 2, depth: 0 }, { id: "t", parent: "s", title: "Child", label: 0, depth: 1 }], shown: 2, total: 2, cross_links: 0, topic: "ISI" }),
+    fetchBenchmarkGraph: ok({
+      nodes: [
+        { id: "s", parent: null, title: "Seed", label: 2, depth: 0 },
+        { id: "t", parent: "s", title: "Child", label: 0, depth: 1 },
+      ],
+      shown: 2,
+      total: 2,
+      cross_links: 0,
+      topic: "ISI",
+    }),
     fetchBenchmarkPage: ok({ id: "s", text: "Seed text", links: [] }),
-    fetchAudit: ok({ items: [{ id: "1", title: "Page one", excerpt: "x", human_label: null }, { id: "2", title: "Page two", excerpt: "y", human_label: 1 }], done: 1 }),
+    fetchAudit: ok({
+      items: [
+        { id: "1", title: "Page one", excerpt: "x", human_label: null },
+        { id: "2", title: "Page two", excerpt: "y", human_label: 1 },
+      ],
+      done: 1,
+    }),
     putAuditLabel: ok({}),
     fetchAuditScore: vi.fn(() => Promise.reject(new Error("no annotated items yet"))),
     fetchBenchmarkEstimate: ok({ arms: {} }),
     startBenchmarkJob: ok({ state: "idle", log: [] }),
     benchmarkJob: ok({ state: "idle", log: [] }),
     stopBenchmarkJob: ok({ state: "idle", log: [] }),
-    previewPrompt: ok({ blocks: [{ id: "sys", title: "System", kind: "locked", note: "Fixed.", text: "You score links." }], prompt: "You score links." }),
+    previewPrompt: ok({
+      blocks: [{ id: "sys", title: "System", kind: "locked", note: "Fixed.", text: "You score links." }],
+      prompt: "You score links.",
+    }),
   };
 });
 
@@ -72,7 +166,12 @@ import BenchmarkPage from "./features/benchmark/BenchmarkPage";
 import NotFoundPage from "./features/errors/NotFoundPage";
 import { INITIAL_STATE } from "./state/initialState";
 
-class FakeWebSocket { constructor() { this.readyState = 0; } close() {} }
+class FakeWebSocket {
+  constructor() {
+    this.readyState = 0;
+  }
+  close() {}
+}
 
 beforeEach(() => {
   window.location.hash = "";
@@ -83,8 +182,30 @@ afterEach(cleanup);
 const clean = async (node, opts) => expect(await axeViolations(node, opts)).toEqual([]);
 
 const nodes = new Map([
-  ["a", { node_id: "a", parent_id: null, state: "EXPANDED", llm_score: 90, priority: 0.9, url: "https://x.org/wiki/A", depth: 0 }],
-  ["b", { node_id: "b", parent_id: "a", state: "SCORED", llm_score: 70, priority: 0.7, url: "https://x.org/wiki/B", depth: 1 }],
+  [
+    "a",
+    {
+      node_id: "a",
+      parent_id: null,
+      state: "EXPANDED",
+      llm_score: 90,
+      priority: 0.9,
+      url: "https://x.org/wiki/A",
+      depth: 0,
+    },
+  ],
+  [
+    "b",
+    {
+      node_id: "b",
+      parent_id: "a",
+      state: "SCORED",
+      llm_score: 70,
+      priority: 0.7,
+      url: "https://x.org/wiki/B",
+      depth: 1,
+    },
+  ],
   ["c", { node_id: "c", parent_id: "a", state: "FETCHED", priority: 0.2, url: "https://x.org/wiki/C", depth: 1 }],
   ["d", { node_id: "d", parent_id: "b", state: "CREATED", url: "https://x.org/wiki/D", depth: 2 }],
 ]);
@@ -100,7 +221,12 @@ describe("whole pages pass axe", () => {
     expect(document.title).toBe("Graph · CrawlViz");
   });
 
-  for (const [hash, title] of [["#/run", "Run a crawl"], ["#/blueprints", "Blueprints"], ["#/data", "Extracted data"], ["#/nope", "Page not found"]]) {
+  for (const [hash, title] of [
+    ["#/run", "Run a crawl"],
+    ["#/blueprints", "Blueprints"],
+    ["#/data", "Extracted data"],
+    ["#/nope", "Page not found"],
+  ]) {
     it(`${hash} has its own title and no violations`, async () => {
       window.location.hash = hash;
       const { container } = render(<App />);
@@ -116,7 +242,14 @@ describe("whole pages pass axe", () => {
   });
 
   it("the loader hides the page under it and starts on Skip", async () => {
-    const { container } = render(<><main><button type="button">Behind</button></main><SpiderLoader progress={0.2} done={false} onSkip={() => {}} /></>);
+    const { container } = render(
+      <>
+        <main>
+          <button type="button">Behind</button>
+        </main>
+        <SpiderLoader progress={0.2} done={false} onSkip={() => {}} />
+      </>,
+    );
     expect(document.activeElement.textContent).toBe("Skip");
     expect(container.querySelector("main").inert).toBe(true);
     await clean(container);
@@ -129,10 +262,20 @@ describe("whole pages pass axe", () => {
 });
 
 describe("graph keyboard", () => {
-  const setup = (props = {}) => render(
-    <GraphView nodes={nodes} edges={edges} candidates={[{ parent_id: "a", url: "https://x.org/off", decision: "dropped", nlp_score: 0.1 }]}
-      replayIndex={null} onNodeClick={vi.fn()} onBackgroundClick={vi.fn()} selectedNodeId={null} heading="Crawl graph" {...props} />,
-  );
+  const setup = (props = {}) =>
+    render(
+      <GraphView
+        nodes={nodes}
+        edges={edges}
+        candidates={[{ parent_id: "a", url: "https://x.org/off", decision: "dropped", nlp_score: 0.1 }]}
+        replayIndex={null}
+        onNodeClick={vi.fn()}
+        onBackgroundClick={vi.fn()}
+        selectedNodeId={null}
+        heading="Crawl graph"
+        {...props}
+      />,
+    );
   const groups = (c) => [...c.querySelectorAll("g.node-group")];
 
   it("is one tab stop, and its pages say what they are", async () => {
@@ -141,7 +284,9 @@ describe("graph keyboard", () => {
     const stops = groups(container).filter((g) => g.getAttribute("tabindex") === "0");
     expect(stops).toHaveLength(1);
     expect(stops[0].getAttribute("data-node-id")).toBe("a");
-    expect(stops[0].getAttribute("aria-label")).toMatch(/wiki\/A, seed page, expanded, relevance \d+ of 100, 2 child pages, 1 link skipped/);
+    expect(stops[0].getAttribute("aria-label")).toMatch(
+      /wiki\/A, seed page, expanded, relevance \d+ of 100, 2 child pages, 1 link skipped/,
+    );
     await clean(container);
   });
 
@@ -166,9 +311,22 @@ describe("graph keyboard", () => {
     await waitFor(() => expect(groups(container).length).toBe(4));
     fireEvent.keyDown(container.querySelector('g[data-node-id="b"]'), { key: "Enter" });
     expect(onNodeClick).toHaveBeenCalledWith(expect.objectContaining({ node_id: "b" }));
-    rerender(<GraphView nodes={nodes} edges={edges} candidates={[]} replayIndex={null} onNodeClick={onNodeClick}
-      onBackgroundClick={vi.fn()} selectedNodeId="b" heading="Crawl graph" annotationId="inspector" />);
-    await waitFor(() => expect(container.querySelector('g[data-node-id="b"]').getAttribute("aria-current")).toBe("true"));
+    rerender(
+      <GraphView
+        nodes={nodes}
+        edges={edges}
+        candidates={[]}
+        replayIndex={null}
+        onNodeClick={onNodeClick}
+        onBackgroundClick={vi.fn()}
+        selectedNodeId="b"
+        heading="Crawl graph"
+        annotationId="inspector"
+      />,
+    );
+    await waitFor(() =>
+      expect(container.querySelector('g[data-node-id="b"]').getAttribute("aria-current")).toBe("true"),
+    );
     expect(container.querySelector('g[data-node-id="b"]').getAttribute("tabindex")).toBe("0");
     expect(screen.getByRole("button", { name: "Read the annotation" })).toBeTruthy();
   });
@@ -192,8 +350,15 @@ describe("graph keyboard", () => {
 describe("panels", () => {
   it("the annotation panel is a named landmark with real tabs", async () => {
     const { container } = render(
-      <NodeInspector node={nodes.get("b")} detail={{ nlp_score: 0.5, llm_score: 70, priority: 0.7, nlp_breakdown: { target_similarity: 0.4 } }}
-        allNodes={nodes} errors={[]} eventLog={[]} onSelectNode={() => {}} onClose={() => {}} />,
+      <NodeInspector
+        node={nodes.get("b")}
+        detail={{ nlp_score: 0.5, llm_score: 70, priority: 0.7, nlp_breakdown: { target_similarity: 0.4 } }}
+        allNodes={nodes}
+        errors={[]}
+        eventLog={[]}
+        onSelectNode={() => {}}
+        onClose={() => {}}
+      />,
     );
     expect(screen.getByRole("complementary", { name: /^Annotation: / })).toBeTruthy();
     const tab = screen.getByRole("tab", { name: "Scoring" });
@@ -209,7 +374,16 @@ describe("panels", () => {
       { type: "NODE_ADDED", node_id: "b", url: "/b", _receivedAt: Date.now() },
     ];
     const onSeek = vi.fn();
-    const { container } = render(<TimelineDock eventLog={eventLog} replayIndex={0} onSeek={onSeek} onExitReplay={() => {}} expanded onToggleExpanded={() => {}} />);
+    const { container } = render(
+      <TimelineDock
+        eventLog={eventLog}
+        replayIndex={0}
+        onSeek={onSeek}
+        onExitReplay={() => {}}
+        expanded
+        onToggleExpanded={() => {}}
+      />,
+    );
     const list = screen.getByRole("list", { name: "Events" });
     const rows = within(list).getAllByRole("button");
     expect(rows).toHaveLength(2);
@@ -229,7 +403,18 @@ describe("panels", () => {
 });
 
 describe("configuration", () => {
-  const sections = ["start", "scoring-cascade", "fetch", "priority", "prompts", "pipelines", "llm", "providers", "presets", "api-keys"];
+  const sections = [
+    "start",
+    "scoring-cascade",
+    "fetch",
+    "priority",
+    "prompts",
+    "pipelines",
+    "llm",
+    "providers",
+    "presets",
+    "api-keys",
+  ];
   for (const slug of sections) {
     it(`${slug}: no violations, no orphan labels`, async () => {
       window.location.hash = `#/config/${slug}`;
@@ -324,12 +509,18 @@ describe("other pages", () => {
         const first = screen.getAllByRole("radio", { name: "Label 0" })[0];
         first.focus();
         fireEvent.keyDown(first, { key: "ArrowDown" });
-        await waitFor(() => expect(screen.getAllByRole("radio", { name: "Label 1" })[0].getAttribute("aria-checked")).toBe("true"));
+        await waitFor(() =>
+          expect(screen.getAllByRole("radio", { name: "Label 1" })[0].getAttribute("aria-checked")).toBe("true"),
+        );
         expect(document.activeElement.getAttribute("aria-label")).toBe("Label 1");
         // A digit answers the item in focus and moves to the next item's answers.
         fireEvent.keyDown(document.activeElement, { key: "2" });
-        await waitFor(() => expect(screen.getAllByRole("radio", { name: "Label 2" })[0].getAttribute("aria-checked")).toBe("true"));
-        await waitFor(() => expect(document.activeElement.closest("li")?.querySelector("h3")?.textContent).toBe("Page two"));
+        await waitFor(() =>
+          expect(screen.getAllByRole("radio", { name: "Label 2" })[0].getAttribute("aria-checked")).toBe("true"),
+        );
+        await waitFor(() =>
+          expect(document.activeElement.closest("li")?.querySelector("h3")?.textContent).toBe("Page two"),
+        );
       }
       await act(async () => {});
       await clean(container);

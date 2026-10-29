@@ -22,6 +22,7 @@ prediction, the human the truth), raw agreement and Cohen's kappa with
 bootstrap 95% CIs, and raw agreement reweighted to the label distribution of
 the whole graph. A second annotator file adds human-human kappa.
 """
+
 import argparse
 import csv
 import json
@@ -47,21 +48,27 @@ def excluded_pages(files) -> set[str]:
         path = Path(f)
         if path.exists():
             with path.open(newline="") as fh:
-                out |= {page_key(r["page"]) for r in csv.DictReader(fh, delimiter="\t") if r.get("page")}
+                out |= {
+                    page_key(r["page"]) for r in csv.DictReader(fh, delimiter="\t") if r.get("page")
+                }
     return out
 
 
 def mentions_tunisia(page: dict) -> bool:
-    return "tunisi" in f'{page.get("title", "")} {page.get("text", "")}'.lower()
+    return "tunisi" in f"{page.get('title', '')} {page.get('text', '')}".lower()
 
 
-def weighted_sample(names: list[str], weights: dict[str, float], k: int, rng: random.Random) -> list[str]:
+def weighted_sample(
+    names: list[str], weights: dict[str, float], k: int, rng: random.Random
+) -> list[str]:
     """k names without replacement, chosen with probability proportional to weight."""
     keyed = sorted(names, key=lambda n: rng.random() ** (1 / weights[n]), reverse=True)
     return keyed[:k]
 
 
-def draw(graph: FrozenGraph, total: int | None, seed: int, exclude: set[str]) -> list[tuple[str, str]]:
+def draw(
+    graph: FrozenGraph, total: int | None, seed: int, exclude: set[str]
+) -> list[tuple[str, str]]:
     """(page, stratum) pairs: all label 2, then label 1, label 0, uniform."""
     rng = random.Random(f"audit:{seed}")
     pool = sorted(n for n in graph.pages if n not in exclude and "text" in graph.pages[n])
@@ -69,7 +76,9 @@ def draw(graph: FrozenGraph, total: int | None, seed: int, exclude: set[str]) ->
     chosen = [(n, "label2") for n in by_label[2]]
     rest = (total - len(chosen)) if total is not None else DEFAULT_REST
     if rest < 0:
-        raise SystemExit(f"--total {total} is below the {len(chosen)} label-2 pages, which are all included")
+        raise SystemExit(
+            f"--total {total} is below the {len(chosen)} label-2 pages, which are all included"
+        )
     n1, n0 = round(rest * SHARES["label1"]), round(rest * SHARES["label0"])
     n_uniform = rest - n1 - n0
     picked = set(by_label[2])
@@ -80,15 +89,24 @@ def draw(graph: FrozenGraph, total: int | None, seed: int, exclude: set[str]) ->
     picked |= set(zero)
     others = [n for n in pool if n not in picked]
     uniform = rng.sample(others, min(n_uniform, len(others)))
-    return chosen + [(n, "label1") for n in one] + [(n, "label0") for n in zero] + [(n, "uniform") for n in uniform]
+    return (
+        chosen
+        + [(n, "label1") for n in one]
+        + [(n, "label0") for n in zero]
+        + [(n, "uniform") for n in uniform]
+    )
 
 
-def sample(graph_path: Path, out: Path, key: Path, total: int | None, seed: int, exclude_files) -> None:
+def sample(
+    graph_path: Path, out: Path, key: Path, total: int | None, seed: int, exclude_files
+) -> None:
     graph = FrozenGraph.load(graph_path)
     unlabelled = sum(1 for p in graph.pages.values() if p.get("label") is None)
     if unlabelled:
-        raise SystemExit(f"{graph_path}: {unlabelled} of {len(graph.pages)} pages have no judge label; "
-                         "finish benchmark.label_graph and --merge before sampling")
+        raise SystemExit(
+            f"{graph_path}: {unlabelled} of {len(graph.pages)} pages have no judge label; "
+            "finish benchmark.label_graph and --merge before sampling"
+        )
     exclude = excluded_pages(exclude_files)
     picks = draw(graph, total, seed, exclude)
     random.Random(f"audit-order:{seed}").shuffle(picks)
@@ -99,22 +117,38 @@ def sample(graph_path: Path, out: Path, key: Path, total: int | None, seed: int,
         w.writerow(["id", "title", "excerpt", "human_label"])
         for i, (name, stratum) in enumerate(picks, 1):
             page = graph.pages[name]
-            w.writerow([i, page["title"], page["text"][:EXCERPT_CHARS].replace("\n", " ").replace("\t", " "), ""])
+            w.writerow(
+                [
+                    i,
+                    page["title"],
+                    page["text"][:EXCERPT_CHARS].replace("\n", " ").replace("\t", " "),
+                    "",
+                ]
+            )
             items[str(i)] = {"page": name, "stratum": stratum, "judge_label": graph.label(name)}
     counts = Counter(graph.label(n) for n in graph.pages)
-    key.write_text(json.dumps({
-        "graph": graph_path.name,
-        "graph_sha256": hashlib.sha256(graph_path.read_bytes()).hexdigest(),
-        "seed": seed,
-        "graph_label_counts": {str(g): counts.get(g, 0) for g in (0, 1, 2)},
-        "items": items,
-    }, ensure_ascii=False, indent=1))
+    key.write_text(
+        json.dumps(
+            {
+                "graph": graph_path.name,
+                "graph_sha256": hashlib.sha256(graph_path.read_bytes()).hexdigest(),
+                "seed": seed,
+                "graph_label_counts": {str(g): counts.get(g, 0) for g in (0, 1, 2)},
+                "items": items,
+            },
+            ensure_ascii=False,
+            indent=1,
+        )
+    )
     by = Counter(s for _, s in picks)
-    print(f"{len(picks)} pages ({', '.join(f'{s} {c}' for s, c in by.items())}); "
-          f"{len(exclude)} pages excluded; wrote {out} and {key}")
+    print(
+        f"{len(picks)} pages ({', '.join(f'{s} {c}' for s, c in by.items())}); "
+        f"{len(exclude)} pages excluded; wrote {out} and {key}"
+    )
 
 
 # ---- scoring ---------------------------------------------------------------
+
 
 def read_labels(path: Path) -> dict[str, int]:
     out = {}
@@ -123,7 +157,9 @@ def read_labels(path: Path) -> dict[str, int]:
             v = (row.get("human_label") or "").strip()
             if v:
                 if v not in ("0", "1", "2"):
-                    raise SystemExit(f"{path}: id {row['id']}: human_label must be 0, 1 or 2, got {v!r}")
+                    raise SystemExit(
+                        f"{path}: id {row['id']}: human_label must be 0, 1 or 2, got {v!r}"
+                    )
                 out[row["id"]] = int(v)
     return out
 
@@ -189,8 +225,12 @@ def binary(pairs):
 
 
 def _fmt(matrix, classes, row_name, col_name) -> str:
-    head = f"{row_name}\\{col_name}".ljust(14) + "".join(f"{c:>6}" for c in classes) + f"{'total':>7}"
-    rows = [f"{c:>14}" + "".join(f"{v:>6}" for v in r) + f"{sum(r):>7}" for c, r in zip(classes, matrix)]
+    head = (
+        f"{row_name}\\{col_name}".ljust(14) + "".join(f"{c:>6}" for c in classes) + f"{'total':>7}"
+    )
+    rows = [
+        f"{c:>14}" + "".join(f"{v:>6}" for v in r) + f"{sum(r):>7}" for c, r in zip(classes, matrix)
+    ]
     return "\n".join([head] + rows)
 
 
@@ -214,15 +254,19 @@ def report(pairs, label_counts, row_name="judge", col_name="human", reweight=Tru
     print(f"{'rel':>7}{bpc[0]:>11.3f}{bpc[1]:>9.3f}   (binary: label >= 1)")
     print()
     for name, ps in (("3-class", pairs), ("binary", bp)):
-        print(f"{name:>8}  agreement {agreement(ps):.3f} {_ci(bootstrap_ci(ps, agreement))}"
-              f"   kappa {kappa(ps):.3f} {_ci(bootstrap_ci(ps, kappa))}   (95% bootstrap, {BOOTSTRAPS} resamples)")
+        print(
+            f"{name:>8}  agreement {agreement(ps):.3f} {_ci(bootstrap_ci(ps, agreement))}"
+            f"   kappa {kappa(ps):.3f} {_ci(bootstrap_ci(ps, kappa))}   (95% bootstrap, {BOOTSTRAPS} resamples)"
+        )
     if reweight:
         rw, missing = reweighted_agreement(pairs, label_counts)
         rw_b, _ = reweighted_agreement(
             bp, {0: label_counts.get(0, 0), 1: label_counts.get(1, 0) + label_counts.get(2, 0)}
         )
-        print(f"\nagreement reweighted to the graph's label distribution {label_counts}: "
-              f"3-class {rw:.3f}, binary {rw_b:.3f}")
+        print(
+            f"\nagreement reweighted to the graph's label distribution {label_counts}: "
+            f"3-class {rw:.3f}, binary {rw_b:.3f}"
+        )
         if missing:
             print(f"  no sampled page with judge label {missing}; those classes are left out")
 
@@ -235,7 +279,9 @@ def score(tsv: Path, key: Path, tsv2: Path | None = None) -> None:
         raise SystemExit(f"{len(unknown)} ids in {tsv} are not in the key file")
     unlabelled = len(k["items"]) - len(human)
     if unlabelled:
-        print(f"{unlabelled} of {len(k['items'])} sampled pages have no human_label and are left out\n")
+        print(
+            f"{unlabelled} of {len(k['items'])} sampled pages have no human_label and are left out\n"
+        )
     counts = {int(g): n for g, n in k["graph_label_counts"].items()}
     ids = sorted(human, key=int)
     pairs = [(k["items"][i]["judge_label"], human[i]) for i in ids]
@@ -373,9 +419,12 @@ def form(tsv: Path, out: Path, limit: int | None = None, name: str = "audit_fill
     items = [{"id": r["id"], "title": r["title"], "excerpt": r["excerpt"]} for r in rows]
     # No "<" survives, so neither "</script>" nor "<!--" can occur in page text.
     data = _json.dumps(items, ensure_ascii=False).replace("<", "\\u003c")
-    page = (FORM.replace("__TITLE__", html.escape(f"Audit: {len(items)} pages"))
-            .replace("__ITEMS__", data).replace("__KEY__", _json.dumps(Path(tsv).name + f":{limit or 'all'}"))
-            .replace("__OUT__", _json.dumps(name)))
+    page = (
+        FORM.replace("__TITLE__", html.escape(f"Audit: {len(items)} pages"))
+        .replace("__ITEMS__", data)
+        .replace("__KEY__", _json.dumps(Path(tsv).name + f":{limit or 'all'}"))
+        .replace("__OUT__", _json.dumps(name))
+    )
     Path(out).write_text(page)
     print(f"wrote {out} ({len(items)} pages); answers export as {name}")
 
@@ -387,10 +436,19 @@ def main() -> None:
     s.add_argument("--graph", type=Path, required=True)
     s.add_argument("--out", type=Path, default=Path("benchmark/data/audit.tsv"))
     s.add_argument("--key", type=Path, default=Path("benchmark/data/audit_key.json"))
-    s.add_argument("--total", type=int, help=f"sample size, label-2 pages included (default: label 2 plus {DEFAULT_REST})")
+    s.add_argument(
+        "--total",
+        type=int,
+        help=f"sample size, label-2 pages included (default: label 2 plus {DEFAULT_REST})",
+    )
     s.add_argument("--seed", type=int, default=0)
-    s.add_argument("--exclude", type=Path, nargs="*", default=[],
-                   help="TSV files with a `page` column whose pages are left out")
+    s.add_argument(
+        "--exclude",
+        type=Path,
+        nargs="*",
+        default=[],
+        help="TSV files with a `page` column whose pages are left out",
+    )
     c = sub.add_parser("score", help="compare the filled TSV with the judge")
     c.add_argument("--tsv", type=Path, required=True)
     c.add_argument("--key", type=Path, required=True)

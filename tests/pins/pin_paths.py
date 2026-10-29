@@ -1,4 +1,5 @@
 """Folders the pins read from and write to."""
+
 from pathlib import Path
 
 PINS_DIR = Path(__file__).resolve().parent

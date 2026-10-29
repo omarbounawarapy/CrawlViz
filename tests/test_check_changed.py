@@ -17,8 +17,14 @@ from tools import check_changed as tool
 OWNERSHIP_FILE = Path(__file__).resolve().parent.parent / ".claude" / "ownership.toml"
 SYNTAX_ERROR_SOURCE = "def broken(:\n"
 GIT_IDENTITY = (
-    "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
-    "-c", "commit.gpgsign=false", "-c", "init.defaultBranch=main",
+    "-c",
+    "user.name=Test",
+    "-c",
+    "user.email=test@example.invalid",
+    "-c",
+    "commit.gpgsign=false",
+    "-c",
+    "init.defaultBranch=main",
 )
 
 
@@ -60,7 +66,12 @@ class TestImportCandidates:
 
     def test_from_import_includes_each_imported_name_as_a_submodule(self) -> None:
         assert self.candidates("from pkg import mod, other", ()) == {
-            "pkg", "pkg.mod", "pkg.other", ".pkg", ".pkg.mod", ".pkg.other",
+            "pkg",
+            "pkg.mod",
+            "pkg.other",
+            ".pkg",
+            ".pkg.mod",
+            ".pkg.other",
         }
 
     def test_relative_import_resolves_against_the_importing_directory(self) -> None:
@@ -181,9 +192,7 @@ class TestPythonTestsFor:
 
         assert selected_tests(repo, "tests/pins/pin_helpers.py") == []
 
-    def test_changed_package_init_selects_tests_importing_a_deeper_module(
-        self, repo: Path
-    ) -> None:
+    def test_changed_package_init_selects_tests_importing_a_deeper_module(self, repo: Path) -> None:
         write(repo, "a/__init__.py")
         write(repo, "a/b/__init__.py")
         write(repo, "a/b/c.py")
@@ -205,9 +214,7 @@ class TestPythonTestsFor:
 
         assert selected_tests(repo, "utils/foo.py") == ["tests/test_foo.py"]
 
-    def test_a_deleted_package_init_selects_tests_that_import_the_package(
-        self, repo: Path
-    ) -> None:
+    def test_a_deleted_package_init_selects_tests_that_import_the_package(self, repo: Path) -> None:
         write(repo, "pkg/__init__.py")
         write(repo, "tests/test_pkg.py", "import pkg.sub\n")
         git(repo, "add", "-A")
@@ -292,7 +299,10 @@ class TestChangedFiles:
         write(repo, "untracked.py")
 
         assert names(repo, tool.changed_files("main")) == [
-            "committed.py", "edited.py", "staged.py", "untracked.py",
+            "committed.py",
+            "edited.py",
+            "staged.py",
+            "untracked.py",
         ]
 
     def test_a_deleted_file_is_reported(self, repo: Path) -> None:
@@ -340,9 +350,7 @@ class TestTouchesMethod:
     def test_method_files_are_detected(self, repo: Path, relative: str) -> None:
         assert tool.touches_method(self.paths(repo, relative))
 
-    def test_every_literal_entry_of_the_ownership_method_list_is_detected(
-        self, repo: Path
-    ) -> None:
+    def test_every_literal_entry_of_the_ownership_method_list_is_detected(self, repo: Path) -> None:
         with OWNERSHIP_FILE.open("rb") as handle:
             patterns: list[str] = tomllib.load(handle)["shared"]["method_files"]
         literal = [pattern for pattern in patterns if "*" not in pattern]
@@ -371,9 +379,7 @@ class RecordedRuns:
         self.commands: list[tuple[list[str], Path, tuple[int, ...]]] = []
         self.results = results or {}
 
-    def __call__(
-        self, command: list[str], cwd: Path, accepted: tuple[int, ...] = (0,)
-    ) -> bool:
+    def __call__(self, command: list[str], cwd: Path, accepted: tuple[int, ...] = (0,)) -> bool:
         self.commands.append((command, cwd, accepted))
         return self.results.get(command[2], True)
 
@@ -381,8 +387,9 @@ class RecordedRuns:
         return [command[2] for command, _cwd, _accepted in self.commands]
 
     def command_for(self, tool_name: str) -> list[str]:
-        return next(command for command, _cwd, _accepted in self.commands
-                    if command[2] == tool_name)
+        return next(
+            command for command, _cwd, _accepted in self.commands if command[2] == tool_name
+        )
 
 
 @pytest.fixture
@@ -418,7 +425,13 @@ class TestCheckPython:
         assert runs.command_for("ruff") == ["uv", "run", "ruff", "check", "pkg/mod.py"]
         assert runs.command_for("mypy") == ["uv", "run", "mypy"]
         assert runs.command_for("pytest") == [
-            "uv", "run", "pytest", "-q", "-m", "not slow", "tests/test_mod.py",
+            "uv",
+            "run",
+            "pytest",
+            "-q",
+            "-m",
+            "not slow",
+            "tests/test_mod.py",
         ]
 
     def test_pytest_exit_code_for_no_collected_tests_is_accepted(
@@ -481,7 +494,10 @@ class TestMain:
         assert runs.command_for("pytest")[-1] == "tests/test_foo.py"
 
     def test_no_changes_run_nothing(
-        self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch,
+        self,
+        repo: Path,
+        runs: RecordedRuns,
+        monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         write(repo, "README.md")
@@ -500,11 +516,15 @@ class TestMain:
 
         assert self.run_main(monkeypatch) == 0
 
-        pytest_commands = [command for command, _cwd, _accepted in runs.commands
-                           if command[2] == "pytest"]
+        pytest_commands = [
+            command for command, _cwd, _accepted in runs.commands if command[2] == "pytest"
+        ]
         assert ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"] in pytest_commands
-        assert all("not slow" not in command for command in pytest_commands
-                   if "pins or method_guard" in command)
+        assert all(
+            "not slow" not in command
+            for command in pytest_commands
+            if "pins or method_guard" in command
+        )
 
     def test_ordinary_change_does_not_run_the_pins(
         self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
@@ -526,12 +546,14 @@ class TestMain:
 
         assert self.run_main(monkeypatch) == 0
 
-        ui_runs = [(command, cwd) for command, cwd, _accepted in runs.commands
-                   if cwd == repo / "crawler-ui"]
+        ui_runs = [
+            (command, cwd)
+            for command, cwd, _accepted in runs.commands
+            if cwd == repo / "crawler-ui"
+        ]
         assert [command[1] for command, _cwd in ui_runs] == ["eslint", "vitest"]
         assert all("src/App.tsx" in command for command, _cwd in ui_runs)
-        assert all(not any("node_modules" in part for part in command)
-                   for command, _cwd in ui_runs)
+        assert all(not any("node_modules" in part for part in command) for command, _cwd in ui_runs)
 
     def test_exit_code_is_one_when_any_check_fails(
         self, repo: Path, monkeypatch: pytest.MonkeyPatch

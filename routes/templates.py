@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Any
 from config import TEMPLATES_DIR
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
+
 router = APIRouter(prefix="/templates", tags=["templates"])
 
 os.makedirs(TEMPLATES_DIR, exist_ok=True)

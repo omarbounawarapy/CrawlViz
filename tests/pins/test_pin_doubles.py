@@ -1,4 +1,5 @@
 """The LLM and gateway doubles of the pin crawl."""
+
 import json
 
 from pin_doubles import RecordingGateway, RecordingLlm, ScriptedLlm

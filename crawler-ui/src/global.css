@@ -6,132 +6,454 @@
   --rule: #d3d9e0;
   --vermilion: #c7311a;
   --muted: #566478;
-  --control: #707d90;   /* borders and marks that must reach 3:1 (WCAG 1.4.11) */
+  --control: #707d90; /* borders and marks that must reach 3:1 (WCAG 1.4.11) */
+
   color-scheme: light;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; width: 100%; background: var(--paper); color: var(--ink); }
-/* Sticky toolbars must not hide the field that has focus. */
-html, .page-scroll { scroll-padding-top: 72px; }
-body { font-family: 'Public Sans', system-ui, sans-serif; font-size: 13px; -webkit-font-smoothing: antialiased; }
-button, input, select, textarea { font: inherit; color: inherit; }
-button { cursor: pointer; }
-.num, td, th, output { font-variant-numeric: tabular-nums; }
 
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
-::selection { background: rgba(199,49,26,0.18); color: var(--ink); }
-input, textarea { caret-color: var(--vermilion); }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Sticky toolbars must not hide the field that has focus. */
+html,
+.page-scroll {
+  scroll-padding-top: 72px;
+}
+
+body {
+  font-family: "Public Sans", system-ui, sans-serif;
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.num,
+td,
+th,
+output {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: rgb(199 49 26 / 18%);
+  color: var(--ink);
+}
+
+input,
+textarea {
+  caret-color: var(--vermilion);
+}
+
 /* Browsers fade placeholders below 4.5:1 (Firefox: 54% ink); pin them to the muted ink. */
-::placeholder { color: var(--muted); opacity: 1; }
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
 
 /* Visually hidden, still read by assistive tech. */
 .sr-only {
-  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
+
 /* Skip link: off screen until focused. */
-.skip-link { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--ink); color: #fbfcfd; padding: 8px 12px; font-weight: 600; }
-.skip-link:focus { left: 8px; }
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  z-index: 50;
+  background: var(--ink);
+  color: #fbfcfd;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 8px;
+}
+
 /* Composite widgets that draw their own state keep a visible ring on keyboard focus. */
-.focus-box:focus { outline: none; }
-.focus-box:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.focus-box:focus {
+  outline: none;
+}
+
+.focus-box:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 /* SVG controls: browsers draw no outline on SVG shapes, so the ring is a stroke. */
-svg [role=slider]:focus { outline: none; }
-svg [role=slider]:focus-visible { stroke: var(--vermilion); stroke-width: 3px; }
-input[type=range] { accent-color: var(--ink); height: 4px; }
-input[type=checkbox] { accent-color: var(--ink); }
+svg [role="slider"]:focus {
+  outline: none;
+}
 
-* { scrollbar-width: thin; scrollbar-color: #aab4c0 transparent; }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: #aab4c0; border-radius: 4px; border: 2px solid var(--paper); }
+svg [role="slider"]:focus-visible {
+  stroke: var(--vermilion);
+  stroke-width: 3px;
+}
 
-@keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+input[type="range"] {
+  accent-color: var(--ink);
+  height: 4px;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--ink);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #aab4c0 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #aab4c0;
+  border-radius: 4px;
+  border: 2px solid var(--paper);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
 /* Three pulses, then still (WCAG 2.2.2): the status word carries the state. */
-.breathe { animation: breathe 1.6s ease-in-out 3; }
+.breathe {
+  animation: breathe 1.6s ease-in-out 3;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .breathe { animation: none; }
-  * { transition-duration: 0.01ms !important; }
+  .breathe {
+    animation: none;
+  }
+
+  * {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Narrow screens: the crawl is a desktop task, but the frame must not clip
    or hide the controls an operator needs (status, Stop, Measurements). */
-.shell-nav { overflow-x: auto; scrollbar-width: none; }
-g[role=button]:focus, g[role=button]:focus-visible { outline: none; }
-g[role=button]:focus-visible circle:first-of-type { stroke: var(--ink); stroke-width: 3px; }
-@media (max-width: 900px) {
-  .shell-header { flex-wrap: wrap; height: auto !important; gap: 0 12px !important; padding: 0 12px !important; }
-  .shell-header > span:first-child { height: 48px; display: flex; align-items: center; }
-  .shell-nav { order: 3; flex-basis: 100%; border-top: 1px solid var(--rule); }
-  .shell-spacer { flex: 1 1 0; }
-  .shell-status { order: 2; height: 48px; gap: 10px !important; }
-  .shell-status .shell-detail { display: none; }
-  .tl-bar { gap: 12px !important; padding: 0 12px !important; }
-  .tl-mode { width: auto !important; }
-  .tl-count { width: auto !important; white-space: nowrap; }
-  .tl-transport > button:not(:nth-child(3)) { display: none; }
-  button, select, summary, a[href] { min-height: 44px; }
-  .shell-nav button { min-height: 44px; }
-  input[type=checkbox] { width: 20px; height: 20px; }
-  input[type=range] { height: 28px; }
-  .measures-drawer { position: absolute; top: 0; right: 0; bottom: 0; z-index: 6; width: min(460px, 100%) !important; box-shadow: -8px 0 24px rgba(15,27,45,0.12); }
+.shell-nav {
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-@media (max-width: 900px) {
-  .page-inner { padding: 24px 16px 48px !important; display: block !important; width: auto !important; }
-  .page-aside { display: none; }
-  .config-section-select { display: block !important; width: 100%; }
-  .bp-root { flex-direction: column; }
-  .bp-sidebar { width: auto !important; max-height: 168px; border-right: none !important; border-bottom: 1px solid #d3d9e0; }
+
+g[role="button"]:focus,
+g[role="button"]:focus-visible {
+  outline: none;
 }
-@media (max-width: 900px) {
-  .inspector-dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 7; width: auto !important; max-height: 60%; border-left: none !important; border-top: 1px solid var(--rule); box-shadow: 0 -8px 24px rgba(15,27,45,0.12); }
+
+g[role="button"]:focus-visible circle:first-of-type {
+  stroke: var(--ink);
+  stroke-width: 3px;
+}
+
+@media (width <= 900px) {
+  .shell-header {
+    flex-wrap: wrap;
+    height: auto !important;
+    gap: 0 12px !important;
+    padding: 0 12px !important;
+  }
+
+  .shell-header > span:first-child {
+    height: 48px;
+    display: flex;
+    align-items: center;
+  }
+
+  .shell-nav {
+    order: 3;
+    flex-basis: 100%;
+    border-top: 1px solid var(--rule);
+  }
+
+  .shell-spacer {
+    flex: 1 1 0;
+  }
+
+  .shell-status {
+    order: 2;
+    height: 48px;
+    gap: 10px !important;
+  }
+
+  .shell-status .shell-detail {
+    display: none;
+  }
+
+  .tl-bar {
+    gap: 12px !important;
+    padding: 0 12px !important;
+  }
+
+  .tl-mode {
+    width: auto !important;
+  }
+
+  .tl-count {
+    width: auto !important;
+    white-space: nowrap;
+  }
+
+  .tl-transport > button:not(:nth-child(3)) {
+    display: none;
+  }
+
+  button,
+  select,
+  summary,
+  a[href] {
+    min-height: 44px;
+  }
+
+  .shell-nav button {
+    min-height: 44px;
+  }
+
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  input[type="range"] {
+    height: 28px;
+  }
+
+  .measures-drawer {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    width: min(460px, 100%) !important;
+    box-shadow: -8px 0 24px rgb(15 27 45 / 12%);
+  }
+}
+
+@media (width <= 900px) {
+  .page-inner {
+    padding: 24px 16px 48px !important;
+    display: block !important;
+    width: auto !important;
+  }
+
+  .page-aside {
+    display: none;
+  }
+
+  .config-section-select {
+    display: block !important;
+    width: 100%;
+  }
+
+  .bp-root {
+    flex-direction: column;
+  }
+
+  .bp-sidebar {
+    width: auto !important;
+    max-height: 168px;
+    border-right: none !important;
+    border-bottom: 1px solid #d3d9e0;
+  }
+}
+
+@media (width <= 900px) {
+  .inspector-dock {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 7;
+    width: auto !important;
+    max-height: 60%;
+    border-left: none !important;
+    border-top: 1px solid var(--rule);
+    box-shadow: 0 -8px 24px rgb(15 27 45 / 12%);
+  }
 }
 
 /* Shared form grid (common/Form.jsx): two-up, one column when narrow. */
-.config-section-select { display: none; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-@media (max-width: 900px) { .form-grid { grid-template-columns: 1fr; } }
-input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
-@media (max-width: 900px) { .spec-field { grid-template-columns: 1fr !important; } }
-@media (min-width: 901px) { .form-grid-3 { grid-template-columns: 1fr 1fr 150px; } }
+.config-section-select {
+  display: none;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+@media (width <= 900px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+@media (width <= 900px) {
+  .spec-field {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (width >= 901px) {
+  .form-grid-3 {
+    grid-template-columns: 1fr 1fr 150px;
+  }
+}
 
 /* Disclosure marker for <summary class="disclosure"> (drawn, not a glyph). */
-summary.disclosure { list-style: none; }
-summary.disclosure::-webkit-details-marker { display: none; }
-summary.disclosure::before {
-  content: ""; width: 6px; height: 6px; margin-right: 10px; flex-shrink: 0;
-  border-right: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); transform: rotate(-45deg);
+summary.disclosure {
+  list-style: none;
 }
-details[open] > summary.disclosure::before { transform: rotate(45deg); }
-@media (max-width: 900px) {
-  input:not([type=checkbox]):not([type=range]), textarea { min-height: 44px; }
+
+summary.disclosure::-webkit-details-marker {
+  display: none;
+}
+
+summary.disclosure::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  border-right: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  transform: rotate(-45deg);
+}
+
+details[open] > summary.disclosure::before {
+  transform: rotate(45deg);
+}
+
+@media (width <= 900px) {
+  input:not([type="checkbox"], [type="range"]),
+  textarea {
+    min-height: 44px;
+  }
 }
 
 /* Graph rules are screen-pixel rules: the ring that says how relevant a page is, a page's outline and
    the selection ring keep their weight at every zoom instead of thinning out with the plate. Text is
    placed and sized in screen space by the annotation pass (GraphView), so it needs no zoom CSS. */
-svg .relevance-ring, svg .body, svg .selection-ring { vector-effect: non-scaling-stroke; }
+svg .relevance-ring,
+svg .body,
+svg .selection-ring {
+  vector-effect: non-scaling-stroke;
+}
 
 /* Reflow (WCAG 1.4.10): at 320 CSS px a setting's control drops under its label instead of
    pushing the page sideways. */
-@media (max-width: 600px) {
-  .setting-row { flex-direction: column; gap: 8px !important; }
-  .setting-control { width: 100%; }
+@media (width <= 600px) {
+  .setting-row {
+    flex-direction: column;
+    gap: 8px !important;
+  }
+
+  .setting-control {
+    width: 100%;
+  }
 }
-@media (max-width: 600px) {
+
+@media (width <= 600px) {
   /* The timeline bar wraps: the scrubber takes its own line rather than shrinking to nothing. */
-  .tl-bar { flex-wrap: wrap; height: auto !important; padding: 6px 12px !important; row-gap: 4px; }
-  .tl-scrub { order: 5; flex-basis: 100% !important; }
+  .tl-bar {
+    flex-wrap: wrap;
+    height: auto !important;
+    padding: 6px 12px !important;
+    row-gap: 4px;
+  }
+
+  .tl-scrub {
+    order: 5;
+    flex-basis: 100% !important;
+  }
 }
-@media (max-width: 600px) {
+
+@media (width <= 600px) {
   /* Six short section names wrap to two rows rather than hiding behind a scroll with no scrollbar. */
-  .shell-nav { flex-wrap: wrap; overflow-x: visible; height: auto !important; }
+  .shell-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    height: auto !important;
+  }
 }
+
 /* Screen-reader-only text is positioned inside the page that scrolls, not past its end. */
-.page-scroll { position: relative; }
-@media (max-width: 600px) {
+.page-scroll {
+  position: relative;
+}
+
+@media (width <= 600px) {
   /* Phone width: the zoom buttons lie in a row along the bottom and the key folds above them,
      so neither covers the toolbar or the plate. */
-  .graph-zoom { flex-direction: row !important; align-items: center !important; }
-  .graph-zoom output { padding: 0 6px !important; }
-  .graph-legend { bottom: 72px !important; max-width: calc(100% - 32px) !important; }
+  .graph-zoom {
+    flex-direction: row !important;
+    align-items: center !important;
+  }
+
+  .graph-zoom output {
+    padding: 0 6px !important;
+  }
+
+  .graph-legend {
+    bottom: 72px !important;
+    max-width: calc(100% - 32px) !important;
+  }
 }

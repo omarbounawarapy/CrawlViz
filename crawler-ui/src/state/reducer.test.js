@@ -4,8 +4,18 @@ import { INITIAL_STATE, SNAPSHOT_INTERVAL, MAX_CHECKPOINTS } from "./initialStat
 
 function nodeAdded(id, parentId, ts) {
   return {
-    type: "NODE_ADDED", ts,
-    node: { node_id: String(id), url: `http://x/${id}`, depth: 0, priority: 0.5, llm_score: 0, parent_id: parentId ? String(parentId) : null, state: "CREATED", created_at: ts },
+    type: "NODE_ADDED",
+    ts,
+    node: {
+      node_id: String(id),
+      url: `http://x/${id}`,
+      depth: 0,
+      priority: 0.5,
+      llm_score: 0,
+      parent_id: parentId ? String(parentId) : null,
+      state: "CREATED",
+      created_at: ts,
+    },
   };
 }
 
@@ -18,9 +28,21 @@ describe("crawlReducer — V2 message types", () => {
   it("PIPELINE_EVENT tracks started/completed/failed counts and running average duration", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "started", node_id: "1" });
-    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "completed", node_id: "1", duration_ms: 10 });
+    state = crawlReducer(state, {
+      type: "PIPELINE_EVENT",
+      stage: "scoring",
+      phase: "completed",
+      node_id: "1",
+      duration_ms: 10,
+    });
     state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "started", node_id: "2" });
-    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "completed", node_id: "2", duration_ms: 20 });
+    state = crawlReducer(state, {
+      type: "PIPELINE_EVENT",
+      stage: "scoring",
+      phase: "completed",
+      node_id: "2",
+      duration_ms: 20,
+    });
 
     expect(state.pipelineStats.scoring.started).toBe(2);
     expect(state.pipelineStats.scoring.completed).toBe(2);
@@ -32,7 +54,9 @@ describe("crawlReducer — V2 message types", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, nodeAdded(1, null, 1));
     state = crawlReducer(state, {
-      type: "CANDIDATE_EVALUATED", parent_id: "1", decision: "dropped",
+      type: "CANDIDATE_EVALUATED",
+      parent_id: "1",
+      decision: "dropped",
       candidates: [{ url: "http://x/dropped", nlp_score: 0.05, nlp_breakdown: {} }],
     });
     expect(state.candidates).toHaveLength(1);
@@ -43,10 +67,22 @@ describe("crawlReducer — V2 message types", () => {
 
   it("NODE_SCORED_DETAIL is keyed by node_id and NODE_ERROR is bounded/appended", () => {
     let state = INITIAL_STATE;
-    state = crawlReducer(state, { type: "NODE_SCORED_DETAIL", node_id: "1", nlp_score: 0.8, llm_score: 7, priority: 0.9 });
+    state = crawlReducer(state, {
+      type: "NODE_SCORED_DETAIL",
+      node_id: "1",
+      nlp_score: 0.8,
+      llm_score: 7,
+      priority: 0.9,
+    });
     expect(state.nodeDetails["1"]).toMatchObject({ nlp_score: 0.8, llm_score: 7, priority: 0.9 });
 
-    state = crawlReducer(state, { type: "NODE_ERROR", node_id: "1", stage: "request", error_type: "TimeoutError", error_message: "boom" });
+    state = crawlReducer(state, {
+      type: "NODE_ERROR",
+      node_id: "1",
+      stage: "request",
+      error_type: "TimeoutError",
+      error_message: "boom",
+    });
     expect(state.errors).toHaveLength(1);
     expect(state.errors[0].error_message).toBe("boom");
   });
@@ -67,10 +103,18 @@ describe("crawlReducer — replay correctness (regression test for §A.1.8 perf 
     for (let i = 1; i <= NUM_NODES; i++) {
       const parent = i === 1 ? null : Math.max(1, i - 3);
       state = crawlReducer(state, nodeAdded(i, parent, 1000 + i));
-      state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "completed", node_id: String(i), duration_ms: 5 + (i % 7) });
+      state = crawlReducer(state, {
+        type: "PIPELINE_EVENT",
+        stage: "scoring",
+        phase: "completed",
+        node_id: String(i),
+        duration_ms: 5 + (i % 7),
+      });
       if (i % 5 === 0) {
         state = crawlReducer(state, {
-          type: "CANDIDATE_EVALUATED", parent_id: String(i), decision: i % 10 === 0 ? "dropped" : "trusted_no_llm",
+          type: "CANDIDATE_EVALUATED",
+          parent_id: String(i),
+          decision: i % 10 === 0 ? "dropped" : "trusted_no_llm",
           candidates: [{ url: `http://x/${i}-cand`, nlp_score: 0.3, nlp_breakdown: {} }],
         });
       }
@@ -117,14 +161,20 @@ describe("crawlReducer batching", () => {
 
   it("does not mutate the state it was given, and matches one-by-one dispatch on mixed events", () => {
     const events = [
-      add("a"), add("b", "a"),
+      add("a"),
+      add("b", "a"),
       { type: "NODE_STATE_CHANGED", node_id: "b", state: "SCORED" },
       { type: "NODE_SCORED_DETAIL", node_id: "b", nlp_score: 0.5, priority: 3 },
       { type: "CANDIDATE_EVALUATED", parent_id: "a", decision: "dropped", candidates: [{ url: "/x", nlp_score: 0.1 }] },
       { type: "NODE_ERROR", node_id: "b", stage: "fetch", error_type: "E", error_message: "boom" },
     ];
     const start = [add("seed")].reduce(crawlReducer, INITIAL_STATE);
-    const snapshot = { nodes: [...start.nodes.keys()], candidates: start.candidates.length, details: Object.keys(start.nodeDetails).length, errors: start.errors.length };
+    const snapshot = {
+      nodes: [...start.nodes.keys()],
+      candidates: start.candidates.length,
+      details: Object.keys(start.nodeDetails).length,
+      errors: start.errors.length,
+    };
     const one = events.reduce(crawlReducer, start);
     const batch = crawlReducer(start, { type: "__BATCH", events });
     expect([...start.nodes.keys()]).toEqual(snapshot.nodes);
@@ -142,7 +192,8 @@ describe("crawlReducer batching", () => {
     const total = SNAPSHOT_INTERVAL * (MAX_CHECKPOINTS + 40);
     const events = Array.from({ length: total }, (_, i) => add(`n${i}`, i ? `n${i - 1}` : null));
     let state = INITIAL_STATE;
-    for (let i = 0; i < events.length; i += 500) state = crawlReducer(state, { type: "__BATCH", events: events.slice(i, i + 500) });
+    for (let i = 0; i < events.length; i += 500)
+      state = crawlReducer(state, { type: "__BATCH", events: events.slice(i, i + 500) });
     expect(state._checkpoints.length).toBeLessThanOrEqual(MAX_CHECKPOINTS);
     const target = Math.floor(total / 2);
     const seeked = crawlReducer(state, { type: "__REPLAY_SEEK", index: target });

@@ -25,7 +25,13 @@ export function Explain({ text: prose }) {
   if (!prose) return null;
   if (!pattern) return prose;
   const parts = prose.split(pattern);
-  return parts.map((part, i) => (
-    i % 2 === 1 ? <Term key={i} term={part}>{part}</Term> : part
-  ));
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <Term key={i} term={part}>
+        {part}
+      </Term>
+    ) : (
+      part
+    ),
+  );
 }

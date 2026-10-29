@@ -3,7 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import PromptStudio from "./PromptStudio";
 import { lineDiff, estimateTokens } from "./promptModel";
 
-const defaults = { scoring_system: "SYS", scoring_rules: "RULES", strategy_contexts: { TOPICAL: "stay", EXPLORATION: "roam" } };
+const defaults = {
+  scoring_system: "SYS",
+  scoring_rules: "RULES",
+  strategy_contexts: { TOPICAL: "stay", EXPLORATION: "roam" },
+};
 const blocks = [
   { id: "system", title: "System prompt", kind: "editable", note: "n", text: "SYS" },
   { id: "output", title: "Output format", kind: "locked", note: "Parser reads this JSON shape.", text: "OUT" },

@@ -39,14 +39,16 @@ SECRET_SAFE_COMMANDS = {"chmod", "stat", "ls", "test", "["}
 NETWORK_TOOLS = re.compile(r"(^|[\s;|&(])(curl|wget|nc|ncat|ssh|scp|rsync|http|httpie)\s")
 DEPENDENCY_CHANGES = re.compile(
     r"\buv\s+(add|remove)\b|\bpip\s+install\b|\bnpm\s+(install|i|add|uninstall)\s+[^-\s]"
-    r"|\bnpm\s+(update|upgrade)\b|\bnpx\s+npm-check-updates\b")
+    r"|\bnpm\s+(update|upgrade)\b|\bnpx\s+npm-check-updates\b"
+)
 UPDATE_PINS = re.compile(r"--update-pins\b")
 DESTRUCTIVE_RM = re.compile(r"\brm\s+(-[a-zA-Z]*[rf][a-zA-Z]*\s+)+(?P<targets>.+)")
 DANGEROUS_RM_TARGETS = {"/", "~", "..", ".", "*", ".git", "./", "../", "~/", "$HOME"}
 WRITE_COMMANDS = re.compile(
     r"(^|[\s;|&(])(rm|mv|cp|touch|mkdir|tee|truncate|ln|chmod|chown|patch|dd)\s"
     r"|\bsed\s+(-[a-zA-Z]*i|--in-place)|\bgit\s+(add|commit|merge|checkout|switch|stash|restore"
-    r"|apply|am|cherry-pick|revert|tag|branch\s+-[dD])\b|\b(uv\s+sync|npm\s+ci)\b")
+    r"|apply|am|cherry-pick|revert|tag|branch\s+-[dD])\b|\b(uv\s+sync|npm\s+ci)\b"
+)
 REDIRECT_TARGET = re.compile(r"(?<![<>&\d])>{1,2}\s*(?P<target>[^\s;|&]+)")
 TEMP_PREFIXES = ("/tmp/", "/dev/null", "/dev/stderr", "/dev/stdout")
 
@@ -81,8 +83,10 @@ def _check_git(agent: str, command: str, rules: dict) -> None:
         for title in _commit_titles(command):
             problems = check_title(title)
             if problems:
-                block("Commit title breaks the convention (AGENTS.md, commit conventions): "
-                      + "; ".join(problems))
+                block(
+                    "Commit title breaks the convention (AGENTS.md, commit conventions): "
+                    + "; ".join(problems)
+                )
 
 
 def _check_rm(command: str) -> None:
@@ -99,8 +103,9 @@ def _check_rm(command: str) -> None:
 
 def _check_readonly(command: str) -> None:
     if WRITE_COMMANDS.search(command):
-        block("Read-only agent: this command changes files or git state. "
-              "Report the finding instead.")
+        block(
+            "Read-only agent: this command changes files or git state. Report the finding instead."
+        )
     for match in REDIRECT_TARGET.finditer(command):
         if not match.group("target").startswith(TEMP_PREFIXES):
             block("Read-only agent: redirect output to /tmp, not into the repository.")

@@ -108,6 +108,8 @@ cp keys.example.json keys.json    # add a key for the LLM provider you use
 make dev                          # API on :8000, UI on :5173
 ```
 
+To try a full crawl without keys or network, start with `CRAWLVIZ_OFFLINE=1 make dev` and run the `offline_demo.json` blueprint. It crawls a frozen copy of the ISI Wikipedia graph with hashing embeddings and a scripted LLM, so the scores are arbitrary but repeatable.
+
 Open <http://localhost:5173>. The landing page has a **Load a sample replay** button that plays a synthetic crawl in the browser, so you can explore the interface before running a real crawl. Full setup, providers and tests: [`docs/08-developer-guide.md`](docs/08-developer-guide.md).
 
 ## Start here, by what you need

@@ -29,8 +29,8 @@ BANNED_PATTERNS = {
     r"(?i)\bstep\s+\d+\b": "step numbers describe the plan, not the change",
     r"(?i)\b(wip|done|todo|plan|audit item)\b": "say what changed instead",
     # File names such as .claude/ and CLAUDE.md are fine; crediting the tool is not.
-    r"(?i)(?<![./\w])(claude|anthropic)(?![./\w])|\b(co-authored-by|generated with)\b":
-        "no AI attribution",
+    r"(?i)(?<![./\w])(claude|anthropic)(?![./\w])"
+    r"|\b(co-authored-by|generated with)\b": "no AI attribution",
     r"(?i)(^|\s)ai(\s|$)": "no AI attribution",
     "—": "no em dashes",
 }
@@ -40,18 +40,22 @@ def check_title(title: str) -> list[str]:
     problems: list[str] = []
     match = TITLE_SHAPE.match(title)
     if not match:
-        problems.append('title must look like "<Area>: <what is now true or what changed>" '
-                        "with a capitalised area")
+        problems.append(
+            'title must look like "<Area>: <what is now true or what changed>" '
+            "with a capitalised area"
+        )
     else:
         summary = match.group("summary")
         if summary[0].isupper() and not IDENTIFIER_START.match(summary):
-            problems.append("start the summary after the colon in lowercase "
-                            "(identifiers and acronyms are fine)")
+            problems.append(
+                "start the summary after the colon in lowercase (identifiers and acronyms are fine)"
+            )
         if summary.endswith("."):
             problems.append("no trailing period")
     if len(title) > MAX_TITLE_LENGTH:
-        problems.append(f"title is {len(title)} characters; keep it under {MAX_TITLE_LENGTH} "
-                        "(aim for about 72)")
+        problems.append(
+            f"title is {len(title)} characters; keep it under {MAX_TITLE_LENGTH} (aim for about 72)"
+        )
     for pattern, reason in BANNED_PATTERNS.items():
         if re.search(pattern, title):
             problems.append(reason)
@@ -73,7 +77,9 @@ def check_message(message: str) -> list[str]:
 def _messages_in_range(revision_range: str) -> list[tuple[str, str]]:
     output = subprocess.run(
         ["git", "log", "--format=%H%x00%B%x1e", revision_range],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
     commits = []
     for record in output.split("\x1e"):
@@ -93,8 +99,9 @@ def main() -> int:
     if args.title is not None:
         results = [("title", check_title(args.title))]
     elif args.revision_range:
-        results = [(sha, check_message(body))
-                   for sha, body in _messages_in_range(args.revision_range)]
+        results = [
+            (sha, check_message(body)) for sha, body in _messages_in_range(args.revision_range)
+        ]
     elif args.message_file:
         with open(args.message_file, encoding="utf-8") as handle:
             results = [("message", check_message(handle.read()))]

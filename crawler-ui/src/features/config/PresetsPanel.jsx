@@ -3,7 +3,14 @@ import { getTheme } from "../../theme";
 import { Button, ConfirmButton, Field, TextInput } from "../common/Form";
 import { SectionTitle } from "../common/Page";
 import {
-  applyPreset, deletePreset, exportConfig, fetchConfig, fetchConfigDefaults, fetchPresets, replaceConfig, savePreset,
+  applyPreset,
+  deletePreset,
+  exportConfig,
+  fetchConfig,
+  fetchConfigDefaults,
+  fetchPresets,
+  replaceConfig,
+  savePreset,
   validateConfig,
 } from "../../api/client";
 import { changesMarkdown, presetChanges } from "./presetModel";
@@ -22,15 +29,23 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
   const fileRef = useRef(null);
 
   const load = useCallback(async () => {
-    try { setPresets(await fetchPresets()); } catch (e) { setMsg({ ok: false, text: e.message }); }
+    try {
+      setPresets(await fetchPresets());
+    } catch (e) {
+      setMsg({ ok: false, text: e.message });
+    }
   }, []);
   useEffect(() => {
     let cancelled = false;
     fetchPresets()
       .then((p) => !cancelled && setPresets(p))
       .catch((e) => !cancelled && setMsg({ ok: false, text: e.message }));
-    fetchConfig().then((c) => !cancelled && setCurrent(c)).catch(() => {});
-    return () => { cancelled = true; };
+    fetchConfig()
+      .then((c) => !cancelled && setCurrent(c))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const guard = async (fn, okText) => {
@@ -45,9 +60,13 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
   };
 
   const apply = async (n) => {
-    if (dirty && !window.confirm("Applying a preset replaces your stored settings and drops unsaved edits. Continue?")) return;
+    if (dirty && !window.confirm("Applying a preset replaces your stored settings and drops unsaved edits. Continue?"))
+      return;
     const cfg = await guard(() => applyPreset(n), `Preset “${n}” applied. It takes effect from the next crawl.`);
-    if (cfg) { onChanged(cfg); setCurrent(cfg); }
+    if (cfg) {
+      onChanged(cfg);
+      setCurrent(cfg);
+    }
   };
 
   const save = async () => {
@@ -68,7 +87,9 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
     if (!stored) return;
     const url = URL.createObjectURL(new Blob([JSON.stringify(stored, null, 2)], { type: "application/json" }));
     const a = document.createElement("a");
-    a.href = url; a.download = "crawlviz-settings.json"; a.click();
+    a.href = url;
+    a.download = "crawlviz-settings.json";
+    a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -80,14 +101,21 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
     if (!out) return;
     const url = URL.createObjectURL(new Blob([out], { type: "text/markdown" }));
     const a = document.createElement("a");
-    a.href = url; a.download = "crawlviz-settings-changes.md"; a.click();
+    a.href = url;
+    a.download = "crawlviz-settings-changes.md";
+    a.click();
     URL.revokeObjectURL(url);
   };
 
   const upload = async (file) => {
     if (!file) return;
     let values;
-    try { values = JSON.parse(await file.text()); } catch { setMsg({ ok: false, text: "That file is not valid JSON." }); return; }
+    try {
+      values = JSON.parse(await file.text());
+    } catch {
+      setMsg({ ok: false, text: "That file is not valid JSON." });
+      return;
+    }
     const check = await guard(() => validateConfig(values), "");
     if (!check) return;
     if (!check.valid) {
@@ -101,40 +129,68 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
 
   // A built-in preset is listed under the name its goal card uses; a saved preset keeps its own.
   const nameOf = (n) => presets.labels?.[n] ?? n;
-  const row = { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", padding: "6px 0",
-                borderBottom: `1px solid ${theme.colors.rowBorder}` };
-  const group = (title, list, deletable) => Object.keys(list).length > 0 && (
-    <div style={{ marginBottom: 12 }}>
-      <h3 style={{ fontSize: 13, fontWeight: 400, color: theme.colors.text.muted, margin: "0 0 4px" }}>{title}</h3>
-      {Object.keys(list).map((n) => (
-        <div key={n} style={row}>
-          <span style={{ flex: 1, fontSize: 14 }}>
-            {nameOf(n)}
-            {presets.descriptions?.[n] && (
-              <span style={{ display: "block", fontSize: 13, color: theme.colors.text.secondary }}>{presets.descriptions[n]}</span>
+  const row = {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    alignItems: "center",
+    padding: "6px 0",
+    borderBottom: `1px solid ${theme.colors.rowBorder}`,
+  };
+  const group = (title, list, deletable) =>
+    Object.keys(list).length > 0 && (
+      <div style={{ marginBottom: 12 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 400, color: theme.colors.text.muted, margin: "0 0 4px" }}>{title}</h3>
+        {Object.keys(list).map((n) => (
+          <div key={n} style={row}>
+            <span style={{ flex: 1, fontSize: 14 }}>
+              {nameOf(n)}
+              {presets.descriptions?.[n] && (
+                <span style={{ display: "block", fontSize: 13, color: theme.colors.text.secondary }}>
+                  {presets.descriptions[n]}
+                </span>
+              )}
+            </span>
+            {/* Names start with the visible words, so speech input can say what is on screen (WCAG 2.5.3). */}
+            <Button
+              variant="quiet"
+              aria-expanded={open === n}
+              onClick={() => setOpen(open === n ? null : n)}
+              aria-label={`What changes in preset ${nameOf(n)}`}
+            >
+              What changes
+            </Button>
+            <Button onClick={() => apply(n)} aria-label={`Apply preset ${nameOf(n)}`}>
+              Apply
+            </Button>
+            {deletable && (
+              <ConfirmButton
+                label="Delete"
+                confirmLabel="Confirm delete"
+                aria-label={`Delete preset ${nameOf(n)}`}
+                onConfirm={() => remove(n)}
+              />
             )}
-          </span>
-          {/* Names start with the visible words, so speech input can say what is on screen (WCAG 2.5.3). */}
-          <Button variant="quiet" aria-expanded={open === n} onClick={() => setOpen(open === n ? null : n)}
-                  aria-label={`What changes in preset ${nameOf(n)}`}>What changes</Button>
-          <Button onClick={() => apply(n)} aria-label={`Apply preset ${nameOf(n)}`}>Apply</Button>
-          {deletable && (
-            <ConfirmButton label="Delete" confirmLabel="Confirm delete" aria-label={`Delete preset ${nameOf(n)}`}
-                           onConfirm={() => remove(n)} />
-          )}
-          {open === n && (
-            <ul aria-label={`Changes made by ${nameOf(n)}`} style={{ flexBasis: "100%", margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}>
-              {(() => {
-                const changes = presetChanges(list[n], current, fields);
-                if (changes.length === 0) return <li>Nothing: your settings already match this preset.</li>;
-                return changes.map((c) => <li key={c.path}>{c.label}: {c.fromText} → <strong>{c.toText}</strong></li>);
-              })()}
-            </ul>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+            {open === n && (
+              <ul
+                aria-label={`Changes made by ${nameOf(n)}`}
+                style={{ flexBasis: "100%", margin: "4px 0 0", paddingLeft: 18, fontSize: 13 }}
+              >
+                {(() => {
+                  const changes = presetChanges(list[n], current, fields);
+                  if (changes.length === 0) return <li>Nothing: your settings already match this preset.</li>;
+                  return changes.map((c) => (
+                    <li key={c.path}>
+                      {c.label}: {c.fromText} → <strong>{c.toText}</strong>
+                    </li>
+                  ));
+                })()}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    );
 
   return (
     <section aria-labelledby="cfg-presets">
@@ -147,16 +203,30 @@ export default function PresetsPanel({ onChanged, dirty, fields = [] }) {
             <TextInput placeholder="e.g. polite-wiki" value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
         </div>
-        <Button onClick={save} disabled={!name.trim()} style={{ marginBottom: 14 }}>Save stored settings as preset</Button>
+        <Button onClick={save} disabled={!name.trim()} style={{ marginBottom: 14 }}>
+          Save stored settings as preset
+        </Button>
         <span style={{ flex: 1 }} />
         <Button onClick={download}>Export JSON</Button>
         <Button onClick={downloadChanges}>Export changes from defaults (Markdown)</Button>
         <Button onClick={() => fileRef.current?.click()}>Import JSON</Button>
-        <input ref={fileRef} type="file" accept="application/json,.json" hidden aria-label="Import settings file"
-               onChange={(e) => { upload(e.target.files?.[0]); e.target.value = ""; }} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          aria-label="Import settings file"
+          onChange={(e) => {
+            upload(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
       </div>
       {msg && msg.text && (
-        <p role="status" style={{ fontSize: 13, marginTop: 8, color: msg.ok ? theme.colors.text.secondary : theme.colors.accent.red }}>
+        <p
+          role="status"
+          style={{ fontSize: 13, marginTop: 8, color: msg.ok ? theme.colors.text.secondary : theme.colors.accent.red }}
+        >
           {msg.text}
         </p>
       )}

@@ -1,4 +1,5 @@
 """NLPService end to end with the hashing embedding engine: no MiniLM, no LLM, no network."""
+
 import asyncio
 from types import SimpleNamespace
 
@@ -27,7 +28,12 @@ def make(tmp_path, engine=None, **kw):
         blueprint_id="bp",
         target_topic=TOPIC,
         llm_handler=SeedLlm(),
-        expansion_config={"llm_type": "x", "llm_model": "m", "num_descriptions": 4, "style": "balanced"},
+        expansion_config={
+            "llm_type": "x",
+            "llm_model": "m",
+            "num_descriptions": 4,
+            "style": "balanced",
+        },
         store_base_dir=str(tmp_path / "space"),
         engine=engine or HashingEmbeddingEngine(),
         **kw,
@@ -52,7 +58,11 @@ def test_relevant_link_outscores_irrelevant_link(tmp_path):
     async def go():
         await svc.start()
         links = [
-            Link("http://s/a", "insulin resistance in diabetes", "how diabetes treatment targets insulin"),
+            Link(
+                "http://s/a",
+                "insulin resistance in diabetes",
+                "how diabetes treatment targets insulin",
+            ),
             Link("http://s/b", "football league table", "match results and transfers"),
         ]
         parent = SimpleNamespace(content="<p>diabetes and insulin treatment</p>")

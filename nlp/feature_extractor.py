@@ -116,10 +116,7 @@ class FeatureExtractor:
     ) -> float:
         if not cluster_centroids or link_vec is None:
             return 1.0
-        distances = [
-            cosine(link_vec, centroid)
-            for centroid in cluster_centroids.values()
-        ]
+        distances = [cosine(link_vec, centroid) for centroid in cluster_centroids.values()]
         return float(min(distances))
 
     def target_similarity(
@@ -238,11 +235,9 @@ class FeatureExtractor:
             "parent_relevance": parent_relevance,
             "semantic_delta": self.semantic_delta(link_vec, parent_vec),
             "contextual_consistency": self.contextual_consistency(context_vec, parent_vec),
-
             # Link vs Target
             "target_similarity": target_sim,
             "cluster_distance": self.distance_to_nearest_cluster(link_vec, cluster_centroids or {}),
-
             # Global Space
             "region_density": density,
             "anchor_similarity": self.target_similarity(anchor_probe, vector_space),

@@ -15,6 +15,7 @@ Four things are recorded, one golden file each:
 * ``llm_requests``: the prompt of every LLM call, in order,
 * ``wire_messages``: every message the UI bridge broadcast.
 """
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -80,8 +81,15 @@ async def run_pin_crawl(
     with monkeypatch.context() as patch:
         use_hashing_embeddings(patch)
         result = await runner.run_cascade(
-            graph, budget, PIN_RANDOM_SEED, llm, blueprint["extraction"], expansion,
-            blueprint["scoring"]["strategy"], (PIN_PROVIDER, PIN_MODEL), work_dir / "space_store",
+            graph,
+            budget,
+            PIN_RANDOM_SEED,
+            llm,
+            blueprint["extraction"],
+            expansion,
+            blueprint["scoring"]["strategy"],
+            (PIN_PROVIDER, PIN_MODEL),
+            work_dir / "space_store",
             extra_components=[observer] if observed else [],
         )
 

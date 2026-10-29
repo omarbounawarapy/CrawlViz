@@ -19,13 +19,14 @@ export function percentile(values, p) {
 export function cascadeCounts(scores, cfg) {
   let lowCut = cfg.low_threshold;
   let highCut = cfg.high_threshold;
-  const usedPercentiles = Boolean(cfg.percentile_bucketing)
-    && scores.length >= (cfg.percentile_min_links ?? 10);
+  const usedPercentiles = Boolean(cfg.percentile_bucketing) && scores.length >= (cfg.percentile_min_links ?? 10);
   if (usedPercentiles) {
     lowCut = percentile(scores, cfg.low_percentile);
     highCut = percentile(scores, cfg.high_percentile);
   }
-  let low = 0, mid = 0, high = 0;
+  let low = 0,
+    mid = 0,
+    high = 0;
   scores.forEach((s) => {
     if (s < lowCut) low += 1;
     else if (s > highCut) high += 1;
@@ -46,9 +47,21 @@ export function cascadeCounts(scores, cfg) {
     toLlm = cap;
   }
   return {
-    total: scores.length, lowCut, highCut, usedPercentiles,
-    low, mid, high, lowKept, lowDropped: low - lowKept,
-    highRandom, highTop, highTrusted, capped,
-    toLlm, trusted: highTrusted + capped, dropped: low - lowKept,
+    total: scores.length,
+    lowCut,
+    highCut,
+    usedPercentiles,
+    low,
+    mid,
+    high,
+    lowKept,
+    lowDropped: low - lowKept,
+    highRandom,
+    highTop,
+    highTrusted,
+    capped,
+    toLlm,
+    trusted: highTrusted + capped,
+    dropped: low - lowKept,
   };
 }

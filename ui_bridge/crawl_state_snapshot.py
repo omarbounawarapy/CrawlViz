@@ -46,15 +46,16 @@ from typing import Deque, Dict, List, Optional
 # Value objects — V1 (unchanged)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class NodeRecord:
-    node_id:    str
-    url:        str
-    depth:      int
-    priority:   float
-    llm_score:  float
-    parent_id:  Optional[str]
-    state:      str             # CREATED | FETCHED | FILTERED | SCORED | EXPANDED
+    node_id: str
+    url: str
+    depth: int
+    priority: float
+    llm_score: float
+    parent_id: Optional[str]
+    state: str  # CREATED | FETCHED | FILTERED | SCORED | EXPANDED
     created_at: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict:
@@ -63,15 +64,15 @@ class NodeRecord:
 
 @dataclass
 class CrawlMetrics:
-    nodes_created:      int   = 0
-    nodes_fetched:      int   = 0
-    nodes_filtered:     int   = 0
-    nodes_scored:       int   = 0
-    nodes_expanded:     int   = 0
-    total_links_found:  int   = 0
-    total_items_stored: int   = 0
-    start_time:         float = field(default_factory=time.time)
-    elapsed_seconds:    float = 0.0
+    nodes_created: int = 0
+    nodes_fetched: int = 0
+    nodes_filtered: int = 0
+    nodes_scored: int = 0
+    nodes_expanded: int = 0
+    total_links_found: int = 0
+    total_items_stored: int = 0
+    start_time: float = field(default_factory=time.time)
+    elapsed_seconds: float = 0.0
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -87,8 +88,13 @@ class CrawlMetrics:
 # events have arrived for a given one -- one fewer "is this key present yet"
 # check on the client.
 PIPELINE_STAGES: tuple = (
-    "request", "extraction", "filtering", "scoring",
-    "priority", "transformation", "export",
+    "request",
+    "extraction",
+    "filtering",
+    "scoring",
+    "priority",
+    "transformation",
+    "export",
 )
 
 # Bounds on unbounded-growth collections. Generous relative to the default
@@ -103,26 +109,24 @@ _MAX_ERRORS = 1000
 class StageStats:
     """Running counters for one pipeline stage. Updated incrementally as
     PIPELINE_EVENT-worthy events arrive; never recomputed from scratch."""
-    started:          int = 0
-    completed:        int = 0
-    failed:           int = 0
-    queue_size:       int = 0     # last observed enqueue-time queue depth
+
+    started: int = 0
+    completed: int = 0
+    failed: int = 0
+    queue_size: int = 0  # last observed enqueue-time queue depth
     last_duration_ms: Optional[float] = None
     _total_duration_ms: float = field(default=0.0, repr=False)
-    _duration_samples:  int   = field(default=0, repr=False)
+    _duration_samples: int = field(default=0, repr=False)
 
     def to_dict(self) -> dict:
-        avg = (
-            self._total_duration_ms / self._duration_samples
-            if self._duration_samples else None
-        )
+        avg = self._total_duration_ms / self._duration_samples if self._duration_samples else None
         return {
-            "started":          self.started,
-            "completed":        self.completed,
-            "failed":           self.failed,
-            "queue_size":       self.queue_size,
+            "started": self.started,
+            "completed": self.completed,
+            "failed": self.failed,
+            "queue_size": self.queue_size,
             "last_duration_ms": self.last_duration_ms,
-            "avg_duration_ms":  avg,
+            "avg_duration_ms": avg,
         }
 
 
@@ -131,12 +135,13 @@ class CandidateRecord:
     """A link the cascade decided on without an LLM call -- either dropped
     outright (low NLP confidence, cost budget exhausted; never a node) or
     trusted (high NLP confidence; becomes a node later via fast-track)."""
-    parent_id:     str
-    url:           str
-    nlp_score:     float
-    decision:      str                    # "dropped" | "trusted_no_llm"
+
+    parent_id: str
+    url: str
+    nlp_score: float
+    decision: str  # "dropped" | "trusted_no_llm"
     nlp_breakdown: Dict[str, float] = field(default_factory=dict)
-    ts:            float = field(default_factory=time.time)
+    ts: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -147,12 +152,13 @@ class NodeDetailRecord:
     """The cascade's full explanation for one node's score -- enrichment
     data for the Node Inspector, sent in addition to (not instead of) the
     lean NodeRecord used for the graph."""
-    node_id:            str
-    nlp_score:          Optional[float] = None
-    nlp_breakdown:       Dict[str, float] = field(default_factory=dict)
-    llm_score:           Optional[float] = None
-    priority:            Optional[float] = None
-    priority_strategy:   Optional[str] = None
+
+    node_id: str
+    nlp_score: Optional[float] = None
+    nlp_breakdown: Dict[str, float] = field(default_factory=dict)
+    llm_score: Optional[float] = None
+    priority: Optional[float] = None
+    priority_strategy: Optional[str] = None
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -160,11 +166,11 @@ class NodeDetailRecord:
 
 @dataclass
 class ErrorRecord:
-    node_id:       Optional[str]
-    stage:         str
-    error_type:    str
+    node_id: Optional[str]
+    stage: str
+    error_type: str
     error_message: str
-    ts:            float = field(default_factory=time.time)
+    ts: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -173,6 +179,7 @@ class ErrorRecord:
 # ---------------------------------------------------------------------------
 # Snapshot
 # ---------------------------------------------------------------------------
+
 
 class CrawlStateSnapshot:
     """
@@ -185,10 +192,10 @@ class CrawlStateSnapshot:
     def __init__(
         self, max_candidates: int = _MAX_CANDIDATES, max_errors: int = _MAX_ERRORS
     ) -> None:
-        self.status:      str                  = "RUNNING"  # RUNNING | STOPPED
-        self.stop_reason: Optional[str]        = None
-        self.metrics:     CrawlMetrics         = CrawlMetrics()
-        self._nodes:      Dict[str, NodeRecord] = {}
+        self.status: str = "RUNNING"  # RUNNING | STOPPED
+        self.stop_reason: Optional[str] = None
+        self.metrics: CrawlMetrics = CrawlMetrics()
+        self._nodes: Dict[str, NodeRecord] = {}
 
         # V2 additions
         self.pipeline_stats: Dict[str, StageStats] = {
@@ -205,13 +212,13 @@ class CrawlStateSnapshot:
     def add_node(
         self,
         *,
-        node_id:   str,
-        url:       str,
-        depth:     int,
-        priority:  float,
+        node_id: str,
+        url: str,
+        depth: int,
+        priority: float,
         llm_score: float,
         parent_id: Optional[str],
-        state:     str = "CREATED",
+        state: str = "CREATED",
     ) -> NodeRecord:
         record = NodeRecord(
             node_id=node_id,
@@ -244,7 +251,7 @@ class CrawlStateSnapshot:
     # ------------------------------------------------------------------
 
     def mark_stopped(self, reason: str) -> None:
-        self.status      = "STOPPED"
+        self.status = "STOPPED"
         self.stop_reason = reason
         self.metrics.elapsed_seconds = time.time() - self.metrics.start_time
 
@@ -255,9 +262,9 @@ class CrawlStateSnapshot:
     def record_pipeline_event(
         self,
         *,
-        stage:       str,
-        phase:       str,               # "enqueued" | "started" | "completed" | "failed"
-        queue_size:  Optional[int] = None,
+        stage: str,
+        phase: str,  # "enqueued" | "started" | "completed" | "failed"
+        queue_size: Optional[int] = None,
         duration_ms: Optional[float] = None,
     ) -> None:
         stats = self.pipeline_stats.setdefault(stage, StageStats())
@@ -343,14 +350,14 @@ class CrawlStateSnapshot:
         """Called by UIWebSocketGateway when a new client connects."""
         self.metrics.elapsed_seconds = time.time() - self.metrics.start_time
         return {
-            "type":        "SNAPSHOT_FULL",
-            "status":      self.status,
+            "type": "SNAPSHOT_FULL",
+            "status": self.status,
             "stop_reason": self.stop_reason,
-            "metrics":     self.metrics.to_dict(),
-            "nodes":       self.node_list(),
+            "metrics": self.metrics.to_dict(),
+            "nodes": self.node_list(),
             # V2 additions
             "pipeline_stats": {k: v.to_dict() for k, v in self.pipeline_stats.items()},
-            "candidates":     [c.to_dict() for c in self._candidates],
-            "node_details":   {k: v.to_dict() for k, v in self._node_details.items()},
-            "errors":         [e.to_dict() for e in self._errors],
+            "candidates": [c.to_dict() for c in self._candidates],
+            "node_details": {k: v.to_dict() for k, v in self._node_details.items()},
+            "errors": [e.to_dict() for e in self._errors],
         }

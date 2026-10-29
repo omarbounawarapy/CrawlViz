@@ -4,16 +4,37 @@ import { getTheme } from "../../theme";
 const theme = getTheme();
 
 const trigger = {
-  font: "inherit", color: "inherit", background: "none", border: "none", padding: 0, cursor: "help",
-  textDecoration: "underline dotted", textUnderlineOffset: 3, textAlign: "inherit",
+  font: "inherit",
+  color: "inherit",
+  background: "none",
+  border: "none",
+  padding: 0,
+  cursor: "help",
+  textDecoration: "underline dotted",
+  textUnderlineOffset: 3,
+  textAlign: "inherit",
 };
 
 const bubble = {
-  position: "absolute", left: 0, top: "100%", zIndex: 20, marginTop: 4, width: "max-content", maxWidth: 300,
-  padding: "8px 10px", borderRadius: theme.radii.sm, background: theme.colors.background.panel,
-  border: `1px solid ${theme.colors.background.border}`, boxShadow: "0 6px 18px rgba(15,27,45,0.14)",
-  fontSize: 13, lineHeight: 1.45, color: theme.colors.text.primary, whiteSpace: "normal", textAlign: "left",
-  fontWeight: 400, fontFamily: "inherit",
+  position: "absolute",
+  left: 0,
+  top: "100%",
+  zIndex: 20,
+  marginTop: 4,
+  width: "max-content",
+  maxWidth: 300,
+  padding: "8px 10px",
+  borderRadius: theme.radii.sm,
+  background: theme.colors.background.panel,
+  border: `1px solid ${theme.colors.background.border}`,
+  boxShadow: "0 6px 18px rgba(15,27,45,0.14)",
+  fontSize: 13,
+  lineHeight: 1.45,
+  color: theme.colors.text.primary,
+  whiteSpace: "normal",
+  textAlign: "left",
+  fontWeight: 400,
+  fontFamily: "inherit",
 };
 
 /**
@@ -27,8 +48,12 @@ export function Hint({ text: explanation, children }) {
 
   useEffect(() => {
     if (!open) return undefined;
-    const onPointer = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
-    const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+    const onPointer = (e) => {
+      if (!ref.current?.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
     return () => {
@@ -38,19 +63,29 @@ export function Hint({ text: explanation, children }) {
   }, [open]);
 
   return (
-    <span ref={ref} style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
-          onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+    <span
+      ref={ref}
+      style={{ position: "relative", display: "inline-block", maxWidth: "100%" }}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       {/* The explanation is always in the DOM (hidden while closed), so the button is described
           by it on every focus, open or not; a tooltip trigger carries no expanded state. */}
       <button
-        type="button" aria-describedby={id}
-        onClick={() => setOpen((v) => !v)} onFocus={() => setOpen(true)}
-        onBlur={(e) => { if (!ref.current?.contains(e.relatedTarget)) setOpen(false); }}
+        type="button"
+        aria-describedby={id}
+        onClick={() => setOpen((v) => !v)}
+        onFocus={() => setOpen(true)}
+        onBlur={(e) => {
+          if (!ref.current?.contains(e.relatedTarget)) setOpen(false);
+        }}
         style={trigger}
       >
         {children}
       </button>
-      <span role="tooltip" id={id} hidden={!open} style={bubble}>{explanation}</span>
+      <span role="tooltip" id={id} hidden={!open} style={bubble}>
+        {explanation}
+      </span>
     </span>
   );
 }

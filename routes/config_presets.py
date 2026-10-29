@@ -81,8 +81,9 @@ def _preset_description(name: str, values: dict[str, Any]) -> str:
     raise KeyError(name)
 
 
-PRESET_DESCRIPTIONS: dict[str, str] = {name: _preset_description(name, values)
-                                       for name, values in BUILTIN_PRESETS.items()}
+PRESET_DESCRIPTIONS: dict[str, str] = {
+    name: _preset_description(name, values) for name, values in BUILTIN_PRESETS.items()
+}
 
 # The goal guide's three starting points. Each is a patch of settings, and its
 # prose is generated from the same values, as the presets' prose is.
@@ -126,9 +127,14 @@ def _goal_description(name: str, values: dict[str, Any]) -> str:
 
 
 def goals() -> dict[str, dict[str, Any]]:
-    return {name: {"label": g["label"], "values": g["values"],
-                   "description": _goal_description(name, g["values"])}
-            for name, g in GOALS.items()}
+    return {
+        name: {
+            "label": g["label"],
+            "values": g["values"],
+            "description": _goal_description(name, g["values"]),
+        }
+        for name, g in GOALS.items()
+    }
 
 
 _PRESET_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 _.-]{0,39}$")
@@ -157,8 +163,11 @@ def _check_preset_name(name: str) -> None:
 @router.get("/config/presets")
 def list_presets() -> dict[str, Any]:
     return {
-        "builtin": BUILTIN_PRESETS, "labels": PRESET_LABELS,
-        "descriptions": PRESET_DESCRIPTIONS, "user": _read_presets(), "goals": goals(),
+        "builtin": BUILTIN_PRESETS,
+        "labels": PRESET_LABELS,
+        "descriptions": PRESET_DESCRIPTIONS,
+        "user": _read_presets(),
+        "goals": goals(),
     }
 
 

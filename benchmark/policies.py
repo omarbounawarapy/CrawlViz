@@ -6,6 +6,7 @@ depth penalty and weights in priority/strategy.py.
 
 Equal scores keep first-in-first-out order, so a constant score is BFS.
 """
+
 import random
 
 from .graph import BASE_URL, TOPIC_TERMS, FrozenGraph

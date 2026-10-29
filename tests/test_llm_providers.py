@@ -8,6 +8,7 @@ network calls. The end-to-end tests at the bottom fake only NetworkClient
 and KeyManager, to prove each new provider is actually reachable through
 LlmHandler.send(), not just implemented as an unused class.
 """
+
 import aiohttp
 import pytest
 from models import ExpansionContext, ScoringContext
@@ -49,6 +50,7 @@ def make_key_manager(monkeypatch, keys: dict) -> KeyManager:
 # Provider selection
 # =====================================================================
 
+
 class TestProviderSelection:
     def test_all_six_providers_registered(self):
         assert LlmHandler.translators == {
@@ -82,6 +84,7 @@ class TestProviderSelection:
 # OpenAI
 # =====================================================================
 
+
 class TestOpenAITranslator:
     def test_translate_request_shape(self):
         ctx = ScoringContext("openai", "gpt-4o-mini", "score these links")
@@ -93,15 +96,11 @@ class TestOpenAITranslator:
         assert params["url"] == "https://api.openai.com/v1/chat/completions"
         assert params["headers"]["Authorization"] == "Bearer sk-test-openai-key"
         assert params["data"]["model"] == "gpt-4o-mini"
-        assert params["data"]["messages"] == [
-            {"role": "user", "content": "score these links"}
-        ]
+        assert params["data"]["messages"] == [{"role": "user", "content": "score these links"}]
 
     def test_translate_response_plain_json(self):
         response = {
-            "choices": [
-                {"message": {"content": '{"results": {"https://a.com": {"score": 90}}}'}}
-            ]
+            "choices": [{"message": {"content": '{"results": {"https://a.com": {"score": 90}}}'}}]
         }
         assert OpenAITranslator.translate_response(response) == {
             "results": {"https://a.com": {"score": 90}}
@@ -111,20 +110,22 @@ class TestOpenAITranslator:
         response = {
             "choices": [{"message": {"content": '```json\n{"descriptions": ["a", "b"]}\n```'}}]
         }
-        assert OpenAITranslator.translate_response(response) == {
-            "descriptions": ["a", "b"]
-        }
+        assert OpenAITranslator.translate_response(response) == {"descriptions": ["a", "b"]}
 
     def test_translate_response_malformed_yields_empty_dict(self):
         assert OpenAITranslator.translate_response({"unexpected": "shape"}) == {}
-        assert OpenAITranslator.translate_response(
-            {"choices": [{"message": {"content": "not json at all"}}]}
-        ) == {}
+        assert (
+            OpenAITranslator.translate_response(
+                {"choices": [{"message": {"content": "not json at all"}}]}
+            )
+            == {}
+        )
 
 
 # =====================================================================
 # Anthropic
 # =====================================================================
+
 
 class TestAnthropicTranslator:
     def test_translate_request_shape(self):
@@ -143,15 +144,11 @@ class TestAnthropicTranslator:
         # max_tokens is required by Anthropic's API; CrawlViz's contexts
         # don't carry one, so the translator must supply a default.
         assert params["data"]["max_tokens"] == AnthropicTranslator.DEFAULT_MAX_TOKENS
-        assert params["data"]["messages"] == [
-            {"role": "user", "content": "score these links"}
-        ]
+        assert params["data"]["messages"] == [{"role": "user", "content": "score these links"}]
 
     def test_translate_response_single_text_block(self):
         response = {
-            "content": [
-                {"type": "text", "text": '{"results": {"https://a.com": {"score": 42}}}'}
-            ]
+            "content": [{"type": "text", "text": '{"results": {"https://a.com": {"score": 42}}}'}]
         }
         assert AnthropicTranslator.translate_response(response) == {
             "results": {"https://a.com": {"score": 42}}
@@ -164,9 +161,7 @@ class TestAnthropicTranslator:
                 {"type": "text", "text": '["a", "b"]}'},
             ]
         }
-        assert AnthropicTranslator.translate_response(response) == {
-            "descriptions": ["a", "b"]
-        }
+        assert AnthropicTranslator.translate_response(response) == {"descriptions": ["a", "b"]}
 
     def test_translate_response_strips_markdown_fences(self):
         response = {"content": [{"type": "text", "text": '```json\n{"score": 1}\n```'}]}
@@ -174,17 +169,24 @@ class TestAnthropicTranslator:
 
     def test_translate_response_malformed_yields_empty_dict(self):
         assert AnthropicTranslator.translate_response({"content": []}) == {}
-        assert AnthropicTranslator.translate_response(
-            {"content": [{"type": "text", "text": "not json"}]}
-        ) == {}
-        assert AnthropicTranslator.translate_response(
-            {"type": "error", "error": {"message": "overloaded"}}
-        ) == {}
+        assert (
+            AnthropicTranslator.translate_response(
+                {"content": [{"type": "text", "text": "not json"}]}
+            )
+            == {}
+        )
+        assert (
+            AnthropicTranslator.translate_response(
+                {"type": "error", "error": {"message": "overloaded"}}
+            )
+            == {}
+        )
 
 
 # =====================================================================
 # Gemini
 # =====================================================================
+
 
 class TestGeminiTranslator:
     def test_translate_request_shape(self):
@@ -202,9 +204,7 @@ class TestGeminiTranslator:
         assert "model" not in params["data"]
         assert params["headers"]["x-goog-api-key"] == "gm-test-key"
         assert "Authorization" not in params["headers"]
-        assert params["data"]["contents"] == [
-            {"parts": [{"text": "score these links"}]}
-        ]
+        assert params["data"]["contents"] == [{"parts": [{"text": "score these links"}]}]
 
     def test_translate_response_single_part(self):
         response = {
@@ -236,6 +236,7 @@ class TestGeminiTranslator:
 # NVIDIA (NIM)
 # =====================================================================
 
+
 class TestNvidiaTranslator:
     def test_translate_request_shape(self):
         ctx = ScoringContext("nvidia", "meta/llama-3.1-70b-instruct", "score these links")
@@ -247,31 +248,28 @@ class TestNvidiaTranslator:
         assert params["url"] == "https://integrate.api.nvidia.com/v1/chat/completions"
         assert params["headers"]["Authorization"] == "Bearer nvapi-test-key"
         assert params["data"]["model"] == "meta/llama-3.1-70b-instruct"
-        assert params["data"]["messages"] == [
-            {"role": "user", "content": "score these links"}
-        ]
+        assert params["data"]["messages"] == [{"role": "user", "content": "score these links"}]
 
     def test_translate_response_plain_json(self):
         response = {
-            "choices": [
-                {"message": {"content": '{"results": {"https://a.com": {"score": 33}}}'}}
-            ]
+            "choices": [{"message": {"content": '{"results": {"https://a.com": {"score": 33}}}'}}]
         }
         assert NvidiaTranslator.translate_response(response) == {
             "results": {"https://a.com": {"score": 33}}
         }
 
     def test_translate_response_strips_markdown_fences(self):
-        response = {
-            "choices": [{"message": {"content": '```json\n{"descriptions": ["c"]}\n```'}}]
-        }
+        response = {"choices": [{"message": {"content": '```json\n{"descriptions": ["c"]}\n```'}}]}
         assert NvidiaTranslator.translate_response(response) == {"descriptions": ["c"]}
 
     def test_translate_response_malformed_yields_empty_dict(self):
         assert NvidiaTranslator.translate_response({"unexpected": "shape"}) == {}
-        assert NvidiaTranslator.translate_response(
-            {"choices": [{"message": {"content": "not json at all"}}]}
-        ) == {}
+        assert (
+            NvidiaTranslator.translate_response(
+                {"choices": [{"message": {"content": "not json at all"}}]}
+            )
+            == {}
+        )
 
 
 # =====================================================================
@@ -279,12 +277,13 @@ class TestNvidiaTranslator:
 # that the classes exist.
 # =====================================================================
 
+
 class TestEndToEndThroughLlmHandler:
     async def test_openai_reachable_via_scoring_context(self, monkeypatch):
         key_manager = make_key_manager(monkeypatch, {"openai": ["sk-test"]})
-        fake_client = FakeNetworkClient({
-            "choices": [{"message": {"content": '{"results": {"https://a.com": {"score": 5}}}'}}]
-        })
+        fake_client = FakeNetworkClient(
+            {"choices": [{"message": {"content": '{"results": {"https://a.com": {"score": 5}}}'}}]}
+        )
         handler = LlmHandler(key_manager, client=fake_client)
 
         ctx = ScoringContext("openai", "gpt-4o-mini", "score these links")
@@ -296,9 +295,9 @@ class TestEndToEndThroughLlmHandler:
 
     async def test_anthropic_reachable_via_expansion_context(self, monkeypatch):
         key_manager = make_key_manager(monkeypatch, {"anthropic": ["sk-ant-test"]})
-        fake_client = FakeNetworkClient({
-            "content": [{"type": "text", "text": '{"descriptions": ["expanded topic"]}'}]
-        })
+        fake_client = FakeNetworkClient(
+            {"content": [{"type": "text", "text": '{"descriptions": ["expanded topic"]}'}]}
+        )
         handler = LlmHandler(key_manager, client=fake_client)
 
         ctx = ExpansionContext("anthropic", "claude-3-5-sonnet-latest", "expand this topic")
@@ -309,9 +308,9 @@ class TestEndToEndThroughLlmHandler:
 
     async def test_gemini_reachable_via_scoring_context(self, monkeypatch):
         key_manager = make_key_manager(monkeypatch, {"gemini": ["gm-test"]})
-        fake_client = FakeNetworkClient({
-            "candidates": [{"content": {"parts": [{"text": '{"results": {}}'}]}}]
-        })
+        fake_client = FakeNetworkClient(
+            {"candidates": [{"content": {"parts": [{"text": '{"results": {}}'}]}}]}
+        )
         handler = LlmHandler(key_manager, client=fake_client)
 
         ctx = ScoringContext("gemini", "gemini-1.5-flash", "score these links")
@@ -322,16 +321,18 @@ class TestEndToEndThroughLlmHandler:
 
     async def test_nvidia_reachable_via_scoring_context(self, monkeypatch):
         key_manager = make_key_manager(monkeypatch, {"nvidia": ["nvapi-test"]})
-        fake_client = FakeNetworkClient({
-            "choices": [{"message": {"content": '{"results": {"https://a.com": {"score": 12}}}'}}]
-        })
+        fake_client = FakeNetworkClient(
+            {"choices": [{"message": {"content": '{"results": {"https://a.com": {"score": 12}}}'}}]}
+        )
         handler = LlmHandler(key_manager, client=fake_client)
 
         ctx = ScoringContext("nvidia", "meta/llama-3.1-70b-instruct", "score these links")
         result = await handler.send(ctx)
 
         assert result == {"results": {"https://a.com": {"score": 12}}}
-        assert fake_client.last_params["url"] == "https://integrate.api.nvidia.com/v1/chat/completions"
+        assert (
+            fake_client.last_params["url"] == "https://integrate.api.nvidia.com/v1/chat/completions"
+        )
         assert fake_client.last_params["headers"]["Authorization"] == "Bearer nvapi-test"
 
     async def test_provider_without_keys_gets_none_key_not_a_crash(self, monkeypatch):
@@ -354,6 +355,7 @@ class TestEndToEndThroughLlmHandler:
 # Groq
 # =====================================================================
 
+
 class TestGroqTranslator:
     def test_translate_request_shape(self):
         ctx = ScoringContext("groq", "llama-3.3-70b-versatile", "score these links")
@@ -365,14 +367,10 @@ class TestGroqTranslator:
         assert params["url"] == "https://api.groq.com/openai/v1/chat/completions"
         assert params["headers"]["Authorization"] == "Bearer gsk-test-key"
         assert params["data"]["model"] == "llama-3.3-70b-versatile"
-        assert params["data"]["messages"] == [
-            {"role": "user", "content": "score these links"}
-        ]
+        assert params["data"]["messages"] == [{"role": "user", "content": "score these links"}]
 
     def test_translate_response_strips_markdown_fences(self):
-        response = {
-            "choices": [{"message": {"content": '```json\n{"descriptions": ["c"]}\n```'}}]
-        }
+        response = {"choices": [{"message": {"content": '```json\n{"descriptions": ["c"]}\n```'}}]}
         assert GroqTranslator.translate_response(response) == {"descriptions": ["c"]}
 
     def test_translate_response_malformed_yields_empty_dict(self):
@@ -380,9 +378,7 @@ class TestGroqTranslator:
 
     async def test_groq_reachable_via_scoring_context(self, monkeypatch):
         key_manager = make_key_manager(monkeypatch, {"groq": ["gsk-test"]})
-        fake_client = FakeNetworkClient({
-            "choices": [{"message": {"content": '{"results": {}}'}}]
-        })
+        fake_client = FakeNetworkClient({"choices": [{"message": {"content": '{"results": {}}'}}]})
         handler = LlmHandler(key_manager, client=fake_client)
 
         ctx = ScoringContext("groq", "llama-3.3-70b-versatile", "score these links")
@@ -396,7 +392,12 @@ class TestGroqTranslator:
 class TestTokenUsage:
     def test_each_translator_reads_its_providers_usage_block(self):
         openai_shape = {"usage": {"prompt_tokens": 120, "completion_tokens": 30}}
-        for translator in (OpenAITranslator, GroqTranslator, NvidiaTranslator, OpenRouterTranslator):
+        for translator in (
+            OpenAITranslator,
+            GroqTranslator,
+            NvidiaTranslator,
+            OpenRouterTranslator,
+        ):
             assert translator.translate_usage(openai_shape) == (120, 30)
         assert AnthropicTranslator.translate_usage(
             {"usage": {"input_tokens": 7, "output_tokens": 3}}
@@ -411,17 +412,21 @@ class TestTokenUsage:
 
     async def test_the_handler_leaves_the_usage_on_the_context(self, monkeypatch):
         key_manager = make_key_manager(monkeypatch, {"groq": ["gsk-test"]})
-        client = FakeNetworkClient({
-            "choices": [{"message": {"content": '{"results": {}}'}}],
-            "usage": {"prompt_tokens": 55, "completion_tokens": 11},
-        })
+        client = FakeNetworkClient(
+            {
+                "choices": [{"message": {"content": '{"results": {}}'}}],
+                "usage": {"prompt_tokens": 55, "completion_tokens": 11},
+            }
+        )
         ctx = ScoringContext("groq", "m", "p")
         await LlmHandler(key_manager, client=client).send(ctx)
         assert ctx.get_usage() == (55, 11)
 
+
 # =====================================================================
 # Rejected-key handling
 # =====================================================================
+
 
 class RejectingClient:
     """Returns 401 for any key in `bad`, a canned response otherwise."""

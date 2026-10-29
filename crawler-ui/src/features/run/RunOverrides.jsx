@@ -28,13 +28,20 @@ export default function RunOverrides({ onPatch, disabled }) {
   useEffect(() => {
     if (!open || schema) return;
     Promise.all([fetchConfigSchema(), fetchConfig(), fetchConfigDefaults()])
-      .then(([s, v, d]) => { setSchema(s); setSaved(v); setDraft(v); setDefaults(d); })
+      .then(([s, v, d]) => {
+        setSchema(s);
+        setSaved(v);
+        setDraft(v);
+        setDefaults(d);
+      })
       .catch((e) => setError(e.message));
   }, [open, schema]);
 
   const fields = useMemo(() => (schema ? buildFields(schema) : []), [schema]);
   const patch = useMemo(() => (draft && saved ? buildPatch(fields, draft, saved) : {}), [fields, draft, saved]);
-  useEffect(() => { onPatch(patch); }, [patch, onPatch]);
+  useEffect(() => {
+    onPatch(patch);
+  }, [patch, onPatch]);
   const count = Object.keys(fields.length ? flat(patch) : {}).length;
   // What "Clear overrides" will put back: every leaf the draft holds differently from the saved settings.
   const overridden = useMemo(() => (draft && saved ? presetChanges(draft, saved) : []), [draft, saved]);
@@ -50,24 +57,54 @@ export default function RunOverrides({ onPatch, disabled }) {
           <p style={{ fontSize: 13, color: theme.colors.text.muted, maxWidth: "60ch" }}>
             Changes here apply to this run only. Edit the saved defaults on the Configuration page.
           </p>
-          {error && <p role="alert" style={{ color: theme.colors.accent.red, fontSize: 14 }}>{error}</p>}
+          {error && (
+            <p role="alert" style={{ color: theme.colors.accent.red, fontSize: 14 }}>
+              {error}
+            </p>
+          )}
           {draft && (
             <>
               <div style={{ display: "flex", gap: 10, margin: "8px 0", alignItems: "center", flexWrap: "wrap" }}>
-                <label htmlFor="run-settings-search" style={{ fontSize: 13, fontWeight: 600 }}>Search run settings</label>
-                <TextInput id="run-settings-search" type="search" placeholder="e.g. workers" value={query}
-                           onChange={(e) => setQuery(e.target.value)} style={{ width: "min(220px, 100%)" }} />
-                <label htmlFor="run-settings-section" style={{ fontSize: 13, fontWeight: 600 }}>Section</label>
-                <Select id="run-settings-section" value={section} onChange={(e) => setSection(e.target.value)} style={{ width: "min(200px, 100%)" }}>
+                <label htmlFor="run-settings-search" style={{ fontSize: 13, fontWeight: 600 }}>
+                  Search run settings
+                </label>
+                <TextInput
+                  id="run-settings-search"
+                  type="search"
+                  placeholder="e.g. workers"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  style={{ width: "min(220px, 100%)" }}
+                />
+                <label htmlFor="run-settings-section" style={{ fontSize: 13, fontWeight: 600 }}>
+                  Section
+                </label>
+                <Select
+                  id="run-settings-section"
+                  value={section}
+                  onChange={(e) => setSection(e.target.value)}
+                  style={{ width: "min(200px, 100%)" }}
+                >
                   <option value="">All sections</option>
-                  {sections.map((name) => <option key={sectionSlug(name)} value={name}>{name}</option>)}
+                  {sections.map((name) => (
+                    <option key={sectionSlug(name)} value={name}>
+                      {name}
+                    </option>
+                  ))}
                 </Select>
-                <Chip pressed={advanced} onClick={() => setAdvanced((v) => !v)}>Advanced</Chip>
-                <Button variant="quiet" disabled={overridden.length === 0} onClick={() => setDraft(saved)}>Clear overrides</Button>
+                <Chip pressed={advanced} onClick={() => setAdvanced((v) => !v)}>
+                  Advanced
+                </Chip>
+                <Button variant="quiet" disabled={overridden.length === 0} onClick={() => setDraft(saved)}>
+                  Clear overrides
+                </Button>
               </div>
               {overridden.length > 0 && (
                 <div style={{ fontSize: 13, color: text.secondary, margin: "0 0 8px" }}>
-                  <div>{overridden.length} setting{overridden.length === 1 ? "" : "s"} overridden for this run. Clearing puts these back:</div>
+                  <div>
+                    {overridden.length} setting{overridden.length === 1 ? "" : "s"} overridden for this run. Clearing
+                    puts these back:
+                  </div>
                   <ul style={{ margin: "4px 0 0", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 2 }}>
                     {overridden.map((c) => (
                       <li key={c.path} style={{ wordBreak: "break-word" }}>
@@ -78,9 +115,15 @@ export default function RunOverrides({ onPatch, disabled }) {
                 </div>
               )}
               <SettingsEditor
-                fields={fields} draft={draft} defaults={defaults} saved={saved}
+                fields={fields}
+                draft={draft}
+                defaults={defaults}
+                saved={saved}
                 onChange={(path, v) => setDraft((d) => setIn(d, path, v))}
-                query={query} showAdvanced={advanced} section={section || undefined} sectionOrder={sections}
+                query={query}
+                showAdvanced={advanced}
+                section={section || undefined}
+                sectionOrder={sections}
               />
             </>
           )}

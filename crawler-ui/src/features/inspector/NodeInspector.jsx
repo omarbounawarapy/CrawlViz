@@ -7,21 +7,24 @@ import { Tabs, TabPanel } from "../common/Form";
 const theme = getTheme();
 const S = createComponentStyles(theme);
 
-
-
 // Every named sub-signal the cascade's NLP stage can produce (see
 // nlp/feature_extractor.py FeatureExtractor.extract_all / traceability's
 // NLP_SimilarityScored) -- fixed order so the breakdown reads the same way
 // for every node instead of reshuffling by whatever keys happened to be present.
 const NLP_SIGNAL_ORDER = [
-  "target_similarity", "contextual_consistency", "novelty_injection",
-  "region_density", "cluster_distance", "coverage_gap",
-  "lexical_overlap", "semantic_delta",
+  "target_similarity",
+  "contextual_consistency",
+  "novelty_injection",
+  "region_density",
+  "cluster_distance",
+  "coverage_gap",
+  "lexical_overlap",
+  "semantic_delta",
 ];
 
 function orderedSignals(breakdown) {
   if (!breakdown) return [];
-  const known = NLP_SIGNAL_ORDER.filter(k => k in breakdown).map(k => [k, breakdown[k]]);
+  const known = NLP_SIGNAL_ORDER.filter((k) => k in breakdown).map((k) => [k, breakdown[k]]);
   const rest = Object.entries(breakdown).filter(([k]) => !NLP_SIGNAL_ORDER.includes(k));
   return [...known, ...rest];
 }
@@ -35,7 +38,11 @@ function relativeAge(createdAt) {
 }
 
 const STATE_WORD = {
-  CREATED: "Found", FETCHED: "Fetched", FILTERED: "Filtered", SCORED: "Scored", EXPANDED: "Expanded",
+  CREATED: "Found",
+  FETCHED: "Fetched",
+  FILTERED: "Filtered",
+  SCORED: "Scored",
+  EXPANDED: "Expanded",
 };
 
 function StateBadge({ state }) {
@@ -45,13 +52,30 @@ function StateBadge({ state }) {
   const fill = theme.colors.background.border;
   const swatch = theme.colors.state[state] || "transparent";
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      fontSize: theme.typography.size.xxs, color, fontFamily: theme.typography.fontMono,
-      padding: "2px 7px", borderRadius: theme.radii.sm, background: fill,
-      letterSpacing: theme.typography.letterSpacing.wide,
-    }}>
-      <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: "50%", background: swatch, border: `1px solid ${theme.colors.state.label[state] || theme.colors.text.muted}` }} />
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        fontSize: theme.typography.size.xxs,
+        color,
+        fontFamily: theme.typography.fontMono,
+        padding: "2px 7px",
+        borderRadius: theme.radii.sm,
+        background: fill,
+        letterSpacing: theme.typography.letterSpacing.wide,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 9,
+          height: 9,
+          borderRadius: "50%",
+          background: swatch,
+          border: `1px solid ${theme.colors.state.label[state] || theme.colors.text.muted}`,
+        }}
+      />
       {STATE_WORD[state] ?? state}
     </span>
   );
@@ -62,7 +86,14 @@ function Row({ label, value, mono = true }) {
   return (
     <div style={S.nodeDetailRow}>
       <dt style={S.nodeDetailKey}>{label}</dt>
-      <dd style={{ ...S.nodeDetailVal, margin: 0, maxWidth: "220px", fontFamily: mono ? theme.typography.fontMono : theme.typography.fontDisplay }}>
+      <dd
+        style={{
+          ...S.nodeDetailVal,
+          margin: 0,
+          maxWidth: "220px",
+          fontFamily: mono ? theme.typography.fontMono : theme.typography.fontDisplay,
+        }}
+      >
         {value ?? "—"}
       </dd>
     </div>
@@ -75,24 +106,39 @@ function OverviewTab({ node, children, onSelectNode }) {
   return (
     <div>
       <dl style={{ margin: 0 }}>
-      <div style={{ marginBottom: 14 }}>
-        <dt style={S.breakdownLabel}>URL</dt>
-        <dd style={{ ...S.inspectorUrl, margin: 0 }}>{node.url}</dd>
-      </div>
-      <Row label="State" value={<StateBadge state={node.state} />} />
-      <Row label="Depth" value={node.depth} />
-      <Row label="Queue priority" value={typeof node.priority === "number" ? node.priority.toFixed(3) : "—"} />
-      <Row label="LLM score (0–100)" value={node.llm_score || node.llm_score === 0 ? node.llm_score : "—"} />
-      <Row
-        label="Parent"
-        value={node.parent_id ? (
-          <button type="button" onClick={() => onSelectNode(node.parent_id)} style={linkBtnStyle}
-                  aria-label={`Parent page ${shortId(node.parent_id, 12)}, select it`}>{shortId(node.parent_id, 12)}</button>
-        ) : "None (seed page)"}
-      />
-      <Row label="Discovered" value={relativeAge(node.created_at)} />
-      <Row label="Links found" value={node.links_accepted != null ? `${node.links_accepted} accepted / ${node.links_rejected ?? 0} rejected` : "—"} />
-      <Row label="Items stored" value={node.items_accepted ?? "—"} />
+        <div style={{ marginBottom: 14 }}>
+          <dt style={S.breakdownLabel}>URL</dt>
+          <dd style={{ ...S.inspectorUrl, margin: 0 }}>{node.url}</dd>
+        </div>
+        <Row label="State" value={<StateBadge state={node.state} />} />
+        <Row label="Depth" value={node.depth} />
+        <Row label="Queue priority" value={typeof node.priority === "number" ? node.priority.toFixed(3) : "—"} />
+        <Row label="LLM score (0–100)" value={node.llm_score || node.llm_score === 0 ? node.llm_score : "—"} />
+        <Row
+          label="Parent"
+          value={
+            node.parent_id ? (
+              <button
+                type="button"
+                onClick={() => onSelectNode(node.parent_id)}
+                style={linkBtnStyle}
+                aria-label={`Parent page ${shortId(node.parent_id, 12)}, select it`}
+              >
+                {shortId(node.parent_id, 12)}
+              </button>
+            ) : (
+              "None (seed page)"
+            )
+          }
+        />
+        <Row label="Discovered" value={relativeAge(node.created_at)} />
+        <Row
+          label="Links found"
+          value={
+            node.links_accepted != null ? `${node.links_accepted} accepted / ${node.links_rejected ?? 0} rejected` : "—"
+          }
+        />
+        <Row label="Items stored" value={node.items_accepted ?? "—"} />
       </dl>
 
       <h3 style={{ ...subhead, marginTop: 16 }}>Children ({children.length})</h3>
@@ -101,11 +147,28 @@ function OverviewTab({ node, children, onSelectNode }) {
           {node.state === "EXPANDED" ? "Expanded with no surviving children." : "Not expanded yet."}
         </div>
       ) : (
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 3, maxHeight: 180, overflowY: "auto" }}>
-          {children.map(c => (
+        <ul
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 3,
+            maxHeight: 180,
+            overflowY: "auto",
+          }}
+        >
+          {children.map((c) => (
             <li key={c.node_id}>
-              <button type="button" onClick={() => onSelectNode(c.node_id)} style={{ ...linkBtnStyle, textAlign: "left", display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pathOf(c.url) || hostnameOf(c.url)}</span>
+              <button
+                type="button"
+                onClick={() => onSelectNode(c.node_id)}
+                style={{ ...linkBtnStyle, textAlign: "left", display: "flex", justifyContent: "space-between", gap: 8 }}
+              >
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {pathOf(c.url) || hostnameOf(c.url)}
+                </span>
                 <StateBadge state={c.state} />
               </button>
             </li>
@@ -117,9 +180,13 @@ function OverviewTab({ node, children, onSelectNode }) {
 }
 
 const linkBtnStyle = {
-  background: "transparent", border: "none", padding: "3px 0",
-  color: theme.colors.accent.blue, cursor: "pointer",
-  fontFamily: theme.typography.fontMono, fontSize: theme.typography.size.xxs,
+  background: "transparent",
+  border: "none",
+  padding: "3px 0",
+  color: theme.colors.accent.blue,
+  cursor: "pointer",
+  fontFamily: theme.typography.fontMono,
+  fontSize: theme.typography.size.xxs,
   width: "100%",
 };
 
@@ -145,32 +212,47 @@ function ScoringTab({ detail }) {
         <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, marginBottom: 12 }}>
           No sub-signal breakdown available.
         </div>
-      ) : signals.map(([key, value]) => {
-        const pct = Math.min(100, (Math.abs(value) / maxAbs) * 100);
-        const positive = value >= 0;
-        return (
-          <div key={key} style={S.breakdownRow}>
-            <div style={S.breakdownLabel} title={key}>{key.replace(/_/g, " ")}</div>
-            <div style={S.breakdownBarTrack} aria-hidden="true">
-              <div style={S.breakdownBarFill(`${pct}%`, positive ? theme.colors.text.primary : `repeating-linear-gradient(45deg, ${theme.colors.text.secondary} 0 2px, transparent 2px 5px)`)} />
+      ) : (
+        signals.map(([key, value]) => {
+          const pct = Math.min(100, (Math.abs(value) / maxAbs) * 100);
+          const positive = value >= 0;
+          return (
+            <div key={key} style={S.breakdownRow}>
+              <div style={S.breakdownLabel} title={key}>
+                {key.replace(/_/g, " ")}
+              </div>
+              <div style={S.breakdownBarTrack} aria-hidden="true">
+                <div
+                  style={S.breakdownBarFill(
+                    `${pct}%`,
+                    positive
+                      ? theme.colors.text.primary
+                      : `repeating-linear-gradient(45deg, ${theme.colors.text.secondary} 0 2px, transparent 2px 5px)`,
+                  )}
+                />
+              </div>
+              <div style={S.breakdownValue}>{value.toFixed(2)}</div>
             </div>
-            <div style={S.breakdownValue}>{value.toFixed(2)}</div>
-          </div>
-        );
-      })}
+          );
+        })
+      )}
 
       <div style={{ height: 1, background: theme.colors.background.border, margin: "14px 0" }} />
 
       <dl style={{ margin: 0 }}>
-      <Row label="NLP score" value={typeof detail.nlp_score === "number" ? detail.nlp_score.toFixed(3) : "—"} />
-      <Row
-        label="LLM score"
-        value={detail.llm_score != null
-          ? detail.llm_score
-          : <span style={{ color: theme.colors.state.label.TRUSTED }}>skipped, trusted on NLP alone</span>}
-      />
-      <Row label="Final priority" value={typeof detail.priority === "number" ? detail.priority.toFixed(3) : "—"} />
-      <Row label="Strategy" value={detail.priority_strategy} />
+        <Row label="NLP score" value={typeof detail.nlp_score === "number" ? detail.nlp_score.toFixed(3) : "—"} />
+        <Row
+          label="LLM score"
+          value={
+            detail.llm_score != null ? (
+              detail.llm_score
+            ) : (
+              <span style={{ color: theme.colors.state.label.TRUSTED }}>skipped, trusted on NLP alone</span>
+            )
+          }
+        />
+        <Row label="Final priority" value={typeof detail.priority === "number" ? detail.priority.toFixed(3) : "—"} />
+        <Row label="Strategy" value={detail.priority_strategy} />
       </dl>
     </div>
   );
@@ -184,10 +266,15 @@ function ActivityTab({ history, errors }) {
           <h3 style={{ ...subhead, color: theme.colors.accent.red }}>Errors ({errors.length})</h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
             {errors.map((e, i) => (
-              <div key={i} style={{
-                background: "rgba(122,31,92,0.06)", border: `1px solid rgba(122,31,92,0.30)`,
-                borderRadius: theme.radii.md, padding: 8,
-              }}>
+              <div
+                key={i}
+                style={{
+                  background: "rgba(122,31,92,0.06)",
+                  border: `1px solid rgba(122,31,92,0.30)`,
+                  borderRadius: theme.radii.md,
+                  padding: 8,
+                }}
+              >
                 <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.accent.red }}>
                   {e.stage}: {e.error_type}
                 </div>
@@ -204,16 +291,23 @@ function ActivityTab({ history, errors }) {
       {history.length === 0 ? (
         <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted }}>
           No pipeline-stage events recorded for this node in the current event log
-          {/* i.e. it may have existed before this session's log started, e.g. after a reconnect */}
-          .
+          {/* i.e. it may have existed before this session's log started, e.g. after a reconnect */}.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column" }}>
           {history.map((h, i) => (
             <div key={i} style={{ ...S.nodeDetailRow, borderBottom: `1px solid ${theme.colors.rowBorder}` }}>
               <div style={{ ...S.nodeDetailKey, minWidth: 90 }}>{h.stage}</div>
-              <div style={{ ...S.nodeDetailVal, maxWidth: "none", flex: 1, color: h.phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary }}>
-                {h.phase}{h.detail ? `: ${h.detail}` : ""}
+              <div
+                style={{
+                  ...S.nodeDetailVal,
+                  maxWidth: "none",
+                  flex: 1,
+                  color: h.phase === "failed" ? theme.colors.accent.red : theme.colors.text.secondary,
+                }}
+              >
+                {h.phase}
+                {h.detail ? `: ${h.detail}` : ""}
               </div>
               <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, flexShrink: 0 }}>
                 {formatDuration(h.duration_ms)}
@@ -257,47 +351,92 @@ export default function NodeInspector({ node, detail, allNodes, errors, eventLog
   const history = useMemo(() => {
     if (!node) return [];
     return eventLog
-      .filter(e => e.type === "PIPELINE_EVENT" && e.node_id === node.node_id)
-      .map(e => ({ stage: e.stage, phase: e.phase, duration_ms: e.duration_ms, detail: e.detail }));
+      .filter((e) => e.type === "PIPELINE_EVENT" && e.node_id === node.node_id)
+      .map((e) => ({ stage: e.stage, phase: e.phase, duration_ms: e.duration_ms, detail: e.detail }));
   }, [node, eventLog]);
 
   const nodeErrors = useMemo(() => {
     if (!node) return [];
-    return errors.filter(e => e.node_id === node.node_id);
+    return errors.filter((e) => e.node_id === node.node_id);
   }, [node, errors]);
 
   if (!node) return null;
 
   return (
-    <aside id="inspector" tabIndex={-1} aria-labelledby="inspector-title" className="inspector-dock focus-box" style={S.inspectorDock}>
+    <aside
+      id="inspector"
+      tabIndex={-1}
+      aria-labelledby="inspector-title"
+      className="inspector-dock focus-box"
+      style={S.inspectorDock}
+    >
       <div style={S.inspectorHeader}>
         <div style={{ minWidth: 0 }}>
-          <h2 id="inspector-title" style={{ fontSize: theme.typography.size.xs, fontFamily: theme.typography.fontDisplay, fontWeight: 600, color: theme.colors.text.primary, margin: 0 }}>
-            <span className="sr-only">Annotation:</span>{" "}{pathOf(node.url) || hostnameOf(node.url)}
+          <h2
+            id="inspector-title"
+            style={{
+              fontSize: theme.typography.size.xs,
+              fontFamily: theme.typography.fontDisplay,
+              fontWeight: 600,
+              color: theme.colors.text.primary,
+              margin: 0,
+            }}
+          >
+            <span className="sr-only">Annotation:</span> {pathOf(node.url) || hostnameOf(node.url)}
           </h2>
           {hostnameOf(node.url) && hostnameOf(node.url) !== (pathOf(node.url) || hostnameOf(node.url)) && (
-            <div style={{ fontSize: theme.typography.size.xxs, color: theme.colors.text.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "260px" }}>
+            <div
+              style={{
+                fontSize: theme.typography.size.xxs,
+                color: theme.colors.text.muted,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "260px",
+              }}
+            >
               {hostnameOf(node.url)}
             </div>
           )}
         </div>
-        <button type="button" onClick={onClose} style={{ ...S.nodeDetailCloseBtn, minWidth: 24, minHeight: 24 }} aria-label="Close annotation panel">
-          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{ ...S.nodeDetailCloseBtn, minWidth: 24, minHeight: 24 }}
+          aria-label="Close annotation panel"
+        >
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+            <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
         </button>
       </div>
 
-      <p style={{
-        margin: 0, padding: "12px 16px", fontFamily: theme.typography.fontDisplay, fontSize: 15, lineHeight: 1.45,
-        color: theme.colors.text.primary, borderBottom: `1px solid ${theme.colors.background.border}`,
-      }}>
+      <p
+        style={{
+          margin: 0,
+          padding: "12px 16px",
+          fontFamily: theme.typography.fontDisplay,
+          fontSize: 15,
+          lineHeight: 1.45,
+          color: theme.colors.text.primary,
+          borderBottom: `1px solid ${theme.colors.background.border}`,
+        }}
+      >
         {whySentence(node, detail)}
       </p>
 
       <div style={{ ...S.tabRow, padding: `0 ${theme.spacing.lg}` }}>
-        <Tabs id="inspector" label="Annotation views" value={tab} onChange={setTab} options={[
-          ["overview", "Overview"], ["scoring", "Scoring"],
-          ["activity", `Activity${nodeErrors.length > 0 ? ` (${nodeErrors.length})` : ""}`],
-        ]} />
+        <Tabs
+          id="inspector"
+          label="Annotation views"
+          value={tab}
+          onChange={setTab}
+          options={[
+            ["overview", "Overview"],
+            ["scoring", "Scoring"],
+            ["activity", `Activity${nodeErrors.length > 0 ? ` (${nodeErrors.length})` : ""}`],
+          ]}
+        />
       </div>
 
       <div style={S.panelScroll}>

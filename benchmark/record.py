@@ -8,6 +8,7 @@ labels are added in a separate step.
     .venv/bin/python -m benchmark.record --seed 'Universit%C3%A9_de_Tunis_El_Manar' \\
         --pages 400 --out benchmark/data/isi.json
 """
+
 import argparse
 import asyncio
 from collections import deque
@@ -28,18 +29,28 @@ def wiki_name(href: str) -> str | None:
     """Article name from an href, or None for anything that is not an article."""
     href = urldefrag(href)[0]
     if href.startswith(HOST):
-        href = href[len(HOST):]
+        href = href[len(HOST) :]
     if not href.startswith("/wiki/"):
         return None
-    name = href[len("/wiki/"):]
+    name = href[len("/wiki/") :]
     if not name or "/" in name or "?" in name or ":" in unquote(name):
         return None
     return name
 
 
 BOILERPLATE = (
-    "mw-editsection", "hatnote", "homonymie", "bandeau-article", "bandeau-container",
-    "bandeau-portail", "bandeau-homonymie", "ambox", "navbox", "navbar", "noprint", "metadata",
+    "mw-editsection",
+    "hatnote",
+    "homonymie",
+    "bandeau-article",
+    "bandeau-container",
+    "bandeau-portail",
+    "bandeau-homonymie",
+    "ambox",
+    "navbox",
+    "navbar",
+    "noprint",
+    "metadata",
 )
 
 
@@ -67,7 +78,9 @@ def parse(name: str, raw: str) -> dict:
     for cls in BOILERPLATE:
         _drop(scope.xpath(f".//*[contains(concat(' ', normalize-space(@class), ' '), ' {cls} ')]"))
     _drop(scope.xpath(".//sup[contains(@class, 'reference')]"))
-    text = " ".join(" ".join(p.text_content().split()) for p in scope.xpath(".//p[normalize-space()]"))
+    text = " ".join(
+        " ".join(p.text_content().split()) for p in scope.xpath(".//p[normalize-space()]")
+    )
     return {"title": title, "canonical": canonical, "text": text[:TEXT_CHARS], "links": links}
 
 
@@ -85,9 +98,9 @@ async def fetch(session, name: str, cache: Path, delay: float) -> str | None:
                     return raw
                 if resp.status == 404:
                     return None
-                await asyncio.sleep(2 ** attempt)
+                await asyncio.sleep(2**attempt)
         except aiohttp.ClientError:
-            await asyncio.sleep(2 ** attempt)
+            await asyncio.sleep(2**attempt)
     return None
 
 
@@ -98,7 +111,9 @@ async def record(seed: str, pages: int, cache: Path, delay: float, workers: int)
     queue = deque([seed])
     async with aiohttp.ClientSession(headers={"User-Agent": USER_AGENT}) as session:
         while queue and len(recorded) < pages:
-            batch = [queue.popleft() for _ in range(min(workers, len(queue), pages - len(recorded)))]
+            batch = [
+                queue.popleft() for _ in range(min(workers, len(queue), pages - len(recorded)))
+            ]
             raws = await asyncio.gather(*(fetch(session, n, cache, delay) for n in batch))
             for name, raw in zip(batch, raws):
                 if raw is None:

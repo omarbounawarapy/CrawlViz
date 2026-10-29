@@ -20,6 +20,7 @@ from config import TEMPLATES_DIR, default_runtime_paths
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
 from config.settings_store import load_runtime_config
 from core import Crawler
+from offline import build_offline_session, is_offline
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,18 @@ class RunRequest(BaseModel):
 async def _run_crawler(template_name: str, config=None, seed: int | None = None) -> None:
     global _current_crawler
     try:
-        if config is None:
+        if is_offline():
+            session = build_offline_session(
+                config or load_runtime_config(default_runtime_paths().settings_file)
+            )
+            spider = Crawler(
+                template_name,
+                config=session.config,
+                seed=seed,
+                llm=session.llm,
+                fetcher=session.fetcher,
+            )
+        elif config is None:
             spider = Crawler(template_name)
         else:
             spider = Crawler(template_name, config=config, seed=seed)
@@ -96,5 +108,13 @@ def crawl_status():
     and the items waiting in each pipeline queue, so the pages can show both live."""
     running = bool(_current_task and not _current_task.done())
     budget = getattr(_current_crawler, "call_budget", None) if running else None
-    queues = _current_crawler.queue_depths() if running and hasattr(_current_crawler, "queue_depths") else None
-    return {"running": running, "llm_calls": budget.snapshot() if budget is not None else None, "queues": queues}
+    queues = (
+        _current_crawler.queue_depths()
+        if running and hasattr(_current_crawler, "queue_depths")
+        else None
+    )
+    return {
+        "running": running,
+        "llm_calls": budget.snapshot() if budget is not None else None,
+        "queues": queues,
+    }

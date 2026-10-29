@@ -141,9 +141,21 @@ def _ruff_glob_override(globs: dict[str, frozenset[str]]) -> str:
 def collect_ruff_violations(globs: dict[str, frozenset[str]]) -> set[tuple[str, str]]:
     """Every (path, code) ruff reports when only the glob ignores, not the baseline, apply."""
     result = subprocess.run(
-        ["uv", "run", "ruff", "check", ".", "--output-format", "json",
-         "--config", _ruff_glob_override(globs)],
-        cwd=ROOT, capture_output=True, text=True, check=False,
+        [
+            "uv",
+            "run",
+            "ruff",
+            "check",
+            ".",
+            "--output-format",
+            "json",
+            "--config",
+            _ruff_glob_override(globs),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if result.returncode not in SUCCESS_OR_FINDINGS:
         raise SystemExit(f"ruff failed: {result.stderr.strip()}")
@@ -159,12 +171,23 @@ def collect_mypy_modules_without_baseline() -> set[str]:
     # Config and cache live outside the repo; mypy resolves `files` and `mypy_path` against cwd.
     with tempfile.TemporaryDirectory() as scratch:
         config = Path(scratch) / "mypy-without-baseline.toml"
-        config.write_text(text.replace("ignore_errors = true", "ignore_errors = false"),
-                          encoding="utf-8")
+        config.write_text(
+            text.replace("ignore_errors = true", "ignore_errors = false"), encoding="utf-8"
+        )
         result = subprocess.run(
-            ["uv", "run", "mypy", "--config-file", str(config),
-             "--cache-dir", str(Path(scratch) / "cache")],
-            cwd=ROOT, capture_output=True, text=True, check=False,
+            [
+                "uv",
+                "run",
+                "mypy",
+                "--config-file",
+                str(config),
+                "--cache-dir",
+                str(Path(scratch) / "cache"),
+            ],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
         )
     if result.returncode not in SUCCESS_OR_FINDINGS:
         raise SystemExit(f"mypy failed: {result.stdout}{result.stderr}")

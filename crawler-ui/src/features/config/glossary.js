@@ -19,8 +19,14 @@ export function loadGlossary() {
   if (value) return Promise.resolve(value);
   if (!pending) {
     pending = fetchConfigSchema()
-      .then((schema) => { primeGlossary(schema.ui_glossary ?? {}); return value; })
-      .catch(() => { pending = null; return {}; });
+      .then((schema) => {
+        primeGlossary(schema.ui_glossary ?? {});
+        return value;
+      })
+      .catch(() => {
+        pending = null;
+        return {};
+      });
   }
   return pending;
 }
@@ -28,10 +34,15 @@ export function loadGlossary() {
 /** The glossary as { term: definition }; {} until it has loaded. */
 export function useGlossary() {
   const glossary = useSyncExternalStore(
-    (cb) => { listeners.add(cb); return () => listeners.delete(cb); },
+    (cb) => {
+      listeners.add(cb);
+      return () => listeners.delete(cb);
+    },
     () => value,
   );
-  useEffect(() => { if (!value) loadGlossary(); }, []);
+  useEffect(() => {
+    if (!value) loadGlossary();
+  }, []);
   return glossary ?? {};
 }
 

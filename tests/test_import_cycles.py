@@ -42,7 +42,7 @@ def _find_cycle(graph: dict[str, set[str]]) -> list[str] | None:
 
     def visit(node: str, path: list[str]) -> list[str] | None:
         if node in path:
-            return [*path[path.index(node):], node]
+            return [*path[path.index(node) :], node]
         if node in finished:
             return None
         for neighbour in sorted(graph.get(node, ())):

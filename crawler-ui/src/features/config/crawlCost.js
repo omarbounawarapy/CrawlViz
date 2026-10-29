@@ -19,12 +19,23 @@ export function useCrawlCost(pages) {
   useEffect(() => {
     let cancelled = false;
     fetchConfig()
-      .then((cfg) => !cancelled && setCost(llmCost({
-        cascade: cfg.scoring_cascade, nlp: cfg.nlp, llm: cfg.llm, prompts: cfg.prompts,
-        scores: sample.cascadeScores,
-      })))
+      .then(
+        (cfg) =>
+          !cancelled &&
+          setCost(
+            llmCost({
+              cascade: cfg.scoring_cascade,
+              nlp: cfg.nlp,
+              llm: cfg.llm,
+              prompts: cfg.prompts,
+              scores: sample.cascadeScores,
+            }),
+          ),
+      )
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
   if (!cost || !Number.isFinite(Number(pages))) return null;
   return crawlEstimate(cost, Number(pages));

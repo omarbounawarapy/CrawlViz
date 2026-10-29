@@ -36,12 +36,18 @@ domain has moved, its files stay where the table says.
 | `make check-baselines` | fails if the mypy legacy list or the ruff per-file baseline gained an entry or keeps a stale one |
 | `make format` | ruff format (the repo is not formatted yet; do not run it on unrelated files) |
 | `make check` | lint, type check, baseline guard, all tests, hook tests and the UI build: what CI runs |
+| `make audit` | pip-audit and npm audit on the locked dependencies |
+| `make hooks` | installs the lefthook git hooks (refuses when `core.hooksPath` is set globally) |
+| `make model` | downloads the embedding model once (network); real crawls load it offline |
+| `make clean-runs YES=1` | deletes recorded runs, logs, debug dumps and saved spaces |
 | `make hook-test` | the agent guard hook tests |
 | `uv run pytest -m pins` | the behaviour pins (`tests/pins/README.md`); goldens change only with `--update-pins` |
 | `python3 .claude/hooks/commit_msg_check.py --range main..HEAD` | commit titles in a range |
 
-Planned in phase A and not available yet: `CRAWLVIZ_OFFLINE=1`,
-`make e2e`, `make model`. Do not document or rely on them until they exist.
+`CRAWLVIZ_OFFLINE=1 make dev` runs crawls with no keys and no network (see the offline
+doubles below; start the `offline_demo.json` blueprint).
+
+Planned in phase A and not available yet: `make e2e` (browser tests). Do not document or rely on them until they exist.
 
 ## How we work
 
@@ -245,6 +251,7 @@ the shared empty state`.
   because they write one file in order.
 - **Offline doubles.** These exist for tests and agents, so no keys or network are needed:
   - `HashingEmbeddingEngine` (`nlp/embedding_engine.py`)
+  - `ScriptedLlm` (`offline/scripted_llm.py`), used by `CRAWLVIZ_OFFLINE=1` and the pins
   - `FixedLlm` (`tests/test_runtime_invariants.py`)
   - `CachedLlm` (`benchmark/llm_cache.py`)
   - `FrozenGraph` (`benchmark/graph.py`)

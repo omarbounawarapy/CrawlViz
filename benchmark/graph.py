@@ -11,6 +11,7 @@ Page names must be URL path segments. The graph is served as HTML by
 ``FrozenGraph.fetcher()``, so extraction runs through the real
 ``LinkExtractor`` and nothing about the runtime changes.
 """
+
 import html
 import json
 import random
@@ -137,12 +138,16 @@ class FrozenGraph:
         pages and at least one direct target."""
         ungraded = sum(1 for p in self.pages.values() if p.get("label") is None)
         if ungraded:
-            return [f"{ungraded} of {len(self.pages)} pages have no 0/1/2 label "
-                    "(label it with benchmark.label_graph, then --merge)"]
+            return [
+                f"{ungraded} of {len(self.pages)} pages have no 0/1/2 label "
+                "(label it with benchmark.label_graph, then --merge)"
+            ]
         problems = []
         relevant = len(self.relevant())
         if relevant < min_relevant:
-            problems.append(f"only {relevant} relevant pages (label >= 1); at least {min_relevant} needed")
+            problems.append(
+                f"only {relevant} relevant pages (label >= 1); at least {min_relevant} needed"
+            )
         if not any(self.label(n) == 2 for n in self.pages):
             problems.append("no label-2 pages, so harvest of direct targets is undefined")
         return problems
@@ -196,7 +201,9 @@ class GraphFetcher:
     def __init__(self, graph: FrozenGraph, absent: str | None = None):
         self.absent = ABSENT_PAGE_HITS if absent is None else absent
         if self.absent not in ABSENT_PAGE_MODES:
-            raise ValueError(f"unknown absent-page mode {self.absent!r}; expected one of {ABSENT_PAGE_MODES}")
+            raise ValueError(
+                f"unknown absent-page mode {self.absent!r}; expected one of {ABSENT_PAGE_MODES}"
+            )
         self.graph = graph
         self.fetched: list[str] = []
         self.absent_hits = 0  # requests for pages the graph does not contain
@@ -213,7 +220,8 @@ class GraphFetcher:
             return f"<html><body><h1>{html.escape(name)}</h1></body></html>"
         self.fetched.append(name)
         items = "".join(
-            f'<li><a href="/{link["to"]}">{html.escape(link["anchor"])}</a></li>' for link in page["links"]
+            f'<li><a href="/{link["to"]}">{html.escape(link["anchor"])}</a></li>'
+            for link in page["links"]
         )
         if "text" not in page:  # synthetic page: anchors only
             return f"<html><body><h1>{name}</h1><ul>{items}</ul></body></html>"

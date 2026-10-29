@@ -17,12 +17,19 @@ export default function ProviderTable({ endpoints }) {
     fetchProviders()
       .then((p) => !cancelled && setProviders(p))
       .catch(() => !cancelled && setFailed(true));
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const names = Object.keys(endpoints ?? {});
   if (names.length === 0) return null;
-  const cell = { padding: "6px 10px", textAlign: "left", verticalAlign: "top", borderBottom: `1px solid ${background.border}` };
+  const cell = {
+    padding: "6px 10px",
+    textAlign: "left",
+    verticalAlign: "top",
+    borderBottom: `1px solid ${background.border}`,
+  };
   const head = { ...cell, fontSize: 12, color: text.muted, fontWeight: 600 };
 
   return (
@@ -33,10 +40,18 @@ export default function ProviderTable({ endpoints }) {
         </caption>
         <thead>
           <tr>
-            <th scope="col" style={head}>Provider</th>
-            <th scope="col" style={head}>Request URL</th>
-            <th scope="col" style={head}>Models used by blueprints</th>
-            <th scope="col" style={head}>API keys</th>
+            <th scope="col" style={head}>
+              Provider
+            </th>
+            <th scope="col" style={head}>
+              Request URL
+            </th>
+            <th scope="col" style={head}>
+              Models used by blueprints
+            </th>
+            <th scope="col" style={head}>
+              API keys
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -45,10 +60,18 @@ export default function ProviderTable({ endpoints }) {
             const keys = info?.keys ?? 0;
             return (
               <tr key={name}>
-                <th scope="row" style={{ ...cell, fontWeight: 600 }}>{name}</th>
+                <th scope="row" style={{ ...cell, fontWeight: 600 }}>
+                  {name}
+                </th>
                 <td style={{ ...cell, wordBreak: "break-all" }}>{endpoints[name]}</td>
                 <td style={cell}>
-                  {info ? (info.models.length ? info.models.join(", ") : "None yet") : failed ? "Unavailable" : "Loading"}
+                  {info
+                    ? info.models.length
+                      ? info.models.join(", ")
+                      : "None yet"
+                    : failed
+                      ? "Unavailable"
+                      : "Loading"}
                 </td>
                 <td style={cell}>
                   {info ? (keys === 0 ? "No key stored" : `${keys} stored`) : failed ? "Unavailable" : "Loading"}
