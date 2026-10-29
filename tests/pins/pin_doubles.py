@@ -1,22 +1,15 @@
 """Doubles for the outside world of a pin crawl: the LLM and the WebSocket gateway.
 
 The web is a ``FrozenGraph`` and the embedding model is ``HashingEmbeddingEngine``;
-both come from the repository. These two are written for the pins.
+both come from the repository, and so does the scripted LLM (``offline``). The recording
+doubles are written for the pins.
 """
-import json
-import re
-import zlib
 from typing import Any, Protocol
 
 from models import LlmContext
+from offline.scripted_llm import ScriptedLlm
 
-# One answer in this many carries an expansion, so the semantic space grows
-# during the crawl and later NLP scores depend on it.
-EXPANSION_EVERY = 5
-SCORE_RANGE = 100
-
-_CANDIDATES = re.compile(r"CANDIDATES:\n(\[.*?\])\n", re.DOTALL)
-_EXPANSION_DESCRIPTIONS = ["diabetes insulin glucose", "pancreas care"]
+__all__ = ["LlmSender", "RecordingGateway", "RecordingLlm", "ScriptedLlm"]
 
 
 class LlmSender(Protocol):
@@ -24,30 +17,6 @@ class LlmSender(Protocol):
 
     # Any: the LLM's answer is JSON from outside the program.
     async def send(self, context: LlmContext) -> dict[str, Any]: ...
-
-
-class ScriptedLlm:
-    """Answers expansion and scoring prompts from the prompt alone.
-
-    Each candidate's score is a checksum of its URL, so it is arbitrary but
-    identical on every run and every machine.
-    """
-
-    async def send(self, context: LlmContext) -> dict[str, Any]:
-        match = _CANDIDATES.search(context.get_prompt())
-        if not match:
-            return {"target": "pin topic", "descriptions": _EXPANSION_DESCRIPTIONS}
-        urls = [candidate["url"] for candidate in json.loads(match.group(1))]
-        results = []
-        for url in urls:
-            checksum = zlib.crc32(url.encode())
-            results.append({
-                "url": url,
-                "score": checksum % SCORE_RANGE,
-                "relevance_type": "direct",
-                "expansions": [f"insulin {url}"] if checksum % EXPANSION_EVERY == 0 else [],
-            })
-        return {"results": results}
 
 
 class RecordingLlm:
