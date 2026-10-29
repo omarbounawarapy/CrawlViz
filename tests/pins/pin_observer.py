@@ -44,7 +44,7 @@ class PinObserver:
         self.decisions: list[tuple[int, dict[str, Any]]] = []
         # Every event the bridge translates, which includes the three decision events.
         self.handlers: dict[type, Callable[[Any], Coroutine[Any, Any, None]]] = {
-            event_type: self.put for event_type in self.bridge._dispatch
+            event_type: self.put for event_type in self.bridge.event_types
         }
 
     async def start(self) -> None:
