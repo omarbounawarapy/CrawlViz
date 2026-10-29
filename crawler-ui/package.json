@@ -30,7 +30,7 @@
     "axe-core": "^4.10.3",
     "eslint": "^9.39.4",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
     "html-validate": "^11.17.0",
