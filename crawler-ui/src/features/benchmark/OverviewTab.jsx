@@ -6,37 +6,52 @@ import {useLoad, num} from "./shared";
 
 const { text } = getTheme().colors;
 
+const hasProtocol = (protocol) => protocol.hypotheses.length > 0 || protocol.arms.length > 0;
+
+function ProtocolSections({ protocol, runs }) {
+  return (
+    <>
+    <SectionTitle>Hypotheses</SectionTitle>
+    {protocol.hypotheses.map((h) => <Row key={h.id} label={h.id} note={`${h.text} (${h.comparison})`}>{" "}</Row>)}
+    <p style={{ fontSize: 13, color: text.muted, marginTop: 10, maxWidth: "66ch" }}>
+      Primary metric: {protocol.primary_metric}
+    </p>
+
+    <SectionTitle>Design</SectionTitle>
+    <Row label="Budgets (fetched pages)">{protocol.budgets.join(" / ")}</Row>
+    {protocol.arms.map((a) => (
+      <Row key={a.arm} label={a.arm} note={`${a.scopes}; LLM: ${a.llm}`}>{a.repeats}</Row>
+    ))}
+    {protocol.models.map((m) => (
+      <Row key={m.role} label={m.role}>{m.provider === "local" || m.provider.startsWith("same") ? m.model : `${m.provider} ${m.model}`}</Row>
+    ))}
+    <Row label="Result files on disk">{runs}</Row>
+
+    {protocol.amendments.length > 0 && (
+      <>
+        <SectionTitle>Amendments</SectionTitle>
+        {protocol.amendments.map((a) => (
+          <details key={a.title} style={{ margin: "6px 0" }}>
+            <summary style={{ fontSize: 14, cursor: "pointer" }}>{a.title}</summary>
+            <p style={{ fontSize: 13, lineHeight: 1.55, color: text.secondary, maxWidth: "66ch", whiteSpace: "pre-wrap" }}>{a.body}</p>
+          </details>
+        ))}
+      </>
+    )}
+    </>
+  );
+}
+
 export default function OverviewTab() {
   const state = useLoad(fetchBenchmarkOverview);
   return (
     <Loading state={state}>{(o) => (
       <>
-        <SectionTitle>Hypotheses</SectionTitle>
-        {o.protocol.hypotheses.map((h) => <Row key={h.id} label={h.id} note={`${h.text} (${h.comparison})`}>{" "}</Row>)}
-        <p style={{ fontSize: 13, color: text.muted, marginTop: 10, maxWidth: "66ch" }}>
-          Primary metric: {o.protocol.primary_metric}
-        </p>
-
-        <SectionTitle>Design</SectionTitle>
-        <Row label="Budgets (fetched pages)">{o.protocol.budgets.join(" / ")}</Row>
-        {o.protocol.arms.map((a) => (
-          <Row key={a.arm} label={a.arm} note={`${a.scopes}; LLM: ${a.llm}`}>{a.repeats}</Row>
-        ))}
-        {o.protocol.models.map((m) => (
-          <Row key={m.role} label={m.role}>{m.provider === "local" || m.provider.startsWith("same") ? m.model : `${m.provider} ${m.model}`}</Row>
-        ))}
-        <Row label="Result files on disk">{o.runs}</Row>
-
-        {o.protocol.amendments.length > 0 && (
-          <>
-            <SectionTitle>Amendments</SectionTitle>
-            {o.protocol.amendments.map((a) => (
-              <details key={a.title} style={{ margin: "6px 0" }}>
-                <summary style={{ fontSize: 14, cursor: "pointer" }}>{a.title}</summary>
-                <p style={{ fontSize: 13, lineHeight: 1.55, color: text.secondary, maxWidth: "66ch", whiteSpace: "pre-wrap" }}>{a.body}</p>
-              </details>
-            ))}
-          </>
+        {hasProtocol(o.protocol) ? <ProtocolSections protocol={o.protocol} runs={o.runs} /> : (
+          <p style={{ fontSize: 14, color: text.muted, maxWidth: "66ch" }}>
+            No study protocol has been written yet, so there are no hypotheses or arms to show.
+            The graphs below are still available.
+          </p>
         )}
 
         {Object.entries(o.graphs).map(([name, g]) => (

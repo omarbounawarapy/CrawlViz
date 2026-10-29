@@ -56,7 +56,7 @@ export default function AuditTab() {
       <p style={{ fontSize: 14, color: text.secondary, maxWidth: "62ch" }}>
         Label each page without seeing the judge's answer. Keys 0, 1, 2 answer and move to the next item; Tab moves between
         items; arrow keys change an answer; Backspace clears.
-        Answers are saved as you go, separately from the original audit_filled.tsv. Annotator 2 labels the first 50 items only (PROTOCOL.md section 8.4).
+        Answers are saved as you go, separately from the original audit_filled.tsv. Annotator 2 labels the first 50 items only.
       </p>
       <Tabs id="annot" label="Annotator" value={annotator} onChange={setAnnotator}
         options={[["1", "Annotator 1"], ["2", "Annotator 2"]]} />

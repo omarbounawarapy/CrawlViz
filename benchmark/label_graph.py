@@ -1,6 +1,6 @@
 """Labels every page of a frozen graph 0/1/2 under the frozen rubric (benchmark/rubric.md).
 
-Answers are cached (pilot_cache.jsonl) and each label is appended to <graph>_labels.jsonl as it lands, so
+Answers are cached (label_graph_cache.jsonl) and each label is appended to <graph>_labels.jsonl as it lands, so
 a stopped run resumes where it left off. ``--merge`` writes the labels and the rubric hash
 into the graph file.
 
@@ -18,8 +18,8 @@ import aiohttp
 from infrastructure import KeyManager, LlmHandler
 
 from .graph import FrozenGraph, page_key
+from .judge import judge
 from .llm_cache import CachedLlm
-from .pilot import judge  # same prompt and validation as the pilot
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
@@ -27,7 +27,7 @@ RUBRIC = Path(__file__).with_name("rubric.md")
 # answers 429 to everything, which the judge reports as "no usable answer";
 # going on would only spend a few minutes per batch for nothing.
 MAX_CONSECUTIVE_FAILURES = 3
-CACHE = Path("benchmark/data/pilot_cache.jsonl")
+CACHE = Path("benchmark/data/label_graph_cache.jsonl")
 
 
 def rubric_sha() -> str:

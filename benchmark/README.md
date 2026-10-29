@@ -76,8 +76,8 @@ The cache key is the scope, provider, model, prompt version (the scoring
 strategy plus a hash of `models/prompts.py`), the graph file's SHA-256 and the
 prompt text. Entries written before the prompt version and graph hash joined
 the key are never hit, so an old `--llm-cache` cannot be replayed: record the
-repeats again. The judge cache (`pilot_cache.jsonl`) keeps its original key;
-its prompt already carries the rubric.
+repeats again. The judge cache (`label_graph_cache.jsonl`, written by `label_graph`) keys on the
+prompt, which already carries the rubric.
 
 Time spent asleep on pacing or a 429 back-off pauses the runner's idle clock
 (and is reported as 429 back-off time), so a long rate-limit wait is not
@@ -152,16 +152,8 @@ redirect crawled twice); `FrozenGraph.merge(keep, drop)` folds one into the othe
   cascade performs on the web.
 - Results hold for concurrency 1 and lockstep only.
 
-## Rubric v1 (frozen 2026-10-02) and its pilot
+## Rubric v1 (frozen 2026-10-02)
 
 `rubric.md` is frozen; its SHA-256 goes into the graph file on `label_graph --merge`.
 The judge is `qwen/qwen3.8-27b` (Groq retired `llama-3.3-70b-versatile`); the cascade uses
 `openai/gpt-oss-120b`, a different family.
-
-Pilot (`pilot30.tsv`, `pilot_label2.tsv`; run `python -m benchmark.pilot <tsv>`): 42 pages
-labelled by hand, judge matched on 38. The four differences: Ariana, Gouvernorat de l'Ariana and Licence d'informatique (hand 1,
-judge 0) and Institut supérieur de documentation de Tunis (hand 0, judge 1).
-They come from the hand labeller asking "does this lead toward the ISI" where the rubric
-asks "is the subject a Tunisian higher-education institution or system". Label 1 therefore
-measures topical neighbourhood, not navigation value. The label-2 check found the target
-and no false 2s (1 target page exists in the graph; no programme or department pages).
