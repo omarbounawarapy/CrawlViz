@@ -1,8 +1,17 @@
-.PHONY: audit install dev dev-backend dev-frontend lint format typecheck check-baselines test check check-changed hook-test clean
+.PHONY: audit hooks model clean-runs install dev dev-backend dev-frontend lint format typecheck check-baselines test check check-changed hook-test clean
 
 install:
 	uv sync --extra dev
 	cd crawler-ui && npm install
+
+# Installs the git hooks from lefthook.yml (pre-commit checks, commit title check).
+hooks:
+	cd crawler-ui && npx lefthook install
+
+# Downloads the sentence-transformers model once (needs network). Crawls load it with
+# local_files_only, so run this before the first real crawl; offline mode does not need it.
+model:
+	uv run python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
 # Runs the FastAPI API (:8000), the crawl WebSocket gateway (:8765,
 # started per-crawl -- see core/crawler.py), and the Vite dev server
@@ -64,3 +73,9 @@ hook-test:
 clean:
 	find . -type d -name __pycache__ -not -path "./crawler-ui/*" -exec rm -rf {} +
 	rm -rf crawler-ui/dist
+
+# Deletes recorded crawl runs, logs, debug dumps and saved semantic spaces. Past runs cannot
+# be recovered, so it only runs as `make clean-runs YES=1`.
+clean-runs:
+	@test "$(YES)" = "1" || { echo "This deletes export/, logs/, debug/ and .space_store/. Run: make clean-runs YES=1"; exit 1; }
+	rm -rf export/* logs/* debug/* .space_store/*
