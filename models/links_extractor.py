@@ -43,10 +43,10 @@ class LinkExtractor:
                     anchor = href.split("/")[-1].replace("-", " ")
 
                 context_node = (
-                    link_node.xpath("ancestor::li[1]") or
-                    link_node.xpath("ancestor::p[1]") or
-                    link_node.xpath("ancestor::td[1]") or
-                    link_node.xpath("ancestor::div[1]")
+                    link_node.xpath("ancestor::li[1]")
+                    or link_node.xpath("ancestor::p[1]")
+                    or link_node.xpath("ancestor::td[1]")
+                    or link_node.xpath("ancestor::div[1]")
                 )
                 if context_node:
                     context_text = " ".join(context_node[0].itertext()).strip()

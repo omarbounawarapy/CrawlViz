@@ -1,4 +1,5 @@
 """Fixtures for the behaviour pins."""
+
 from collections.abc import Callable, Iterable
 from pathlib import Path
 

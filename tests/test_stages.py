@@ -1,4 +1,5 @@
 """The stage registry (core/stages.py) is the one list of the crawl's stages."""
+
 from pathlib import Path
 from typing import Any
 
@@ -15,8 +16,11 @@ BLUEPRINT: dict[str, Any] = {
     "blueprint_id": "test-bp",
     "extraction": {"fields": []},
     "stop_conditions": {
-        "max_nodes": 50, "max_depth": 3, "max_duration": 60,
-        "no_progress_timeout": 30, "stop_url": None,
+        "max_nodes": 50,
+        "max_depth": 3,
+        "max_duration": 60,
+        "no_progress_timeout": 30,
+        "stop_url": None,
     },
 }
 

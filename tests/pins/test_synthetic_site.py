@@ -1,4 +1,5 @@
 """The synthetic site is the same graph every time, and a connected one."""
+
 import json
 import subprocess
 import sys
@@ -53,7 +54,10 @@ def test_the_site_does_not_depend_on_the_hash_seed_of_the_process() -> None:
         env = {"PYTHONHASHSEED": hash_seed, "PYTHONPATH": str(REPO_ROOT)}
         return subprocess.run(
             [sys.executable, "-c", code, str(PINS_DIR)],
-            capture_output=True, text=True, check=True, env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+            env=env,
         ).stdout
 
     assert pages_under("1") == pages_under("2")

@@ -1,4 +1,5 @@
 """The 0/1/2 judge retries with a changed prompt until every page has a valid label."""
+
 import asyncio
 from typing import Any
 

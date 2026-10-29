@@ -90,6 +90,7 @@ def get_connection() -> Generator[sqlite3.Connection, None, None]:
 # QUERY HELPERS -- ALL READ-ONLY, ALL BOUNDED
 # =========================================================
 
+
 def fetch_all_tables() -> list[str]:
     """Return names of all user-created tables that look like crawler tables.
 

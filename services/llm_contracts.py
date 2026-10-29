@@ -4,6 +4,7 @@ Parsing is lenient on values (a score of 500 clamps to 100) but never silent:
 each parse reports an outcome so callers can count malformed responses instead
 of treating them as ``{}``.
 """
+
 from collections import Counter
 from typing import Any
 

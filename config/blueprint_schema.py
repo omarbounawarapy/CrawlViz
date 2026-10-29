@@ -31,6 +31,7 @@ runtime gap, provided this schema is kept in sync too. That's still a
 manual step, but a single, declared, importable one instead of five
 files' worth of implicit dict-shape agreement.
 """
+
 from __future__ import annotations
 
 from typing import Literal
@@ -68,9 +69,7 @@ ALLOWED_EXPORT_TYPES: frozenset[str] = frozenset({"text", "real", "int", "json"}
 
 ALLOWED_FIELD_TYPES: frozenset[str] = frozenset({"scalar", "list"})
 
-_NO_CONFIG_TRANSFORMS: frozenset[str] = frozenset(
-    {"strip", "lowercase", "deduplicate", "join"}
-)
+_NO_CONFIG_TRANSFORMS: frozenset[str] = frozenset({"strip", "lowercase", "deduplicate", "join"})
 _PARAMETERISED_TRANSFORMS: dict[str, list[str]] = {
     "truncate": ["max_len"],
     "regex": ["pattern"],
@@ -98,6 +97,7 @@ class BlueprintSchemaError(ValueError):
 # above was this shape drifting between the translator and
 # ExportingPipeline specifically.
 
+
 class TransformStep(BaseModel):
     model_config = ConfigDict(extra="allow")  # regex/truncate carry extra params
 
@@ -107,9 +107,7 @@ class TransformStep(BaseModel):
     @classmethod
     def _validate_type(cls, v: str) -> str:
         if v not in ALLOWED_TRANSFORMS:
-            raise ValueError(
-                f"Unknown transform {v!r}. Allowed: {sorted(ALLOWED_TRANSFORMS)}"
-            )
+            raise ValueError(f"Unknown transform {v!r}. Allowed: {sorted(ALLOWED_TRANSFORMS)}")
         return v
 
 
@@ -130,6 +128,7 @@ class ExtractionConfig(BaseModel):
 # TOP-LEVEL SECTIONS
 # =========================================================
 
+
 class ScoringParams(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -145,9 +144,7 @@ class ScoringConfig(BaseModel):
     @classmethod
     def _validate_strategy(cls, v: str) -> str:
         if v not in ALLOWED_STRATEGIES:
-            raise ValueError(
-                f"Unknown strategy {v!r}. Allowed: {sorted(ALLOWED_STRATEGIES)}"
-            )
+            raise ValueError(f"Unknown strategy {v!r}. Allowed: {sorted(ALLOWED_STRATEGIES)}")
         return v
 
 
@@ -189,8 +186,7 @@ class StopConditions(BaseModel):
     def _validate_priority_strategy(cls, v: str) -> str:
         if v not in ALLOWED_PRIORITY_STRATEGIES:
             raise ValueError(
-                f"Unknown priority_strategy {v!r}. "
-                f"Allowed: {sorted(ALLOWED_PRIORITY_STRATEGIES)}"
+                f"Unknown priority_strategy {v!r}. Allowed: {sorted(ALLOWED_PRIORITY_STRATEGIES)}"
             )
         return v
 
@@ -204,6 +200,7 @@ class Blueprint(BaseModel):
     incrementally, as each section proves what its consumers actually
     require, rather than guessing all of it up front.
     """
+
     model_config = ConfigDict(extra="allow")
 
     blueprint_id: str

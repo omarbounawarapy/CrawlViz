@@ -1,7 +1,8 @@
 """Descriptive statistics of a frozen graph, for the paper's dataset table.
 
-    .venv/bin/python -m benchmark.graph_stats --graph benchmark/data/ball.json [--tex FILE]
+.venv/bin/python -m benchmark.graph_stats --graph benchmark/data/ball.json [--tex FILE]
 """
+
 import argparse
 import statistics
 from collections import Counter, deque
@@ -25,7 +26,9 @@ def depths(graph: FrozenGraph) -> dict[str, int]:
 
 def stats(graph: FrozenGraph) -> dict:
     degrees = [len(p["links"]) for p in graph.pages.values()]
-    absent = sum(1 for p in graph.pages.values() for link in p["links"] if link["to"] not in graph.pages)
+    absent = sum(
+        1 for p in graph.pages.values() for link in p["links"] if link["to"] not in graph.pages
+    )
     depth = depths(graph)
     labels = {n: graph.label(n) for n in graph.pages}
     per_depth: dict[int, dict[str, int]] = {}
@@ -67,7 +70,9 @@ def to_text(s: dict) -> str:
         f"{'depth':>5}{'pages':>9}{'label 1':>9}{'label 2':>9}{'relevant':>10}",
     ]
     for depth, row in s["relevant_per_depth"].items():
-        lines.append(f"{depth:>5}{row['pages']:>9}{row['label1']:>9}{row['label2']:>9}{row['label1'] + row['label2']:>10}")
+        lines.append(
+            f"{depth:>5}{row['pages']:>9}{row['label1']:>9}{row['label2']:>9}{row['label1'] + row['label2']:>10}"
+        )
     return "\n".join(lines)
 
 
@@ -84,11 +89,20 @@ def to_tex(s: dict, name: str = "") -> str:
     ]
     lines = [r"\begin{tabular}{lr}", r"\toprule", r"Statistic & Value \\", r"\midrule"]
     lines += [f"{k} & {v} \\\\" for k, v in rows]
-    lines += [r"\bottomrule", r"\end{tabular}", "", r"\begin{tabular}{rrrrr}", r"\toprule",
-              r"Depth & Pages & Label 1 & Label 2 & Relevant \\", r"\midrule"]
+    lines += [
+        r"\bottomrule",
+        r"\end{tabular}",
+        "",
+        r"\begin{tabular}{rrrrr}",
+        r"\toprule",
+        r"Depth & Pages & Label 1 & Label 2 & Relevant \\",
+        r"\midrule",
+    ]
     for depth, row in s["relevant_per_depth"].items():
-        lines.append(f"{depth} & {row['pages']:,} & {row['label1']:,} & {row['label2']:,} & "
-                     f"{row['label1'] + row['label2']:,} \\\\")
+        lines.append(
+            f"{depth} & {row['pages']:,} & {row['label1']:,} & {row['label2']:,} & "
+            f"{row['label1'] + row['label2']:,} \\\\"
+        )
     return "\n".join(lines + [r"\bottomrule", r"\end{tabular}", ""])
 
 

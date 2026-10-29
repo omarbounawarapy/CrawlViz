@@ -7,12 +7,14 @@ TraceMode = Literal["full", "sampled", "minimal", "off"]
 _FORCE_EMIT_SUFFIXES = ("Failed", "Bootstrapped", "ScoreEmitted")
 
 # Minimal-mode allowlist -- only these event type names pass in "minimal" mode.
-_MINIMAL_ALLOWLIST = frozenset({
-    "NLP_ScoreEmitted",
-    "LLM_RequestFailed",
-    "NET_RequestFailed",
-    "EXP_SpaceBootstrapped",
-})
+_MINIMAL_ALLOWLIST = frozenset(
+    {
+        "NLP_ScoreEmitted",
+        "LLM_RequestFailed",
+        "NET_RequestFailed",
+        "EXP_SpaceBootstrapped",
+    }
+)
 
 
 class TraceEmitter:

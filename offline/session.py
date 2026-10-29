@@ -1,4 +1,5 @@
 """Everything an offline crawl swaps in for the outside world."""
+
 import os
 from dataclasses import dataclass
 from pathlib import Path

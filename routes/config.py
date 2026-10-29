@@ -62,8 +62,6 @@ router.include_router(presets_router)
 router.include_router(keys_router)
 
 
-
-
 @router.get("/config/schema")
 def get_config_schema() -> dict:
     """JSON Schema for RuntimeConfig, including the ui_* hints used by the
@@ -141,20 +139,32 @@ def reset_config(section: str | None = None) -> dict:
 
 
 _SAMPLE_LINKS = [
-    ("https://example.org/produce/bananas/ripening-guide", "How bananas ripen",
-     "Ethylene gas triggers ripening; a guide for grocers and home cooks."),
-    ("https://example.org/about/contact", "Contact us",
-     "Write to the editorial team or find our office address."),
-    ("https://example.org/produce/fruit-exports", "Fruit exports by country",
-     "Tables of banana, mango and pineapple exports since 2010."),
+    (
+        "https://example.org/produce/bananas/ripening-guide",
+        "How bananas ripen",
+        "Ethylene gas triggers ripening; a guide for grocers and home cooks.",
+    ),
+    (
+        "https://example.org/about/contact",
+        "Contact us",
+        "Write to the editorial team or find our office address.",
+    ),
+    (
+        "https://example.org/produce/fruit-exports",
+        "Fruit exports by country",
+        "Tables of banana, mango and pineapple exports since 2010.",
+    ),
 ]
 
 # What a person may change in each block, and why the rest is fixed.
 _BLOCK_INFO = {
     "system": ("System prompt", "editable", "Who the model is and what it must return."),
     "task": ("Task", "generated", "Fixed wording; the parser expects scores from 0 to 100."),
-    "context": ("Context", "generated",
-                "Built from the crawl target, the scoring strategy and its wording (edit that wording per strategy)."),
+    "context": (
+        "Context",
+        "generated",
+        "Built from the crawl target, the scoring strategy and its wording (edit that wording per strategy).",
+    ),
     "candidates": ("Candidates", "generated", "The links of one batch, filled in at crawl time."),
     "rules": ("Rules", "editable", "Scoring rules the model should follow."),
     "output": ("Output format", "locked", "The response parser reads exactly this JSON shape."),
@@ -177,14 +187,21 @@ def preview_prompt(body: PromptPreviewBody) -> dict:
     if body.strategy not in STRATEGIES:
         raise HTTPException(status_code=422, detail=f"Unknown scoring strategy '{body.strategy}'")
     builder = PromptBuilder(
-        body.target, body.strategy,
-        system_prompt=body.scoring_system, rules=body.scoring_rules,
+        body.target,
+        body.strategy,
+        system_prompt=body.scoring_system,
+        rules=body.scoring_rules,
         strategy_contexts=body.strategy_contexts,
     )
     links = [Link(url, anchor, ctx) for url, anchor, ctx in _SAMPLE_LINKS]
     blocks = [
-        {"id": name, "title": _BLOCK_INFO[name][0], "kind": _BLOCK_INFO[name][1],
-         "note": _BLOCK_INFO[name][2], "text": text}
+        {
+            "id": name,
+            "title": _BLOCK_INFO[name][0],
+            "kind": _BLOCK_INFO[name][1],
+            "note": _BLOCK_INFO[name][2],
+            "text": text,
+        }
         for name, text in builder.build_blocks(links)
     ]
     return {"blocks": blocks, "prompt": "\n\n".join(b["text"] for b in blocks)}
@@ -207,8 +224,10 @@ def get_providers() -> dict:
             with open(os.path.join(templates_dir, name), encoding="utf-8") as f:
                 bp = json.load(f)
             pairs = [
-                (bp["scoring"]["params"]["scoring_type"],
-                 bp["scoring"]["params"]["model_information"]),
+                (
+                    bp["scoring"]["params"]["scoring_type"],
+                    bp["scoring"]["params"]["model_information"],
+                ),
                 (bp["expansion"]["llm_type"], bp["expansion"]["llm_model"]),
             ]
         except (OSError, ValueError, KeyError, TypeError):
@@ -220,7 +239,6 @@ def get_providers() -> dict:
         if provider in providers:
             providers[provider]["keys"] = len(keys)
     return providers
-
 
 
 @router.get("/config/export")

@@ -1,4 +1,5 @@
 """The pin crawl itself: offline, complete and repeatable, on a graph of a dozen pages."""
+
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,9 @@ def tree_graph() -> FrozenGraph:
 
     def page(name: str, targets: list[str]) -> dict[str, Any]:
         return {
-            "label": 0, "title": name, "text": f"{name} insulin glucose",
+            "label": 0,
+            "title": name,
+            "text": f"{name} insulin glucose",
             "links": [{"to": target, "anchor": f"{target} insulin"} for target in targets],
         }
 

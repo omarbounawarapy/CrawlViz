@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 # ABSTRACT INTERFACE
 # =========================================================
 
+
 class BaseEmbeddingEngine(ABC):
     """Abstract interface for any embedding backend."""
 
@@ -32,6 +33,7 @@ class BaseEmbeddingEngine(ABC):
 # =========================================================
 # SENTENCE-TRANSFORMERS BACKEND (DEFAULT)
 # =========================================================
+
 
 class SentenceTransformerEngine(BaseEmbeddingEngine):
     """Wraps sentence-transformers. Lazy-loaded on first use.
@@ -55,9 +57,8 @@ class SentenceTransformerEngine(BaseEmbeddingEngine):
             # stack, so we don't pay that import cost for backends/crawls
             # that never actually use this engine.
             from sentence_transformers import SentenceTransformer
-            self._model = SentenceTransformer(
-                self.model_name, local_files_only=True, device="cpu"
-            )
+
+            self._model = SentenceTransformer(self.model_name, local_files_only=True, device="cpu")
             self._dim = self._model.get_sentence_embedding_dimension()
             logger.info("Loaded embedding model '%s' (dim=%d)", self.model_name, self._dim)
 
@@ -77,6 +78,7 @@ class SentenceTransformerEngine(BaseEmbeddingEngine):
 # =========================================================
 # HASHING BACKEND (TESTS, OFFLINE RUNS)
 # =========================================================
+
 
 class HashingEmbeddingEngine(BaseEmbeddingEngine):
     """Deterministic bag-of-words embedding: each token is hashed into a
@@ -99,7 +101,11 @@ class HashingEmbeddingEngine(BaseEmbeddingEngine):
     def encode(self, texts: str | list[str]) -> np.ndarray:
         if isinstance(texts, str):
             return self._one(texts)
-        return np.stack([self._one(t) for t in texts]) if texts else np.zeros((0, self._dim), np.float32)
+        return (
+            np.stack([self._one(t) for t in texts])
+            if texts
+            else np.zeros((0, self._dim), np.float32)
+        )
 
     @property
     def dim(self) -> int:
@@ -109,6 +115,7 @@ class HashingEmbeddingEngine(BaseEmbeddingEngine):
 # =========================================================
 # FACTORY
 # =========================================================
+
 
 def create_embedding_engine(
     backend: str = "sentence_transformers", **kwargs

@@ -13,7 +13,11 @@ def test_every_builtin_preset_has_a_description(name):
 
 def test_polite_and_fast_state_their_pace_and_fetches():
     polite = presets.PRESET_DESCRIPTIONS["polite"]
-    assert "2 s between requests" in polite and "0.5 s random" in polite and "2 parallel fetches" in polite
+    assert (
+        "2 s between requests" in polite
+        and "0.5 s random" in polite
+        and "2 parallel fetches" in polite
+    )
     fast = presets.PRESET_DESCRIPTIONS["fast"]
     assert "0.2 s between requests" in fast and "8 parallel fetches" in fast
 
@@ -47,7 +51,9 @@ def test_frugal_names_the_default_it_moves_from():
 
 
 def test_description_follows_the_values(monkeypatch):
-    values = {"scoring_cascade": {"high_score_llm_fraction": 0.25, "low_score_sample_fraction": 0.05}}
+    values = {
+        "scoring_cascade": {"high_score_llm_fraction": 0.25, "low_score_sample_fraction": 0.05}
+    }
     text = presets._preset_description("frugal", values)
     assert "25 % of the high-confidence bucket" in text and "5 % of low-score links" in text
 

@@ -15,6 +15,7 @@ failures (system behavior). It changes wall-clock only, never an answer. It
 also records each live call's latency and the time spent waiting, which is the
 performance side of the benchmark (the page sequence never depends on it).
 """
+
 import asyncio
 import hashlib
 import json
@@ -31,8 +32,13 @@ class ReplayMiss(RuntimeError):
 
 class CachedLlm:
     def __init__(
-        self, inner, path: Path, scope: str = "", replay_only: bool = False,
-        prompt_version: str = "", graph_sha: str = "",
+        self,
+        inner,
+        path: Path,
+        scope: str = "",
+        replay_only: bool = False,
+        prompt_version: str = "",
+        graph_sha: str = "",
     ):
         self.inner = inner
         self.scope = scope
@@ -41,9 +47,13 @@ class CachedLlm:
         self.replay_only = replay_only
         self.path = Path(path)
         self.hits = self.misses = 0
-        self.input_tokens = self.output_tokens = 0  # tokens behind every answer served, replayed ones included
+        self.input_tokens = self.output_tokens = (
+            0  # tokens behind every answer served, replayed ones included
+        )
         self.replay_misses: list[str] = []
-        self.miss_prompts: list[str] = []  # prompt text of each miss, for diagnosing a diverged replay
+        self.miss_prompts: list[
+            str
+        ] = []  # prompt text of each miss, for diagnosing a diverged replay
         # Answers per key in the order they were given. The same prompt can
         # be answered more than once (an empty answer, then its retry), and a
         # replay must hand them out in that order or the retry logic runs on
@@ -91,7 +101,9 @@ class CachedLlm:
             # here and checked by the caller after the run.
             self.replay_misses.append(key)
             self.miss_prompts.append(context.get_prompt())
-            raise ReplayMiss(f"scope {self.scope!r}: no recorded answer for {context.get_prompt()[:80]!r}")
+            raise ReplayMiss(
+                f"scope {self.scope!r}: no recorded answer for {context.get_prompt()[:80]!r}"
+            )
         result = await self.inner.send(context)
         self.misses += 1
         usage = context.get_usage() if hasattr(context, "get_usage") else (0, 0)
@@ -103,7 +115,18 @@ class CachedLlm:
         self._served[key] = len(self._cache[key])
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a") as f:
-            f.write(json.dumps({"key": key, "result": result or {}, "usage": list(usage), "prompt": context.get_prompt()}, ensure_ascii=False) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "key": key,
+                        "result": result or {},
+                        "usage": list(usage),
+                        "prompt": context.get_prompt(),
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
+            )
         return result
 
 

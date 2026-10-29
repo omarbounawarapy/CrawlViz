@@ -7,6 +7,7 @@ into the graph file.
     .venv/bin/python -m benchmark.label_graph --graph benchmark/data/ball.json
     .venv/bin/python -m benchmark.label_graph --graph benchmark/data/ball.json --merge
 """
+
 import argparse
 import asyncio
 import hashlib
@@ -42,7 +43,9 @@ def labels_path(graph_file: Path) -> Path:
 def done(labels: Path) -> dict[str, int]:
     if not labels.exists():
         return {}
-    return {page_key(d["page"]): d["label"] for d in map(json.loads, labels.read_text().splitlines())}
+    return {
+        page_key(d["page"]): d["label"] for d in map(json.loads, labels.read_text().splitlines())
+    }
 
 
 async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
@@ -52,7 +55,14 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
     failures = 0
     for s in range(0, len(todo), BATCH):
         batch = todo[s : s + BATCH]
-        rows = [{"id": n, "title": graph.pages[n]["title"], "excerpt": graph.pages[n]["text"][:EXCERPT_CHARS].replace("\n", " ")} for n in batch]
+        rows = [
+            {
+                "id": n,
+                "title": graph.pages[n]["title"],
+                "excerpt": graph.pages[n]["text"][:EXCERPT_CHARS].replace("\n", " "),
+            }
+            for n in batch
+        ]
         before = llm.misses
         try:
             result = await judge(llm, rows)
@@ -60,8 +70,11 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
             failures += 1
             print(f"\nbatch at {batch[0]} failed: {e!r}; waiting 60 s", flush=True)
             if failures >= MAX_CONSECUTIVE_FAILURES:
-                print(f"\n{failures} batches in a row failed (likely the provider's daily token cap); "
-                      "stopping. Rerun later: finished labels are kept.", flush=True)
+                print(
+                    f"\n{failures} batches in a row failed (likely the provider's daily token cap); "
+                    "stopping. Rerun later: finished labels are kept.",
+                    flush=True,
+                )
                 break
             await asyncio.sleep(60)
             continue

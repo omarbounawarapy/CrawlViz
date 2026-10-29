@@ -58,11 +58,13 @@ class ExpansionPromptBuilder:
                 max_sentences=config.get("max_sentences", defaults.max_sentences),
             )
 
-        return "\n\n".join([
-            BASE_PROMPT,
-            f"TASK:\nGenerate {config.num_descriptions} semantic descriptions for:\n{topic}",
-            f"STYLE:\n{STYLE_BLOCKS[config.style]}",
-            CONSTRAINTS_BLOCK.format(max_sentences=config.max_sentences),
-            FACET_BLOCK,
-            OUTPUT_SCHEMA_BLOCK,
-        ])
+        return "\n\n".join(
+            [
+                BASE_PROMPT,
+                f"TASK:\nGenerate {config.num_descriptions} semantic descriptions for:\n{topic}",
+                f"STYLE:\n{STYLE_BLOCKS[config.style]}",
+                CONSTRAINTS_BLOCK.format(max_sentences=config.max_sentences),
+                FACET_BLOCK,
+                OUTPUT_SCHEMA_BLOCK,
+            ]
+        )

@@ -1,4 +1,5 @@
 """Every message type the backend emits is documented in docs/crawl_messages.ts."""
+
 import re
 from pathlib import Path
 

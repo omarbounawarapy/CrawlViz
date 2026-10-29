@@ -5,6 +5,7 @@ from typing import Any, Literal
 # 1. NODE CREATION (GRAPH CONSTRUCTION CORE)
 # =========================================================
 
+
 @dataclass
 class StorageNodeCreatedEvent:
     correlation_id: str
@@ -19,6 +20,7 @@ class StorageNodeCreatedEvent:
 # 2. NODE INSERTION INTO STORAGE
 # =========================================================
 
+
 @dataclass
 class StorageNodeAddedEvent:
     correlation_id: str
@@ -28,6 +30,7 @@ class StorageNodeAddedEvent:
 # =========================================================
 # 3. NODE STATE UPDATE
 # =========================================================
+
 
 @dataclass
 class StorageNodeUpdatedEvent:
@@ -41,6 +44,7 @@ class StorageNodeUpdatedEvent:
 # 4. ITEM PERSISTENCE TRACE
 # =========================================================
 
+
 @dataclass
 class StorageItemStoredEvent:
     correlation_id: str
@@ -51,6 +55,7 @@ class StorageItemStoredEvent:
 # =========================================================
 # 5. LINK PERSISTENCE TRACE
 # =========================================================
+
 
 @dataclass
 class StorageLinkStoredEvent:
@@ -63,6 +68,7 @@ class StorageLinkStoredEvent:
 # 6. GLOBAL NODE ADDITION (DOWNSTREAM COMPATIBILITY)
 # =========================================================
 
+
 @dataclass
 class NodeAddedEvent:
     correlation_id: str
@@ -72,6 +78,7 @@ class NodeAddedEvent:
 # =========================================================
 # 7. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
+
 
 @dataclass
 class StorageOperationFailedEvent:
@@ -84,6 +91,7 @@ class StorageOperationFailedEvent:
 # =========================================================
 # 8. NODE CONTENT UPDATE
 # =========================================================
+
 
 @dataclass
 class NodeContentSetEvent:

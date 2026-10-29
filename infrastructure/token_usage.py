@@ -1,6 +1,7 @@
 """Token counts from provider responses. Each reader returns
 ``(input_tokens, output_tokens)`` and never raises: a response without usage
 data counts as ``(0, 0)``."""
+
 from typing import Any
 
 

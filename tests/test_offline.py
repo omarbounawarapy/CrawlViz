@@ -1,4 +1,5 @@
 """Offline mode: a full crawl with no keys and no network."""
+
 import asyncio
 import json
 import socket
@@ -50,8 +51,13 @@ async def test_offline_crawl_runs_to_its_stop_condition_without_keys(tmp_path: P
     session = build_offline_session(default_runtime_config())
     paths = RuntimePaths.under(tmp_path)  # no keys.json in it
     crawler = Crawler(
-        "offline_demo.json", config=session.config, paths=paths, seed=0,
-        ui_port=_free_port(), llm=session.llm, fetcher=session.fetcher,
+        "offline_demo.json",
+        config=session.config,
+        paths=paths,
+        seed=0,
+        ui_port=_free_port(),
+        llm=session.llm,
+        fetcher=session.fetcher,
     )
 
     await asyncio.wait_for(crawler.start(), CRAWL_TIMEOUT_SECONDS)

@@ -33,9 +33,13 @@ def diff(base: dict, new: dict) -> dict:
     """The entries of `new` that differ from `base` (nested)."""
     out: dict[str, Any] = {}
     for key, value in new.items():
-        if isinstance(value, dict) and isinstance(base.get(key), dict) and key != "extra_headers" \
-                and not key.endswith("_weights") \
-                and key not in ("strategy_contexts", "endpoints"):
+        if (
+            isinstance(value, dict)
+            and isinstance(base.get(key), dict)
+            and key != "extra_headers"
+            and not key.endswith("_weights")
+            and key not in ("strategy_contexts", "endpoints")
+        ):
             sub = diff(base[key], value)
             if sub:
                 out[key] = sub

@@ -1,4 +1,5 @@
 """The 0/1/2 relevance judge: one rubric prompt per batch of pages, validated and retried."""
+
 import asyncio
 from pathlib import Path
 from typing import Any, Protocol

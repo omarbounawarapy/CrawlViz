@@ -39,5 +39,9 @@ class CallBudget:
         return self.limit is not None and self.used >= self.limit
 
     def snapshot(self) -> dict:
-        return {"limit": self.limit, "used": self.used, "refused": self.refused,
-                "exhausted": self.exhausted}
+        return {
+            "limit": self.limit,
+            "used": self.used,
+            "refused": self.refused,
+            "exhausted": self.exhausted,
+        }

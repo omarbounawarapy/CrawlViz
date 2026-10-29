@@ -6,6 +6,7 @@ through `mypy_path`. A pins module named `config.py` or `models.py` would then w
 over the real top-level package and break imports silently. The rule is in
 `README.md`; this test enforces it.
 """
+
 import sys
 from pathlib import Path
 

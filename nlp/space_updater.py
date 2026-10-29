@@ -89,7 +89,8 @@ class SpaceUpdater:
         self._running = True
         logger.info(
             "SpaceUpdater started (interval=%ss, threshold=%d)",
-            self.flush_interval, self.flush_threshold,
+            self.flush_interval,
+            self.flush_threshold,
         )
 
         loop = asyncio.get_running_loop()
@@ -160,7 +161,9 @@ class SpaceUpdater:
 
         logger.info(
             "Flush #%d: %d vectors committed (space size now %d)",
-            self._flush_count, len(items), self.nlp_service.space_size(),
+            self._flush_count,
+            len(items),
+            self.nlp_service.space_size(),
         )
 
     async def force_flush(self) -> None:

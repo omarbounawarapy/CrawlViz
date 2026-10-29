@@ -44,9 +44,7 @@ class AnthropicTranslator:
             "data": {
                 "model": context.get_model_information(),
                 "max_tokens": AnthropicTranslator.DEFAULT_MAX_TOKENS,
-                "messages": [
-                    {"role": "user", "content": context.get_prompt()}
-                ],
+                "messages": [{"role": "user", "content": context.get_prompt()}],
             },
         }
 
@@ -84,6 +82,7 @@ class AnthropicTranslator:
         except Exception as e:
             logger.warning(
                 "Failed to parse Anthropic response: %s. Raw response: %.300s",
-                e, response,
+                e,
+                response,
             )
             return {}

@@ -17,7 +17,11 @@ from pydantic import BaseModel
 
 from benchmark import audit as audit_mod
 from benchmark.analyze import (
-    by_policy, dedupe_records, efficiency, harvest_at, mean_ci,
+    by_policy,
+    dedupe_records,
+    efficiency,
+    harvest_at,
+    mean_ci,
     validity_counts,
 )
 from benchmark.graph import FrozenGraph
@@ -46,8 +50,14 @@ def _cells(line: str) -> list[str]:
 def read_protocol() -> dict:
     """Hypotheses, arms, budgets, models and amendments, read from PROTOCOL.md itself."""
     if not PROTOCOL_FILE.is_file():
-        return {"hypotheses": [], "arms": [], "budgets": [], "models": [], "primary_metric": "",
-                "amendments": []}
+        return {
+            "hypotheses": [],
+            "arms": [],
+            "budgets": [],
+            "models": [],
+            "primary_metric": "",
+            "amendments": [],
+        }
     text = PROTOCOL_FILE.read_text()
     hypotheses = []
     for line in _section(text, "1").splitlines():
@@ -60,7 +70,12 @@ def read_protocol() -> dict:
         c = _cells(line) if line.startswith("|") else []
         if len(c) >= 4 and re.match(r"\d+", c[1]):
             arms.append({"arm": c[0], "repeats": c[1], "scopes": c[2], "llm": c[3]})
-    budgets = [int(b) for b in re.findall(r"\d+", (re.search(r"Budgets[^:]*:\s*([^.]*)\.", sec5) or [None, ""])[1])]
+    budgets = [
+        int(b)
+        for b in re.findall(
+            r"\d+", (re.search(r"Budgets[^:]*:\s*([^.]*)\.", sec5) or [None, ""])[1]
+        )
+    ]
     models = []
     for line in _section(text, "6").splitlines():
         c = _cells(line) if line.startswith("|") else []
@@ -69,10 +84,15 @@ def read_protocol() -> dict:
     metric = re.search(r"^harvest@30[^\n]*(?:\n[^\n]+)*", _section(text, "2").strip(), re.M)
     tail = text.split("\n## Amendments", 1)[1] if "\n## Amendments" in text else ""
     parts = re.split(r"^\*\*(\d{4}-\d{2}-\d{2}[^*]*)\*\*", tail, flags=re.M)
-    amendments = [{"title": parts[k].strip().rstrip("."), "body": parts[k + 1].strip().replace("`", "")}
-                  for k in range(1, len(parts) - 1, 2)]
+    amendments = [
+        {"title": parts[k].strip().rstrip("."), "body": parts[k + 1].strip().replace("`", "")}
+        for k in range(1, len(parts) - 1, 2)
+    ]
     return {
-        "hypotheses": hypotheses, "arms": arms, "budgets": budgets, "models": models,
+        "hypotheses": hypotheses,
+        "arms": arms,
+        "budgets": budgets,
+        "models": models,
         "primary_metric": " ".join(metric.group(0).split()).replace("`", "") if metric else "",
         "amendments": amendments,
     }
@@ -123,6 +143,7 @@ def _graph_names() -> list[str]:
 
 # ── runs ─────────────────────────────────────────────────────────────────────
 
+
 def _records() -> list[tuple[str, RunRecord]]:
     out = []
     for p in sorted(RESULTS_DIR.glob("*.json")):
@@ -136,13 +157,24 @@ def _records() -> list[tuple[str, RunRecord]]:
 def _summary(name: str, r: RunRecord) -> dict:
     found = sum(1 for v in r.labels if v >= 1)
     return {
-        "name": name, "graph": r.graph, "policy": r.policy, "rep": r.rep, "budget": r.budget,
-        "valid": r.valid, "status": r.status, "replay": r.replay, "fetched": len(r.sequence),
-        "found": found, "found_label2": sum(1 for v in r.labels if v == 2),
+        "name": name,
+        "graph": r.graph,
+        "policy": r.policy,
+        "rep": r.rep,
+        "budget": r.budget,
+        "valid": r.valid,
+        "status": r.status,
+        "replay": r.replay,
+        "fetched": len(r.sequence),
+        "found": found,
+        "found_label2": sum(1 for v in r.labels if v == 2),
         "harvest30": harvest_at(r.labels, 30) if r.labels else None,
-        "input_tokens": r.input_tokens, "output_tokens": r.output_tokens,
-        "llm_calls": r.llm_calls, "llm_replayed": r.llm_replayed,
-        "wall_seconds": r.wall_seconds, "replay_misses": r.replay_misses,
+        "input_tokens": r.input_tokens,
+        "output_tokens": r.output_tokens,
+        "llm_calls": r.llm_calls,
+        "llm_replayed": r.llm_replayed,
+        "wall_seconds": r.wall_seconds,
+        "replay_misses": r.replay_misses,
         "problems": r.problems,
         "short": len(r.sequence) < 0.9 * r.budget if r.budget else False,
     }
@@ -161,13 +193,21 @@ def get_run(name: str):
     if not path.is_file():
         raise HTTPException(status_code=404, detail="run not found")
     record = RunRecord.from_json(json.loads(path.read_text()))
-    return {**_summary(name, record), "sequence": record.sequence, "labels": record.labels,
-            "manifest": record.manifest, "settings": record.settings}
+    return {
+        **_summary(name, record),
+        "sequence": record.sequence,
+        "labels": record.labels,
+        "manifest": record.manifest,
+        "settings": record.settings,
+    }
 
 
 @router.get("/curves")
-def get_curves(min_grade: int = Query(1, ge=1, le=2), max_k: int = Query(100, ge=1, le=500),
-               budget: int | None = None):
+def get_curves(
+    min_grade: int = Query(1, ge=1, le=2),
+    max_k: int = Query(100, ge=1, le=500),
+    budget: int | None = None,
+):
     records = [r for _, r in _records() if budget is None or r.budget == budget]
     records = dedupe_records(records, DATA_DIR)
     groups = by_policy(records)
@@ -184,8 +224,10 @@ def get_curves(min_grade: int = Query(1, ge=1, le=2), max_k: int = Query(100, ge
         def avg(vals):
             vals = [v for v in vals if not math.isnan(v) and not math.isinf(v)]
             return sum(vals) / len(vals) if vals else None
+
         series[policy] = {
-            "runs": len(runs), "points": points,
+            "runs": len(runs),
+            "points": points,
             "short": sum(1 for r in runs if r.budget and len(r.sequence) < 0.9 * r.budget),
             "tokens": sum(r.input_tokens + r.output_tokens for r in runs) / len(runs),
             "rel_per_call": avg([e[0] for e in eff]),
@@ -196,6 +238,7 @@ def get_curves(min_grade: int = Query(1, ge=1, le=2), max_k: int = Query(100, ge
 
 # ── overview and graph ───────────────────────────────────────────────────────
 
+
 @router.get("/overview")
 def overview():
     graphs = {}
@@ -204,18 +247,36 @@ def overview():
             s = graph_stats(_graph(name))
         except Exception:  # unreadable or half-written graph file
             continue
-        graphs[name] = {**{k: s[k] for k in ("pages", "edges", "absent_links", "reachable",
-                                              "out_degree", "labels", "relevant_unreachable")},
-                        "depth": [{"depth": d, **row} for d, row in s["relevant_per_depth"].items()]}
+        graphs[name] = {
+            **{
+                k: s[k]
+                for k in (
+                    "pages",
+                    "edges",
+                    "absent_links",
+                    "reachable",
+                    "out_degree",
+                    "labels",
+                    "relevant_unreachable",
+                )
+            },
+            "depth": [{"depth": d, **row} for d, row in s["relevant_per_depth"].items()],
+        }
     key = DATA_DIR / "audit_key.json"
-    return {"protocol": read_protocol(), "graphs": graphs,
-            "audit": _audit_result(key, DATA_DIR / "audit_filled.tsv") if key.is_file() else None,
-            "runs": len(_records())}
+    return {
+        "protocol": read_protocol(),
+        "graphs": graphs,
+        "audit": _audit_result(key, DATA_DIR / "audit_filled.tsv") if key.is_file() else None,
+        "runs": len(_records()),
+    }
 
 
 @router.get("/graph")
-def get_graph(name: str = "isi.json", max_depth: int = Query(1, ge=0, le=6),
-              limit: int = Query(400, ge=10, le=3000)):
+def get_graph(
+    name: str = "isi.json",
+    max_depth: int = Query(1, ge=0, le=6),
+    limit: int = Query(400, ge=10, le=3000),
+):
     """Seed-centred subgraph as a breadth-first spanning tree (what the crawl graph view draws).
 
     Pages up to ``max_depth``, relevant pages first. ``parent`` is the page each
@@ -234,8 +295,10 @@ def get_graph(name: str = "isi.json", max_depth: int = Query(1, ge=0, le=6),
             if t in graph.pages and t not in depth:
                 depth[t], parent[t] = depth[n] + 1, n
                 queue.append(t)
-    ranked = sorted((n for n, d in depth.items() if d <= max_depth),
-                    key=lambda n: (-graph.label(n), depth[n], n))
+    ranked = sorted(
+        (n for n, d in depth.items() if d <= max_depth),
+        key=lambda n: (-graph.label(n), depth[n], n),
+    )
     keep = set(ranked[:limit])
     # A kept page needs its chain of ancestors, or the tree falls apart.
     for n in list(keep):
@@ -243,13 +306,28 @@ def get_graph(name: str = "isi.json", max_depth: int = Query(1, ge=0, le=6),
         while a is not None and a not in keep:
             keep.add(a)
             a = parent[a]
-    nodes = [{"id": n, "parent": parent[n], "title": graph.pages[n].get("title") or n,
-              "label": graph.label(n), "depth": depth[n], "out": len(graph.pages[n]["links"])}
-             for n in sorted(keep, key=lambda n: (depth[n], n))]
+    nodes = [
+        {
+            "id": n,
+            "parent": parent[n],
+            "title": graph.pages[n].get("title") or n,
+            "label": graph.label(n),
+            "depth": depth[n],
+            "out": len(graph.pages[n]["links"]),
+        }
+        for n in sorted(keep, key=lambda n: (depth[n], n))
+    ]
     tree = sum(1 for n in keep if parent[n] is not None)
     all_links = sum(1 for n in keep for link in graph.pages[n]["links"] if link["to"] in keep)
-    return {"name": name, "seed": graph.seed, "topic": graph.topic, "total": len(graph.pages),
-            "shown": len(nodes), "cross_links": all_links - tree, "nodes": nodes}
+    return {
+        "name": name,
+        "seed": graph.seed,
+        "topic": graph.topic,
+        "total": len(graph.pages),
+        "shown": len(nodes),
+        "cross_links": all_links - tree,
+        "nodes": nodes,
+    }
 
 
 @router.get("/page")
@@ -258,8 +336,13 @@ def get_page(name: str, graph: str = "isi.json"):
     page = g.pages.get(name)
     if page is None:
         raise HTTPException(status_code=404, detail="page not in graph")
-    return {"id": name, "title": page.get("title"), "label": g.label(name),
-            "text": (page.get("text") or "")[:3000], "links": page["links"][:60]}
+    return {
+        "id": name,
+        "title": page.get("title"),
+        "label": g.label(name),
+        "text": (page.get("text") or "")[:3000],
+        "links": page["links"][:60],
+    }
 
 
 @router.get("/estimate")
@@ -272,9 +355,17 @@ def estimate(budget: int = Query(50, ge=1)):
             continue
         arm = "cascade" if r.policy.startswith("cascade") else r.policy
         per.setdefault(arm, []).append(tokens / len(r.sequence))
-    return {"budget": budget, "arms": {
-        arm: {"tokens_per_page": sum(v) / len(v), "runs": len(v), "tokens_for_budget": sum(v) / len(v) * budget}
-        for arm, v in per.items()}}
+    return {
+        "budget": budget,
+        "arms": {
+            arm: {
+                "tokens_per_page": sum(v) / len(v),
+                "runs": len(v),
+                "tokens_for_budget": sum(v) / len(v) * budget,
+            }
+            for arm, v in per.items()
+        },
+    }
 
 
 # ── audit annotation ─────────────────────────────────────────────────────────
@@ -306,10 +397,20 @@ def _labels_of(path: Path) -> dict[str, int]:
 def get_audit(annotator: str = "1"):
     """The sample for a human. The judge's label is never sent (blind audit)."""
     labels = _labels_of(_audit_paths(annotator))
-    items = [{"id": r["id"], "title": r["title"], "excerpt": r["excerpt"],
-              "human_label": labels.get(r["id"])} for r in _audit_rows(annotator)]
-    return {"annotator": annotator, "items": items,
-            "done": sum(1 for i in items if i["human_label"] is not None)}
+    items = [
+        {
+            "id": r["id"],
+            "title": r["title"],
+            "excerpt": r["excerpt"],
+            "human_label": labels.get(r["id"]),
+        }
+        for r in _audit_rows(annotator)
+    ]
+    return {
+        "annotator": annotator,
+        "items": items,
+        "done": sum(1 for i in items if i["human_label"] is not None),
+    }
 
 
 class LabelBody(BaseModel):
@@ -339,7 +440,9 @@ def put_audit(item_id: str, body: LabelBody, annotator: str = "1"):
     return {"id": item_id, "human_label": body.human_label, "done": len(labels)}
 
 
-def _audit_result(key_path: Path, tsv: Path, total: int | None = None, other: Path | None = None) -> dict | None:
+def _audit_result(
+    key_path: Path, tsv: Path, total: int | None = None, other: Path | None = None
+) -> dict | None:
     key = json.loads(key_path.read_text())
     human = _labels_of(tsv)
     ids = sorted((i for i in human if i in key["items"]), key=int)
@@ -350,7 +453,8 @@ def _audit_result(key_path: Path, tsv: Path, total: int | None = None, other: Pa
     counts = {int(g): n for g, n in key["graph_label_counts"].items()}
     prec, rec = audit_mod.per_class(bp, (1,))[1]
     return {
-        "n": len(pairs), "sampled": total or len(key["items"]),
+        "n": len(pairs),
+        "sampled": total or len(key["items"]),
         "confusion": audit_mod.confusion(pairs, (0, 1, 2)),
         "confusion_binary": audit_mod.confusion(bp, (0, 1)),
         "agreement": _nan(audit_mod.agreement(pairs)),
@@ -358,7 +462,8 @@ def _audit_result(key_path: Path, tsv: Path, total: int | None = None, other: Pa
         "agreement_binary": _nan(audit_mod.agreement(bp)),
         "kappa_binary": _nan(audit_mod.kappa(bp)),
         "kappa_ci": [_nan(v) for v in audit_mod.bootstrap_ci(pairs, audit_mod.kappa)],
-        "relevant_precision": _nan(prec), "relevant_recall": _nan(rec),
+        "relevant_precision": _nan(prec),
+        "relevant_recall": _nan(rec),
         "reweighted": _nan(audit_mod.reweighted_agreement(pairs, counts)[0]),
         "human_vs_annotator1": _human_pair(human, other),
     }
@@ -371,10 +476,13 @@ def _human_pair(human: dict[str, int], other: Path | None) -> dict | None:
     if not both:
         return None
     pairs = [(first[i], human[i]) for i in both]
-    return {"n": len(pairs), "agreement": _nan(audit_mod.agreement(pairs)),
-            "kappa": _nan(audit_mod.kappa(pairs)),
-            "agreement_binary": _nan(audit_mod.agreement(audit_mod.binary(pairs))),
-            "kappa_binary": _nan(audit_mod.kappa(audit_mod.binary(pairs)))}
+    return {
+        "n": len(pairs),
+        "agreement": _nan(audit_mod.agreement(pairs)),
+        "kappa": _nan(audit_mod.kappa(pairs)),
+        "agreement_binary": _nan(audit_mod.agreement(audit_mod.binary(pairs))),
+        "kappa_binary": _nan(audit_mod.kappa(audit_mod.binary(pairs))),
+    }
 
 
 @router.post("/audit/score")
@@ -386,7 +494,9 @@ def score_audit(annotator: str = "1", source: str = "ui"):
     tsv = DATA_DIR / "audit_filled.tsv" if source == "filled" else _audit_paths(annotator)
     second = annotator == "2" and source != "filled"
     result = _audit_result(
-        key, tsv, SECOND_ANNOTATOR_ITEMS if second else None,
+        key,
+        tsv,
+        SECOND_ANNOTATOR_ITEMS if second else None,
         _audit_paths("1") if second else None,
     )
     if result is None:

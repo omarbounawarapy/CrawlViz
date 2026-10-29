@@ -1,4 +1,5 @@
 """Pin: a 50-page cascade crawl on the frozen ISI graph (benchmark/data/isi.json)."""
+
 from collections.abc import Callable, Iterable
 from pathlib import Path
 

@@ -46,9 +46,7 @@ class GeminiTranslator:
                 "Accept": "application/json",
             },
             "data": {
-                "contents": [
-                    {"parts": [{"text": context.get_prompt()}]}
-                ],
+                "contents": [{"parts": [{"text": context.get_prompt()}]}],
             },
         }
 
@@ -82,6 +80,7 @@ class GeminiTranslator:
         except Exception as e:
             logger.warning(
                 "Failed to parse Gemini response: %s. Raw response: %.300s",
-                e, response,
+                e,
+                response,
             )
             return {}

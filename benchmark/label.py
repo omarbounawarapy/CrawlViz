@@ -11,6 +11,7 @@ evidence the metric measures what it should.
     .venv/bin/python -m benchmark.label --graph benchmark/data/isi.json \\
         --spot benchmark/data/spotcheck.tsv --agreement
 """
+
 import argparse
 import asyncio
 import csv
@@ -26,7 +27,10 @@ from models.llm_context import LlmContext
 from .graph import FrozenGraph
 from .llm_cache import CachedLlm
 
-PROVIDER, MODEL = "groq", "qwen/qwen3.8-27b"  # a different family from the cascade's model (llama-3.3-70b was retired on Groq)
+PROVIDER, MODEL = (
+    "groq",
+    "qwen/qwen3.8-27b",
+)  # a different family from the cascade's model (llama-3.3-70b was retired on Groq)
 BATCH = 8
 EXCERPT_CHARS = 450
 TOKENS_PER_MINUTE = 5500  # Groq's cap on this key is 8000
@@ -49,7 +53,7 @@ Answer with JSON only: {{"labels": {{"1": true, "2": false, ...}}}} with one ent
 
 
 def excerpt(page: dict) -> str:
-    return f'{page["title"]}: {page["text"][:EXCERPT_CHARS]}'.replace("\n", " ")
+    return f"{page['title']}: {page['text'][:EXCERPT_CHARS]}".replace("\n", " ")
 
 
 def make_prompt(topic: str, batch: list[tuple[str, dict]]) -> str:
@@ -61,7 +65,14 @@ async def judge(llm, topic: str, batch: list[tuple[str, dict]]) -> dict[str, boo
     prompt = make_prompt(topic, batch)
     for attempt in range(6):
         try:
-            result = await llm.send(LlmContext(PROVIDER, MODEL, prompt + (f"\n(Attempt {attempt + 1}: answer every page number.)" if attempt else "")))
+            result = await llm.send(
+                LlmContext(
+                    PROVIDER,
+                    MODEL,
+                    prompt
+                    + (f"\n(Attempt {attempt + 1}: answer every page number.)" if attempt else ""),
+                )
+            )
         except aiohttp.ClientResponseError as e:
             if e.status != 429:
                 raise
@@ -121,8 +132,12 @@ def main() -> None:
     ap.add_argument("--cache", type=Path, default=Path("benchmark/data/judge_cache.jsonl"))
     ap.add_argument("--keys", type=Path, default=Path("keys.json"))
     ap.add_argument("--limit", type=int, help="label only the first N pages (a dry run)")
-    ap.add_argument("--spot", type=Path, help="spot-check TSV: written after labelling, read by --agreement")
-    ap.add_argument("--agreement", action="store_true", help="compare the judge with the filled TSV")
+    ap.add_argument(
+        "--spot", type=Path, help="spot-check TSV: written after labelling, read by --agreement"
+    )
+    ap.add_argument(
+        "--agreement", action="store_true", help="compare the judge with the filled TSV"
+    )
     args = ap.parse_args()
 
     graph = FrozenGraph.load(args.graph)
@@ -144,7 +159,9 @@ def main() -> None:
     if args.spot:
         write_spot_check(graph, args.spot)
     labelled = [p["relevant"] for p in graph.pages.values() if p["relevant"] is not None]
-    print(f"{sum(labelled)} relevant of {len(labelled)} labelled ({llm.hits} cached, {llm.misses} calls)")
+    print(
+        f"{sum(labelled)} relevant of {len(labelled)} labelled ({llm.hits} cached, {llm.misses} calls)"
+    )
     if args.spot:
         print(f"spot check written to {args.spot}")
 

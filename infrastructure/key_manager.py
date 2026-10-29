@@ -24,9 +24,7 @@ class KeyManager:
         self.registry = self.load_keys()
         self.cooldown = cooldown
         self.indexes = {p: 0 for p in self.registry}
-        self.timestamps = {
-            p: {k: 0 for k in self.registry[p]} for p in self.registry
-        }
+        self.timestamps = {p: {k: 0 for k in self.registry[p]} for p in self.registry}
         self.lock = asyncio.Lock()
 
     async def next_key(self, provider_name: str) -> str | None:
@@ -68,7 +66,8 @@ class KeyManager:
             self.indexes[provider_name] %= len(keys)
             logger.warning(
                 "Dropped rejected API key for '%s'; %d key(s) left",
-                provider_name, len(keys),
+                provider_name,
+                len(keys),
             )
             return True
 
@@ -179,7 +178,5 @@ class KeyManager:
             if not all(isinstance(k, str) for k in keys):
                 raise ValueError(f"All keys for '{provider}' must be strings")
 
-        logger.info(
-            "Loaded API keys for providers: %s", ", ".join(sorted(data.keys()))
-        )
+        logger.info("Loaded API keys for providers: %s", ", ".join(sorted(data.keys())))
         return data

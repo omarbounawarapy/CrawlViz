@@ -27,7 +27,10 @@ def git_sha() -> str | None:
     try:
         out = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=5,
+            cwd=BASE_DIR,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
     except (OSError, subprocess.SubprocessError):
         return None

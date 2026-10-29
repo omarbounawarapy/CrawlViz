@@ -1,4 +1,5 @@
 """The LLM double for offline runs: answers from the prompt alone."""
+
 import json
 import re
 import zlib
@@ -30,10 +31,12 @@ class ScriptedLlm:
         results = []
         for url in urls:
             checksum = zlib.crc32(url.encode())
-            results.append({
-                "url": url,
-                "score": checksum % SCORE_RANGE,
-                "relevance_type": "direct",
-                "expansions": [f"insulin {url}"] if checksum % EXPANSION_EVERY == 0 else [],
-            })
+            results.append(
+                {
+                    "url": url,
+                    "score": checksum % SCORE_RANGE,
+                    "relevance_type": "direct",
+                    "expansions": [f"insulin {url}"] if checksum % EXPANSION_EVERY == 0 else [],
+                }
+            )
         return {"results": results}

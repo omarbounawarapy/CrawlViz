@@ -8,44 +8,36 @@ from events import (
     RequestStartedEvent,
     RequestResponseReceivedEvent,
     RequestFailedEvent,
-
     # Extraction
     ExtractionStartedEvent,
     LinkExtractionCompletedEvent,
     ItemExtractionCompletedEvent,
     ProcessingExtractionFailedEvent,
-
     # Filtering
     FilteringInputSnapshotEvent,
     LinkFilteringCompletedEvent,
     ItemFilteringCompletedEvent,
     FilteringPipelineErrorEvent,
-
     # Scoring
     ScoringStartedEvent,
     ScoringCompletedEvent,
     ScoringFailedEvent,
     EmptyScoreResultsEvent,
     NoLinksToScoreEvent,
-
     # Priority
     PriorityCalculationStartedEvent,
     PriorityCalculatedEvent,
     PriorityCalculationFailedEvent,
-
     # Transformation
     TransformationStartedEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
-
     # Storage
     NodeContentSetEvent,
-
     # Export
     ExportBatchFailedEvent,
     ExportBatchStartedEvent,
     ExportRowFailedEvent,
-
     # Retry
     RetryOperationFailedEvent,
 )
@@ -110,7 +102,7 @@ class DebuggingPipeline(BasePipeline):
         self.event_broker = event_broker
         self.enabled = enabled
 
-        debug_dir = os.path.join(debug_root, crawl_id[:crawl_id.find("-")])
+        debug_dir = os.path.join(debug_root, crawl_id[: crawl_id.find("-")])
         os.makedirs(debug_dir, exist_ok=True)
 
         path = os.path.join(debug_dir, crawl_id)
@@ -123,68 +115,56 @@ class DebuggingPipeline(BasePipeline):
             RequestStartedEvent: self._request_started,
             RequestResponseReceivedEvent: self._response_received,
             RequestFailedEvent: self._request_failed,
-
             # Extraction
             ExtractionStartedEvent: self._extraction_started,
             LinkExtractionCompletedEvent: self._links_extracted,
             ItemExtractionCompletedEvent: self._items_extracted,
             ProcessingExtractionFailedEvent: self._extraction_failed,
-
             # Filtering
             FilteringInputSnapshotEvent: self._filter_input,
             LinkFilteringCompletedEvent: self._link_filter,
             ItemFilteringCompletedEvent: self._item_filter,
             FilteringPipelineErrorEvent: self._filter_failed,
-
             # Transformation
             TransformationStartedEvent: self._transformation_started,
             TransformationCompletedEvent: self._transformation_done,
             TransformationFailedEvent: self._transformation_failed,
-
             # Scoring
             ScoringStartedEvent: self._scoring_started,
             ScoringCompletedEvent: self._scoring_done,
             ScoringFailedEvent: self._scoring_failed,
             EmptyScoreResultsEvent: self._empty_score,
             NoLinksToScoreEvent: self._no_links_to_score,
-
             # Storage
             NodeContentSetEvent: self._content_set,
-
             # Priority
             PriorityCalculationStartedEvent: self._priority_started,
             PriorityCalculatedEvent: self._priority_done,
             PriorityCalculationFailedEvent: self._priority_failed,
-
             # Export
             ExportRowFailedEvent: self._export_row_failed,
             ExportBatchFailedEvent: self._export_failed_event,
             ExportBatchStartedEvent: self._export_batch_started,
-
             # Retry
             RetryOperationFailedEvent: self._retry_failed,
-
             # NLP trace
             NLP_InputReceived: self._nlp_input_received,
             NLP_FeaturesExtracted: self._nlp_features_extracted,
             NLP_SimilarityScored: self._nlp_similarity_scored,
             NLP_VectorComposed: self._nlp_vector_composed,
             NLP_ScoreEmitted: self._nlp_score_emitted,
-
             # LLM trace
             LLM_PromptBuilt: self._llm_prompt_built,
             LLM_RequestDispatched: self._llm_request_dispatched,
             LLM_ResponseReceived: self._llm_response_received,
             LLM_ResponseParsed: self._llm_response_parsed,
             LLM_RequestFailed: self._llm_request_failed,
-
             # Network trace
             NET_RequestCreated: self._net_request_created,
             NET_RequestDispatched: self._net_request_dispatched,
             NET_ResponseReceived: self._net_response_received,
             NET_RequestFailed: self._net_request_failed,
             NET_RetryAttempted: self._net_retry_attempted,
-
             # Expansion trace
             EXP_Triggered: self._exp_triggered,
             EXP_PromptBuilt: self._exp_prompt_built,
@@ -232,7 +212,7 @@ class DebuggingPipeline(BasePipeline):
     # =========================================================
     def _prefix(self, w: int) -> str:
         now = datetime.now()
-        t = now.strftime("%H:%M:%S") + f".{int(now.microsecond/1000):03d}"
+        t = now.strftime("%H:%M:%S") + f".{int(now.microsecond / 1000):03d}"
         return f"[{t}][DW{w}]"
 
     def _clean(self, url: str) -> str:
@@ -271,20 +251,17 @@ class DebuggingPipeline(BasePipeline):
 
     def _filter_input(self, e, w):
         return (
-            f"{self._prefix(w)} [FILTER] INPUT "
-            f"links={e.raw_links_count} items={e.raw_items_count}"
+            f"{self._prefix(w)} [FILTER] INPUT links={e.raw_links_count} items={e.raw_items_count}"
         )
 
     def _link_filter(self, e, w):
         return (
-            f"{self._prefix(w)} [FILTER] LINKS "
-            f"kept={len(e.accepted)} rejected={e.rejected_count}"
+            f"{self._prefix(w)} [FILTER] LINKS kept={len(e.accepted)} rejected={e.rejected_count}"
         )
 
     def _item_filter(self, e, w):
         return (
-            f"{self._prefix(w)} [FILTER] ITEMS "
-            f"kept={len(e.accepted)} rejected={e.rejected_count}"
+            f"{self._prefix(w)} [FILTER] ITEMS kept={len(e.accepted)} rejected={e.rejected_count}"
         )
 
     def _filter_failed(self, e, w):

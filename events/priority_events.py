@@ -5,6 +5,7 @@ from typing import Any, Literal
 # 1. INPUT / INGESTION TRACE
 # =========================================================
 
+
 @dataclass
 class PriorityInputSnapshotEvent:
     correlation_id: str
@@ -15,6 +16,7 @@ class PriorityInputSnapshotEvent:
 # =========================================================
 # 2. EXECUTION START
 # =========================================================
+
 
 @dataclass
 class PriorityCalculationStartedEvent:
@@ -27,6 +29,7 @@ class PriorityCalculationStartedEvent:
 # =========================================================
 # 3. SUCCESS OUTPUT
 # =========================================================
+
 
 @dataclass
 class PriorityCalculatedEvent:
@@ -44,6 +47,7 @@ class PriorityCalculatedEvent:
 # 4. FAILURE (STRICT DEBUG CONTEXT)
 # =========================================================
 
+
 @dataclass
 class PriorityCalculationFailedEvent:
     correlation_id: str
@@ -58,12 +62,14 @@ class PriorityCalculationFailedEvent:
 # 5. OPTIONAL (RECOMMENDED FOR FUTURE GUI ENHANCEMENT)
 # =========================================================
 
+
 @dataclass
 class PriorityLinkTransformationEvent:
     """Optional fine-grained observability event.
 
     Only enable if you want step-by-step animation in the GUI.
     """
+
     correlation_id: str
     node_id: str
     link: str

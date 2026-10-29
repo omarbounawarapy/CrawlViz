@@ -6,6 +6,7 @@ never checked (they only checked key *presence*, not value *type*), to
 demonstrate the schema pass is adding real coverage, not just duplicating
 what was already there.
 """
+
 import pytest
 
 from config.blueprint_schema import Blueprint, StopConditions
@@ -37,8 +38,11 @@ class TestStopConditionsModelDirectly:
     def test_rejects_unknown_priority_strategy(self):
         with pytest.raises(Exception):  # pydantic.ValidationError
             StopConditions(
-                max_nodes=1, max_depth=1, max_duration=1,
-                no_progress_timeout=1, priority_strategy="not_real",
+                max_nodes=1,
+                max_depth=1,
+                max_duration=1,
+                no_progress_timeout=1,
+                priority_strategy="not_real",
             )
 
 

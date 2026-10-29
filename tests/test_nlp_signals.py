@@ -1,4 +1,5 @@
 """FeatureExtractor signals and ScoringPipeline bucketing (pure logic, no models)."""
+
 import numpy as np
 
 from nlp.feature_extractor import FeatureExtractor
@@ -12,9 +13,15 @@ class L:
 
 def pipeline(**kw):
     return ScoringPipeline(
-        None, None, None, low_threshold=0.2, high_threshold=0.75,
-        high_score_llm_fraction=0.3, low_score_sample_fraction=0.0,
-        high_score_random_fraction=0.0, **kw,
+        None,
+        None,
+        None,
+        low_threshold=0.2,
+        high_threshold=0.75,
+        high_score_llm_fraction=0.3,
+        low_score_sample_fraction=0.0,
+        high_score_random_fraction=0.0,
+        **kw,
     )
 
 

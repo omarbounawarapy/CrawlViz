@@ -24,10 +24,7 @@ def get_paths() -> RuntimePaths:
 
 
 def validation_errors(exc: ValidationError) -> list[dict[str, Any]]:
-    return [
-        {"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]}
-        for e in exc.errors()
-    ]
+    return [{"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]} for e in exc.errors()]
 
 
 def validation_http_error(exc: ValidationError) -> HTTPException:

@@ -72,6 +72,7 @@ class GroqTranslator:
         except Exception as e:
             logger.warning(
                 "Failed to parse Groq response: %s. Raw response: %.300s",
-                e, response,
+                e,
+                response,
             )
             return {}

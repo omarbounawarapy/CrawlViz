@@ -1,4 +1,5 @@
 """Extra components hear the run, and observers that change nothing leave the crawl unchanged."""
+
 import json
 from pathlib import Path
 from typing import Any
@@ -46,9 +47,16 @@ async def _cascade(
     llm = RecordingLlm(ScriptedLlm())
     run_dir = work_dir / f"run{len(list(work_dir.iterdir()))}"
     result = await run_cascade(
-        graph, budget, 0, CachedLlm(llm, run_dir / "cache.jsonl", scope="rep0"),
-        blueprint["extraction"], expansion, blueprint["scoring"]["strategy"], ("groq", "m"),
-        run_dir / "space", extra_components=extra_components or (),
+        graph,
+        budget,
+        0,
+        CachedLlm(llm, run_dir / "cache.jsonl", scope="rep0"),
+        blueprint["extraction"],
+        expansion,
+        blueprint["scoring"]["strategy"],
+        ("groq", "m"),
+        run_dir / "space",
+        extra_components=extra_components or (),
     )
     return result, [request["prompt"] for request in llm.requests]
 
@@ -80,7 +88,9 @@ async def test_an_idle_listener_does_not_change_a_baseline_run() -> None:
     graph = synthetic_graph(n_pages=BASELINE_PAGES, seed=0)
     alone = await run_policy(graph, "anchor_lexical", BASELINE_BUDGET)
     observed = await run_policy(
-        graph, "anchor_lexical", BASELINE_BUDGET,
+        graph,
+        "anchor_lexical",
+        BASELINE_BUDGET,
         extra_components=[Listener(StorageNodeUpdatedEvent)],
     )
     assert observed.visited == alone.visited

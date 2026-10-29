@@ -1,4 +1,5 @@
 """Queue depths of a running crawl: what the Pipelines picture shows while a crawl runs."""
+
 import asyncio
 from types import SimpleNamespace
 
@@ -13,11 +14,13 @@ def _stage(maxsize=0, items=0):
 
 
 def test_queue_depths_name_each_stage_by_its_setting():
-    fake = SimpleNamespace(_pipelines={
-        "requests": _stage(maxsize=10, items=3),
-        "debug": _stage(items=2),
-        "logging": _stage(items=5),  # not a settings stage, so not reported
-    })
+    fake = SimpleNamespace(
+        _pipelines={
+            "requests": _stage(maxsize=10, items=3),
+            "debug": _stage(items=2),
+            "logging": _stage(items=5),  # not a settings stage, so not reported
+        }
+    )
     depths = Crawler.queue_depths(fake)
     assert depths["requests"] == {"size": 3, "max": 10}
     assert depths["debugging"] == {"size": 2, "max": None}

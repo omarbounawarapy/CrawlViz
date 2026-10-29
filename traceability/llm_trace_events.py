@@ -5,6 +5,7 @@ from typing import Literal
 # LLM HANDLER TRACE EVENTS
 # =========================================================
 
+
 @dataclass
 class LLM_PromptBuilt:
     trace_id: str
@@ -12,9 +13,9 @@ class LLM_PromptBuilt:
     request_id: str
     llm_type: str
     model: str
-    strategy: str               # context class name
+    strategy: str  # context class name
     prompt_len: int
-    prompt_preview: str         # first 400 chars
+    prompt_preview: str  # first 400 chars
 
 
 @dataclass
@@ -33,7 +34,7 @@ class LLM_ResponseReceived:
     request_id: str
     latency_ms: float
     status_ok: bool
-    raw_preview: str            # first 300 chars of raw response
+    raw_preview: str  # first 300 chars of raw response
 
 
 @dataclass
@@ -43,7 +44,7 @@ class LLM_ResponseParsed:
     request_id: str
     output_keys: list[str]
     token_usage: dict[str, int] | None
-    output_preview: str         # first 300 chars of normalized result
+    output_preview: str  # first 300 chars of normalized result
 
 
 @dataclass

@@ -44,58 +44,68 @@ class TracedLlmHandler:
         model = context.get_model_information()
         prompt_str = context.get_prompt()
 
-        await self._tracer.emit(LLM_PromptBuilt(
-            trace_id=trace_id,
-            node_id=node_id,
-            request_id=request_id,
-            llm_type=llm_type,
-            model=model,
-            strategy=type(context).__name__,
-            prompt_len=len(prompt_str),
-            prompt_preview=prompt_str[:400],
-        ))
+        await self._tracer.emit(
+            LLM_PromptBuilt(
+                trace_id=trace_id,
+                node_id=node_id,
+                request_id=request_id,
+                llm_type=llm_type,
+                model=model,
+                strategy=type(context).__name__,
+                prompt_len=len(prompt_str),
+                prompt_preview=prompt_str[:400],
+            )
+        )
 
-        await self._tracer.emit(LLM_RequestDispatched(
-            trace_id=trace_id,
-            node_id=node_id,
-            request_id=request_id,
-            llm_type=llm_type,
-            model=model,
-        ))
+        await self._tracer.emit(
+            LLM_RequestDispatched(
+                trace_id=trace_id,
+                node_id=node_id,
+                request_id=request_id,
+                llm_type=llm_type,
+                model=model,
+            )
+        )
 
         try:
             result = await self._inner.send(context)
             latency_ms = (time.monotonic() - t0) * 1000
 
-            await self._tracer.emit(LLM_ResponseReceived(
-                trace_id=trace_id,
-                node_id=node_id,
-                request_id=request_id,
-                latency_ms=latency_ms,
-                status_ok=True,
-                raw_preview=str(result)[:300],
-            ))
+            await self._tracer.emit(
+                LLM_ResponseReceived(
+                    trace_id=trace_id,
+                    node_id=node_id,
+                    request_id=request_id,
+                    latency_ms=latency_ms,
+                    status_ok=True,
+                    raw_preview=str(result)[:300],
+                )
+            )
 
             output_keys = list(result.keys()) if isinstance(result, dict) else []
             token_usage = result.get("usage") if isinstance(result, dict) else None
-            await self._tracer.emit(LLM_ResponseParsed(
-                trace_id=trace_id,
-                node_id=node_id,
-                request_id=request_id,
-                output_keys=output_keys,
-                token_usage=token_usage,
-                output_preview=str(result)[:300],
-            ))
+            await self._tracer.emit(
+                LLM_ResponseParsed(
+                    trace_id=trace_id,
+                    node_id=node_id,
+                    request_id=request_id,
+                    output_keys=output_keys,
+                    token_usage=token_usage,
+                    output_preview=str(result)[:300],
+                )
+            )
 
             return result
 
         except Exception as exc:
-            await self._tracer.emit(LLM_RequestFailed(
-                trace_id=trace_id,
-                node_id=node_id,
-                request_id=request_id,
-                stage="dispatch",
-                error_type=type(exc).__name__,
-                error_message=str(exc),
-            ))
+            await self._tracer.emit(
+                LLM_RequestFailed(
+                    trace_id=trace_id,
+                    node_id=node_id,
+                    request_id=request_id,
+                    stage="dispatch",
+                    error_type=type(exc).__name__,
+                    error_message=str(exc),
+                )
+            )
             raise

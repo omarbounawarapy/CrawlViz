@@ -69,11 +69,13 @@ class Crawler:
         self.ui_port = ui_port if ui_port is not None else self.config.observability.ui_port
         self.seed = seed if seed is not None else self.config.run.seed
         self.fetch_concurrency = (
-            fetch_concurrency if fetch_concurrency is not None
+            fetch_concurrency
+            if fetch_concurrency is not None
             else self.config.pipelines.requests.workers
         )
         self.scoring_concurrency = (
-            scoring_concurrency if scoring_concurrency is not None
+            scoring_concurrency
+            if scoring_concurrency is not None
             else self.config.pipelines.scoring.workers
         )
         self.paths = paths if paths is not None else default_runtime_paths()
@@ -154,9 +156,7 @@ class Crawler:
         A task that raises propagates after the others are cancelled."""
         running = [asyncio.ensure_future(t) for t in tasks]
         try:
-            done, pending = await asyncio.wait(
-                running, return_when=asyncio.FIRST_COMPLETED
-            )
+            done, pending = await asyncio.wait(running, return_when=asyncio.FIRST_COMPLETED)
             if pending and not any(d.exception() for d in done if not d.cancelled()):
                 done2, pending = await asyncio.wait(pending, timeout=grace)
                 done |= done2
@@ -281,21 +281,23 @@ class Crawler:
         stage, and keep them for `queue_depths` and `apply_live`."""
         # One budget per crawl: every scoring worker draws from the same counter.
         self.call_budget = CallBudget(self.config.llm.max_calls_per_crawl)
-        self._pipelines = build_stages(StageInputs(
-            broker=self.event_broker,
-            storage=self.storage,
-            config=self.config,
-            paths=self.paths,
-            crawl_id=self.crawl_id,
-            blueprint=blueprint,
-            nlp_service=nlp_service,
-            scoring_service=scoring_service,
-            call_budget=self.call_budget,
-            fetch_concurrency=self.fetch_concurrency,
-            scoring_concurrency=self.scoring_concurrency,
-            seed=self.seed,
-            fetcher=self.fetcher,
-        ))
+        self._pipelines = build_stages(
+            StageInputs(
+                broker=self.event_broker,
+                storage=self.storage,
+                config=self.config,
+                paths=self.paths,
+                crawl_id=self.crawl_id,
+                blueprint=blueprint,
+                nlp_service=nlp_service,
+                scoring_service=scoring_service,
+                call_budget=self.call_budget,
+                fetch_concurrency=self.fetch_concurrency,
+                scoring_concurrency=self.scoring_concurrency,
+                seed=self.seed,
+                fetcher=self.fetcher,
+            )
+        )
         return self._pipelines
 
     def _wire_subscriptions(self, p: dict, space_updater: SpaceUpdater) -> None:

@@ -4,8 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from config.runtime_config import default_runtime_config
-from core.live_settings import (LIVE_BINDINGS, LiveSettingsError, apply_live,
-                                live_fields)
+from core.live_settings import LIVE_BINDINGS, LiveSettingsError, apply_live, live_fields
 
 
 def test_every_live_field_has_a_binding():
@@ -13,15 +12,19 @@ def test_every_live_field_has_a_binding():
 
 
 def _pipes():
-    return {"requests": SimpleNamespace(min_delay=1, jitter_max=0.2, max_backoff=10),
-            "retry": SimpleNamespace(max_request_retries=3, max_scoring_retries=3)}
+    return {
+        "requests": SimpleNamespace(min_delay=1, jitter_max=0.2, max_backoff=10),
+        "retry": SimpleNamespace(max_request_retries=3, max_scoring_retries=3),
+    }
 
 
 def test_apply_sets_pipeline_attributes():
     pipes = _pipes()
-    cfg = apply_live(default_runtime_config(), pipes,
-                     {"fetch": {"min_delay": 0.25, "backoff_max": 20},
-                      "retries": {"max_request_retries": 7}})
+    cfg = apply_live(
+        default_runtime_config(),
+        pipes,
+        {"fetch": {"min_delay": 0.25, "backoff_max": 20}, "retries": {"max_request_retries": 7}},
+    )
     assert pipes["requests"].min_delay == 0.25
     assert pipes["requests"].max_backoff == 20
     assert pipes["retry"].max_request_retries == 7

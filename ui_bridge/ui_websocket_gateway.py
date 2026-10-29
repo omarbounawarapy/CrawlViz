@@ -26,9 +26,7 @@ try:
     from websockets.asyncio.server import ServerConnection, serve
     from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 except ImportError:
-    raise ImportError(
-        "The 'websockets' package is required. Install with: pip install websockets"
-    )
+    raise ImportError("The 'websockets' package is required. Install with: pip install websockets")
 
 from .crawl_state_snapshot import CrawlStateSnapshot
 
@@ -48,10 +46,10 @@ class UIWebSocketGateway:
         port: int = 8765,
     ) -> None:
         self._snapshot: CrawlStateSnapshot = snapshot
-        self._host:     str                = host
-        self._port:     int                = port
-        self._clients:  Set[ServerConnection] = set()
-        self._server                       = None
+        self._host: str = host
+        self._port: int = port
+        self._clients: Set[ServerConnection] = set()
+        self._server = None
 
     @property
     def port(self) -> int:
@@ -120,10 +118,10 @@ class UIWebSocketGateway:
         if not self._clients:
             return
 
-        payload  = json.dumps(message, default=str)
+        payload = json.dumps(message, default=str)
         dead: Set[ServerConnection] = set()
 
-        for ws in set(self._clients):          # snapshot set; safe against mutation
+        for ws in set(self._clients):  # snapshot set; safe against mutation
             try:
                 await ws.send(payload)
             except Exception:

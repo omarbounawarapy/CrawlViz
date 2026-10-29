@@ -11,6 +11,7 @@ page's own events, its scoring, the stop) races with the runner stopping the
 crawl, so it is left out. Only the stop message is kept, reduced to the fields
 that do not depend on that race.
 """
+
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -68,14 +69,23 @@ class PinObserver:
             kind = "high_score_links" if is_high else "low_score_links"
             node = event.node
         for record in event.records:
-            self.decisions.append((event.seq, {
-                "decision": kind, "seq": event.seq, "node_id": node.get_id(), **record,
-            }))
+            self.decisions.append(
+                (
+                    event.seq,
+                    {
+                        "decision": kind,
+                        "seq": event.seq,
+                        "node_id": node.get_id(),
+                        **record,
+                    },
+                )
+            )
 
     def wire_messages(self) -> list[dict[str, Any]]:
         return [
             {key: message[key] for key in STOP_MESSAGE_KEYS}
-            if message["type"] == "CRAWL_STOPPED" else message
+            if message["type"] == "CRAWL_STOPPED"
+            else message
             for message in self.gateway.messages
         ]
 

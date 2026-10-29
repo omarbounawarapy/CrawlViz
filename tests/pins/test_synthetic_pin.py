@@ -1,4 +1,5 @@
 """Pin: a cascade crawl on a seeded 200-page synthetic site generated in the test."""
+
 from collections.abc import Callable, Iterable
 from pathlib import Path
 

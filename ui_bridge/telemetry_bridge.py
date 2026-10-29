@@ -77,11 +77,11 @@ class TelemetryBridge:
     def __init__(
         self,
         snapshot: CrawlStateSnapshot,
-        gateway,                        # UIWebSocketGateway — typed as Any to avoid circular import
+        gateway,  # UIWebSocketGateway — typed as Any to avoid circular import
         priority_strategy_name: str = "balanced",
     ) -> None:
         self.snapshot = snapshot
-        self.gateway  = gateway
+        self.gateway = gateway
         self.priority_strategy_name = priority_strategy_name
         self._dispatch: Dict[type, Callable] = {}
 
@@ -149,57 +149,49 @@ class TelemetryBridge:
 
         self._dispatch = {
             # --- V1 node lifecycle (unchanged behavior)
-            NodeAddedEvent:          self._on_node_added,
-            PageFetchedEvent:        self._on_page_fetched,
-            ContentFilteredEvent:    self._on_content_filtered,
-            LinksScoredEvent:        self._on_links_scored,
+            NodeAddedEvent: self._on_node_added,
+            PageFetchedEvent: self._on_page_fetched,
+            ContentFilteredEvent: self._on_content_filtered,
+            LinksScoredEvent: self._on_links_scored,
             PriorityCalculatedEvent: self._on_priority_calculated,
             StorageNodeUpdatedEvent: self._on_node_updated,
-            StopCrawlEvent:          self._on_crawl_stopped,
-
+            StopCrawlEvent: self._on_crawl_stopped,
             # --- V2: request stage
-            RequestEnqueuedEvent:         self._on_request_enqueued,
-            RequestStartedEvent:          self._on_request_started,
+            RequestEnqueuedEvent: self._on_request_enqueued,
+            RequestStartedEvent: self._on_request_started,
             RequestResponseReceivedEvent: self._on_request_completed,
-            RequestFailedEvent:           self._on_request_failed,
-
+            RequestFailedEvent: self._on_request_failed,
             # --- V2: extraction stage
-            ExtractionStartedEvent:          self._on_extraction_started,
-            LinkExtractionCompletedEvent:    self._on_extraction_links_done,
-            ItemExtractionCompletedEvent:    self._on_extraction_items_done,
+            ExtractionStartedEvent: self._on_extraction_started,
+            LinkExtractionCompletedEvent: self._on_extraction_links_done,
+            ItemExtractionCompletedEvent: self._on_extraction_items_done,
             ProcessingExtractionFailedEvent: self._on_extraction_failed,
-
             # --- V2: filtering stage
-            FilteringEnqueuedEvent:          self._on_filtering_enqueued,
+            FilteringEnqueuedEvent: self._on_filtering_enqueued,
             FilteringWorkerCycleStartedEvent: self._on_filtering_started,
-            FilteringPipelineErrorEvent:     self._on_filtering_failed,
-
+            FilteringPipelineErrorEvent: self._on_filtering_failed,
             # --- V2: scoring stage (+ cascade candidate visibility)
-            ScoringEnqueuedEvent:  self._on_scoring_enqueued,
-            ScoringStartedEvent:   self._on_scoring_started,
+            ScoringEnqueuedEvent: self._on_scoring_enqueued,
+            ScoringStartedEvent: self._on_scoring_started,
             ScoringCompletedEvent: self._on_scoring_completed,
-            ScoringFailedEvent:    self._on_scoring_failed,
-            HighScoreLinksEvent:   self._on_high_score_links,
-            LowScoreLinksEvent:    self._on_low_score_links,
-
+            ScoringFailedEvent: self._on_scoring_failed,
+            HighScoreLinksEvent: self._on_high_score_links,
+            LowScoreLinksEvent: self._on_low_score_links,
             # --- V2: priority stage
             PriorityCalculationStartedEvent: self._on_priority_started,
-            PriorityCalculationFailedEvent:  self._on_priority_failed,
-
+            PriorityCalculationFailedEvent: self._on_priority_failed,
             # --- V2: transformation stage
-            TransformationStartedEvent:   self._on_transformation_started,
+            TransformationStartedEvent: self._on_transformation_started,
             TransformationCompletedEvent: self._on_transformation_completed,
-            TransformationFailedEvent:    self._on_transformation_failed,
-
+            TransformationFailedEvent: self._on_transformation_failed,
             # --- V2: export stage
-            ExportBatchStartedEvent:   self._on_export_started,
+            ExportBatchStartedEvent: self._on_export_started,
             ExportBatchCompletedEvent: self._on_export_completed,
-            ExportBatchFailedEvent:    self._on_export_failed,
-            ExportRowFailedEvent:      self._on_export_row_failed,
-
+            ExportBatchFailedEvent: self._on_export_failed,
+            ExportRowFailedEvent: self._on_export_row_failed,
             # --- V2: crawl-wide errors
             StorageOperationFailedEvent: self._on_storage_failed,
-            RetryOperationFailedEvent:   self._on_retry_failed,
+            RetryOperationFailedEvent: self._on_retry_failed,
         }
 
     @property
@@ -246,9 +238,9 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_node_added(self, event) -> list:
-        node      = event.node
-        node_id   = str(node.get_id())
-        url       = unquote(node.link.url)
+        node = event.node
+        node_id = str(node.get_id())
+        url = unquote(node.link.url)
         parent_id = str(node.parent.get_id()) if node.parent and node.parent != "" else None
         record = self.snapshot.add_node(
             node_id=node_id,
@@ -260,11 +252,13 @@ class TelemetryBridge:
         )
         self.snapshot.increment("nodes_created")
 
-        messages = [{
-            "type": "NODE_ADDED",
-            "ts":   time.time(),
-            "node": record.to_dict(),
-        }]
+        messages = [
+            {
+                "type": "NODE_ADDED",
+                "ts": time.time(),
+                "node": record.to_dict(),
+            }
+        ]
 
         # If this node's link went through the scoring cascade (it almost
         # always will -- the only nodes that don't are seeds), the pending
@@ -281,11 +275,13 @@ class TelemetryBridge:
                 priority=pending.get("priority"),
                 priority_strategy=self.priority_strategy_name,
             )
-            messages.append({
-                "type": "NODE_SCORED_DETAIL",
-                "ts":   time.time(),
-                **detail.to_dict(),
-            })
+            messages.append(
+                {
+                    "type": "NODE_SCORED_DETAIL",
+                    "ts": time.time(),
+                    **detail.to_dict(),
+                }
+            )
 
         return messages
 
@@ -295,10 +291,10 @@ class TelemetryBridge:
         self.snapshot.increment("nodes_fetched")
 
         return {
-            "type":    "NODE_STATE_CHANGED",
-            "ts":      time.time(),
+            "type": "NODE_STATE_CHANGED",
+            "ts": time.time(),
             "node_id": node_id,
-            "state":   "FETCHED",
+            "state": "FETCHED",
         }
 
     def _on_content_filtered(self, event) -> dict:
@@ -308,13 +304,13 @@ class TelemetryBridge:
         self.snapshot.increment("total_links_found", by=event.accepted_links_count)
 
         return {
-            "type":            "NODE_STATE_CHANGED",
-            "ts":              time.time(),
-            "node_id":         node_id,
-            "state":           "FILTERED",
-            "links_accepted":  event.accepted_links_count,
-            "links_rejected":  event.rejected_links_count,
-            "items_accepted":  event.accepted_items_count,
+            "type": "NODE_STATE_CHANGED",
+            "ts": time.time(),
+            "node_id": node_id,
+            "state": "FILTERED",
+            "links_accepted": event.accepted_links_count,
+            "links_rejected": event.rejected_links_count,
+            "items_accepted": event.accepted_items_count,
         }
 
     def _on_links_scored(self, event) -> dict:
@@ -323,10 +319,10 @@ class TelemetryBridge:
         self.snapshot.increment("nodes_scored")
 
         return {
-            "type":         "NODE_STATE_CHANGED",
-            "ts":           time.time(),
-            "node_id":      node_id,
-            "state":        "SCORED",
+            "type": "NODE_STATE_CHANGED",
+            "ts": time.time(),
+            "node_id": node_id,
+            "state": "SCORED",
             "scored_count": len(event.scored_links),
         }
 
@@ -354,14 +350,14 @@ class TelemetryBridge:
             }
 
         return {
-            "type":           "NODE_EXPANDED",
-            "ts":             time.time(),
-            "parent_id":      parent_id,
+            "type": "NODE_EXPANDED",
+            "ts": time.time(),
+            "parent_id": parent_id,
             "children_count": len(event.links),
             "children": [
                 {
-                    "url":      unquote(link["link"].url),
-                    "score":    link["score"],
+                    "url": unquote(link["link"].url),
+                    "score": link["score"],
                     "priority": link["priority"],
                 }
                 for link in event.links
@@ -380,14 +376,14 @@ class TelemetryBridge:
         self.snapshot.mark_stopped(event.reason)
 
         return {
-            "type":       "CRAWL_STOPPED",
-            "ts":         time.time(),
-            "reason":     event.reason,
+            "type": "CRAWL_STOPPED",
+            "ts": time.time(),
+            "reason": event.reason,
             "node_count": event.node_count,
-            "max_depth":  event.max_depth,
-            "duration":   event.duration,
-            "detail":     event.detail,
-            "metrics":    self.snapshot.metrics.to_dict(),
+            "max_depth": event.max_depth,
+            "duration": event.duration,
+            "detail": event.detail,
+            "metrics": self.snapshot.metrics.to_dict(),
         }
 
     # ==================================================================
@@ -419,31 +415,39 @@ class TelemetryBridge:
                 duration_ms = round((time.monotonic() - start) * 1000, 2)
 
         self.snapshot.record_pipeline_event(
-            stage=stage, phase=phase, queue_size=queue_size, duration_ms=duration_ms,
+            stage=stage,
+            phase=phase,
+            queue_size=queue_size,
+            duration_ms=duration_ms,
         )
 
         return {
-            "type":        "PIPELINE_EVENT",
-            "ts":          time.time(),
-            "stage":       stage,
-            "phase":       phase,
-            "node_id":     node_id,
-            "worker_id":   worker_id,
-            "queue_size":  queue_size,
+            "type": "PIPELINE_EVENT",
+            "ts": time.time(),
+            "stage": stage,
+            "phase": phase,
+            "node_id": node_id,
+            "worker_id": worker_id,
+            "queue_size": queue_size,
             "duration_ms": duration_ms,
-            "detail":      detail,
+            "detail": detail,
         }
 
-    def _error(self, *, node_id: Optional[str], stage: str, error_type: str, error_message: str) -> dict:
+    def _error(
+        self, *, node_id: Optional[str], stage: str, error_type: str, error_message: str
+    ) -> dict:
         self.snapshot.add_error(
-            node_id=node_id, stage=stage, error_type=error_type, error_message=error_message,
+            node_id=node_id,
+            stage=stage,
+            error_type=error_type,
+            error_message=error_message,
         )
         return {
-            "type":          "NODE_ERROR",
-            "ts":            time.time(),
-            "node_id":       node_id,
-            "stage":         stage,
-            "error_type":    error_type,
+            "type": "NODE_ERROR",
+            "ts": time.time(),
+            "node_id": node_id,
+            "stage": stage,
+            "error_type": error_type,
             "error_message": error_message,
         }
 
@@ -452,19 +456,39 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_request_enqueued(self, event) -> dict:
-        return self._tick(stage="request", phase="enqueued", node_id=event.node_id, queue_size=event.queue_size)
+        return self._tick(
+            stage="request", phase="enqueued", node_id=event.node_id, queue_size=event.queue_size
+        )
 
     def _on_request_started(self, event) -> dict:
-        return self._tick(stage="request", phase="started", node_id=event.node_id, worker_id=event.worker_id, detail=event.url)
+        return self._tick(
+            stage="request",
+            phase="started",
+            node_id=event.node_id,
+            worker_id=event.worker_id,
+            detail=event.url,
+        )
 
     def _on_request_completed(self, event) -> dict:
-        return self._tick(stage="request", phase="completed", node_id=event.node_id, detail=f"{event.response_size} B")
+        return self._tick(
+            stage="request",
+            phase="completed",
+            node_id=event.node_id,
+            detail=f"{event.response_size} B",
+        )
 
     def _on_request_failed(self, event) -> list:
         node_id = str(event.node.get_id())
         return [
-            self._tick(stage="request", phase="failed", node_id=node_id, detail=event.error_message),
-            self._error(node_id=node_id, stage="request", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="request", phase="failed", node_id=node_id, detail=event.error_message
+            ),
+            self._error(
+                node_id=node_id,
+                stage="request",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     # ==================================================================
@@ -472,10 +496,17 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_extraction_started(self, event) -> dict:
-        return self._tick(stage="extraction", phase="started", node_id=event.node_id, worker_id=event.worker_id)
+        return self._tick(
+            stage="extraction", phase="started", node_id=event.node_id, worker_id=event.worker_id
+        )
 
     def _on_extraction_links_done(self, event) -> dict:
-        return self._tick(stage="extraction", phase="completed", node_id=event.node_id, detail=f"{event.extracted_links_count} links")
+        return self._tick(
+            stage="extraction",
+            phase="completed",
+            node_id=event.node_id,
+            detail=f"{event.extracted_links_count} links",
+        )
 
     def _on_extraction_items_done(self, event) -> None:
         # Second half of the same extraction call (_on_extraction_links_done
@@ -487,8 +518,15 @@ class TelemetryBridge:
     def _on_extraction_failed(self, event) -> list:
         node_id = str(event.node.get_id())
         return [
-            self._tick(stage="extraction", phase="failed", node_id=node_id, detail=event.error_message),
-            self._error(node_id=node_id, stage="extraction", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="extraction", phase="failed", node_id=node_id, detail=event.error_message
+            ),
+            self._error(
+                node_id=node_id,
+                stage="extraction",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     # ==================================================================
@@ -496,16 +534,27 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_filtering_enqueued(self, event) -> dict:
-        return self._tick(stage="filtering", phase="enqueued", node_id=event.node_id, queue_size=event.queue_size)
+        return self._tick(
+            stage="filtering", phase="enqueued", node_id=event.node_id, queue_size=event.queue_size
+        )
 
     def _on_filtering_started(self, event) -> dict:
-        return self._tick(stage="filtering", phase="started", node_id=event.node_id, worker_id=event.worker_id)
+        return self._tick(
+            stage="filtering", phase="started", node_id=event.node_id, worker_id=event.worker_id
+        )
 
     def _on_filtering_failed(self, event) -> list:
         node_id = str(event.node.get_id())
         return [
-            self._tick(stage="filtering", phase="failed", node_id=node_id, detail=event.error_message),
-            self._error(node_id=node_id, stage="filtering", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="filtering", phase="failed", node_id=node_id, detail=event.error_message
+            ),
+            self._error(
+                node_id=node_id,
+                stage="filtering",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     # ==================================================================
@@ -513,20 +562,36 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_scoring_enqueued(self, event) -> dict:
-        return self._tick(stage="scoring", phase="enqueued", node_id=event.node_id, queue_size=event.queue_size)
+        return self._tick(
+            stage="scoring", phase="enqueued", node_id=event.node_id, queue_size=event.queue_size
+        )
 
     def _on_scoring_started(self, event) -> dict:
-        return self._tick(stage="scoring", phase="started", node_id=event.node_id, worker_id=event.worker_id)
+        return self._tick(
+            stage="scoring", phase="started", node_id=event.node_id, worker_id=event.worker_id
+        )
 
     def _on_scoring_completed(self, event) -> dict:
         node_id = str(event.node.get_id())
-        return self._tick(stage="scoring", phase="completed", node_id=node_id, detail=f"{event.output_count} sent to LLM")
+        return self._tick(
+            stage="scoring",
+            phase="completed",
+            node_id=node_id,
+            detail=f"{event.output_count} sent to LLM",
+        )
 
     def _on_scoring_failed(self, event) -> list:
         node_id = str(event.node.get_id())
         return [
-            self._tick(stage="scoring", phase="failed", node_id=node_id, detail=event.error_message),
-            self._error(node_id=node_id, stage="scoring", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="scoring", phase="failed", node_id=node_id, detail=event.error_message
+            ),
+            self._error(
+                node_id=node_id,
+                stage="scoring",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     def _candidate_message(self, event, decision: str) -> Optional[dict]:
@@ -546,20 +611,25 @@ class TelemetryBridge:
             nlp_score = getattr(link, "_nlp_score", 0.0)
             breakdown = dict(getattr(link, "nlp_vector", {}) or {})
             self.snapshot.add_candidate(
-                parent_id=parent_id, url=unquote(link.url), nlp_score=nlp_score,
-                decision=decision, nlp_breakdown=breakdown,
+                parent_id=parent_id,
+                url=unquote(link.url),
+                nlp_score=nlp_score,
+                decision=decision,
+                nlp_breakdown=breakdown,
             )
-            candidates.append({
-                "url": unquote(link.url),
-                "nlp_score": nlp_score,
-                "nlp_breakdown": breakdown,
-            })
+            candidates.append(
+                {
+                    "url": unquote(link.url),
+                    "nlp_score": nlp_score,
+                    "nlp_breakdown": breakdown,
+                }
+            )
 
         return {
-            "type":       "CANDIDATE_EVALUATED",
-            "ts":         time.time(),
-            "parent_id":  parent_id,
-            "decision":   decision,
+            "type": "CANDIDATE_EVALUATED",
+            "ts": time.time(),
+            "parent_id": parent_id,
+            "decision": decision,
             "candidates": candidates,
         }
 
@@ -574,13 +644,22 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_priority_started(self, event) -> dict:
-        return self._tick(stage="priority", phase="started", node_id=event.node_id, worker_id=event.worker_id)
+        return self._tick(
+            stage="priority", phase="started", node_id=event.node_id, worker_id=event.worker_id
+        )
 
     def _on_priority_failed(self, event) -> list:
         node_id = str(event.node.get_id())
         return [
-            self._tick(stage="priority", phase="failed", node_id=node_id, detail=event.error_message),
-            self._error(node_id=node_id, stage="priority", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="priority", phase="failed", node_id=node_id, detail=event.error_message
+            ),
+            self._error(
+                node_id=node_id,
+                stage="priority",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     # ==================================================================
@@ -588,17 +667,34 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_transformation_started(self, event) -> dict:
-        return self._tick(stage="transformation", phase="started", node_id=event.node_id, worker_id=event.worker_id)
+        return self._tick(
+            stage="transformation",
+            phase="started",
+            node_id=event.node_id,
+            worker_id=event.worker_id,
+        )
 
     def _on_transformation_completed(self, event) -> dict:
         node_id = str(event.node.get_id())
-        return self._tick(stage="transformation", phase="completed", node_id=node_id, detail=f"{event.output_count} items")
+        return self._tick(
+            stage="transformation",
+            phase="completed",
+            node_id=node_id,
+            detail=f"{event.output_count} items",
+        )
 
     def _on_transformation_failed(self, event) -> list:
         node_id = str(event.node.get_id())
         return [
-            self._tick(stage="transformation", phase="failed", node_id=node_id, detail=event.error_message),
-            self._error(node_id=node_id, stage="transformation", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="transformation", phase="failed", node_id=node_id, detail=event.error_message
+            ),
+            self._error(
+                node_id=node_id,
+                stage="transformation",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     # ==================================================================
@@ -606,28 +702,46 @@ class TelemetryBridge:
     # ==================================================================
 
     def _on_export_started(self, event) -> dict:
-        return self._tick(stage="export", phase="started", detail=f"{event.table} (batch={event.batch_size})")
+        return self._tick(
+            stage="export", phase="started", detail=f"{event.table} (batch={event.batch_size})"
+        )
 
     def _on_export_completed(self, event) -> dict:
         # This is the one V1 event that already carried its own duration --
         # honor it instead of the started/completed correlation, since export
         # batches aren't tracked per-node the way every other stage is.
-        self.snapshot.record_pipeline_event(stage="export", phase="completed", duration_ms=event.duration_ms)
+        self.snapshot.record_pipeline_event(
+            stage="export", phase="completed", duration_ms=event.duration_ms
+        )
         return {
-            "type": "PIPELINE_EVENT", "ts": time.time(), "stage": "export", "phase": "completed",
-            "node_id": None, "worker_id": None, "queue_size": None,
-            "duration_ms": event.duration_ms, "detail": f"{event.table}: {event.inserted_count} rows",
+            "type": "PIPELINE_EVENT",
+            "ts": time.time(),
+            "stage": "export",
+            "phase": "completed",
+            "node_id": None,
+            "worker_id": None,
+            "queue_size": None,
+            "duration_ms": event.duration_ms,
+            "detail": f"{event.table}: {event.inserted_count} rows",
         }
 
     def _on_export_failed(self, event) -> list:
         return [
-            self._tick(stage="export", phase="failed", detail=f"{event.table}: {event.error_message}"),
-            self._error(node_id=None, stage="export", error_type=event.error_type, error_message=event.error_message),
+            self._tick(
+                stage="export", phase="failed", detail=f"{event.table}: {event.error_message}"
+            ),
+            self._error(
+                node_id=None,
+                stage="export",
+                error_type=event.error_type,
+                error_message=event.error_message,
+            ),
         ]
 
     def _on_export_row_failed(self, event) -> dict:
         return self._error(
-            node_id=None, stage="export",
+            node_id=None,
+            stage="export",
             error_type=event.error_type,
             error_message=f"{event.table}.{event.field}: {event.value!r}",
         )
@@ -638,12 +752,16 @@ class TelemetryBridge:
 
     def _on_storage_failed(self, event) -> dict:
         return self._error(
-            node_id=event.correlation_id, stage="storage",
-            error_type=event.error_type, error_message=event.error_message,
+            node_id=event.correlation_id,
+            stage="storage",
+            error_type=event.error_type,
+            error_message=event.error_message,
         )
 
     def _on_retry_failed(self, event) -> dict:
         return self._error(
-            node_id=event.correlation_id, stage=f"retry:{event.stage}",
-            error_type=event.error_type, error_message=event.error_message,
+            node_id=event.correlation_id,
+            stage=f"retry:{event.stage}",
+            error_type=event.error_type,
+            error_message=event.error_message,
         )

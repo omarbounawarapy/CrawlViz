@@ -91,9 +91,7 @@ class RetryProcessor(BasePipeline):
     async def _on_scoring_failed(self, event: ScoringFailedEvent) -> None:
         """Reschedule a node whose scoring raised (e.g. an LLM call failed),
         up to `max_scoring_retries`, instead of dropping it from the crawl."""
-        await self._reschedule_scoring(
-            event.node, event.error_message, event.error_type
-        )
+        await self._reschedule_scoring(event.node, event.error_message, event.error_type)
 
     async def _reschedule_scoring(
         self, node, reason: str, error_type: str, demote: int = 0
@@ -105,7 +103,10 @@ class RetryProcessor(BasePipeline):
         if attempts > self.max_scoring_retries:
             logger.warning(
                 "Node %s exceeded max scoring retries (%d) after %s: %s -- giving up",
-                node_id, self.max_scoring_retries, error_type, reason,
+                node_id,
+                self.max_scoring_retries,
+                error_type,
+                reason,
             )
             return
 
@@ -146,7 +147,10 @@ class RetryProcessor(BasePipeline):
         if attempts > self.max_request_retries:
             logger.warning(
                 "Node %s exceeded max retries (%d) after %s: %s -- giving up",
-                node_id, self.max_request_retries, event.error_type, event.error_message,
+                node_id,
+                self.max_request_retries,
+                event.error_type,
+                event.error_message,
             )
             node.fail()
             return
@@ -155,7 +159,9 @@ class RetryProcessor(BasePipeline):
             logger.warning(
                 "RequestFailedEvent for node %s but RetryProcessor has no "
                 "requests_pipeline wired in -- cannot retry (%s: %s)",
-                node_id, event.error_type, event.error_message,
+                node_id,
+                event.error_type,
+                event.error_message,
             )
             node.fail()
             return
@@ -163,8 +169,11 @@ class RetryProcessor(BasePipeline):
         node.decrease_priority(self.fetch_retry_demotion)
         logger.info(
             "Retrying node %s (attempt %d/%d) after %s: %s",
-            node_id, attempts, self.max_request_retries,
-            event.error_type, event.error_message,
+            node_id,
+            attempts,
+            self.max_request_retries,
+            event.error_type,
+            event.error_message,
         )
 
         async def _requeue() -> None:

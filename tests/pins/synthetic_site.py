@@ -4,6 +4,7 @@ A fifth of the pages are about the topic. Links from topical pages lean towards
 topical pages, and anchors to topical pages mostly use topic words, so a
 topic-focused crawl has something to find. Every page is reachable from the seed.
 """
+
 import random
 from typing import Any
 
@@ -29,12 +30,28 @@ OFF_TOPIC_TEXT_CHANCE = 0.1  # the same for any other page
 
 TOPIC = "diabetes insulin glucose"
 TOPIC_WORDS = [
-    "diabetes", "insulin", "glucose", "pancreas", "glycemic",
-    "neuropathy", "retinopathy", "metabolic", "hba1c",
+    "diabetes",
+    "insulin",
+    "glucose",
+    "pancreas",
+    "glycemic",
+    "neuropathy",
+    "retinopathy",
+    "metabolic",
+    "hba1c",
 ]
 OTHER_WORDS = [
-    "history", "news", "travel", "sports", "music", "weather",
-    "politics", "economy", "culture", "education", "software",
+    "history",
+    "news",
+    "travel",
+    "sports",
+    "music",
+    "weather",
+    "politics",
+    "economy",
+    "culture",
+    "education",
+    "software",
 ]
 
 

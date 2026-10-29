@@ -2,6 +2,7 @@
 and validate. Wiring is checked on a real Crawler built from a
 non-default RuntimeConfig, so a setting that is declared but never read
 fails here."""
+
 import json
 
 import pytest
@@ -22,9 +23,16 @@ from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
 
 OVERRIDES = {
     "fetch": {
-        "min_delay": 2.5, "jitter_max": 0.7, "backoff_start": 0.5, "backoff_max": 20.0,
-        "backoff_growth": 3.0, "backoff_success_decay": 0.25, "backoff_failure_decay": 0.75,
-        "user_agent": "TestBot/9", "respect_robots": False, "accept_language": "fr",
+        "min_delay": 2.5,
+        "jitter_max": 0.7,
+        "backoff_start": 0.5,
+        "backoff_max": 20.0,
+        "backoff_growth": 3.0,
+        "backoff_success_decay": 0.25,
+        "backoff_failure_decay": 0.75,
+        "user_agent": "TestBot/9",
+        "respect_robots": False,
+        "accept_language": "fr",
         "extra_headers": {"X-Test": "1"},
     },
     "pipelines": {
@@ -36,11 +44,22 @@ OVERRIDES = {
         "scoring": {"workers": 2},
         "retry": {"workers": 2},
     },
-    "retries": {"max_request_retries": 9, "max_scoring_retries": 8, "base_delay": 0.1,
-                "growth": 3.0, "empty_score_demotion": 7, "fetch_retry_demotion": 4},
-    "scoring_cascade": {"percentile_bucketing": False, "low_percentile": 10.0,
-                        "high_percentile": 90.0, "percentile_min_links": 3,
-                        "max_llm_links_per_node": 11, "llm_batch_size": 4},
+    "retries": {
+        "max_request_retries": 9,
+        "max_scoring_retries": 8,
+        "base_delay": 0.1,
+        "growth": 3.0,
+        "empty_score_demotion": 7,
+        "fetch_retry_demotion": 4,
+    },
+    "scoring_cascade": {
+        "percentile_bucketing": False,
+        "low_percentile": 10.0,
+        "high_percentile": 90.0,
+        "percentile_min_links": 3,
+        "max_llm_links_per_node": 11,
+        "llm_batch_size": 4,
+    },
     "priority": {"nlp_bias": 30, "llm_bias": 70},
     "observability": {"debug_enabled": False, "ui_port": 9001},
     "run": {"seed": 5},
@@ -102,19 +121,28 @@ def test_defaults_keep_the_previous_behaviour(tmp_path):
 
 def test_explicit_ctor_args_beat_config(tmp_path):
     cfg = store.load_runtime_config(None, OVERRIDES)
-    c = Crawler("wikiMD.json", config=cfg, paths=RuntimePaths.under(tmp_path),
-                fetch_concurrency=1, ui_port=1234, seed=2)
+    c = Crawler(
+        "wikiMD.json",
+        config=cfg,
+        paths=RuntimePaths.under(tmp_path),
+        fetch_concurrency=1,
+        ui_port=1234,
+        seed=2,
+    )
     assert (c.fetch_concurrency, c.ui_port, c.seed) == (1, 1234, 2)
 
 
-@pytest.mark.parametrize("bad", [
-    {"fetch": {"backoff_start": 5, "backoff_max": 1}},
-    {"fetch": {"http_connect_timeout": 99, "http_total_timeout": 5}},
-    {"scoring_cascade": {"low_percentile": 80, "high_percentile": 20}},
-    {"scoring_cascade": {"low_threshold": 0.9, "high_threshold": 0.1}},
-    {"pipelines": {"filtering": {"workers": 0}}},
-    {"priority": {"nlp_bias": 0, "llm_bias": 0}},
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"fetch": {"backoff_start": 5, "backoff_max": 1}},
+        {"fetch": {"http_connect_timeout": 99, "http_total_timeout": 5}},
+        {"scoring_cascade": {"low_percentile": 80, "high_percentile": 20}},
+        {"scoring_cascade": {"low_threshold": 0.9, "high_threshold": 0.1}},
+        {"pipelines": {"filtering": {"workers": 0}}},
+        {"priority": {"nlp_bias": 0, "llm_bias": 0}},
+    ],
+)
 def test_invalid_settings_are_rejected(bad):
     with pytest.raises(Exception):
         store.load_runtime_config(None, bad)
@@ -126,9 +154,9 @@ def test_store_persists_only_the_difference(tmp_path):
     assert json.loads(f.read_text()) == {"fetch": {"min_delay": 3.0}}
     store.save_settings(f, {"pipelines": {"filtering": {"workers": 4}}})
     cfg = store.load_runtime_config(f, {"fetch": {"min_delay": 0.0}})
-    assert cfg.fetch.min_delay == 0.0                     # override beats stored
-    assert cfg.pipelines.filtering.workers == 4           # stored beats default
-    assert cfg.pipelines.priority.workers == 10           # untouched stays default
+    assert cfg.fetch.min_delay == 0.0  # override beats stored
+    assert cfg.pipelines.filtering.workers == 4  # stored beats default
+    assert cfg.pipelines.priority.workers == 10  # untouched stays default
     store.reset_settings(f, "fetch")
     assert "fetch" not in json.loads(f.read_text())
     store.reset_settings(f)
@@ -235,20 +263,27 @@ def test_run_overrides_are_validated(tmp_path, monkeypatch):
     app = FastAPI()
     app.include_router(run_routes.router)
     c = TestClient(app)
-    r = c.post("/run", json={"templateName": "wikiMD.json",
-                             "overrides": {"fetch": {"min_delay": -5}}})
+    r = c.post(
+        "/run", json={"templateName": "wikiMD.json", "overrides": {"fetch": {"min_delay": -5}}}
+    )
     assert r.status_code == 422
     assert isinstance(RuntimeConfig.model_validate({}), RuntimeConfig)
 
 
 NEW_KNOBS = {
     "fetch": {"respect_robots": True, "robots_ttl_seconds": 30.0},
-    "nlp": {"target_top_k": 4, "cluster_eps": 0.5, "cluster_min_samples": 3,
-            "link_context_length": 40},
+    "nlp": {
+        "target_top_k": 4,
+        "cluster_eps": 0.5,
+        "cluster_min_samples": 3,
+        "link_context_length": 40,
+    },
     "run": {"stop_check_interval": 0.5, "shutdown_grace": 1.5},
     "observability": {"snapshot_max_candidates": 7, "snapshot_max_errors": 3},
-    "priority": {name + "_weights": {k: 0.0 for k in DEFAULT_WEIGHTS[name]} | {"target_similarity": 1.0}
-                 for name in ("aggressive", "balanced", "exploration")},
+    "priority": {
+        name + "_weights": {k: 0.0 for k in DEFAULT_WEIGHTS[name]} | {"target_similarity": 1.0}
+        for name in ("aggressive", "balanced", "exploration")
+    },
 }
 
 
@@ -290,6 +325,7 @@ def test_snapshot_bounds_and_url_rules(tmp_path):
 def test_nlp_knobs_reach_service():
     import inspect
     from services.nlp_service import NLPService
+
     sig = inspect.signature(NLPService.__init__).parameters
     assert {"target_top_k", "cluster_eps", "cluster_min_samples"} <= set(sig)
 
@@ -332,12 +368,20 @@ def test_presets_export_and_token(client, monkeypatch):
     assert client.get("/config/export").json() == {"fetch": {"min_delay": 4.0}}
     assert client.put("/config/presets/mine").json() == {"saved": "mine"}
     assert client.put("/config/presets/polite").status_code == 422
-    assert client.put("/config/presets/bad", json={"values": {"fetch": {"min_delay": -1}}}).status_code == 422
+    assert (
+        client.put("/config/presets/bad", json={"values": {"fetch": {"min_delay": -1}}}).status_code
+        == 422
+    )
     assert client.post("/config/presets/fast/apply").json()["fetch"]["min_delay"] == 0.2
     assert client.post("/config/presets/mine/apply").json()["fetch"]["min_delay"] == 4.0
     assert client.delete("/config/presets/mine").status_code == 200
     assert client.post("/config/presets/mine/apply").status_code == 404
-    assert client.post("/config/presets/frugal/apply").json()["scoring_cascade"]["high_score_llm_fraction"] == 0.1
+    assert (
+        client.post("/config/presets/frugal/apply").json()["scoring_cascade"][
+            "high_score_llm_fraction"
+        ]
+        == 0.1
+    )
 
     monkeypatch.setenv("CRAWLVIZ_API_TOKEN", "s3cret")
     assert client.get("/config").status_code == 401
@@ -349,20 +393,28 @@ def test_presets_export_and_token(client, monkeypatch):
 def test_prompts_and_endpoints_reach_their_objects(tmp_path):
     from models.prompts import PromptBuilder
 
-    cfg = store.load_runtime_config(None, {
-        "prompts": {"scoring_system": "SYS", "scoring_rules": "RULES:\n- only this",
-                    "strategy_contexts": {"TOPICAL": "custom ctx"}},
-        "providers": {"endpoints": {"groq": "http://localhost:9/v1/chat"}},
-    })
+    cfg = store.load_runtime_config(
+        None,
+        {
+            "prompts": {
+                "scoring_system": "SYS",
+                "scoring_rules": "RULES:\n- only this",
+                "strategy_contexts": {"TOPICAL": "custom ctx"},
+            },
+            "providers": {"endpoints": {"groq": "http://localhost:9/v1/chat"}},
+        },
+    )
     crawler = Crawler("wikiMD.json", config=cfg, paths=RuntimePaths.under(tmp_path))
     crawler._load_blueprint_config(FAKE_BLUEPRINT)
     pr = cfg.prompts
-    text = PromptBuilder("cats", "TOPICAL", pr.scoring_system, pr.scoring_rules,
-                         pr.strategy_contexts).build_prompt([])
+    text = PromptBuilder(
+        "cats", "TOPICAL", pr.scoring_system, pr.scoring_rules, pr.strategy_contexts
+    ).build_prompt([])
     assert text.startswith("SYS") and "- only this" in text and "custom ctx" in text
     assert "OUTPUT FORMAT" in text and "Score range" not in text
 
     from infrastructure.llm_handler import LlmHandler
+
     h = LlmHandler(None, endpoints=cfg.providers.endpoints)
     assert h.endpoints == {"groq": "http://localhost:9/v1/chat"}
     params = {"url": "x"}
@@ -372,10 +424,12 @@ def test_prompts_and_endpoints_reach_their_objects(tmp_path):
 
 
 def test_invalid_prompt_and_endpoint_rejected():
-    for bad in ({"prompts": {"scoring_system": ""}},
-                {"prompts": {"strategy_contexts": {"NOPE": "x"}}},
-                {"providers": {"endpoints": {"groq": "ftp://x"}}},
-                {"providers": {"endpoints": {"mystery": "http://x"}}}):
+    for bad in (
+        {"prompts": {"scoring_system": ""}},
+        {"prompts": {"strategy_contexts": {"NOPE": "x"}}},
+        {"providers": {"endpoints": {"groq": "ftp://x"}}},
+        {"providers": {"endpoints": {"mystery": "http://x"}}},
+    ):
         with pytest.raises(Exception):
             store.load_runtime_config(None, bad)
 
@@ -416,11 +470,15 @@ def test_prompt_preview_uses_draft_wording_and_matches_builder():
     from models.prompts import PromptBuilder
 
     client = TestClient(app)
-    res = client.post("/config/prompts/preview", json={
-        "target": "tea", "strategy": "EXPLORATION",
-        "scoring_rules": "RULES:\n- be brief",
-        "strategy_contexts": {"EXPLORATION": "Roam widely."},
-    })
+    res = client.post(
+        "/config/prompts/preview",
+        json={
+            "target": "tea",
+            "strategy": "EXPLORATION",
+            "scoring_rules": "RULES:\n- be brief",
+            "strategy_contexts": {"EXPLORATION": "Roam widely."},
+        },
+    )
     assert res.status_code == 200
     data = res.json()
     ids = [b["id"] for b in data["blocks"]]

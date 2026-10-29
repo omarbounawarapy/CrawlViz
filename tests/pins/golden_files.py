@@ -21,6 +21,7 @@ so a drift that keeps the true order of two values can make them equal but never
 invert them. A strict inversion of two priorities, or of two NLP scores of one
 parent page, therefore fails as "order changed" even when each moved by one step.
 """
+
 import difflib
 import json
 import math

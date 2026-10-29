@@ -54,8 +54,7 @@ class LlmHandler:
         self.temperature = temperature
         # Only entries that differ from the built-in URL are applied.
         self.endpoints = {
-            p: u for p, u in (endpoints or {}).items()
-            if u and u != LLM_DEFAULT_ENDPOINTS.get(p)
+            p: u for p, u in (endpoints or {}).items() if u and u != LLM_DEFAULT_ENDPOINTS.get(p)
         }
 
     def _apply_options(self, llm_type: str, params: dict) -> None:
@@ -95,8 +94,7 @@ class LlmHandler:
         translator_cls = self.translators.get(llm_type)
         if translator_cls is None:
             raise ValueError(
-                f"Unknown scoring type: {llm_type!r}. "
-                f"Registered: {list(self.translators.keys())}"
+                f"Unknown scoring type: {llm_type!r}. Registered: {list(self.translators.keys())}"
             )
 
         while True:
@@ -111,9 +109,7 @@ class LlmHandler:
             except aiohttp.ClientResponseError as e:
                 # A rejected key (401/403) will never start working: drop it
                 # from rotation and retry with the next one, if any is left.
-                if e.status in (401, 403) and await self.key_manager.mark_invalid(
-                    llm_type, key
-                ):
+                if e.status in (401, 403) and await self.key_manager.mark_invalid(llm_type, key):
                     continue
                 raise
         usage = getattr(translator_cls, "translate_usage", None)

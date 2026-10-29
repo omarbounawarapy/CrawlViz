@@ -3,6 +3,7 @@ on a graph that never changes, and compare what they fetch.
 
 See benchmark/README.md.
 """
+
 from .graph import FrozenGraph, synthetic_graph
 from .policies import POLICIES
 from .runner import RunResult, run_policy

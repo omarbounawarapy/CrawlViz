@@ -1,5 +1,6 @@
 """Run isolation: a stored vector space is keyed by (blueprint, model) and
 read-only unless opted in; items.db rows are keyed by (crawl_id, hash)."""
+
 import asyncio
 import sqlite3
 import types
@@ -91,7 +92,9 @@ def test_two_crawls_keep_their_rows(tmp_path):
 def test_legacy_table_is_migrated(tmp_path):
     db = str(tmp_path / "items.db")
     con = sqlite3.connect(db)
-    con.execute("CREATE TABLE t (id TEXT PRIMARY KEY, crawl_id TEXT, url TEXT, created_at TEXT, title TEXT)")
+    con.execute(
+        "CREATE TABLE t (id TEXT PRIMARY KEY, crawl_id TEXT, url TEXT, created_at TEXT, title TEXT)"
+    )
     con.execute("INSERT INTO t VALUES ('samehash','old','u','now','legacy')")
     con.commit()
     con.close()

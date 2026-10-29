@@ -5,6 +5,7 @@ is deterministic for a seed), minus the LLM, embeddings, exporter, loggers
 and UI. The scoring pipeline's LLM stage is a no-op, so every link is
 ranked by the policy's own score.
 """
+
 import asyncio
 import logging
 import random
@@ -338,12 +339,20 @@ def assess(budget, fetched, monitor, retry, errors, frontier_empty: bool = False
         else:
             h.problems.append(f"stalled with work pending after {len(fetched)} of {budget} pages")
     if exhausted:
-        h.problems.append(f"{len(exhausted)} node(s) gave up scoring after {retry.max_scoring_retries} retries")
-    for name in ("PriorityCalculationFailedEvent", "StorageOperationFailedEvent", "RequestFailedEvent"):
+        h.problems.append(
+            f"{len(exhausted)} node(s) gave up scoring after {retry.max_scoring_retries} retries"
+        )
+    for name in (
+        "PriorityCalculationFailedEvent",
+        "StorageOperationFailedEvent",
+        "RequestFailedEvent",
+    ):
         if monitor.counts.get(name):
             h.problems.append(f"{monitor.counts[name]} {name}")
     if errors.records:
-        h.problems.append(f"{len(errors.records)} swallowed pipeline exception(s): {errors.records[0][:120]}")
+        h.problems.append(
+            f"{len(errors.records)} swallowed pipeline exception(s): {errors.records[0][:120]}"
+        )
     if h.problems:
         h.status = "failed"
     return h
@@ -357,8 +366,12 @@ class RunResult:
     health: RunHealth = field(default_factory=RunHealth)
     wall_seconds: float = 0.0
     rate_limit_seconds: float = 0.0  # wall time spent waiting on pacing or a 429; not idle time
-    thresholds: dict = field(default_factory=dict)  # bucketing in force: mode, absolute and percentile values
-    absent_page_hits: int = 0  # requests for pages outside the frozen graph (graph.ABSENT_PAGE_HITS)
+    thresholds: dict = field(
+        default_factory=dict
+    )  # bucketing in force: mode, absolute and percentile values
+    absent_page_hits: int = (
+        0  # requests for pages outside the frozen graph (graph.ABSENT_PAGE_HITS)
+    )
 
     def harvest(self, k: int) -> float:
         """Share of the first k fetched pages that are relevant (label >= 1)."""
@@ -384,13 +397,19 @@ def _thresholds(kwargs: dict, percentiles) -> dict:
         mode = "absolute"
     return {
         "mode": mode,
-        "low": kwargs["low_threshold"], "high": kwargs["high_threshold"],
-        "low_percentile": percentiles[0], "high_percentile": percentiles[1],
+        "low": kwargs["low_threshold"],
+        "high": kwargs["high_threshold"],
+        "low_percentile": percentiles[0],
+        "high_percentile": percentiles[1],
     }
 
 
 async def run_policy(
-    graph: FrozenGraph, policy: str, budget: int, seed: int = 0, lockstep: bool = True,
+    graph: FrozenGraph,
+    policy: str,
+    budget: int,
+    seed: int = 0,
+    lockstep: bool = True,
     extra_components: Sequence[object] = (),
 ) -> RunResult:
     """Fetch up to `budget` pages (the seed counts) starting from graph.seed.
@@ -400,7 +419,8 @@ async def run_policy(
     pins use it.
     """
     scoring_args = (
-        _NoLlm(), POLICIES[policy](graph, seed),
+        _NoLlm(),
+        POLICIES[policy](graph, seed),
         # Admit every link: a ranking baseline must not inherit the cascade's
         # bucketing, which drops low-NLP links before they reach the frontier.
     )
@@ -414,15 +434,34 @@ async def run_policy(
         "max_llm_links": None,
     }
     return await _run(
-        graph, policy, budget, seed, scoring_args, scoring_kwargs, _passthrough,
-        list(extra_components), lockstep=lockstep,
+        graph,
+        policy,
+        budget,
+        seed,
+        scoring_args,
+        scoring_kwargs,
+        _passthrough,
+        list(extra_components),
+        lockstep=lockstep,
     )
 
 
 async def _run(
-    graph, label, budget, seed, scoring_args, scoring_kwargs, strategy, extra,
-    extraction=EXTRACTION, retry_base_delay=0.01, idle_limit=0.5, lockstep=True,
-    rate_limited=None, budget_gate=None, percentiles=(NLP_LOW_PERCENTILE, NLP_HIGH_PERCENTILE),
+    graph,
+    label,
+    budget,
+    seed,
+    scoring_args,
+    scoring_kwargs,
+    strategy,
+    extra,
+    extraction=EXTRACTION,
+    retry_base_delay=0.01,
+    idle_limit=0.5,
+    lockstep=True,
+    rate_limited=None,
+    budget_gate=None,
+    percentiles=(NLP_LOW_PERCENTILE, NLP_HIGH_PERCENTILE),
 ) -> RunResult:
     """One lockstep run. Each component in ``extra`` has ``handlers`` (event
     type to coroutine), ``start`` and ``put``, and is subscribed to the events
@@ -438,7 +477,10 @@ async def _run(
 
     gated = _Lockstep(fetcher, lambda: False, budget) if lockstep else fetcher
     requests = RequestsPipeline(
-        broker, max_concurrency=1, fetcher=gated, min_delay=0,
+        broker,
+        max_concurrency=1,
+        fetcher=gated,
+        min_delay=0,
         rng=_NoJitter(),
     )
     if lockstep:
@@ -452,7 +494,9 @@ async def _run(
         rng=random.Random(f"{seed}:scoring"),
         **scoring_kwargs,
     )
-    retry = RetryProcessor(storage, broker, requests_pipeline=requests, retry_base_delay=retry_base_delay)
+    retry = RetryProcessor(
+        storage, broker, requests_pipeline=requests, retry_base_delay=retry_base_delay
+    )
     processing = ProcessingPipeline(broker, extraction)
     filtering = FilteringPipeline(broker, storage)
     transformation = TransformationPipeline(broker, extraction)
@@ -484,24 +528,28 @@ async def _run(
                 and not retry._pending
             )
 
-        gated.quiet = lambda: others_idle() and (scoring.queue._unfinished_tasks == 0 or scoring.parked)
+        gated.quiet = lambda: (
+            others_idle() and (scoring.queue._unfinished_tasks == 0 or scoring.parked)
+        )
         scoring.gate = others_idle
         requests.queue.gate = gated.quiet
     errors = _ErrorLog()
     logging.getLogger().addHandler(errors)
     started = time.monotonic()
-    tasks = [asyncio.create_task(broker.start())] + [asyncio.create_task(p.start()) for p in pipelines]
+    tasks = [asyncio.create_task(broker.start())] + [
+        asyncio.create_task(p.start()) for p in pipelines
+    ]
     await asyncio.sleep(0.05)
-    seed_node = Node(storage.next_id(), url=f"{BASE_URL}/{graph.seed}", domain=domain, priority=0.01)
+    seed_node = Node(
+        storage.next_id(), url=f"{BASE_URL}/{graph.seed}", domain=domain, priority=0.01
+    )
     storage.add_node(seed_node)
     await broker.emit(NodeAddedEvent(correlation_id=str(seed_node.get_id()), node=seed_node))
 
     # Done when the budget is met, or nothing new has been fetched for a while.
     def frontier_empty() -> bool:
         return (
-            requests.queue.empty()
-            and scoring.queue._unfinished_tasks == 0
-            and not retry._pending
+            requests.queue.empty() and scoring.queue._unfinished_tasks == 0 and not retry._pending
         )
 
     last, idle, empty_for, rate_limit_wait = 0, 0.0, 0.0, 0.0
@@ -529,9 +577,12 @@ async def _run(
     wall = time.monotonic() - started
     visited = fetcher.fetched[:budget]
     return RunResult(
-        label, visited, [graph.label(p) for p in visited],
+        label,
+        visited,
+        [graph.label(p) for p in visited],
         assess(budget, fetcher.fetched, monitor, retry, errors, frontier_empty()),
-        wall_seconds=wall, rate_limit_seconds=rate_limit_wait,
+        wall_seconds=wall,
+        rate_limit_seconds=rate_limit_wait,
         absent_page_hits=fetcher.absent_hits,
         thresholds=_thresholds(scoring_kwargs, percentiles),
     )
@@ -623,13 +674,17 @@ async def run_cascade(
     if arm != "cascade" and (low is not None or high is not None or pct_given):
         raise ValueError("low/high and low_pct/high_pct only apply to the cascade arm")
     if pct_given and (low is not None or high is not None):
-        raise ValueError("absolute thresholds and percentiles are different bucketing modes; give one")
+        raise ValueError(
+            "absolute thresholds and percentiles are different bucketing modes; give one"
+        )
     percentiles = (
         NLP_LOW_PERCENTILE if low_pct is None else low_pct,
         NLP_HIGH_PERCENTILE if high_pct is None else high_pct,
     )
     if not 0 <= percentiles[0] < percentiles[1] <= 100:
-        raise ValueError(f"low_pct ({percentiles[0]}) must be below high_pct ({percentiles[1]}), within 0..100")
+        raise ValueError(
+            f"low_pct ({percentiles[0]}) must be below high_pct ({percentiles[1]}), within 0..100"
+        )
     kwargs = {
         "low_threshold": c.low_threshold if low is None else low,
         "high_threshold": c.high_threshold if high is None else high,
@@ -640,24 +695,42 @@ async def run_cascade(
         "max_llm_links": MAX_LLM_LINKS_PER_NODE,
     }
     if kwargs["low_threshold"] >= kwargs["high_threshold"]:
-        raise ValueError(f"low ({kwargs['low_threshold']}) must be below high ({kwargs['high_threshold']})")
+        raise ValueError(
+            f"low ({kwargs['low_threshold']}) must be below high ({kwargs['high_threshold']})"
+        )
     if arm == "llm_all":
         kwargs.update(
-            low_threshold=-1.0, high_threshold=2.0, percentile_bucketing=False,
-            high_score_llm_fraction=0.0, low_score_sample_fraction=0.0,
-            high_score_random_fraction=0.0, max_llm_links=None,
+            low_threshold=-1.0,
+            high_threshold=2.0,
+            percentile_bucketing=False,
+            high_score_llm_fraction=0.0,
+            low_score_sample_fraction=0.0,
+            high_score_random_fraction=0.0,
+            max_llm_links=None,
             llm_batch_size=MAX_LLM_LINKS_PER_NODE,
         )
     elif arm == "no_llm":
         kwargs.update(
-            high_score_llm_fraction=0.0, low_score_sample_fraction=0.0,
-            high_score_random_fraction=0.0, max_llm_links=None,
+            high_score_llm_fraction=0.0,
+            low_score_sample_fraction=0.0,
+            high_score_random_fraction=0.0,
+            max_llm_links=None,
         )
         llm_service = _NoLlm()
     return await _run(
-        graph, arm, budget, seed, (llm_service, nlp), kwargs,
-        get_strategy(c.default_priority_strategy), list(extra_components), extraction,
-        retry_base_delay=RETRY_BASE_DELAY, idle_limit=IDLE_LIMIT, lockstep=lockstep,
+        graph,
+        arm,
+        budget,
+        seed,
+        (llm_service, nlp),
+        kwargs,
+        get_strategy(c.default_priority_strategy),
+        list(extra_components),
+        extraction,
+        retry_base_delay=RETRY_BASE_DELAY,
+        idle_limit=IDLE_LIMIT,
+        lockstep=lockstep,
         rate_limited=lambda: bool(getattr(llm, "waiting", False)),
-        budget_gate=gate, percentiles=percentiles,
+        budget_gate=gate,
+        percentiles=percentiles,
     )

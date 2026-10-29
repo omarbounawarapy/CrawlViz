@@ -59,6 +59,7 @@ _PROFILE_REGISTRY: dict[str, Any] = _load_profiles()
 # VALIDATION HELPERS
 # =========================================================
 
+
 class BlueprintValidationError(ValueError):
     """Raised when user-supplied data would violate blueprint constraints."""
 
@@ -66,8 +67,7 @@ class BlueprintValidationError(ValueError):
 def _validate_strategy(strategy: str) -> None:
     if strategy not in ALLOWED_STRATEGIES:
         raise BlueprintValidationError(
-            f"Unknown strategy {strategy!r}. "
-            f"Allowed: {sorted(ALLOWED_STRATEGIES)}"
+            f"Unknown strategy {strategy!r}. Allowed: {sorted(ALLOWED_STRATEGIES)}"
         )
 
 
@@ -143,6 +143,7 @@ def _validate_field_dict(field_name: str, field_def: dict[str, Any]) -> None:
 # FIELD BUILDER
 # =========================================================
 
+
 def _build_field(field_name: str, field_def: dict[str, Any]) -> dict[str, Any]:
     """Return a fully-specified field dict ready for injection into the blueprint.
 
@@ -180,6 +181,7 @@ def _build_field_from_profile(field_name: str, profile_field: dict[str, Any]) ->
 # =========================================================
 # MAIN CLASS
 # =========================================================
+
 
 class BlueprintTranslator:
     """Converts user input plus an optional profile or manual fields into
@@ -261,25 +263,19 @@ class BlueprintTranslator:
         params = scoring.get("params", {})
         for pk in ("scoring_type", "model_information"):
             if pk not in params:
-                raise BlueprintValidationError(
-                    f"scoring.params is missing required key {pk!r}."
-                )
+                raise BlueprintValidationError(f"scoring.params is missing required key {pk!r}.")
 
         # Validate expansion.
         expansion = self._user_input["expansion"]
         for ek in ("style", "num_descriptions", "llm_type", "llm_model"):
             if ek not in expansion:
-                raise BlueprintValidationError(
-                    f"expansion section is missing required key {ek!r}."
-                )
+                raise BlueprintValidationError(f"expansion section is missing required key {ek!r}.")
 
         # Validate stop_conditions.
         sc = self._user_input["stop_conditions"]
         for sk in ("max_nodes", "max_depth", "max_duration", "no_progress_timeout", "stop_url"):
             if sk not in sc:
-                raise BlueprintValidationError(
-                    f"stop_conditions is missing required key {sk!r}."
-                )
+                raise BlueprintValidationError(f"stop_conditions is missing required key {sk!r}.")
         # priority_strategy is optional -- falls back to
         # config.DEFAULT_PRIORITY_STRATEGY when omitted -- but if the
         # user did supply one, it must be a real priority/strategy.py entry.
@@ -297,8 +293,7 @@ class BlueprintTranslator:
             return self._resolve_manual_fields()
         else:
             raise BlueprintValidationError(
-                f"Unknown extraction_mode {self._extraction_mode!r}. "
-                "Must be 'profile' or 'manual'."
+                f"Unknown extraction_mode {self._extraction_mode!r}. Must be 'profile' or 'manual'."
             )
 
     def _resolve_profile_fields(self) -> dict[str, Any]:
@@ -323,10 +318,7 @@ class BlueprintTranslator:
                     f"Profile {self._selected_profile!r} does not contain "
                     f"field(s): {sorted(unknown)}"
                 )
-            all_fields = {
-                k: v for k, v in all_fields.items()
-                if k in self._profile_field_checklist
-            }
+            all_fields = {k: v for k, v in all_fields.items() if k in self._profile_field_checklist}
 
         resolved: dict[str, Any] = {}
         for field_name, profile_field in all_fields.items():
@@ -417,9 +409,7 @@ class BlueprintTranslator:
         for i, seed in enumerate(blueprint["seeds"]):
             for sk in ("url", "domain"):
                 if sk not in seed:
-                    raise BlueprintValidationError(
-                        f"seeds[{i}] is missing required key {sk!r}."
-                    )
+                    raise BlueprintValidationError(f"seeds[{i}] is missing required key {sk!r}.")
 
         # Validate domains structure.
         for domain_name, domain_cfg in blueprint["domains"].items():
@@ -447,6 +437,7 @@ class BlueprintTranslator:
 # =========================================================
 # CONVENIENCE FACTORY
 # =========================================================
+
 
 def translate_blueprint(
     user_input: dict[str, Any],
@@ -476,7 +467,6 @@ def translate_blueprint(
 # =========================================================
 
 if __name__ == "__main__":
-
     # Example 1: profile mode
     user_input_profile = {
         "blueprint_id": "wikimd_diabetes_v2",

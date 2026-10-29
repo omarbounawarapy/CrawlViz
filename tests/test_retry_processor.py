@@ -1,4 +1,5 @@
 """RetryProcessor: scoring failures are rescheduled, and fetch retries are delayed."""
+
 import asyncio
 
 from events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
@@ -63,9 +64,7 @@ async def test_request_retry_is_delayed_not_immediate():
     rp, _, reqs = make()
     node = FakeNode()
     await rp._process(
-        RequestFailedEvent(
-            correlation_id="1", node=node, error_type="E", error_message="502"
-        ),
+        RequestFailedEvent(correlation_id="1", node=node, error_type="E", error_message="502"),
         0,
     )
     assert reqs.queue.empty()

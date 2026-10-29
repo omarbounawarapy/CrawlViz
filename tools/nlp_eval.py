@@ -7,6 +7,7 @@ Labels come from a compact LLM scoring prompt (score 0-100 per link); a link
 is "relevant" when score >= LABEL_THRESHOLD. They are cached in
 tools/eval_data/labels.json so `report` never calls the LLM.
 """
+
 import asyncio
 import json
 import sys
@@ -133,8 +134,11 @@ async def feature_rows(store_dir: str = ".space_store"):
     {url, score, <signal>: value, ...} (first page wins for repeated URLs)."""
     tmpl, _ = _template()
     svc = NLPService(
-        tmpl["blueprint_id"], tmpl["target_topic"], LlmHandler(KeyManager()),
-        tmpl["expansion"], store_base_dir=store_dir,
+        tmpl["blueprint_id"],
+        tmpl["target_topic"],
+        LlmHandler(KeyManager()),
+        tmpl["expansion"],
+        store_base_dir=store_dir,
     )
     await svc.start()
     rows, seen = [], set()
@@ -152,6 +156,7 @@ async def feature_rows(store_dir: str = ".space_store"):
 
 def auc(y, x) -> float:
     from sklearn.metrics import roc_auc_score
+
     return float(roc_auc_score(y, x))
 
 
@@ -180,9 +185,12 @@ async def report(store_dir: str = ".space_store"):
         print(f"  {k:26}{w:+.3f}")
     print(f"in-sample AUC {auc(y, clf.decision_function(Z)):.3f}")
     from sklearn.model_selection import StratifiedKFold, cross_val_predict
+
     cv = StratifiedKFold(5, shuffle=True, random_state=0)
     pred = cross_val_predict(clf, Z, y, cv=cv, method="decision_function")
-    print(f"5-fold CV AUC {auc(y, pred):.3f}  (current composite: {auc(y, X[:, keys.index('score')]):.3f})")
+    print(
+        f"5-fold CV AUC {auc(y, pred):.3f}  (current composite: {auc(y, X[:, keys.index('score')]):.3f})"
+    )
 
 
 if __name__ == "__main__":

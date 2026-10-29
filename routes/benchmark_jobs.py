@@ -47,11 +47,25 @@ def _word(value: str) -> str:
 FlagSpecs = dict[str, Callable[[Any], Any]]
 
 RUN_FLAGS: FlagSpecs = {
-    "graph": _path_arg, "budget": int, "reps": int, "cascade": bool, "llm_all": bool,
-    "no_llm": bool, "replay_only": bool, "flush_every": int, "provider": _word, "model": _word,
-    "llm_cache": _path_arg, "runs_file": _path_arg, "template": _path_arg,
-    "low_pct": float, "high_pct": float, "low": float, "high": float,
-    "results_dir": _path_arg, "save_sequences": _path_arg,
+    "graph": _path_arg,
+    "budget": int,
+    "reps": int,
+    "cascade": bool,
+    "llm_all": bool,
+    "no_llm": bool,
+    "replay_only": bool,
+    "flush_every": int,
+    "provider": _word,
+    "model": _word,
+    "llm_cache": _path_arg,
+    "runs_file": _path_arg,
+    "template": _path_arg,
+    "low_pct": float,
+    "high_pct": float,
+    "low": float,
+    "high": float,
+    "results_dir": _path_arg,
+    "save_sequences": _path_arg,
 }
 ANALYZE_FLAGS: FlagSpecs = {"k": int, "test_k": int, "ndcg": bool, "no_dedupe": bool}
 LABEL_FLAGS: FlagSpecs = {"graph": _path_arg, "merge": bool}
@@ -82,7 +96,8 @@ def build_command(kind: str, args: dict[str, Any]) -> list[str]:
             cooked = spec(value)
         except (TypeError, ValueError) as error:
             raise HTTPException(
-                status_code=422, detail=f"bad value for {key}: {value!r}",
+                status_code=422,
+                detail=f"bad value for {key}: {value!r}",
             ) from error
         cmd += [flag, str(cooked)]
     return cmd
@@ -117,8 +132,12 @@ class _Job:
 
     def snapshot(self) -> dict[str, Any]:
         now = self.ended or time.time()
-        new = {p.name for d in _result_dirs(self.cmd) for p in d.glob("*.json")
-               if p.stat().st_mtime >= self.started}
+        new = {
+            p.name
+            for d in _result_dirs(self.cmd)
+            for p in d.glob("*.json")
+            if p.stat().st_mtime >= self.started
+        }
         text = "\n".join(self.log)
         waits = len(re.findall(r"429|rate.?limit", text, re.I))
         if self.returncode is None:
@@ -128,10 +147,15 @@ class _Job:
         else:
             state = "done" if self.returncode == 0 else "failed"
         return {
-            "kind": self.kind, "command": " ".join(self.cmd[1:]), "state": state,
-            "returncode": self.returncode, "elapsed": round(now - self.started, 1),
-            "expected_results": self.expected, "new_results": sorted(new),
-            "rate_limit_mentions": waits, "log": list(self.log),
+            "kind": self.kind,
+            "command": " ".join(self.cmd[1:]),
+            "state": state,
+            "returncode": self.returncode,
+            "elapsed": round(now - self.started, 1),
+            "expected_results": self.expected,
+            "new_results": sorted(new),
+            "rate_limit_mentions": waits,
+            "log": list(self.log),
         }
 
 
@@ -163,7 +187,10 @@ async def _pump(job: _Job) -> None:
         LAST_JOB_FILE.write_text(json.dumps(job.snapshot()))
     except OSError:
         logger.warning(
-            "could not save the finished %s job to %s", job.kind, LAST_JOB_FILE, exc_info=True,
+            "could not save the finished %s job to %s",
+            job.kind,
+            LAST_JOB_FILE,
+            exc_info=True,
         )
 
 
@@ -174,7 +201,10 @@ async def start_job(body: JobBody) -> dict[str, Any]:
     cmd = build_command(body.kind, body.args)
     job = _Job(body.kind, cmd, body.args)
     job.proc = await asyncio.create_subprocess_exec(
-        *cmd, cwd=ROOT, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.STDOUT,
+        *cmd,
+        cwd=ROOT,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
     )
     _slot.job = job
     _slot.pump = asyncio.create_task(_pump(job))

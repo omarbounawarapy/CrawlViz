@@ -4,6 +4,7 @@ The web is a ``FrozenGraph`` and the embedding model is ``HashingEmbeddingEngine
 both come from the repository, and so does the scripted LLM (``offline``). The recording
 doubles are written for the pins.
 """
+
 from typing import Any, Protocol
 
 from models import LlmContext
@@ -27,11 +28,13 @@ class RecordingLlm:
         self.requests: list[dict[str, str]] = []
 
     async def send(self, context: LlmContext) -> dict[str, Any]:
-        self.requests.append({
-            "llm_type": context.get_llm_type(),
-            "model": context.get_model_information(),
-            "prompt": context.get_prompt(),
-        })
+        self.requests.append(
+            {
+                "llm_type": context.get_llm_type(),
+                "model": context.get_model_information(),
+                "prompt": context.get_prompt(),
+            }
+        )
         return await self.inner.send(context)
 
 

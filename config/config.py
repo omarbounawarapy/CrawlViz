@@ -25,9 +25,9 @@ DEBUG: bool = True
 
 # API server CORS. A comma-separated CRAWLVIZ_CORS_ORIGINS overrides the
 # Vite dev-server default, e.g. for deploying the frontend elsewhere.
-CORS_ORIGINS: list[str] = os.environ.get(
-    "CRAWLVIZ_CORS_ORIGINS", "http://localhost:5173"
-).split(",")
+CORS_ORIGINS: list[str] = os.environ.get("CRAWLVIZ_CORS_ORIGINS", "http://localhost:5173").split(
+    ","
+)
 # Regex for additional allowed origins (Vite falls back to 5174, 5175... when
 # 5173 is taken). Any local port by default. Set CRAWLVIZ_CORS_ORIGIN_REGEX to
 # an empty string to allow only CRAWLVIZ_CORS_ORIGINS, e.g. for a deployment.
@@ -55,8 +55,7 @@ BUFFER_MAX_SIZE: int = 500
 # =========================================================================
 # Identify the crawler honestly: replace the contact before crawling live sites.
 USER_AGENT: str = (
-    "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; "
-    "omar.bounawara.py@gmail.com)"
+    "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)"
 )
 RESPECT_ROBOTS: bool = True
 

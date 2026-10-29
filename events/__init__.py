@@ -124,7 +124,6 @@ __all__ = [
     "RequestResponseReceivedEvent",
     "RequestStartedEvent",
     "RequestTimingEvent",
-
     # Processing
     "ContentExtractedEvent",
     "ExtractionInputSnapshotEvent",
@@ -134,7 +133,6 @@ __all__ = [
     "LinkExtractionCompletedEvent",
     "LinkResolvedEvent",
     "ProcessingExtractionFailedEvent",
-
     # Filtering
     "ContentFilteredEvent",
     "FilteringEnqueuedEvent",
@@ -143,7 +141,6 @@ __all__ = [
     "FilteringWorkerCycleStartedEvent",
     "ItemFilteringCompletedEvent",
     "LinkFilteringCompletedEvent",
-
     # Scoring
     "EmptyScoreResultsEvent",
     "HighScoreLinksEvent",
@@ -155,14 +152,12 @@ __all__ = [
     "ScoringFailedEvent",
     "ScoringInputSnapshotEvent",
     "ScoringStartedEvent",
-
     # Priority
     "PriorityCalculatedEvent",
     "PriorityCalculationFailedEvent",
     "PriorityCalculationStartedEvent",
     "PriorityInputSnapshotEvent",
     "PriorityLinkTransformationEvent",
-
     # Storage
     "NodeAddedEvent",
     "NodeContentSetEvent",
@@ -172,7 +167,6 @@ __all__ = [
     "StorageNodeCreatedEvent",
     "StorageNodeUpdatedEvent",
     "StorageOperationFailedEvent",
-
     # Transform
     "ItemsTransformedEvent",
     "TransformationCompletedEvent",
@@ -180,17 +174,14 @@ __all__ = [
     "TransformationFailedEvent",
     "TransformationInputSnapshotEvent",
     "TransformationStartedEvent",
-
     # Export
     "ExportBatchCompletedEvent",
     "ExportBatchFailedEvent",
     "ExportBatchStartedEvent",
     "ExportRowFailedEvent",
-
     # Retry
     "RetryOperationFailedEvent",
     "ScoreRescheduledEvent",
-
     # Stop
     "StopCrawlEvent",
 ]

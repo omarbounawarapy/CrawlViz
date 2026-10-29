@@ -5,6 +5,7 @@ their own queue (making `worker()`/`max_concurrency` dead code), and
 most other pipelines having no reliable way to stop a worker blocked on
 an empty queue once a crawl ends.
 """
+
 import asyncio
 
 import pytest

@@ -14,7 +14,10 @@ class RobotsPolicy:
     """
 
     def __init__(
-        self, fetcher: Fetcher, user_agent: str, headers: dict | None = None,
+        self,
+        fetcher: Fetcher,
+        user_agent: str,
+        headers: dict | None = None,
         ttl: float = 0.0,
     ):
         self.fetcher = fetcher
@@ -30,7 +33,8 @@ class RobotsPolicy:
         origin = f"{parts.scheme}://{parts.netloc}"
         parser = self._parsers.get(origin)
         expired = (
-            parser is not None and self.ttl > 0
+            parser is not None
+            and self.ttl > 0
             and time.monotonic() - self._loaded_at[origin] >= self.ttl
         )
         if parser is None or expired:

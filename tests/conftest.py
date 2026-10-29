@@ -5,6 +5,7 @@
 because pytest reads an option only from conftest files it loads at start-up,
 and it does not load a ``pins`` sub-directory when the run starts at ``tests``.
 """
+
 import pytest
 
 

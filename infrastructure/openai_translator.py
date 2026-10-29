@@ -31,9 +31,7 @@ class OpenAITranslator:
             },
             "data": {
                 "model": context.get_model_information(),
-                "messages": [
-                    {"role": "user", "content": context.get_prompt()}
-                ],
+                "messages": [{"role": "user", "content": context.get_prompt()}],
             },
         }
 
@@ -67,6 +65,7 @@ class OpenAITranslator:
         except Exception as e:
             logger.warning(
                 "Failed to parse OpenAI response: %s. Raw response: %.300s",
-                e, response,
+                e,
+                response,
             )
             return {}
