@@ -1,4 +1,4 @@
-.PHONY: install dev dev-backend dev-frontend lint format typecheck check-baselines test check check-changed hook-test clean
+.PHONY: audit install dev dev-backend dev-frontend lint format typecheck check-baselines test check check-changed hook-test clean
 
 install:
 	uv sync --extra dev
@@ -35,6 +35,13 @@ typecheck:
 # The mypy legacy list and ruff baseline may only shrink (tools/check_baselines.py).
 check-baselines:
 	uv run python tools/check_baselines.py
+
+# Known-vulnerability scan of the locked Python and npm dependencies (what CI runs).
+audit:
+	uv export --locked --extra dev --no-emit-project --no-hashes -o .audit-requirements.txt
+	uv run pip-audit --strict -r .audit-requirements.txt --no-deps --disable-pip; \
+		status=$$?; rm -f .audit-requirements.txt; exit $$status
+	cd crawler-ui && npm audit --audit-level=high
 
 test:
 	uv run pytest -q
