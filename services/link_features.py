@@ -51,6 +51,14 @@ ANCHOR_PREVIEW_CHARS = 80
 CONTEXT_PREVIEW_CHARS = 120
 
 
+def _floored_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    """Cosine similarity floored at 0. Cosine is undefined when a vector is
+    all zeros (a page with no words embeds that way); that counts as 0."""
+    if not a.any() or not b.any():
+        return 0.0
+    return float(max(0.0, 1.0 - cosine(a, b)))
+
+
 @dataclass(frozen=True)
 class FeatureSettings:
     """The NLP settings link features depend on (RuntimeConfig.nlp)."""
@@ -111,7 +119,7 @@ class LinkFeatureScorer:
         vector = self.engine.encode(content) if content else target_vec
         space_matrix = space.get_matrix()
         self._refresh_space_stats(space, target_topic)
-        relevance = float(max(0.0, 1.0 - cosine(vector, target_vec)))
+        relevance = _floored_similarity(vector, target_vec)
         return ParentContext(
             content=content,
             vector=vector,

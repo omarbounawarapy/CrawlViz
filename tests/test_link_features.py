@@ -1,5 +1,6 @@
 """LinkFeatureScorer: the parent context and the composite score."""
 import asyncio
+import warnings
 from types import SimpleNamespace
 
 import numpy as np
@@ -35,3 +36,17 @@ def test_a_parent_without_text_is_scored_as_the_target() -> None:
     assert np.array_equal(context.vector, target)
     assert context.relevance == 1.0
     assert context.cluster_centroids == {}  # too few vectors to cluster
+
+
+def test_a_parent_with_no_words_is_not_relevant_and_raises_no_warning() -> None:
+    engine = HashingEmbeddingEngine()
+    space = VectorSpace(dim=engine.dim)
+    target = engine.encode(TOPIC)
+    space.add_vector(key="__target__bp", vector=target, metadata={"type": "target", "text": TOPIC})
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        context = asyncio.run(
+            scorer().parent_context(SimpleNamespace(content="<p>!!! ???</p>"), space, target, TOPIC)
+        )
+    assert not context.vector.any()  # the hashing engine embeds no words as zeros
+    assert context.relevance == 0.0
