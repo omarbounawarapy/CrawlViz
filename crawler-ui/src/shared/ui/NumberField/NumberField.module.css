@@ -1,5 +1,5 @@
 /* Box, unit, then the sentence that says what to type on its own line. */
-.numberField {
+.root {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
