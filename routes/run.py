@@ -7,11 +7,16 @@ pipelines/stopping_pipeline.py), so every stage drains and flushes, and waits
 for the task to end; only if the crawl does not end in time does it cancel the
 task and wait for that too. Cancellation works even when a pipeline is stuck
 mid-request, and the crawl's own cleanup (core/crawler.py) still runs.
+
+How the last crawl ended (finished, stopped or failed, with a plain-words message for a
+failure) is kept in ``_last_outcome`` and reported by GET /status.
 """
 
 import asyncio
 import json
 import logging
+from dataclasses import dataclass
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
@@ -33,8 +38,36 @@ CANCEL_CLEANUP_SECONDS = 10.0
 
 router = APIRouter(tags=["run"])
 
+
+@dataclass(frozen=True)
+class CrawlOutcome:
+    """How the last crawl ended, kept after it so GET /status can report it."""
+
+    template: str
+    state: Literal["finished", "stopped", "failed"]
+    error_type: str | None = None
+    message: str | None = None
+
+
 _current_task: asyncio.Task | None = None
 _current_crawler: Crawler | None = None
+_last_outcome: CrawlOutcome | None = None
+_stop_requested = False
+
+
+def _failed_outcome(template_name: str, error: Exception) -> CrawlOutcome:
+    """A failure in plain words. The exception text stays in the log: it can hold
+    URLs or keys, which must not reach the UI."""
+    error_type = type(error).__name__
+    return CrawlOutcome(
+        template=template_name,
+        state="failed",
+        error_type=error_type,
+        message=(
+            f"The crawl of {template_name} stopped because of an internal error ({error_type}). "
+            "The backend log has the details. Fix the cause, then start the crawl again."
+        ),
+    )
 
 
 def _refuse_endpoint_overrides(overrides: dict | None) -> None:
@@ -58,7 +91,8 @@ class RunRequest(BaseModel):
 
 
 async def _run_crawler(template_name: str, config=None, seed: int | None = None) -> None:
-    global _current_crawler
+    global _current_crawler, _last_outcome
+    outcome = CrawlOutcome(template_name, "finished")
     try:
         if is_offline():
             session = build_offline_session(
@@ -77,17 +111,21 @@ async def _run_crawler(template_name: str, config=None, seed: int | None = None)
             spider = Crawler(template_name, config=config, seed=seed)
         _current_crawler = spider
         await spider.start()
+        if _stop_requested:
+            outcome = CrawlOutcome(template_name, "stopped")
     except asyncio.CancelledError:
-        pass
-    except Exception:
+        outcome = CrawlOutcome(template_name, "stopped")
+    except Exception as error:
         logger.exception("Crawler failed for template '%s'", template_name)
+        outcome = _failed_outcome(template_name, error)
     finally:
         _current_crawler = None
+        _last_outcome = outcome
 
 
 @router.post("/run")
 async def run_crawl(body: RunRequest):
-    global _current_task
+    global _current_task, _last_outcome, _stop_requested
 
     if _current_task and not _current_task.done():
         raise HTTPException(status_code=409, detail="A crawl is already running")
@@ -112,6 +150,8 @@ async def run_crawl(body: RunRequest):
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
 
+    _last_outcome = None
+    _stop_requested = False
     _current_task = asyncio.create_task(_run_crawler(body.templateName, config, body.seed))
     return {"started": body.templateName}
 
@@ -124,9 +164,12 @@ async def _ended_within(task: asyncio.Task, seconds: float) -> bool:
 
 @router.post("/stop")
 async def stop_crawl() -> dict[str, bool | str]:
+    global _stop_requested
     task = _current_task
     if task is None or task.done():
         return {"stopped": False, "detail": "No active crawl"}
+
+    _stop_requested = True
 
     crawler = _current_crawler
     if crawler is not None and await crawler.request_stop():
@@ -154,8 +197,15 @@ def crawl_status():
         if running and hasattr(_current_crawler, "queue_depths")
         else None
     )
+    last = _last_outcome
     return {
         "running": running,
         "llm_calls": budget.snapshot() if budget is not None else None,
         "queues": queues,
+        "last_outcome": last.state if last is not None else None,
+        "last_error": (
+            {"error_type": last.error_type, "message": last.message}
+            if last is not None and last.state == "failed"
+            else None
+        ),
     }
