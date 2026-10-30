@@ -55,10 +55,9 @@ BUFFER_MAX_SIZE: int = 500
 # =========================================================================
 # POLITENESS
 # =========================================================================
-# Identify the crawler honestly: replace the contact before crawling live sites.
-USER_AGENT: str = (
-    "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)"
-)
+# Identify the crawler honestly. The project page is the default contact; an operator
+# crawling live sites should set their own (a web or email address, see config/user_agent.py).
+USER_AGENT: str = "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz)"
 RESPECT_ROBOTS: bool = True
 
 # =========================================================================
