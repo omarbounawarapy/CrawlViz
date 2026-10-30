@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import stat
+from pathlib import Path
 
 import pytest
 
@@ -21,7 +22,9 @@ def write_keys(path: Path, mode: int) -> None:
     path.chmod(mode)
 
 
-def test_a_world_readable_keys_file_is_restricted_on_load(tmp_path, caplog):
+def test_a_world_readable_keys_file_is_restricted_on_load(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
     keys_file = tmp_path / "keys.json"
     write_keys(keys_file, 0o644)
     with caplog.at_level(logging.WARNING):
@@ -30,7 +33,9 @@ def test_a_world_readable_keys_file_is_restricted_on_load(tmp_path, caplog):
     assert "readable by other users" in caplog.text
 
 
-def test_an_owner_only_keys_file_logs_nothing(tmp_path, caplog):
+def test_an_owner_only_keys_file_logs_nothing(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
     keys_file = tmp_path / "keys.json"
     write_keys(keys_file, 0o600)
     with caplog.at_level(logging.WARNING):
@@ -38,7 +43,7 @@ def test_an_owner_only_keys_file_logs_nothing(tmp_path, caplog):
     assert "readable by other users" not in caplog.text
 
 
-def test_save_over_a_loose_temp_file_still_writes_owner_only(tmp_path):
+def test_save_over_a_loose_temp_file_still_writes_owner_only(tmp_path: Path) -> None:
     keys_file = tmp_path / "keys.json"
     write_keys(keys_file, 0o600)
     manager = KeyManager(keys_file=keys_file)
