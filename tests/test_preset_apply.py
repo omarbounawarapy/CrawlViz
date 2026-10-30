@@ -16,7 +16,7 @@ MY_AGENT = "Mine/1 (+https://example.org/bot)"
 
 
 @pytest.fixture
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, RuntimePaths]:
     paths = RuntimePaths.under(tmp_path)
     monkeypatch.setattr(config_support, "default_runtime_paths", lambda: paths)
     app = FastAPI()
@@ -24,7 +24,9 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     return TestClient(app), paths
 
 
-def test_apply_keeps_settings_the_preset_does_not_mention(client) -> None:
+def test_apply_keeps_settings_the_preset_does_not_mention(
+    client: tuple[TestClient, RuntimePaths],
+) -> None:
     c, paths = client
     c.put("/config", json={"values": {"fetch": {"user_agent": MY_AGENT, "min_delay": 4.0}}})
     c.put("/config", json={"values": {"pipelines": {"filtering": {"workers": 5}}}})
@@ -37,7 +39,9 @@ def test_apply_keeps_settings_the_preset_does_not_mention(client) -> None:
     assert store.read_stored(paths.settings_file)["fetch"]["user_agent"] == MY_AGENT
 
 
-def test_apply_reports_each_changed_field_with_old_and_new_value(client) -> None:
+def test_apply_reports_each_changed_field_with_old_and_new_value(
+    client: tuple[TestClient, RuntimePaths],
+) -> None:
     c, _ = client
     c.put("/config", json={"values": {"fetch": {"min_delay": 4.0}}})
     default_jitter = default_runtime_config().fetch.jitter_max
@@ -49,7 +53,9 @@ def test_apply_reports_each_changed_field_with_old_and_new_value(client) -> None
     assert all(change["old"] != change["new"] for change in changes)
 
 
-def test_preview_returns_the_changes_and_saves_nothing(client) -> None:
+def test_preview_returns_the_changes_and_saves_nothing(
+    client: tuple[TestClient, RuntimePaths],
+) -> None:
     c, paths = client
     c.put("/config", json={"values": {"fetch": {"min_delay": 4.0}}})
     stored_before = store.read_stored(paths.settings_file)
@@ -61,7 +67,7 @@ def test_preview_returns_the_changes_and_saves_nothing(client) -> None:
     assert store.read_stored(paths.settings_file) == stored_before
 
 
-def test_preview_of_a_missing_preset_is_404(client) -> None:
+def test_preview_of_a_missing_preset_is_404(client: tuple[TestClient, RuntimePaths]) -> None:
     c, _ = client
     assert c.post("/config/presets/nope/preview").status_code == 404
 
