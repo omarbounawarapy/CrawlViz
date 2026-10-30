@@ -10,6 +10,7 @@ from events import (
 )
 
 from .base_pipeline import BasePipeline
+from .http_failure import is_permanent_failure
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +139,16 @@ class RetryProcessor(BasePipeline):
         node = event.node
         node_id = node.get_id()
         if event.error_type == "RobotsDisallowed":
+            node.fail()
+            return
+        if is_permanent_failure(event.status_code):
+            # The site answered 404, 403, 410 or another 4xx that will not change.
+            logger.info(
+                "Node %s failed with HTTP %s: %s -- not retrying",
+                node_id,
+                event.status_code,
+                event.error_message,
+            )
             node.fail()
             return
 
