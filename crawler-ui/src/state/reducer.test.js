@@ -95,6 +95,29 @@ describe("crawlReducer — V2 message types", () => {
   });
 });
 
+describe("crawlReducer — SNAPSHOT_FULL", () => {
+  it("rebuilds the edges from the parent of every node, so a late joiner sees the same graph", () => {
+    const nodes = [
+      { node_id: "1", parent_id: null, state: "EXPANDED" },
+      { node_id: "2", parent_id: "1", state: "SCORED" },
+      { node_id: "3", parent_id: "1", state: "FETCHED" },
+      { node_id: "4", parent_id: "2", state: "CREATED" },
+    ];
+    const joined = crawlReducer(INITIAL_STATE, { type: "SNAPSHOT_FULL", status: "RUNNING", nodes });
+    const live = nodes.reduce((s, n) => crawlReducer(s, { type: "NODE_ADDED", node: n }), INITIAL_STATE);
+
+    expect([...joined.edges].sort()).toEqual(["1→2", "1→3", "2→4"]);
+    expect([...joined.edges].sort()).toEqual([...live.edges].sort());
+  });
+
+  it("drops the edges of an earlier crawl when a new snapshot arrives", () => {
+    const first = crawlReducer(INITIAL_STATE, add("a"));
+    const withEdge = crawlReducer(first, add("b", "a"));
+    const next = crawlReducer(withEdge, { type: "SNAPSHOT_FULL", status: "RUNNING", nodes: [] });
+    expect(next.edges.size).toBe(0);
+  });
+});
+
 describe("crawlReducer — replay correctness (regression test for §A.1.8 perf fix)", () => {
   it("checkpoint-assisted __REPLAY_SEEK matches brute-force full replay at every boundary", () => {
     let state = INITIAL_STATE;
