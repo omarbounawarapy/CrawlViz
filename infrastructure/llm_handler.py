@@ -93,6 +93,50 @@ def is_transient(status: int) -> bool:
     return status == TOO_MANY_REQUESTS or status in SERVER_ERROR_STATUSES
 
 
+def retry_delay(
+    policy: RetryPolicy, error: aiohttp.ClientResponseError, retries: int, call: str
+) -> float | None:
+    """Seconds to wait before retrying `error` under `policy`, or None to raise it.
+
+    `retries` counts the retries already made. `call` names the provider and
+    model for the log. Only they, the status and the wait are logged: never
+    the key, URL, headers or body.
+    """
+    if not is_transient(error.status):
+        return None
+    if retries >= policy.max_retries:
+        if policy.max_retries:
+            logger.warning(
+                "LLM %s answered HTTP %d; giving up after %d retries",
+                call,
+                error.status,
+                retries,
+            )
+        return None
+    header = error.headers.get(hdrs.RETRY_AFTER) if error.headers else None
+    retry_after = parse_retry_after(header)
+    if retry_after is not None and retry_after > policy.max_delay_seconds:
+        logger.warning(
+            "LLM %s answered HTTP %d asking to wait %.0f s, over the %.0f s limit; giving up",
+            call,
+            error.status,
+            retry_after,
+            policy.max_delay_seconds,
+        )
+        return None
+    delay = policy.backoff(retries) if retry_after is None else retry_after
+    logger.warning(
+        "LLM %s answered HTTP %d; retry %d of %d in %.1f s (%s)",
+        call,
+        error.status,
+        retries + 1,
+        policy.max_retries,
+        delay,
+        "backoff" if retry_after is None else "Retry-After",
+    )
+    return delay
+
+
 class LlmHandler:
     """Routes LLM requests through the correct translator and network client.
 
@@ -172,49 +216,6 @@ class LlmHandler:
             endpoint = f"{endpoint.rstrip('/')}/{context.get_model_information()}:generateContent"
         params["url"] = endpoint
 
-    def _retry_delay(
-        self, error: aiohttp.ClientResponseError, retries: int, call: str
-    ) -> float | None:
-        """Seconds to wait before retrying `error`, or None to raise it.
-
-        `call` names the provider and model for the log. Only they, the
-        status and the wait are logged: never the key, URL, headers or body.
-        """
-        if not is_transient(error.status):
-            return None
-        policy = self.retry_policy
-        if retries >= policy.max_retries:
-            if policy.max_retries:
-                logger.warning(
-                    "LLM %s answered HTTP %d; giving up after %d retries",
-                    call,
-                    error.status,
-                    retries,
-                )
-            return None
-        header = error.headers.get(hdrs.RETRY_AFTER) if error.headers else None
-        retry_after = parse_retry_after(header)
-        if retry_after is not None and retry_after > policy.max_delay_seconds:
-            logger.warning(
-                "LLM %s answered HTTP %d asking to wait %.0f s, over the %.0f s limit; giving up",
-                call,
-                error.status,
-                retry_after,
-                policy.max_delay_seconds,
-            )
-            return None
-        delay = policy.backoff(retries) if retry_after is None else retry_after
-        logger.warning(
-            "LLM %s answered HTTP %d; retry %d of %d in %.1f s (%s)",
-            call,
-            error.status,
-            retries + 1,
-            policy.max_retries,
-            delay,
-            "backoff" if retry_after is None else "Retry-After",
-        )
-        return delay
-
     async def send(self, context) -> dict:
         """Send one LLM request end to end: key, translate, dispatch, normalize.
 
@@ -248,7 +249,7 @@ class LlmHandler:
                 if is_rejected_key and await self.key_manager.mark_invalid(llm_type, key):
                     continue
                 call = f"{llm_type}/{context.get_model_information()}"
-                delay = self._retry_delay(e, retries, call)
+                delay = retry_delay(self.retry_policy, e, retries, call)
                 if delay is None:
                     raise
                 retries += 1
