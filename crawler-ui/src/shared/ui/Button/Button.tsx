@@ -24,14 +24,7 @@ export interface ButtonProps extends Omit<ComponentPropsWithRef<"button">, "chil
  * The one button of the plate. It is a real `button`, `type="button"` unless a form asks
  * for `submit`, so a button inside a form never submits it by accident.
  */
-export function Button({
-  variant = "outline",
-  pressed,
-  type = "button",
-  className,
-  children,
-  ...rest
-}: ButtonProps) {
+export function Button({ variant = "outline", pressed, type = "button", className, children, ...rest }: ButtonProps) {
   return (
     <button
       {...rest}
