@@ -7,6 +7,12 @@ from typing import Any
 # The result is JSON for the UI, so values are plain dicts and lists.
 Protocol = dict[str, Any]
 
+# Columns of the protocol tables: hypothesis (id, text, comparison), arm (arm, repeats, scopes, llm)
+# and model (role, provider, model).
+HYPOTHESIS_COLUMNS = 3
+ARM_COLUMNS = 4
+MODEL_COLUMNS = 3
+
 
 def _section(text: str, number: str) -> str:
     """The body of '## <number>. ...' up to the next '## ' heading."""
@@ -33,20 +39,20 @@ def read_protocol(protocol_file: Path) -> Protocol:
     hypotheses = []
     for line in _section(text, "1").splitlines():
         c = _cells(line) if line.startswith("|") else []
-        if len(c) >= 3 and re.fullmatch(r"H\d", c[0]):
+        if len(c) >= HYPOTHESIS_COLUMNS and re.fullmatch(r"H\d", c[0]):
             hypotheses.append({"id": c[0], "text": c[1], "comparison": c[2]})
     arms = []
     sec5 = _section(text, "5")
     for line in sec5.splitlines():
         c = _cells(line) if line.startswith("|") else []
-        if len(c) >= 4 and re.match(r"\d+", c[1]):
+        if len(c) >= ARM_COLUMNS and re.match(r"\d+", c[1]):
             arms.append({"arm": c[0], "repeats": c[1], "scopes": c[2], "llm": c[3]})
     budget_line = re.search(r"Budgets[^:]*:\s*([^.]*)\.", sec5)
     budgets = [int(b) for b in re.findall(r"\d+", budget_line.group(1) if budget_line else "")]
     models = []
     for line in _section(text, "6").splitlines():
         c = _cells(line) if line.startswith("|") else []
-        if len(c) == 3 and c[0] not in ("Role", "") and not set(c[0]) <= set("-"):
+        if len(c) == MODEL_COLUMNS and c[0] not in ("Role", "") and not set(c[0]) <= set("-"):
             models.append({"role": c[0], "provider": c[1], "model": c[2]})
     metric = re.search(r"^harvest@30[^\n]*(?:\n[^\n]+)*", _section(text, "2").strip(), re.M)
     tail = text.split("\n## Amendments", 1)[1] if "\n## Amendments" in text else ""
