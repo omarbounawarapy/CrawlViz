@@ -10,6 +10,8 @@ from config.paths import RuntimePaths
 from config.runtime_config import default_runtime_config
 from routes import config_support
 
+MY_AGENT = "Mine/1 (+https://example.org/bot)"
+
 
 @pytest.fixture
 def client(tmp_path, monkeypatch):
@@ -22,15 +24,15 @@ def client(tmp_path, monkeypatch):
 
 def test_apply_keeps_settings_the_preset_does_not_mention(client):
     c, paths = client
-    c.put("/config", json={"values": {"fetch": {"user_agent": "Mine/1", "min_delay": 4.0}}})
+    c.put("/config", json={"values": {"fetch": {"user_agent": MY_AGENT, "min_delay": 4.0}}})
     c.put("/config", json={"values": {"pipelines": {"filtering": {"workers": 5}}}})
 
     applied = c.post("/config/presets/polite/apply").json()
 
     assert applied["fetch"]["min_delay"] == 2.0
-    assert applied["fetch"]["user_agent"] == "Mine/1"
+    assert applied["fetch"]["user_agent"] == MY_AGENT
     assert applied["pipelines"]["filtering"]["workers"] == 5
-    assert store.read_stored(paths.settings_file)["fetch"]["user_agent"] == "Mine/1"
+    assert store.read_stored(paths.settings_file)["fetch"]["user_agent"] == MY_AGENT
 
 
 def test_apply_reports_each_changed_field_with_old_and_new_value(client):

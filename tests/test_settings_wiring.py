@@ -30,6 +30,8 @@ def api_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {get_session_token()}"}
 
 
+UI_AGENT = "UI/1 (+https://example.org/bot)"
+
 OVERRIDES = {
     "fetch": {
         "min_delay": 2.5,
@@ -39,7 +41,7 @@ OVERRIDES = {
         "backoff_growth": 3.0,
         "backoff_success_decay": 0.25,
         "backoff_failure_decay": 0.75,
-        "user_agent": "TestBot/9",
+        "user_agent": "TestBot/9 (+https://example.org/bot)",
         "respect_robots": False,
         "accept_language": "fr",
         "extra_headers": {"X-Test": "1"},
@@ -87,7 +89,7 @@ def test_fetch_settings_reach_requests_pipeline(tmp_path):
     r = p["requests"]
     assert (r.min_delay, r.jitter_max, r.backoff_start, r.max_backoff) == (2.5, 0.7, 0.5, 20.0)
     assert (r.backoff_growth, r.backoff_success_decay, r.backoff_failure_decay) == (3.0, 0.25, 0.75)
-    assert r.headers["User-Agent"] == "TestBot/9"
+    assert r.headers["User-Agent"] == "TestBot/9 (+https://example.org/bot)"
     assert r.headers["Accept-Language"] == "fr"
     assert r.headers["X-Test"] == "1"
     assert r.robots is None
@@ -203,11 +205,11 @@ def client(tmp_path, monkeypatch):
 
 def test_config_routes_round_trip(client):
     c, paths = client
-    r = c.put("/config", json={"values": {"fetch": {"user_agent": "UI/1"}}})
-    assert r.status_code == 200 and r.json()["fetch"]["user_agent"] == "UI/1"
-    assert c.get("/config").json()["fetch"]["user_agent"] == "UI/1"
-    assert c.get("/config/defaults").json()["fetch"]["user_agent"] != "UI/1"
-    assert c.get("/config/stored").json() == {"fetch": {"user_agent": "UI/1"}}
+    r = c.put("/config", json={"values": {"fetch": {"user_agent": UI_AGENT}}})
+    assert r.status_code == 200 and r.json()["fetch"]["user_agent"] == UI_AGENT
+    assert c.get("/config").json()["fetch"]["user_agent"] == UI_AGENT
+    assert c.get("/config/defaults").json()["fetch"]["user_agent"] != UI_AGENT
+    assert c.get("/config/stored").json() == {"fetch": {"user_agent": UI_AGENT}}
     assert c.post("/config/reset", params={"section": "fetch"}).status_code == 200
     assert c.get("/config/stored").json() == {}
     assert c.post("/config/reset", params={"section": "nope"}).status_code == 404
