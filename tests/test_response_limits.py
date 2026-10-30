@@ -42,12 +42,12 @@ async def fetch(
         await client.close()
 
 
-async def test_small_html_page_is_returned():
+async def test_small_html_page_is_returned() -> None:
     async with serve(lambda: web.Response(text="<p>hi</p>", content_type="text/html")) as url:
         assert await fetch(url) == "<p>hi</p>"
 
 
-async def test_declared_charset_is_used_and_bad_bytes_do_not_fail():
+async def test_declared_charset_is_used_and_bad_bytes_do_not_fail() -> None:
     body = "café".encode("latin-1") + b"\xff"
     async with serve(
         lambda: web.Response(body=body, headers={"Content-Type": "text/html; charset=latin-1"})
@@ -55,13 +55,13 @@ async def test_declared_charset_is_used_and_bad_bytes_do_not_fail():
         assert (await fetch(url)).startswith("café")
 
 
-async def test_oversized_body_is_refused():
+async def test_oversized_body_is_refused() -> None:
     async with serve(lambda: web.Response(text="x" * (LIMIT * 3), content_type="text/html")) as url:
         with pytest.raises(ResponseTooLargeError):
             await fetch(url)
 
 
-async def test_compressed_bomb_is_stopped_after_decompression():
+async def test_compressed_bomb_is_stopped_after_decompression() -> None:
     bomb = gzip.compress(b"a" * (50 * 1024 * 1024))
     assert len(bomb) < LIMIT * 100  # small on the wire, huge once decompressed
     async with serve(
@@ -73,19 +73,19 @@ async def test_compressed_bomb_is_stopped_after_decompression():
             await fetch(url, limit=1024 * 1024)
 
 
-async def test_non_html_content_is_refused_unread():
+async def test_non_html_content_is_refused_unread() -> None:
     async with serve(lambda: web.Response(body=b"%PDF-1.7", content_type="application/pdf")) as url:
         with pytest.raises(UnsupportedContentTypeError, match="application/pdf"):
             await fetch(url)
 
 
-async def test_missing_content_type_is_refused_for_pages():
+async def test_missing_content_type_is_refused_for_pages() -> None:
     async with serve(lambda: web.Response(body=b"<p>x</p>", headers={})) as url:
         with pytest.raises(UnsupportedContentTypeError):
             await fetch(url)
 
 
-async def test_any_type_is_read_when_the_caller_names_none():
+async def test_any_type_is_read_when_the_caller_names_none() -> None:
     # robots.txt is plain text: its fetch names no content types.
     async with serve(lambda: web.Response(text="User-agent: *", content_type="text/plain")) as url:
         assert await fetch(url, content_types=None) == "User-agent: *"
