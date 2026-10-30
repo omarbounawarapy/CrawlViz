@@ -1,5 +1,7 @@
 """Per-run overrides cannot redirect an LLM provider (its requests carry the API key)."""
 
+from typing import Any
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -14,7 +16,7 @@ ENDPOINT_OVERRIDES = [
 
 
 @pytest.fixture
-def client(monkeypatch):
+def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setattr(run_routes, "_current_task", None)
     monkeypatch.setattr(run_routes, "_current_crawler", None)
     app = FastAPI()
@@ -23,14 +25,16 @@ def client(monkeypatch):
 
 
 @pytest.mark.parametrize("overrides", ENDPOINT_OVERRIDES)
-def test_run_refuses_provider_endpoints_in_overrides(client, overrides):
+def test_run_refuses_provider_endpoints_in_overrides(
+    client: TestClient, overrides: dict[str, Any]
+) -> None:
     response = client.post("/run", json={"templateName": "isi.json", "overrides": overrides})
     assert response.status_code == 422
     assert "Configuration page" in response.json()["detail"]
     assert run_routes._current_task is None
 
 
-def test_other_overrides_are_not_refused_by_the_endpoint_check(client):
+def test_other_overrides_are_not_refused_by_the_endpoint_check(client: TestClient) -> None:
     # The template does not exist, so a 404 shows the endpoint check let the request through.
     response = client.post(
         "/run", json={"templateName": "missing.json", "overrides": {"fetch": {"min_delay": 1.0}}}
