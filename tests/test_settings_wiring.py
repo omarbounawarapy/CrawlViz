@@ -21,6 +21,9 @@ from infrastructure.key_manager import KeyManager
 from infrastructure.llm_handler import LlmHandler
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
 
+# The API refuses any Host but a local one, and TestClient's default is "testserver".
+LOCAL_API_URL = "http://localhost:8000"
+
 OVERRIDES = {
     "fetch": {
         "min_delay": 2.5,
@@ -469,7 +472,7 @@ def test_prompt_preview_uses_draft_wording_and_matches_builder():
     from main import app
     from models.prompts import PromptBuilder
 
-    client = TestClient(app)
+    client = TestClient(app, base_url=LOCAL_API_URL)
     res = client.post(
         "/config/prompts/preview",
         json={
