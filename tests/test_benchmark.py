@@ -1375,8 +1375,7 @@ async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monk
 
     monkeypatch.setattr(label_graph, "judge", failing_judge)
     monkeypatch.setattr(label_graph, "CachedLlm", lambda *a, **k: _Llm())
-    monkeypatch.setattr(label_graph, "LlmHandler", lambda *a, **k: None)
-    monkeypatch.setattr(label_graph, "KeyManager", lambda *a, **k: None)
+    monkeypatch.setattr(label_graph, "retry_free_handler", lambda *a, **k: None)
     monkeypatch.setattr(label_graph.asyncio, "sleep", no_sleep)
     await label_graph.label(graph, tmp_path / "k.json", tmp_path / "l.jsonl")
     assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
