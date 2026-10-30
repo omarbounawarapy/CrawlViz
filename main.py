@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import ALLOWED_HOSTS, CORS_ORIGIN_REGEX, CORS_ORIGINS
 from routes.request_guards import RequestGuardMiddleware
+from routes.session_token import SessionTokenMiddleware
 from routes.session_token import router as session_router
 from routes.templates import router as templates_router
 from routes.run import router as run_router
@@ -22,8 +23,10 @@ from routes.benchmark import router as benchmark_router
 
 app = FastAPI(title="CrawlViz Control API")
 
-# The last middleware added is the outermost. The guards sit inside CORS so that a refusal
-# still carries the CORS headers and the UI can show its message.
+# The last middleware added is the outermost. The checks sit inside CORS so that a refusal
+# still carries the CORS headers and the UI can show its message. Host, Origin and content
+# type are checked before the token, so /session is never reachable from a rebound host.
+app.add_middleware(SessionTokenMiddleware)
 app.add_middleware(
     RequestGuardMiddleware,
     allowed_hosts=ALLOWED_HOSTS,
