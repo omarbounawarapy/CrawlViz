@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 from pathlib import Path
 
+from utils import atomic_open
+
 from .vector_space import VectorSpace
 
 
@@ -58,7 +60,7 @@ class SpaceStore:
         return {}
 
     def _save_index(self) -> None:
-        with open(self._index_path, "w") as f:
+        with atomic_open(self._index_path) as f:
             json.dump(self._index, f, indent=2)
 
     def record_save(self, blueprint_id: str, n_vectors: int, version: int) -> None:
