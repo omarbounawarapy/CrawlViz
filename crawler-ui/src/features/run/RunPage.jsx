@@ -76,7 +76,7 @@ function SessionSummary({ state, metrics }) {
   );
 }
 
-export default function RunPage({ onNavigate, state, metrics }) {
+export default function RunPage({ onNavigate, state, metrics, onUserStopped }) {
   const [templates, setTemplates] = useState([]);
   const [selected, setSelected] = useState("");
   const [blueprint, setBlueprint] = useState(null);
@@ -155,6 +155,7 @@ export default function RunPage({ onNavigate, state, metrics }) {
     try {
       const res = await stopCrawl();
       setRunning(false);
+      if (res.stopped) onUserStopped?.();
       setMsg({ ok: true, text: res.stopped ? "Crawl stopped." : "No active crawl." });
     } catch (e) {
       setMsg({ ok: false, text: e.message });
