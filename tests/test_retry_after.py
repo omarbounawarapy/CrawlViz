@@ -61,7 +61,7 @@ def test_a_long_wait_is_capped() -> None:
     )
 
 
-@pytest.mark.parametrize("value", [None, "", "soon", "-5"])
+@pytest.mark.parametrize("value", [None, "", "soon", "-5", "²", "١٢"])
 def test_missing_or_unreadable_header_gives_no_wait(value: str | None) -> None:
     assert retry_after_seconds(failure(HTTP_TOO_MANY_REQUESTS, value)) is None
 

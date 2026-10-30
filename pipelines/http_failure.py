@@ -46,7 +46,7 @@ def retry_after_seconds(error: BaseException, now: float | None = None) -> float
     if value is None:
         return None
     value = value.strip()
-    if value.isdigit():
+    if value.isascii() and value.isdigit():
         seconds = float(value)
     else:
         try:
