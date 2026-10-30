@@ -16,17 +16,20 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import TEMPLATES_DIR, default_runtime_paths
-from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
-from config.settings_store import load_runtime_config
+from config.blueprint_schema import Blueprint, BlueprintSchemaError, validate_blueprint
+from config.settings_store import SettingsFileError, load_runtime_config
 from config.template_names import InvalidTemplateNameError, resolve_template_path
-from core import Crawler
+from core import Crawler, find_preflight_problems
 from offline import build_offline_session, is_offline
+
+from .config_support import validation_errors
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +86,29 @@ def _refuse_endpoint_overrides(overrides: dict | None) -> None:
         )
 
 
+def _refuse_if_running() -> None:
+    if _current_task and not _current_task.done():
+        raise HTTPException(status_code=409, detail="A crawl is already running")
+
+
+def _read_blueprint(template_path: Path, template_name: str) -> Blueprint:
+    """The validated blueprint, or a 422 that names the file and what to fix."""
+    try:
+        with open(template_path, encoding="utf-8") as f:
+            return validate_blueprint(json.load(f))
+    except json.JSONDecodeError as exc:
+        reason = f"it is not valid JSON ({exc})"
+    except OSError as exc:
+        reason = f"it could not be read ({exc.strerror or exc})"
+    except BlueprintSchemaError as exc:
+        reason = str(exc)
+    raise HTTPException(
+        status_code=422,
+        detail=f"The blueprint {template_name} cannot be used: {reason}. "
+        "Fix it on the Blueprints page, then start the crawl again.",
+    )
+
+
 class RunRequest(BaseModel):
     templateName: str
     # Partial RuntimeConfig deep-merged over the saved settings for this run.
@@ -127,9 +153,7 @@ async def _run_crawler(template_name: str, config=None, seed: int | None = None)
 async def run_crawl(body: RunRequest):
     global _current_task, _last_outcome, _stop_requested
 
-    if _current_task and not _current_task.done():
-        raise HTTPException(status_code=409, detail="A crawl is already running")
-
+    _refuse_if_running()
     _refuse_endpoint_overrides(body.overrides)
 
     try:
@@ -139,17 +163,31 @@ async def run_crawl(body: RunRequest):
     if not template_path.exists():
         raise HTTPException(status_code=404, detail=f"Template '{body.templateName}' not found")
 
-    try:
-        with open(template_path, encoding="utf-8") as f:
-            validate_blueprint(json.load(f))
-    except (json.JSONDecodeError, BlueprintSchemaError) as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+    blueprint = _read_blueprint(template_path, body.templateName)
 
+    paths = default_runtime_paths()
     try:
-        config = load_runtime_config(default_runtime_paths().settings_file, body.overrides)
+        config = load_runtime_config(paths.settings_file, body.overrides)
     except ValidationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        problems = "; ".join(f"{e['path']}: {e['message']}" for e in validation_errors(exc))
+        raise HTTPException(
+            status_code=422,
+            detail=f"These settings are not valid: {problems}. Correct them and start again.",
+        )
+    except SettingsFileError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    problems_found = await asyncio.to_thread(
+        find_preflight_problems,
+        blueprint.scoring.params.scoring_type,
+        config,
+        paths.keys_file,
+        is_offline(),
+    )
+    if problems_found:
+        raise HTTPException(status_code=409, detail=" ".join(problems_found))
+
+    _refuse_if_running()  # another request may have started a crawl while preflight ran
     _last_outcome = None
     _stop_requested = False
     _current_task = asyncio.create_task(_run_crawler(body.templateName, config, body.seed))
