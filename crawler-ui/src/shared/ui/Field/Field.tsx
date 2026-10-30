@@ -75,11 +75,6 @@ export interface TextInputProps extends ComponentPropsWithRef<"input"> {
 export function TextInput({ invalid, type = "text", className, ...rest }: TextInputProps) {
   const flagged = invalid === true || rest["aria-invalid"] === true || rest["aria-invalid"] === "true";
   return (
-    <input
-      {...rest}
-      type={type}
-      aria-invalid={flagged || undefined}
-      className={classNames(styles.input, className)}
-    />
+    <input {...rest} type={type} aria-invalid={flagged || undefined} className={classNames(styles.input, className)} />
   );
 }
