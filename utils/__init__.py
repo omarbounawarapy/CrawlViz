@@ -1,4 +1,5 @@
 from .atomic_write import atomic_open, write_text_atomic
+from .git_revision import get_git_revision
 from .hash_utils import hash_item
 from .html_utils import apply_selector, build_url, is_absolute_url, is_relative_url, normalize_url
 from .jsonio import load_json, save_json
@@ -7,6 +8,7 @@ __all__ = [
     "apply_selector",
     "atomic_open",
     "build_url",
+    "get_git_revision",
     "hash_item",
     "is_absolute_url",
     "is_relative_url",

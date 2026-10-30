@@ -14,28 +14,17 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 from pathlib import Path
 from typing import Any
 
 from config.config import BASE_DIR
-from utils import save_json
+from utils import get_git_revision, save_json
 
 log = logging.getLogger("ui_bridge.recorder")
 
 
 def git_sha() -> str | None:
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=BASE_DIR,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return out.stdout.strip() or None if out.returncode == 0 else None
+    return get_git_revision(BASE_DIR)
 
 
 class EventRecorder:
