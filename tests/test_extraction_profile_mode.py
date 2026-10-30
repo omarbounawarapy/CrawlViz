@@ -7,6 +7,7 @@ the server resolves them when it loads the blueprint, so extraction is never emp
 import copy
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -23,15 +24,18 @@ PAGE = (
 )
 
 
-def profile_blueprint(**extraction):
-    blueprint = copy.deepcopy(BASE)
+def profile_blueprint(**extraction: Any) -> dict[str, Any]:  # blueprints are parsed JSON
+    blueprint: dict[str, Any] = copy.deepcopy(BASE)
     blueprint["extraction"] = {"mode": "document", "profile_mode": True, **extraction}
     return blueprint
 
 
-def load(tmp_path: Path, blueprint):
+def load(tmp_path: Path, blueprint: dict[str, Any]) -> dict[str, Any]:
     (tmp_path / "bp.json").write_text(json.dumps(blueprint), encoding="utf-8")
-    return BootStrapper(None, None, "bp.json", templates_dir=tmp_path).load_template()
+    loaded: dict[str, Any] = BootStrapper(
+        None, None, "bp.json", templates_dir=tmp_path
+    ).load_template()
+    return loaded
 
 
 def test_profile_mode_blueprint_extracts_the_profile_fields(tmp_path: Path) -> None:
@@ -65,7 +69,7 @@ def test_manual_fields_are_kept_when_profile_mode_is_off(tmp_path: Path) -> None
     ],
 )
 def test_profile_mode_errors_are_reported_when_the_blueprint_is_validated(
-    extraction, message
+    extraction: dict[str, Any], message: str
 ) -> None:
     with pytest.raises(BlueprintSchemaError, match=message):
         validate_blueprint(profile_blueprint(**extraction))
