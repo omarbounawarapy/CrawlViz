@@ -12,6 +12,7 @@ import logging
 from config import TEMPLATES_DIR
 from config.blueprint_schema import validate_blueprint
 from config.template_names import resolve_template_path
+from config.extraction_profiles import resolve_extraction_profile
 from events import NodeAddedEvent
 from models import Domain, Node
 
@@ -42,6 +43,8 @@ class BootStrapper:
             self.template = json.load(file)
 
         validate_blueprint(self.template)
+        # Profile-mode blueprints carry a profile id, not fields; the crawl reads fields.
+        self.template["extraction"] = resolve_extraction_profile(self.template["extraction"])
         return self.template
 
     def inject_domains(self, domains: dict) -> None:
