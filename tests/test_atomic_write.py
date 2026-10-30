@@ -42,7 +42,7 @@ def test_space_index_write_failure_keeps_the_previous_index(
     store.record_save("bp", 2, 1)
     before = (tmp_path / "index.json").read_text()
 
-    def explode(*args, **kwargs):
+    def explode(*args: object, **kwargs: object) -> str:
         raise OSError("disk full")
 
     monkeypatch.setattr("utils.jsonio.json.dumps", explode)
