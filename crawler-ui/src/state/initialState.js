@@ -20,6 +20,7 @@ export const INITIAL_STATE = {
   metrics: null,
   status: "CONNECTING", // crawl lifecycle: CONNECTING | RUNNING | STOPPED
   stop_reason: null,
+  stop_detail: null, // the sentence behind stop_reason, e.g. which limit was reached
   eventLog: [], // append-only; used for replay
   _replayIndex: null,
   _checkpoints: [], // [{ index, state }] periodic full-state snapshots for O(1)-ish seeking
