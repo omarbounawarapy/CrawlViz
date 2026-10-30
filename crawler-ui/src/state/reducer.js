@@ -55,6 +55,7 @@ export function applyEvent(state, event) {
         status: event.status || "RUNNING",
         stop_reason: event.stop_reason || null,
         stop_detail: event.stop_detail ?? null,
+        stopped_by_user: false,
         metrics: event.metrics || state.metrics,
         pipelineStats,
         candidates,
@@ -229,6 +230,11 @@ export function applyEvent(state, event) {
       return { ...state, connectionStatus: "CONNECTED" };
     case "__WS_DISCONNECTED":
       return { ...state, connectionStatus: "DISCONNECTED" };
+
+    // Raised by this client when the user's stop request was accepted, so the status can say
+    // "stopped by you" and not "finished": the backend's CRAWL_STOPPED does not say who asked.
+    case "__USER_STOPPED":
+      return { ...state, stopped_by_user: true };
 
     default:
       return state;
