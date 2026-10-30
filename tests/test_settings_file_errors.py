@@ -13,7 +13,7 @@ from routes import config_support
 
 
 @pytest.fixture
-def damaged(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def damaged(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[TestClient, RuntimePaths]:
     paths = RuntimePaths.under(tmp_path)
     monkeypatch.setattr(config_support, "default_runtime_paths", lambda: paths)
     paths.settings_file.parent.mkdir(parents=True, exist_ok=True)
@@ -56,7 +56,9 @@ def test_full_reset_repairs_a_damaged_file(tmp_path: Path) -> None:
     assert store.read_stored(path) == {}
 
 
-def test_config_route_says_what_is_wrong_and_what_to_do(damaged) -> None:
+def test_config_route_says_what_is_wrong_and_what_to_do(
+    damaged: tuple[TestClient, RuntimePaths],
+) -> None:
     client, paths = damaged
     response = client.get("/config")
     assert response.status_code == 500
@@ -64,7 +66,7 @@ def test_config_route_says_what_is_wrong_and_what_to_do(damaged) -> None:
     assert str(paths.settings_file) in detail and "reset the settings" in detail
 
 
-def test_reset_route_works_on_a_damaged_file(damaged) -> None:
+def test_reset_route_works_on_a_damaged_file(damaged: tuple[TestClient, RuntimePaths]) -> None:
     client, _ = damaged
     assert client.post("/config/reset").status_code == 200
     assert client.get("/config").status_code == 200
