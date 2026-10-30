@@ -50,13 +50,14 @@ from .config_presets import router as presets_router
 from .config_support import (
     ConfigPatch,
     get_paths,
+    report_settings_file_errors,
     validation_errors,
     validation_http_error,
 )
 from .keys import get_key_manager
 from .keys import router as keys_router
 
-router = APIRouter(tags=["config"])
+router = APIRouter(tags=["config"], dependencies=[Depends(report_settings_file_errors)])
 router.include_router(presets_router)
 router.include_router(keys_router)
 

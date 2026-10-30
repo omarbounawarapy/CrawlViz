@@ -354,7 +354,7 @@ class TelemetryBridge:
             self._pending_detail[url] = {
                 "nlp_score": getattr(link, "_nlp_score", None),
                 "nlp_breakdown": dict(getattr(link, "nlp_vector", {}) or {}),
-                "llm_score": entry.get("score") or None,
+                "llm_score": entry.get("score"),  # None only when the LLM did not score it
                 "priority": entry.get("priority"),
             }
 

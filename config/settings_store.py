@@ -65,13 +65,41 @@ def changed_fields(old: dict, new: dict, _prefix: str = "") -> list[dict[str, An
     return changes
 
 
+class SettingsFileError(Exception):
+    """The stored settings file exists but cannot be read as a settings object."""
+
+
 def read_stored(path: Path) -> dict:
-    """The raw stored overrides, ``{}`` when the file is missing or invalid."""
+    """The raw stored overrides: ``{}`` when no file exists yet.
+
+    Raises ``SettingsFileError`` when the file exists but is unreadable or is not a
+    JSON object, so a damaged file is never mistaken for "no settings".
+    """
+    path = Path(path)
     try:
-        data = json.loads(Path(path).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
         return {}
-    return data if isinstance(data, dict) else {}
+    except OSError as exc:
+        raise SettingsFileError(
+            f"The settings file {path} could not be read ({exc.strerror or exc}). "
+            "Check its permissions, or reset the settings from the Config page."
+        ) from exc
+    try:
+        data = json.loads(text)
+    except ValueError as exc:
+        raise SettingsFileError(
+            f"The settings file {path} is not valid JSON ({exc}). "
+            "Fix it by hand, or reset the settings from the Config page, "
+            "which replaces it with the defaults."
+        ) from exc
+    if not isinstance(data, dict):
+        raise SettingsFileError(
+            f"The settings file {path} must hold a JSON object but holds "
+            f"{type(data).__name__}. Fix it by hand, or reset the settings "
+            "from the Config page, which replaces it with the defaults."
+        )
+    return data
 
 
 def _write(path: Path, data: dict) -> None:
@@ -113,10 +141,10 @@ def replace_settings(settings_file: Path, full: dict) -> RuntimeConfig:
 
 def reset_settings(settings_file: Path, section: str | None = None) -> RuntimeConfig:
     """Drop one section's stored values, or all of them."""
-    stored = read_stored(settings_file)
     if section is None:
-        stored = {}
+        stored = {}  # a full reset never reads the file, so it also repairs a damaged one
     else:
+        stored = read_stored(settings_file)
         stored.pop(section, None)
     _write(settings_file, stored)
     return load_runtime_config(settings_file)
