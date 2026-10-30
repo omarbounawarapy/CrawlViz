@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import ALLOWED_HOSTS, CORS_ORIGIN_REGEX, CORS_ORIGINS
 from routes.request_guards import RequestGuardMiddleware
+from routes.session_token import router as session_router
 from routes.templates import router as templates_router
 from routes.run import router as run_router
 from routes.validation import router as validation_router
@@ -37,6 +38,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(session_router)
 app.include_router(templates_router)
 app.include_router(run_router)
 app.include_router(validation_router)
