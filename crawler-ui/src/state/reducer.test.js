@@ -91,7 +91,7 @@ describe("crawlReducer — V2 message types", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, { type: "__WS_DISCONNECTED" });
     expect(state.connectionStatus).toBe("DISCONNECTED");
-    expect(state.status).toBe("CONNECTING"); // untouched -- crawl lifecycle is independent of socket health
+    expect(state.status).toBe("IDLE"); // untouched -- crawl lifecycle is independent of socket health
   });
 });
 
