@@ -4,4 +4,6 @@
  */
 export const sharedUiMessages = {
   required: "required",
+  numberExpected: "Enter a number, like 0.5.",
+  wholeNumberExpected: "Enter a whole number, like 12.",
 } as const;
