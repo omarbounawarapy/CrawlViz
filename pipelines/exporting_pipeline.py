@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from config import ITEMS_DB_PATH
 from events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
 from models import Node
+from utils import BackgroundTasks
 
 from .base_pipeline import SHUTDOWN
 
@@ -45,6 +46,7 @@ class ExportingPipeline:
 
         self._initialized_tables = set()
         self._buffer = []
+        self._background = BackgroundTasks()
 
         self.running = True  # internal lifecycle flag
 
@@ -135,7 +137,10 @@ class ExportingPipeline:
                 finally:
                     self.queue.task_done()
         finally:
-            self._finalize()
+            try:
+                self._finalize()
+            finally:
+                await self._background.cancel_all()
 
     def _finalize(self) -> None:
         try:
@@ -164,7 +169,7 @@ class ExportingPipeline:
             self.conn.commit()
 
             duration = (time.time() - start) * 1000
-            asyncio.create_task(
+            self._background.spawn(
                 self.event_broker.emit(
                     ExportBatchCompletedEvent(
                         correlation_id="export",
@@ -172,7 +177,8 @@ class ExportingPipeline:
                         inserted_count=len(self._buffer),
                         duration_ms=duration,
                     )
-                )
+                ),
+                name="export-batch-completed",
             )
 
         except Exception:

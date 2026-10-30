@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+from utils import BackgroundTasks
+
 logger = logging.getLogger(__name__)
 
 # How long stop() waits for room in a full queue before it cancels the workers.
@@ -116,6 +118,7 @@ class BasePipeline:
         self._pool_closed = False
         self._pool_next_id = 0
         self.workers = []
+        self._background = BackgroundTasks()
         self._pool_spawn(self.max_concurrency)
         # resize() may add workers while running; wait for those too.
         while True:
@@ -124,6 +127,7 @@ class BasePipeline:
                 break
             # A worker cancelled by a timed-out stop() ends here without raising.
             await asyncio.gather(*pending, return_exceptions=True)
+        await self._background.cancel_all()
 
     def _pool_spawn(self, count: int) -> None:
         for _ in range(count):
@@ -148,7 +152,9 @@ class BasePipeline:
                 try:
                     self.queue.put_nowait(SHUTDOWN)
                 except asyncio.QueueFull:
-                    asyncio.ensure_future(self.queue.put(SHUTDOWN))
+                    self._background.spawn(
+                        self.queue.put(SHUTDOWN), name=f"{type(self).__name__}-shrink-shutdown"
+                    )
 
     async def stop(self) -> None:
         """Wake every worker so start() returns, even if the queue would
