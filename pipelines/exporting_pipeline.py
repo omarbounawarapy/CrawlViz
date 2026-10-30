@@ -150,6 +150,25 @@ class ExportingPipeline:
     # =========================================================
     # FLUSH
     # =========================================================
+    def _write_buffer(self) -> int:
+        """Insert every buffered row in one transaction and return how many.
+
+        The buffer is cleared only after the commit. On failure the transaction
+        is rolled back, the rows stay buffered for the next flush, and the
+        error is raised.
+        """
+        try:
+            self.cursor.execute("BEGIN")
+            for table, node, item, extraction_blueprint, item_hash in self._buffer:
+                self._insert_row(table, node, item, extraction_blueprint, item_hash)
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
+        inserted = len(self._buffer)
+        self._buffer.clear()
+        return inserted
+
     def _flush_with_events(self, table: str) -> None:
         """Batch flush that also emits ExportBatchCompletedEvent for observability."""
         if not self._buffer:
@@ -158,47 +177,43 @@ class ExportingPipeline:
         start = time.time()
 
         try:
-            self.cursor.execute("BEGIN")
-            for t, node, item, extraction_blueprint, item_hash in self._buffer:
-                self._insert_row(t, node, item, extraction_blueprint, item_hash)
-            self.conn.commit()
+            inserted = self._write_buffer()
+        except Exception:
+            logger.exception(
+                "Batch flush failed for table %s; keeping %d rows for the next flush",
+                table,
+                len(self._buffer),
+            )
+            return
 
-            duration = (time.time() - start) * 1000
-            asyncio.create_task(
-                self.event_broker.emit(
-                    ExportBatchCompletedEvent(
-                        correlation_id="export",
-                        table=table,
-                        inserted_count=len(self._buffer),
-                        duration_ms=duration,
-                    )
+        duration = (time.time() - start) * 1000
+        asyncio.create_task(
+            self.event_broker.emit(
+                ExportBatchCompletedEvent(
+                    correlation_id="export",
+                    table=table,
+                    inserted_count=inserted,
+                    duration_ms=duration,
                 )
             )
-
-        except Exception:
-            self.conn.rollback()
-            logger.exception("Batch flush failed for table %s", table)
-
-        finally:
-            self._buffer.clear()
+        )
 
     def _flush(self) -> None:
-        """Simple flush with no event emission -- used at shutdown."""
+        """Flush with no event emission, used at shutdown.
+
+        Rows that cannot be written now have no later flush to wait for, so the
+        failure is logged with the number of rows lost and raised.
+        """
         if not self._buffer:
             return
 
         try:
-            self.cursor.execute("BEGIN")
-            for table, node, item, extraction_blueprint, item_hash in self._buffer:
-                self._insert_row(table, node, item, extraction_blueprint, item_hash)
-            self.conn.commit()
-
+            self._write_buffer()
         except Exception:
-            self.conn.rollback()
-            logger.exception("Final flush failed")
-
-        finally:
-            self._buffer.clear()
+            logger.exception(
+                "Final flush failed; %d buffered rows were not saved", len(self._buffer)
+            )
+            raise
 
     # =========================================================
     # SCHEMA / ROW HELPERS
