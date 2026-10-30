@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 
 from events import (
@@ -9,6 +10,12 @@ from events import (
 )
 
 from .base_pipeline import BasePipeline
+
+logger = logging.getLogger(__name__)
+
+# A blueprint pattern runs against page text we do not control. Beyond this many
+# characters the transform is skipped, so a backtracking pattern cannot stall a worker.
+MAX_REGEX_INPUT_CHARS = 100_000
 
 
 class TransformationPipeline(BasePipeline):
@@ -119,6 +126,20 @@ class TransformationPipeline(BasePipeline):
     # TRANSFORM OPERATIONS
     # =========================================================
 
+    @staticmethod
+    def _fits_regex_limit(text: str, transform_type: str, pattern: str) -> bool:
+        """True if `text` is short enough for a regex; otherwise log and let the caller skip."""
+        if len(text) <= MAX_REGEX_INPUT_CHARS:
+            return True
+        logger.warning(
+            "Skipping %s transform: input is %d characters, limit is %d (pattern %.60r)",
+            transform_type,
+            len(text),
+            MAX_REGEX_INPUT_CHARS,
+            pattern,
+        )
+        return False
+
     def _regex(self, value, config):
         """``{"type": "regex", "pattern": ...}``: first match (or its first
         capture group, if the pattern has one), else None.
@@ -130,7 +151,11 @@ class TransformationPipeline(BasePipeline):
         if not pattern:
             return value
 
-        match = re.search(pattern, str(value))
+        text = str(value)
+        if not self._fits_regex_limit(text, "regex", pattern):
+            return value
+
+        match = re.search(pattern, text)
 
         if not match:
             return None
@@ -157,6 +182,8 @@ class TransformationPipeline(BasePipeline):
             return value
 
         text = value if isinstance(value, str) else " ".join(map(str, value))
+        if not self._fits_regex_limit(text, "regex_extract", pattern):
+            return value
 
         return re.findall(pattern, text)
 
