@@ -4,7 +4,7 @@ import contextlib
 import os
 from collections.abc import Iterator
 from pathlib import Path
-from typing import IO
+from typing import IO, Any
 
 TEMP_SUFFIX = ".tmp"
 
@@ -12,7 +12,7 @@ TEMP_SUFFIX = ".tmp"
 @contextlib.contextmanager
 def atomic_open(
     path: str | os.PathLike[str], mode: str = "w", encoding: str | None = "utf-8"
-) -> Iterator[IO]:
+) -> Iterator[IO[Any]]:  # str or bytes handle, chosen by ``mode``
     """Open a temp file beside ``path`` and move it over ``path`` when the block ends.
 
     The file at ``path`` is replaced only after the new content is flushed to disk;

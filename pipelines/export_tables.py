@@ -2,6 +2,7 @@
 
 import logging
 import sqlite3
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +16,13 @@ def map_export_type(export_type: str) -> str:
     }.get(export_type, "TEXT")
 
 
-def ensure_table(cursor: sqlite3.Cursor, table_name: str, extraction_blueprint: dict) -> None:
-    """Create the table for a blueprint's fields if missing, then migrate its key."""
+def ensure_table(
+    cursor: sqlite3.Cursor, table_name: str, extraction_blueprint: dict[str, Any]
+) -> None:
+    """Create the table for a blueprint's fields if missing, then migrate its key.
+
+    ``extraction_blueprint`` is the parsed JSON blueprint, hence ``Any`` values.
+    """
     fields = extraction_blueprint.get("fields", {})
     columns = ["id TEXT", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
     for field_name, spec in fields.items():
