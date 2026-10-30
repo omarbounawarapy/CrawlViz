@@ -84,7 +84,7 @@ export default function OverviewPage({ state, metrics }) {
   const maxFunnel = cumulative[0] || 1;
 
   const elapsed = metrics.elapsed_seconds || 0;
-  const pagesPerSec = elapsed > 0 ? metrics.nodes_created / elapsed : 0;
+  const pagesPerSec = elapsed > 0 ? metrics.nodes_fetched / elapsed : 0;
 
   const totalCandidates = metrics.candidatesDropped + metrics.candidatesTrusted;
   const dropRate = totalCandidates > 0 ? metrics.candidatesDropped / totalCandidates : 0;
