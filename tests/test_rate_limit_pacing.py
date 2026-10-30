@@ -3,6 +3,7 @@
 import asyncio
 import time
 from itertools import pairwise
+from typing import Any
 
 from core.event_broker import EventBroker
 from models import Domain, Node
@@ -16,23 +17,23 @@ TOLERANCE = 0.01
 class TimingFetcher:
     """Records when each URL was requested."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.times: dict[str, list[float]] = {}
 
-    async def emit_request(self, params):
+    async def emit_request(self, params: dict[str, Any]) -> str:
         self.times.setdefault(params["url"].split("/")[2], []).append(time.monotonic())
         return "<html></html>"
 
-    async def close(self):
+    async def close(self) -> None:
         pass
 
 
-def make_node(node_id, host):
+def make_node(node_id: int, host: str) -> Node:
     domain = Domain("test", f"http://{host}", ".//a")
     return Node(node_id, url=f"http://{host}/p{node_id}", domain=domain)
 
 
-async def fetch_all(nodes, workers):
+async def fetch_all(nodes: list[Node], workers: int) -> dict[str, list[float]]:
     fetcher = TimingFetcher()
     pipeline = RequestsPipeline(
         EventBroker(), max_concurrency=workers, fetcher=fetcher, min_delay=MIN_DELAY, jitter_max=0
@@ -48,7 +49,7 @@ async def fetch_all(nodes, workers):
     return fetcher.times
 
 
-def gaps(times):
+def gaps(times: list[float]) -> list[float]:
     return [later - earlier for earlier, later in pairwise(sorted(times))]
 
 
