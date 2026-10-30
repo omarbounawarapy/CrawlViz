@@ -3,6 +3,7 @@ import random
 
 import aiohttp
 
+from config import USER_AGENT
 from events import (
     NodeAddedEvent,
     PageFetchedEvent,
@@ -52,7 +53,7 @@ class RequestsPipeline:
         max_queue_size: int = 0,
         fetcher: Fetcher | None = None,
         min_delay: float = 1,
-        user_agent: str = "CrawlViz/1.0",
+        user_agent: str = USER_AGENT,
         respect_robots: bool = False,
         rng: random.Random | None = None,
         jitter_max: float = 0.2,
