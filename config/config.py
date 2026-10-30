@@ -14,8 +14,10 @@ from pathlib import Path
 # PATHS
 # =========================================================================
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
-EXPORT_PATH: Path = BASE_DIR / "export"
-ITEMS_DB_PATH: Path = BASE_DIR / "items.db"
+EXPORT_DIR_NAME = "export"
+ITEMS_DB_NAME = "items.db"
+EXPORT_PATH: Path = BASE_DIR / EXPORT_DIR_NAME
+ITEMS_DB_PATH: Path = BASE_DIR / ITEMS_DB_NAME
 TEMPLATES_DIR: Path = BASE_DIR / "templates"
 
 # =========================================================================

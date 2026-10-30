@@ -45,7 +45,7 @@ def test_space_index_write_failure_keeps_the_previous_index(
     def explode(*args, **kwargs):
         raise OSError("disk full")
 
-    monkeypatch.setattr("nlp.space_store.json.dump", explode)
+    monkeypatch.setattr("utils.jsonio.json.dumps", explode)
     with pytest.raises(OSError):
         store.record_save("bp", 5, 2)
     assert (tmp_path / "index.json").read_text() == before
