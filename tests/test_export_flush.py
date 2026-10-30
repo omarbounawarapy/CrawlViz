@@ -12,13 +12,13 @@ from pipelines.exporting_pipeline import ExportingPipeline
 BLUEPRINT = {"extraction": {"fields": {"title": {"export_type": "text"}}}}
 
 
-def _pipeline(db_path):
+def _pipeline(db_path: str) -> ExportingPipeline:
     pipe = ExportingPipeline("c1", "bp", BLUEPRINT, EventBroker(), db_path=db_path)
     pipe._init_db()
     return pipe
 
 
-def _buffer_row(pipe, table, item_hash):
+def _buffer_row(pipe: ExportingPipeline, table: str, item_hash: str) -> None:
     node = types.SimpleNamespace(get_full_url=lambda: "https://example.com/a")
     pipe._buffer.append((table, node, {"title": "kept"}, BLUEPRINT["extraction"], item_hash))
 
@@ -33,6 +33,7 @@ def test_failed_batch_flush_keeps_the_rows_for_the_next_flush(tmp_path: Path) ->
 
     pipe._ensure_table("t", BLUEPRINT["extraction"])
     pipe._write_buffer()
+    assert pipe.conn is not None
     pipe.conn.close()
 
     rows = sqlite3.connect(db).execute("SELECT crawl_id, title FROM t").fetchall()
@@ -47,4 +48,5 @@ def test_failed_final_flush_raises_and_keeps_the_rows(tmp_path: Path) -> None:
         pipe._flush()
 
     assert len(pipe._buffer) == 1
+    assert pipe.conn is not None
     pipe.conn.close()
