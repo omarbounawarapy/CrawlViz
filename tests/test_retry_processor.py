@@ -94,3 +94,41 @@ async def test_request_the_fetch_policy_refused_is_not_retried():
         )
         await asyncio.gather(*rp._pending)
         assert node.failed and reqs.queue.empty()
+
+
+HTTP_FORBIDDEN = 403
+HTTP_NOT_FOUND = 404
+HTTP_GONE = 410
+HTTP_REQUEST_TIMEOUT = 408
+HTTP_TOO_MANY_REQUESTS = 429
+HTTP_BAD_GATEWAY = 502
+
+
+def http_failed(node: FailableNode, status: int | None) -> RequestFailedEvent:
+    return RequestFailedEvent(
+        correlation_id="1",
+        node=node,
+        error_type="ClientResponseError",
+        error_message="m",
+        status_code=status,
+    )
+
+
+async def test_permanent_client_errors_are_not_retried() -> None:
+    for status in (HTTP_FORBIDDEN, HTTP_NOT_FOUND, HTTP_GONE):
+        rp, _, reqs = make()
+        node = FailableNode()
+        await rp._process(http_failed(node, status), 0)
+        await asyncio.gather(*rp._pending)
+        assert node.failed
+        assert reqs.queue.empty()
+
+
+async def test_timeouts_and_rate_limits_and_server_errors_are_retried() -> None:
+    for status in (HTTP_REQUEST_TIMEOUT, HTTP_TOO_MANY_REQUESTS, HTTP_BAD_GATEWAY, None):
+        rp, _, reqs = make()
+        node = FailableNode()
+        await rp._process(http_failed(node, status), 0)
+        await asyncio.gather(*rp._pending)
+        assert not node.failed
+        assert reqs.queue.get_nowait() is node
