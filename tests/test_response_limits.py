@@ -1,6 +1,7 @@
 """A page fetch reads a bounded body, and only of a type the extraction can parse (SEC-2)."""
 
 import gzip
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
 import pytest
@@ -13,10 +14,10 @@ LIMIT = 1000
 
 
 @asynccontextmanager
-async def serve(response_factory):
+async def serve(response_factory: Callable[[], web.Response]) -> AsyncIterator[str]:
     """A real HTTP server on 127.0.0.1 answering every GET with `response_factory()`."""
 
-    async def handler(request):
+    async def handler(request: web.Request) -> web.Response:
         return response_factory()
 
     app = web.Application()
@@ -30,10 +31,13 @@ async def serve(response_factory):
         await runner.cleanup()
 
 
-async def fetch(url, content_types=HTML_ONLY, limit=LIMIT):
+async def fetch(
+    url: str, content_types: tuple[str, ...] | None = HTML_ONLY, limit: int = LIMIT
+) -> str:
     client = NetworkClient(allow_private_addresses=True, max_response_bytes=limit)
     try:
-        return await client.emit_request({"url": url, "content_types": content_types})
+        body: str = await client.emit_request({"url": url, "content_types": content_types})
+        return body
     finally:
         await client.close()
 
