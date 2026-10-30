@@ -9,7 +9,12 @@ what was already there.
 
 import pytest
 
-from config.blueprint_schema import Blueprint, StopConditions
+from config.blueprint_schema import (
+    Blueprint,
+    BlueprintSchemaError,
+    StopConditions,
+    validate_blueprint,
+)
 from config.blueprint_translator import BlueprintValidationError
 from tests.test_blueprint_translator import base_user_input, translate
 
@@ -53,3 +58,21 @@ class TestBlueprintModelAcceptsRealAssembledOutput:
         # schema for BlueprintTranslator's actual output, not a fiction.
         result = translate()
         Blueprint.model_validate(result)  # should not raise
+
+
+class TestTargetTopicNeedsAWord:
+    """A topic with no word character embeds to an all-zero vector, so every
+    link scored against it gets priority 0."""
+
+    @pytest.mark.parametrize("topic", ["", "   ", "\t\n", "?!-", "..."])
+    def test_topic_without_a_word_character_is_rejected(self, topic):
+        blueprint = translate()
+        blueprint["target_topic"] = topic
+        with pytest.raises(BlueprintSchemaError, match="target_topic"):
+            validate_blueprint(blueprint)
+
+    @pytest.mark.parametrize("topic", ["tea", " Type 2 Diabetes ", "AI", "café", "2"])
+    def test_topic_with_a_word_character_is_accepted(self, topic):
+        blueprint = translate()
+        blueprint["target_topic"] = topic
+        assert validate_blueprint(blueprint).target_topic == topic
