@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from src.crawlviz.score.llm import CostTable, ModelPrice, TokenUsage, load_cost_table
-from src.crawlviz.score.llm.cost_table import MAX_COST_TABLE_BYTES
+from crawlviz.score.llm import CostTable, ModelPrice, TokenUsage, load_cost_table
+from crawlviz.score.llm.cost_table import MAX_COST_TABLE_BYTES
 
 TABLE = CostTable(
     free_providers=frozenset({"ollama"}),

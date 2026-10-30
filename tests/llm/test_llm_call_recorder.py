@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from src.crawlviz.score.llm import (
+from crawlviz.score.llm import (
     LLM_CALLS_FILE_NAME,
     CostTable,
     LlmCallRecord,
