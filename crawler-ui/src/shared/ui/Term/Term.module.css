@@ -1,0 +1,61 @@
+.term {
+  position: relative;
+  display: inline-block;
+  max-inline-size: 100%;
+}
+
+/* A word in a sentence: it keeps the sentence's type and marks itself with a dotted rule. */
+.trigger {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--color-control);
+  text-underline-offset: 0.2em;
+  cursor: help;
+
+  &:hover {
+    text-decoration-color: currentcolor;
+  }
+}
+
+/* A margin note: sheet, hairline, no shadow (DESIGN.md, Elevation). */
+.explanation {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-xs));
+  inset-inline-start: 0;
+  z-index: var(--layer-popover);
+  inline-size: max-content;
+
+  /* A short note reads best at about half a text measure, and never runs off a phone screen. */
+  max-inline-size: min(36ch, calc(100vw - 2 * var(--space-md)));
+  padding-block: var(--space-sm);
+  padding-inline: var(--space-md);
+  border: var(--stroke-hairline) solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-sheet);
+  color: var(--color-ink);
+  font-family: var(--type-body-family);
+  font-size: var(--type-body-size);
+  font-weight: var(--type-body-weight);
+  line-height: var(--type-body-line-height);
+  text-align: start;
+  white-space: normal;
+
+  /* Bridges the gap above the note, so the pointer can move from the word onto the note
+     without leaving the term and closing it (WCAG 1.4.13, hoverable). */
+  &::before {
+    position: absolute;
+    inset-block-end: 100%;
+    inset-inline: 0;
+    block-size: calc(var(--space-xs) + var(--stroke-hairline));
+    content: "";
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}

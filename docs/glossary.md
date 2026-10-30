@@ -7,7 +7,7 @@ comments use the word in the **Say** column, with the meaning given here (NAME-4
 they already mean something else here.
 
 Owner: design-system-engineer. A new term, or a change of meaning, is added here before it
-appears in the UI. The UI's `Term` component (`crawler-ui/src/shared/ui/Term.tsx`) shows the
+appears in the UI. The UI's `Term` component (`crawler-ui/src/shared/ui/Term/Term.tsx`) shows the
 **Meaning** text as the explanation, so write it as one or two plain sentences a first-time
 reader understands.
 
