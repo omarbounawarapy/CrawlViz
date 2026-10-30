@@ -225,6 +225,9 @@ export default function Shell({
           >
             <StatusMark status={status} />
             {sample ? "Sample playback" : (STATUS_WORD[status] ?? String(status).toLowerCase())}
+            {status === "IDLE" && !sample && (
+              <span style={{ color: shell.textMuted, fontWeight: 400 }}>· waiting for a crawl</span>
+            )}
             {stopReason && (
               <span style={{ color: shell.textMuted, fontWeight: 400 }}>
                 · {String(stopReason).toLowerCase().replace(/_/g, " ")}
