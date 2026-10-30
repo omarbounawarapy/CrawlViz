@@ -90,7 +90,7 @@ class ExportingPipeline:
         coming) would otherwise never wake up to notice.
         """
         self.running = False
-        await self.queue.put(SHUTDOWN)
+        self.queue.put_nowait(SHUTDOWN)  # the queue is unbounded, so there is always room
 
     # =========================================================
     # START
