@@ -335,8 +335,10 @@ def test_unknown_priority_weight_rejected():
         store.load_runtime_config(None, {"priority": {"balanced_weights": {"bogus": 1}}})
 
 
-def test_robots_ttl_refetches_after_expiry():
+def test_robots_ttl_refetches_after_expiry(monkeypatch):
     import asyncio
+    from types import SimpleNamespace
+    from pipelines import robots
     from pipelines.robots import RobotsPolicy
 
     class F:
@@ -346,11 +348,14 @@ def test_robots_ttl_refetches_after_expiry():
             F.calls += 1
             return "User-agent: *\nDisallow: /no"
 
+    clock = [1000.0]
+    monkeypatch.setattr(robots, "time", SimpleNamespace(monotonic=lambda: clock[0]))
+
     async def run(ttl):
         F.calls = 0
         r = RobotsPolicy(F(), "ua", None, ttl)
         await r.allowed("http://h/x")
-        r._loaded_at["http://h"] -= 100
+        clock[0] += 100
         await r.allowed("http://h/x")
         return F.calls
 
