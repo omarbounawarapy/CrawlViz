@@ -1,0 +1,83 @@
+/* Plate buttons (DESIGN.md, Buttons): 30px, 3px radius, hairline ink edge, flat. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  min-block-size: var(--size-control);
+  min-inline-size: var(--size-target-min);
+  padding-block: 0;
+  padding-inline: var(--space-md);
+  border: var(--stroke-hairline) solid var(--color-ink);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--type-strong-family);
+  font-size: var(--type-strong-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-strong-line-height);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-quick) var(--motion-ease-out),
+    color var(--motion-quick) var(--motion-ease-out);
+
+  &:disabled {
+    border-color: var(--color-rule);
+    background: transparent;
+    color: var(--color-muted);
+    cursor: not-allowed;
+  }
+}
+
+.outline {
+  &:hover:not(:disabled, [aria-pressed="true"]) {
+    background: var(--color-row-rule);
+  }
+
+  &[aria-pressed="true"] {
+    background: var(--color-ink);
+    color: var(--color-on-ink);
+  }
+}
+
+.primary {
+  min-block-size: var(--size-target-touch);
+  padding-inline: var(--space-lg);
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-ink-2);
+    background: var(--color-ink-2);
+  }
+
+  &:disabled {
+    background: var(--color-rule);
+  }
+}
+
+.quiet {
+  border-color: transparent;
+  color: var(--color-ink-2);
+  text-decoration: underline;
+  text-decoration-color: var(--color-control);
+  text-underline-offset: 0.2em;
+
+  &:hover:not(:disabled) {
+    color: var(--color-ink);
+    text-decoration-color: currentcolor;
+  }
+
+  &:disabled {
+    border-color: transparent;
+    text-decoration: none;
+  }
+}
+
+/* Touch and stylus: every button reaches the 44px target (A11Y-1). */
+@media (pointer: coarse) {
+  .button {
+    min-block-size: var(--size-target-touch);
+  }
+}
