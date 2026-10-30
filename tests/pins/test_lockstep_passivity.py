@@ -57,6 +57,8 @@ async def _cascade(
         ("groq", "m"),
         run_dir / "space",
         extra_components=extra_components or (),
+        # The synthetic graph has no topic; this pin checks wiring, not the method.
+        allow_empty_topic=True,
     )
     return result, [request["prompt"] for request in llm.requests]
 
