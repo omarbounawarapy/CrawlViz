@@ -167,18 +167,20 @@ class LlmCallRecord(_Frozen):
         cost_usd: float | None = None,
     ) -> "LlmCallRecord":
         """The record of a call that got an answer (valid or not, per `outcome`)."""
-        return cls(
-            **_request_fields(request),
-            started_at=started_at,
-            model=response.model,
-            input_tokens=response.usage.input_tokens,
-            output_tokens=response.usage.output_tokens,
-            cost_usd=cost_usd,
-            latency_ms=response.latency_ms,
-            attempts=response.attempts,
-            cache_hit=response.cache_hit,
-            outcome=outcome,
-            raw_reply=response.text,
+        return cls.model_validate(
+            {
+                **_request_fields(request),
+                "started_at": started_at,
+                "model": response.model,
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+                "cost_usd": cost_usd,
+                "latency_ms": response.latency_ms,
+                "attempts": response.attempts,
+                "cache_hit": response.cache_hit,
+                "outcome": outcome,
+                "raw_reply": response.text,
+            }
         )
 
     @classmethod
@@ -186,14 +188,16 @@ class LlmCallRecord(_Frozen):
         cls, request: LlmRequest, error: LlmCallError, *, started_at: datetime
     ) -> "LlmCallRecord":
         """The record of a call that got no usable answer."""
-        return cls(
-            **_request_fields(request),
-            started_at=started_at,
-            model=request.model,
-            latency_ms=error.latency_ms,
-            attempts=error.attempts,
-            outcome=error.outcome,
-            error=str(error),
+        return cls.model_validate(
+            {
+                **_request_fields(request),
+                "started_at": started_at,
+                "model": request.model,
+                "latency_ms": error.latency_ms,
+                "attempts": error.attempts,
+                "outcome": error.outcome,
+                "error": str(error),
+            }
         )
 
 
