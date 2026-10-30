@@ -4,6 +4,7 @@ No caller uses it yet: callers move to it one at a time, and the old handler
 goes last. Other areas import from here only (ARCH-2).
 """
 
+from .cost_table import CostTable, ModelPrice, load_cost_table
 from .json_output import (
     LlmOutputError,
     RepairCall,
@@ -31,6 +32,7 @@ __all__ = [
     "LLM_CALL_RECORD_SCHEMA_VERSION",
     "CallOutcome",
     "ChatRole",
+    "CostTable",
     "LlmCallError",
     "LlmCallRecord",
     "LlmClient",
@@ -38,12 +40,14 @@ __all__ = [
     "LlmOutputError",
     "LlmRequest",
     "LlmResponse",
+    "ModelPrice",
     "PromptFileError",
     "PromptRegistry",
     "RenderedPrompt",
     "RepairCall",
     "TokenUsage",
     "ValidatedOutput",
+    "load_cost_table",
     "parse_and_validate",
     "parse_llm_json",
     "render_messages",
