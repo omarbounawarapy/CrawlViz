@@ -10,7 +10,7 @@ async def test_task_is_held_until_it_ends():
     tasks = BackgroundTasks()
     gate = asyncio.Event()
 
-    async def wait_for_gate():
+    async def wait_for_gate() -> None:
         await gate.wait()
 
     task = tasks.spawn(wait_for_gate(), name="waiter")
@@ -24,7 +24,7 @@ async def test_task_is_held_until_it_ends():
 async def test_failure_is_logged_with_the_task_name(caplog):
     tasks = BackgroundTasks()
 
-    async def explode():
+    async def explode() -> None:
         raise RuntimeError("boom")
 
     with caplog.at_level(logging.ERROR, logger="utils.background_tasks"):
@@ -39,7 +39,7 @@ async def test_failure_is_logged_with_the_task_name(caplog):
 async def test_cancel_all_ends_running_tasks_without_logging_an_error(caplog):
     tasks = BackgroundTasks()
 
-    async def sleep_forever():
+    async def sleep_forever() -> None:
         await asyncio.sleep(3600)
 
     running = tasks.spawn(sleep_forever(), name="sleeper")
