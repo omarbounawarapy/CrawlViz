@@ -28,6 +28,7 @@ from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
+from .manifest_redaction import redact_manifest
 from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 
 # Traceability is a second, finer-grained event stream (see
@@ -335,7 +336,7 @@ class Crawler:
         ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
-        recorder.write_manifest(self._run_manifest())
+        recorder.write_manifest(redact_manifest(self._run_manifest()))
         telemetry = TelemetryBridge(
             snapshot,
             RecordingGateway(ui_gateway, recorder),
