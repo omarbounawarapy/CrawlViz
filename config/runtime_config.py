@@ -453,6 +453,16 @@ class FetchConfig(BaseModel):
     def _user_agent_names_a_contact(cls, value: str) -> str:
         return require_contact(value)
 
+    @field_validator("extra_headers")
+    @classmethod
+    def _extra_headers_keep_the_user_agent(cls, value: dict[str, str]) -> dict[str, str]:
+        if any(name.strip().lower() == "user-agent" for name in value):
+            raise ValueError(
+                "Extra headers cannot replace the User-Agent. "
+                "Set it in the User-Agent field, with a contact."
+            )
+        return value
+
     @model_validator(mode="after")
     def _ordered(self) -> "FetchConfig":
         if self.backoff_start > self.backoff_max:

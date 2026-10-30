@@ -36,5 +36,15 @@ def test_a_user_agent_without_a_contact_is_rejected(user_agent):
         FetchConfig(user_agent=user_agent)
 
 
+@pytest.mark.parametrize("header_name", ["User-Agent", "user-agent", " USER-AGENT "])
+def test_extra_headers_cannot_replace_the_user_agent(header_name):
+    with pytest.raises(ValidationError, match="cannot replace the User-Agent"):
+        FetchConfig(extra_headers={header_name: "Mozilla/5.0"})
+
+
+def test_other_extra_headers_are_accepted():
+    assert FetchConfig(extra_headers={"X-Team": "blue"}).extra_headers == {"X-Team": "blue"}
+
+
 def test_the_default_user_agent_names_a_contact():
     assert has_contact(default_runtime_config().fetch.user_agent)
