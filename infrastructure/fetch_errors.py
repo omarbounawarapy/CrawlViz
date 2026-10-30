@@ -26,3 +26,15 @@ class ResponseTooLargeError(FetchRejectedError):
 
 class UnsupportedContentTypeError(FetchRejectedError):
     """The response is not one of the content types the caller can parse."""
+
+
+# `error_type` values of failed requests that retrying cannot fix.
+REJECTION_ERROR_NAMES = frozenset(
+    error.__name__
+    for error in (
+        BlockedAddressError,
+        TooManyRedirectsError,
+        ResponseTooLargeError,
+        UnsupportedContentTypeError,
+    )
+)
