@@ -3,10 +3,12 @@
 import asyncio
 import logging
 
+import pytest
+
 from utils import BackgroundTasks
 
 
-async def test_task_is_held_until_it_ends():
+async def test_task_is_held_until_it_ends() -> None:
     tasks = BackgroundTasks()
     gate = asyncio.Event()
 
@@ -21,7 +23,7 @@ async def test_task_is_held_until_it_ends():
     assert len(tasks) == 0
 
 
-async def test_failure_is_logged_with_the_task_name(caplog):
+async def test_failure_is_logged_with_the_task_name(caplog: pytest.LogCaptureFixture) -> None:
     tasks = BackgroundTasks()
 
     async def explode() -> None:
@@ -36,7 +38,9 @@ async def test_failure_is_logged_with_the_task_name(caplog):
     assert len(tasks) == 0
 
 
-async def test_cancel_all_ends_running_tasks_without_logging_an_error(caplog):
+async def test_cancel_all_ends_running_tasks_without_logging_an_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     tasks = BackgroundTasks()
 
     async def sleep_forever() -> None:
