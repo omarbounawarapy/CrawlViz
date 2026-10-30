@@ -157,6 +157,28 @@ describe("crawlReducer — stop detail", () => {
   });
 });
 
+describe("crawlReducer — stopped by the user", () => {
+  it("__USER_STOPPED marks the stop as the user's, whichever of it and CRAWL_STOPPED arrives first", () => {
+    const asked = crawlReducer(INITIAL_STATE, { type: "__USER_STOPPED" });
+    expect(asked.stopped_by_user).toBe(true);
+
+    const stopped = crawlReducer(asked, { type: "CRAWL_STOPPED", reason: "USER_REQUEST" });
+    expect(stopped.status).toBe("STOPPED");
+    expect(stopped.stopped_by_user).toBe(true);
+
+    const other = crawlReducer(crawlReducer(INITIAL_STATE, { type: "CRAWL_STOPPED", reason: "MAX_NODES" }), {
+      type: "__USER_STOPPED",
+    });
+    expect(other.stopped_by_user).toBe(true);
+  });
+
+  it("a snapshot of a new crawl clears the mark", () => {
+    const asked = crawlReducer(INITIAL_STATE, { type: "__USER_STOPPED" });
+    const next = crawlReducer(asked, { type: "SNAPSHOT_FULL", nodes: [], status: "RUNNING" });
+    expect(next.stopped_by_user).toBe(false);
+  });
+});
+
 describe("crawlReducer — SNAPSHOT_FULL", () => {
   it("carries the completed counts, and a stage with no timing does not dilute later averages", () => {
     let state = crawlReducer(INITIAL_STATE, {
