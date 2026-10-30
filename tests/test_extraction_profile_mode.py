@@ -6,6 +6,7 @@ the server resolves them when it loads the blueprint, so extraction is never emp
 
 import copy
 import json
+from pathlib import Path
 
 import pytest
 
@@ -28,19 +29,19 @@ def profile_blueprint(**extraction):
     return blueprint
 
 
-def load(tmp_path, blueprint):
+def load(tmp_path: Path, blueprint):
     (tmp_path / "bp.json").write_text(json.dumps(blueprint), encoding="utf-8")
     return BootStrapper(None, None, "bp.json", templates_dir=tmp_path).load_template()
 
 
-def test_profile_mode_blueprint_extracts_the_profile_fields(tmp_path):
+def test_profile_mode_blueprint_extracts_the_profile_fields(tmp_path: Path) -> None:
     loaded = load(tmp_path, profile_blueprint(profile_id="wikimd_standard"))
     items = ItemExtractor(loaded["extraction"]).extract_items(PAGE, node=None)
     assert items[0]["title"] == "Aspirin"
     assert items[0]["paragraphs"] == ["A pain reliever."]
 
 
-def test_profile_field_checklist_limits_the_fields(tmp_path):
+def test_profile_field_checklist_limits_the_fields(tmp_path: Path) -> None:
     loaded = load(
         tmp_path,
         profile_blueprint(profile_id="wikimd_standard", profile_field_checklist=["title"]),
@@ -48,7 +49,7 @@ def test_profile_field_checklist_limits_the_fields(tmp_path):
     assert list(loaded["extraction"]["fields"]) == ["title"]
 
 
-def test_manual_fields_are_kept_when_profile_mode_is_off(tmp_path):
+def test_manual_fields_are_kept_when_profile_mode_is_off(tmp_path: Path) -> None:
     blueprint = copy.deepcopy(BASE)
     blueprint["extraction"]["profile_mode"] = False
     loaded = load(tmp_path, blueprint)
@@ -63,6 +64,8 @@ def test_manual_fields_are_kept_when_profile_mode_is_off(tmp_path):
         ({"profile_id": "wikimd_standard", "profile_field_checklist": ["nope"]}, "nope"),
     ],
 )
-def test_profile_mode_errors_are_reported_when_the_blueprint_is_validated(extraction, message):
+def test_profile_mode_errors_are_reported_when_the_blueprint_is_validated(
+    extraction, message
+) -> None:
     with pytest.raises(BlueprintSchemaError, match=message):
         validate_blueprint(profile_blueprint(**extraction))

@@ -1,5 +1,7 @@
 """Applying a preset merges it over the current settings and says what it changed."""
 
+from pathlib import Path
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -12,7 +14,7 @@ from routes import config_support
 
 
 @pytest.fixture
-def client(tmp_path, monkeypatch):
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     paths = RuntimePaths.under(tmp_path)
     monkeypatch.setattr(config_support, "default_runtime_paths", lambda: paths)
     app = FastAPI()
@@ -20,7 +22,7 @@ def client(tmp_path, monkeypatch):
     return TestClient(app), paths
 
 
-def test_apply_keeps_settings_the_preset_does_not_mention(client):
+def test_apply_keeps_settings_the_preset_does_not_mention(client) -> None:
     c, paths = client
     c.put("/config", json={"values": {"fetch": {"user_agent": "Mine/1", "min_delay": 4.0}}})
     c.put("/config", json={"values": {"pipelines": {"filtering": {"workers": 5}}}})
@@ -33,7 +35,7 @@ def test_apply_keeps_settings_the_preset_does_not_mention(client):
     assert store.read_stored(paths.settings_file)["fetch"]["user_agent"] == "Mine/1"
 
 
-def test_apply_reports_each_changed_field_with_old_and_new_value(client):
+def test_apply_reports_each_changed_field_with_old_and_new_value(client) -> None:
     c, _ = client
     c.put("/config", json={"values": {"fetch": {"min_delay": 4.0}}})
     default_jitter = default_runtime_config().fetch.jitter_max
@@ -45,7 +47,7 @@ def test_apply_reports_each_changed_field_with_old_and_new_value(client):
     assert all(change["old"] != change["new"] for change in changes)
 
 
-def test_preview_returns_the_changes_and_saves_nothing(client):
+def test_preview_returns_the_changes_and_saves_nothing(client) -> None:
     c, paths = client
     c.put("/config", json={"values": {"fetch": {"min_delay": 4.0}}})
     stored_before = store.read_stored(paths.settings_file)
@@ -57,12 +59,12 @@ def test_preview_returns_the_changes_and_saves_nothing(client):
     assert store.read_stored(paths.settings_file) == stored_before
 
 
-def test_preview_of_a_missing_preset_is_404(client):
+def test_preview_of_a_missing_preset_is_404(client) -> None:
     c, _ = client
     assert c.post("/config/presets/nope/preview").status_code == 404
 
 
-def test_changed_fields_lists_only_differences_by_dotted_path():
+def test_changed_fields_lists_only_differences_by_dotted_path() -> None:
     old = {"a": {"b": 1, "c": 2}, "d": [1]}
     new = {"a": {"b": 1, "c": 3}, "d": [1, 2]}
     assert store.changed_fields(old, new) == [
