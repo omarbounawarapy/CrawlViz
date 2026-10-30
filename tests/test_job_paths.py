@@ -42,14 +42,14 @@ REFUSED = [
 
 
 @pytest.mark.parametrize(("kind", "args"), ALLOWED)
-def test_paths_inside_their_directory_reach_the_command(kind, args) -> None:
+def test_paths_inside_their_directory_reach_the_command(kind: str, args: dict[str, str]) -> None:
     ((flag, value),) = args.items()
     command = jobs.build_command(kind, args)
     assert command[command.index("--" + flag.replace("_", "-")) + 1] == value
 
 
 @pytest.mark.parametrize(("kind", "args"), REFUSED)
-def test_paths_outside_their_directory_are_refused(kind, args) -> None:
+def test_paths_outside_their_directory_are_refused(kind: str, args: dict[str, str]) -> None:
     with pytest.raises(HTTPException) as refused:
         jobs.build_command(kind, args)
     assert refused.value.status_code == 422
