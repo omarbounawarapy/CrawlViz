@@ -19,7 +19,6 @@ class TooManyRedirectsError(FetchRejectedError):
     """A GET followed more redirects than the client allows."""
 
 
-
 class ResponseTooLargeError(FetchRejectedError):
     """The body is larger than the client's size limit (counted after decompression)."""
 
