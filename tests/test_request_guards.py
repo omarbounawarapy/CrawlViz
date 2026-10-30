@@ -53,10 +53,16 @@ def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header, expected):
 
 @pytest.mark.parametrize(
     "base_url",
-    ["http://localhost:8000", "http://127.0.0.1:8000", "http://[::1]:8000", "http://crawl.example"],
+    ["http://localhost:8000", "http://127.0.0.1:8000", "http://crawl.example"],
 )
 def test_local_and_configured_hosts_are_answered(base_url):
     assert make_client(base_url).get("/ping").status_code == 200
+
+
+def test_the_ipv6_loopback_host_is_answered() -> None:
+    # Sent as a header: the test client cannot split an IPv6 address out of a base URL.
+    reply = make_client().get("/ping", headers={"Host": "[::1]:8000"})
+    assert reply.status_code == 200
 
 
 @pytest.mark.parametrize(
