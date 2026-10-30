@@ -115,7 +115,9 @@ async def stop_crawl() -> dict[str, bool | str]:
         drain_seconds = crawler.config.run.shutdown_grace + STOP_DRAIN_MARGIN_SECONDS
         if await _ended_within(task, drain_seconds):
             return {"stopped": True, "graceful": True}
-        logger.warning("Crawl did not end within %.0fs of a stop request; cancelling", drain_seconds)
+        logger.warning(
+            "Crawl did not end within %.0fs of a stop request; cancelling", drain_seconds
+        )
 
     task.cancel()
     if not await _ended_within(task, CANCEL_CLEANUP_SECONDS):
