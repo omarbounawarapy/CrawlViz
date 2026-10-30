@@ -54,6 +54,7 @@ export function applyEvent(state, event) {
         edges,
         status: event.status || "RUNNING",
         stop_reason: event.stop_reason || null,
+        stop_detail: event.stop_detail ?? null,
         metrics: event.metrics || state.metrics,
         pipelineStats,
         candidates,
@@ -122,6 +123,7 @@ export function applyEvent(state, event) {
         ...state,
         status: "STOPPED",
         stop_reason: event.reason ?? event.stop_reason ?? null,
+        stop_detail: event.detail ?? null,
         metrics: event.metrics || state.metrics,
       };
     }

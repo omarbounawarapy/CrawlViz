@@ -95,6 +95,39 @@ describe("crawlReducer — V2 message types", () => {
   });
 });
 
+describe("crawlReducer — stop detail", () => {
+  it("CRAWL_STOPPED keeps the detail next to the reason, and a new snapshot clears it", () => {
+    let state = crawlReducer(INITIAL_STATE, { type: "CRAWL_STOPPED", reason: "MAX_NODES", detail: "Reached 500 pages" });
+    expect(state.stop_reason).toBe("MAX_NODES");
+    expect(state.stop_detail).toBe("Reached 500 pages");
+
+    state = crawlReducer(state, { type: "SNAPSHOT_FULL", nodes: [], status: "RUNNING" });
+    expect(state.stop_detail).toBeNull();
+  });
+
+  it("a snapshot of a stopped crawl carries the detail, and replay restores it", () => {
+    const log = [
+      { type: "SNAPSHOT_FULL", nodes: [], status: "RUNNING" },
+      { type: "CRAWL_STOPPED", reason: "MAX_NODES", detail: "Reached 500 pages" },
+    ];
+    let state = INITIAL_STATE;
+    for (const ev of log) state = crawlReducer(state, ev);
+    state = crawlReducer(state, { type: "__REPLAY_SEEK", index: 0 });
+    expect(state.stop_detail).toBeNull();
+    state = crawlReducer(state, { type: "__REPLAY_SEEK", index: 1 });
+    expect(state.stop_detail).toBe("Reached 500 pages");
+
+    const joined = crawlReducer(INITIAL_STATE, {
+      type: "SNAPSHOT_FULL",
+      nodes: [],
+      status: "STOPPED",
+      stop_reason: "MAX_NODES",
+      stop_detail: "Reached 500 pages",
+    });
+    expect(joined.stop_detail).toBe("Reached 500 pages");
+  });
+});
+
 describe("crawlReducer — SNAPSHOT_FULL", () => {
   it("rebuilds the edges from the parent of every node, so a late joiner sees the same graph", () => {
     const nodes = [
