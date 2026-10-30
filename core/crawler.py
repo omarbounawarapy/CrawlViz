@@ -26,11 +26,11 @@ from nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
-from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
+from ui_bridge.event_recorder import EventRecorder, RecordingGateway
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
-from .manifest_redaction import redact_manifest
+from .run_manifest import RunManifestWriter
 from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 
 # Traceability is a second, finer-grained event stream (see
@@ -330,19 +330,6 @@ class Crawler:
         for consumer in (*p.values(), space_updater):
             self.event_broker.subscribe(consumer, consumer.event_types)
 
-    def _run_manifest(self) -> dict:
-        return {
-            "crawl_id": self.crawl_id,
-            "blueprint": self.blueprint,
-            "runtime_config": self.config.model_dump(mode="json"),
-            "embedding_model": self.config.embeddings.model_name,
-            "llm_model": self.model_information,
-            "git_sha": git_sha(),
-            "seed": self.seed,
-            "fetch_concurrency": self.fetch_concurrency,
-            "scoring_concurrency": self.scoring_concurrency,
-        }
-
     def _build_ui_layer(self, p: dict) -> RecordingGateway:
         """Build the UI bridge: the WebSocket gateway, the event recorder
         and the TelemetryBridge, subscribed to every event it translates."""
@@ -353,7 +340,15 @@ class Crawler:
         ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
-        recorder.write_manifest(redact_manifest(self._run_manifest()))
+        RunManifestWriter(
+            crawl_id=self.crawl_id,
+            blueprint=self.blueprint,
+            config=self.config,
+            model_information=self.model_information,
+            seed=self.seed,
+            fetch_concurrency=self.fetch_concurrency,
+            scoring_concurrency=self.scoring_concurrency,
+        ).write(recorder)
         recording_gateway = RecordingGateway(ui_gateway, recorder)
         telemetry = TelemetryBridge(
             snapshot,
