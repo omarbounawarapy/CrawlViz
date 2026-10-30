@@ -1,5 +1,7 @@
 """Benchmark job path flags stay inside the directories each flag may read or write."""
 
+from pathlib import Path
+
 import pytest
 from fastapi import HTTPException
 
@@ -40,20 +42,22 @@ REFUSED = [
 
 
 @pytest.mark.parametrize(("kind", "args"), ALLOWED)
-def test_paths_inside_their_directory_reach_the_command(kind, args):
+def test_paths_inside_their_directory_reach_the_command(kind: str, args: dict[str, str]) -> None:
     ((flag, value),) = args.items()
     command = jobs.build_command(kind, args)
     assert command[command.index("--" + flag.replace("_", "-")) + 1] == value
 
 
 @pytest.mark.parametrize(("kind", "args"), REFUSED)
-def test_paths_outside_their_directory_are_refused(kind, args):
+def test_paths_outside_their_directory_are_refused(kind: str, args: dict[str, str]) -> None:
     with pytest.raises(HTTPException) as refused:
         jobs.build_command(kind, args)
     assert refused.value.status_code == 422
 
 
-def test_a_symlink_out_of_the_output_directory_is_refused(tmp_path, monkeypatch):
+def test_a_symlink_out_of_the_output_directory_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     outside = tmp_path / "outside"
     outside.mkdir()
     results = tmp_path / "root" / "benchmark" / "results"
