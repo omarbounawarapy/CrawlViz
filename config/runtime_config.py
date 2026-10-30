@@ -42,6 +42,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import config as _config
+from config.user_agent import require_contact
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
 from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
@@ -446,6 +447,11 @@ class FetchConfig(BaseModel):
         "headers",
         effect="Each header is sent on every request and replaces a default header of the same name.",
     )
+
+    @field_validator("user_agent")
+    @classmethod
+    def _user_agent_names_a_contact(cls, value: str) -> str:
+        return require_contact(value)
 
     @model_validator(mode="after")
     def _ordered(self) -> "FetchConfig":
