@@ -30,12 +30,12 @@ PUBLIC_URL = "http://93.184.216.34/start"  # a public literal, so no DNS lookup 
         "224.0.0.1",
     ],
 )
-def test_non_public_addresses_are_blocked(address):
+def test_non_public_addresses_are_blocked(address) -> None:
     assert is_blocked_address(address)
 
 
 @pytest.mark.parametrize("address", ["93.184.216.34", "8.8.8.8", "2606:2800:220:1::1"])
-def test_public_addresses_are_allowed(address):
+def test_public_addresses_are_allowed(address) -> None:
     assert not is_blocked_address(address)
 
 
@@ -51,17 +51,17 @@ def test_public_addresses_are_allowed(address):
         "http:///nohost",
     ],
 )
-def test_unsafe_urls_are_rejected(url):
+def test_unsafe_urls_are_rejected(url) -> None:
     with pytest.raises(BlockedAddressError):
         ensure_public_url(url)
 
 
-def test_public_literal_and_names_pass_the_url_check():
+def test_public_literal_and_names_pass_the_url_check() -> None:
     ensure_public_url(PUBLIC_URL)
     ensure_public_url("https://example.org/page")  # names are checked when resolved
 
 
-async def test_resolver_refuses_a_name_that_resolves_to_loopback():
+async def test_resolver_refuses_a_name_that_resolves_to_loopback() -> None:
     resolver = PublicAddressResolver()
     try:
         with pytest.raises(BlockedAddressError, match="localhost"):
@@ -110,7 +110,7 @@ class FakeSession:
         return self.responses.pop(0)
 
 
-async def test_redirect_to_a_metadata_address_is_refused_before_it_is_fetched():
+async def test_redirect_to_a_metadata_address_is_refused_before_it_is_fetched() -> None:
     session = FakeSession(FakeResponse(302, "http://169.254.169.254/latest/meta-data/"))
     strategy = GetRequestStrategy(check_addresses=True)
     with pytest.raises(BlockedAddressError):
@@ -118,7 +118,7 @@ async def test_redirect_to_a_metadata_address_is_refused_before_it_is_fetched():
     assert session.asked == [PUBLIC_URL]
 
 
-async def test_relative_redirect_is_followed_and_checked():
+async def test_relative_redirect_is_followed_and_checked() -> None:
     session = FakeSession(FakeResponse(301, "/next"), FakeResponse(200))
     strategy = GetRequestStrategy(check_addresses=True)
     assert await strategy.execute(session, {"url": PUBLIC_URL}) == "page"
@@ -151,7 +151,7 @@ async def hello(request):
     return web.Response(text="hello", content_type="text/html")
 
 
-async def test_default_client_never_reaches_a_local_server():
+async def test_default_client_never_reaches_a_local_server() -> None:
     async with local_server(hello) as (base, hits):
         client = NetworkClient()
         try:
@@ -164,7 +164,7 @@ async def test_default_client_never_reaches_a_local_server():
         assert hits == []
 
 
-async def test_the_flag_allows_a_local_server():
+async def test_the_flag_allows_a_local_server() -> None:
     async with local_server(hello) as (base, hits):
         client = NetworkClient(allow_private_addresses=True)
         try:
@@ -174,7 +174,7 @@ async def test_the_flag_allows_a_local_server():
         assert hits == ["/page"]
 
 
-async def test_endless_redirects_stop_at_the_bound():
+async def test_endless_redirects_stop_at_the_bound() -> None:
     async def loop(request):
         raise web.HTTPFound("/again")
 

@@ -48,9 +48,7 @@ def test_booleans_strings_floats_and_out_of_range_values_are_not_grades(value: o
 
 
 async def test_graded_judge_retries_an_answer_given_as_true_and_false() -> None:
-    sender = ScriptedSender(
-        [{"labels": {"1": True, "2": False}}, {"labels": {"1": 2, "2": 0}}]
-    )
+    sender = ScriptedSender([{"labels": {"1": True, "2": False}}, {"labels": {"1": 2, "2": 0}}])
     labels = await graded_judge.judge(sender, ROWS)
     assert labels == {"a": 2, "b": 0}
     assert all(type(grade) is int for grade in labels.values())

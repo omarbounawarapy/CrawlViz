@@ -82,7 +82,8 @@ class FailableNode(FakeNode):
 
 
 async def test_request_the_fetch_policy_refused_is_not_retried():
-    for error_type in ("BlockedAddressError", "ResponseTooLargeError", "UnsupportedContentTypeError"):
+    refusals = ("BlockedAddressError", "ResponseTooLargeError", "UnsupportedContentTypeError")
+    for error_type in refusals:
         rp, _, reqs = make()
         node = FailableNode()
         await rp._process(

@@ -2,6 +2,7 @@
 
 import sqlite3
 import types
+from pathlib import Path
 
 import pytest
 
@@ -22,7 +23,7 @@ def _buffer_row(pipe, table, item_hash):
     pipe._buffer.append((table, node, {"title": "kept"}, BLUEPRINT["extraction"], item_hash))
 
 
-def test_failed_batch_flush_keeps_the_rows_for_the_next_flush(tmp_path):
+def test_failed_batch_flush_keeps_the_rows_for_the_next_flush(tmp_path: Path) -> None:
     db = str(tmp_path / "items.db")
     pipe = _pipeline(db)
     _buffer_row(pipe, "t", "h1")
@@ -38,7 +39,7 @@ def test_failed_batch_flush_keeps_the_rows_for_the_next_flush(tmp_path):
     assert rows == [("c1", "kept")]
 
 
-def test_failed_final_flush_raises_and_keeps_the_rows(tmp_path):
+def test_failed_final_flush_raises_and_keeps_the_rows(tmp_path: Path) -> None:
     pipe = _pipeline(str(tmp_path / "items.db"))
     _buffer_row(pipe, "missing", "h1")
 

@@ -11,7 +11,6 @@ import json
 
 import pytest
 
-from core.boot_strapper import BootStrapper
 from config.blueprint_schema import (
     Blueprint,
     BlueprintSchemaError,
@@ -19,6 +18,7 @@ from config.blueprint_schema import (
     validate_blueprint,
 )
 from config.blueprint_translator import BlueprintValidationError
+from core.boot_strapper import BootStrapper
 from tests.test_blueprint_translator import base_user_input, translate
 
 

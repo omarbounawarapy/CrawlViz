@@ -22,7 +22,7 @@ class _Crawler:
 
 
 @pytest.fixture(autouse=True)
-def isolated_state(monkeypatch):
+def isolated_state(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(run_routes, "is_offline", lambda: False)
     monkeypatch.setattr(run_routes, "Crawler", _Crawler)
     monkeypatch.setattr(run_routes, "_current_task", None)
@@ -44,7 +44,7 @@ async def _run() -> None:
     await run_routes._run_crawler("wikiMD.json", config=default_runtime_config())
 
 
-async def test_failed_crawl_is_reported_with_a_plain_message():
+async def test_failed_crawl_is_reported_with_a_plain_message() -> None:
     _Crawler.behaviour = ValueError("secret=abc123 in https://example.org/?key=abc123")
 
     await _run()
@@ -57,14 +57,16 @@ async def test_failed_crawl_is_reported_with_a_plain_message():
     assert "abc123" not in message
 
 
-async def test_finished_crawl_has_no_error():
+async def test_finished_crawl_has_no_error() -> None:
     await _run()
 
     assert _status()["last_outcome"] == "finished"
     assert _status()["last_error"] is None
 
 
-async def test_crawl_ended_by_a_stop_request_is_reported_as_stopped(monkeypatch):
+async def test_crawl_ended_by_a_stop_request_is_reported_as_stopped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(run_routes, "_stop_requested", True)
 
     await _run()
