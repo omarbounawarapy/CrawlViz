@@ -195,8 +195,7 @@ export default function App() {
       />
     ) : null;
 
-  const summary =
-    state.nodes.size > 0 ? `${metrics.nodes_fetched} fetched · ${state.nodes.size} found` : null;
+  const summary = state.nodes.size > 0 ? `${metrics.nodes_fetched} fetched · ${state.nodes.size} found` : null;
 
   const offline =
     apiDown && !demoMode ? (
@@ -360,7 +359,9 @@ export default function App() {
         </div>
       )}
 
-      {activeSection === "run" && <RunPage onNavigate={navigateSection} state={state} metrics={metrics} onUserStopped={handleUserStopped} />}
+      {activeSection === "run" && (
+        <RunPage onNavigate={navigateSection} state={state} metrics={metrics} onUserStopped={handleUserStopped} />
+      )}
       {activeSection === "blueprints" && <BlueprintManager onNavigate={navigateSection} />}
       {activeSection === "data" && (
         <DataExplorer
