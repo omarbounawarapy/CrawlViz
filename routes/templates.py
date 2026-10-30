@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Any
 from config import TEMPLATES_DIR
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
+from utils import write_text_atomic
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -34,6 +35,11 @@ def _validated(content: Any) -> Any:
     return content
 
 
+def _write_template(path: str, content: Any) -> None:
+    """Save a blueprint so a failed write never replaces the stored one."""
+    write_text_atomic(path, json.dumps(content, indent=2))
+
+
 @router.get("")
 def list_templates():
     files = [f for f in os.listdir(TEMPLATES_DIR) if f.endswith(".json")]
@@ -55,8 +61,7 @@ def create_template(name: str, body: TemplateBody):
     if os.path.exists(path):
         raise HTTPException(status_code=409, detail="Template already exists")
     content = _validated(body.content)
-    with open(path, "w") as f:
-        json.dump(content, f, indent=2)
+    _write_template(path, content)
     return {"name": os.path.basename(path)}
 
 
@@ -64,8 +69,7 @@ def create_template(name: str, body: TemplateBody):
 def update_template(name: str, body: TemplateBody):
     path = _path(_safe_name(name))
     content = _validated(body.content)
-    with open(path, "w") as f:
-        json.dump(content, f, indent=2)
+    _write_template(path, content)
     return {"name": os.path.basename(path)}
 
 

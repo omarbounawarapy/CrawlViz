@@ -11,9 +11,10 @@ Writes are atomic (temp file + rename).
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
+
+from utils import write_text_atomic
 
 from .runtime_config import RuntimeConfig, default_runtime_config
 
@@ -58,11 +59,7 @@ def read_stored(path: Path) -> dict:
 
 
 def _write(path: Path, data: dict) -> None:
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, path)
+    write_text_atomic(path, json.dumps(data, indent=2, sort_keys=True))
 
 
 def load_runtime_config(
