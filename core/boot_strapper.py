@@ -11,8 +11,8 @@ import logging
 
 from config import TEMPLATES_DIR
 from config.blueprint_schema import validate_blueprint
-from config.template_names import resolve_template_path
 from config.extraction_profiles import resolve_extraction_profile
+from config.template_names import resolve_template_path
 from events import NodeAddedEvent
 from models import Domain, Node
 
