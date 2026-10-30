@@ -50,6 +50,15 @@ describe("crawlReducer — V2 message types", () => {
     expect(state.pipelineStats.scoring.last_duration_ms).toBe(20);
   });
 
+  it("a completed tick without a duration still counts and leaves the average empty", () => {
+    let state = INITIAL_STATE;
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "started", node_id: "1" });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "completed", node_id: "1" });
+
+    expect(state.pipelineStats.filtering.completed).toBe(1);
+    expect(state.pipelineStats.filtering.avg_duration_ms).toBeNull();
+  });
+
   it("CANDIDATE_EVALUATED records dropped/trusted candidates without promoting them to nodes", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, nodeAdded(1, null, 1));
@@ -96,6 +105,24 @@ describe("crawlReducer — V2 message types", () => {
 });
 
 describe("crawlReducer — SNAPSHOT_FULL", () => {
+  it("carries the completed counts, and a stage with no timing does not dilute later averages", () => {
+    let state = crawlReducer(INITIAL_STATE, {
+      type: "SNAPSHOT_FULL",
+      nodes: [],
+      pipeline_stats: {
+        filtering: { started: 4, completed: 4, failed: 0, queue_size: 0, avg_duration_ms: null },
+        scoring: { started: 2, completed: 2, failed: 0, queue_size: 0, avg_duration_ms: 10 },
+      },
+    });
+    expect(state.pipelineStats.filtering.completed).toBe(4);
+
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "completed", duration_ms: 30 });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "completed", duration_ms: 40 });
+
+    expect(state.pipelineStats.filtering.avg_duration_ms).toBe(30);
+    expect(state.pipelineStats.scoring.avg_duration_ms).toBeCloseTo(20);
+  });
+
   it("rebuilds the edges from the parent of every node, so a late joiner sees the same graph", () => {
     const nodes = [
       { node_id: "1", parent_id: null, state: "EXPANDED" },

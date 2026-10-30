@@ -34,8 +34,9 @@ export function applyEvent(state, event) {
           // ticks blend into this average instead of discarding pre-join
           // history (the backend snapshot only carries the derived
           // average, not the raw sum/count it was built from).
+          // A stage that reports completions with no timing (avg null) has no samples to blend.
           _totalDuration: (s.avg_duration_ms || 0) * completed,
-          _samples: completed,
+          _samples: s.avg_duration_ms == null ? 0 : completed,
         };
       });
 
