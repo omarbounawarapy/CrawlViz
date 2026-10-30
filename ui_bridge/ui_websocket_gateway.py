@@ -25,7 +25,7 @@ from collections.abc import Sequence
 from typing import Set
 
 try:
-    from websockets.asyncio.server import ServerConnection, serve
+    from websockets.asyncio.server import Server, ServerConnection, serve
     from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 except ImportError:
     raise ImportError("The 'websockets' package is required. Install with: pip install websockets")
@@ -35,6 +35,10 @@ from config import CORS_ORIGIN_REGEX, CORS_ORIGINS
 from .crawl_state_snapshot import CrawlStateSnapshot
 
 log = logging.getLogger("ui_bridge.gateway")
+
+# Keep-alive pings detect a UI tab that vanished without closing its socket.
+PING_INTERVAL_SECONDS = 20
+PING_TIMEOUT_SECONDS = 10
 
 # An entry the websockets library accepts: an exact origin, a pattern, or None for a client
 # that sends no Origin header (a script, not a browser page).
@@ -72,7 +76,7 @@ class UIWebSocketGateway:
             allowed_origins if allowed_origins is not None else default_allowed_origins()
         )
         self._clients: Set[ServerConnection] = set()
-        self._server = None
+        self._server: Server | None = None
 
     @property
     def port(self) -> int:
@@ -92,8 +96,8 @@ class UIWebSocketGateway:
             self._host,
             self._port,
             origins=self._allowed_origins,
-            ping_interval=20,
-            ping_timeout=10,
+            ping_interval=PING_INTERVAL_SECONDS,
+            ping_timeout=PING_TIMEOUT_SECONDS,
         )
         log.info("UIWebSocketGateway listening on ws://%s:%d", self._host, self._port)
         await self._server.wait_closed()
