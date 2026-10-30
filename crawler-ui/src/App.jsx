@@ -259,6 +259,7 @@ export default function App() {
       status={state.status}
       connectionStatus={demoMode ? "SAMPLE" : state.connectionStatus}
       stopReason={state.status === "STOPPED" ? state.stop_reason : null}
+      stoppedByUser={state.stopped_by_user}
       summary={onGraph ? summary : null}
       errorCount={state.errors.length}
       measuresOpen={onGraph ? measuresOpen : undefined}
