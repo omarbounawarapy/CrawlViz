@@ -297,21 +297,30 @@ class TelemetryBridge:
             "state": "FETCHED",
         }
 
-    def _on_content_filtered(self, event) -> dict:
+    def _on_content_filtered(self, event) -> list:
         node_id = str(event.node.get_id())
         self.snapshot.set_node_state(node_id, "FILTERED")
         self.snapshot.increment("nodes_filtered")
         self.snapshot.increment("total_links_found", by=event.accepted_links_count)
 
-        return {
-            "type": "NODE_STATE_CHANGED",
-            "ts": time.time(),
-            "node_id": node_id,
-            "state": "FILTERED",
-            "links_accepted": event.accepted_links_count,
-            "links_rejected": event.rejected_links_count,
-            "items_accepted": event.accepted_items_count,
-        }
+        return [
+            {
+                "type": "NODE_STATE_CHANGED",
+                "ts": time.time(),
+                "node_id": node_id,
+                "state": "FILTERED",
+                "links_accepted": event.accepted_links_count,
+                "links_rejected": event.rejected_links_count,
+                "items_accepted": event.accepted_items_count,
+            },
+            # Closes the stage's started tick, which gives it a duration.
+            self._tick(
+                stage="filtering",
+                phase="completed",
+                node_id=node_id,
+                detail=f"{event.accepted_links_count} links accepted",
+            ),
+        ]
 
     def _on_links_scored(self, event) -> dict:
         node_id = str(event.node.get_id())
@@ -326,7 +335,7 @@ class TelemetryBridge:
             "scored_count": len(event.scored_links),
         }
 
-    def _on_priority_calculated(self, event) -> dict:
+    def _on_priority_calculated(self, event) -> list:
         parent_id = str(event.parent.get_id())
         self.snapshot.set_node_state(parent_id, "EXPANDED")
         self.snapshot.increment("nodes_expanded")
@@ -349,20 +358,28 @@ class TelemetryBridge:
                 "priority": entry.get("priority"),
             }
 
-        return {
-            "type": "NODE_EXPANDED",
-            "ts": time.time(),
-            "parent_id": parent_id,
-            "children_count": len(event.links),
-            "children": [
-                {
-                    "url": unquote(link["link"].url),
-                    "score": link["score"],
-                    "priority": link["priority"],
-                }
-                for link in event.links
-            ],
-        }
+        return [
+            {
+                "type": "NODE_EXPANDED",
+                "ts": time.time(),
+                "parent_id": parent_id,
+                "children_count": len(event.links),
+                "children": [
+                    {
+                        "url": unquote(link["link"].url),
+                        "score": link["score"],
+                        "priority": link["priority"],
+                    }
+                    for link in event.links
+                ],
+            },
+            self._tick(
+                stage="priority",
+                phase="completed",
+                node_id=parent_id,
+                detail=f"{len(event.links)} links prioritised",
+            ),
+        ]
 
     def _on_node_updated(self, event) -> Optional[dict]:
         # Items are now persisted; update metric only. Not broadcast — too
