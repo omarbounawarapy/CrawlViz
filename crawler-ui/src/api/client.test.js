@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { fetchTemplates, runCrawl, saveConfig, API_STATUS_EVENT } from "./client";
+import {
+  fetchTemplates,
+  fetchValidationSample,
+  runCrawl,
+  saveConfig,
+  isAbortError,
+  API_STATUS_EVENT,
+} from "./client";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -18,6 +25,23 @@ describe("REST client errors", () => {
     window.addEventListener(API_STATUS_EVENT, (e) => seen.push(e.detail.reachable));
     await expect(fetchTemplates()).rejects.toThrow(/Cannot reach the backend/);
     expect(seen.at(-1)).toBe(false);
+  });
+
+  it("passes an abort signal to fetch, and a cancelled request is not reported as an unreachable backend", async () => {
+    const abort = Object.assign(new Error("aborted"), { name: "AbortError" });
+    const fn = vi.fn(() => Promise.reject(abort));
+    vi.stubGlobal("fetch", fn);
+    const seen = [];
+    const listener = (e) => seen.push(e.detail.reachable);
+    window.addEventListener(API_STATUS_EVENT, listener);
+    const controller = new AbortController();
+
+    const error = await fetchValidationSample("pages", null, 25, 0, controller.signal).catch((e) => e);
+    window.removeEventListener(API_STATUS_EVENT, listener);
+
+    expect(fn.mock.calls[0][1].signal).toBe(controller.signal);
+    expect(isAbortError(error)).toBe(true);
+    expect(seen).toEqual([]);
   });
 
   it("explains a bare 404 as a missing endpoint", async () => {
