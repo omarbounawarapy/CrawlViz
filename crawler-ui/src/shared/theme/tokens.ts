@@ -184,6 +184,12 @@ export const typography = {
     weight: "400",
     lineHeight: "1.45",
   },
+  strong: {
+    family: '"Public Sans", system-ui, sans-serif',
+    size: "0.8125rem",
+    weight: "600",
+    lineHeight: "1.2",
+  },
   label: {
     family: '"Public Sans", system-ui, sans-serif',
     size: "0.75rem",

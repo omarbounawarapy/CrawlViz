@@ -66,6 +66,10 @@
   --type-body-size: 0.8125rem;
   --type-body-weight: 400;
   --type-body-line-height: 1.45;
+  --type-strong-family: "Public Sans", system-ui, sans-serif;
+  --type-strong-size: 0.8125rem;
+  --type-strong-weight: 600;
+  --type-strong-line-height: 1.2;
   --type-label-family: "Public Sans", system-ui, sans-serif;
   --type-label-size: 0.75rem;
   --type-label-weight: 500;
