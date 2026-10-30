@@ -1,7 +1,11 @@
 """Page fetches refuse private, loopback, link-local and metadata addresses (SEC-2)."""
 
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from types import TracebackType
+from typing import Any, Self, cast
 
+import aiohttp
 import pytest
 from aiohttp import web
 from yarl import URL
@@ -30,12 +34,12 @@ PUBLIC_URL = "http://93.184.216.34/start"  # a public literal, so no DNS lookup 
         "224.0.0.1",
     ],
 )
-def test_non_public_addresses_are_blocked(address):
+def test_non_public_addresses_are_blocked(address: str) -> None:
     assert is_blocked_address(address)
 
 
 @pytest.mark.parametrize("address", ["93.184.216.34", "8.8.8.8", "2606:2800:220:1::1"])
-def test_public_addresses_are_allowed(address):
+def test_public_addresses_are_allowed(address: str) -> None:
     assert not is_blocked_address(address)
 
 
@@ -51,17 +55,17 @@ def test_public_addresses_are_allowed(address):
         "http:///nohost",
     ],
 )
-def test_unsafe_urls_are_rejected(url):
+def test_unsafe_urls_are_rejected(url: str) -> None:
     with pytest.raises(BlockedAddressError):
         ensure_public_url(url)
 
 
-def test_public_literal_and_names_pass_the_url_check():
+def test_public_literal_and_names_pass_the_url_check() -> None:
     ensure_public_url(PUBLIC_URL)
     ensure_public_url("https://example.org/page")  # names are checked when resolved
 
 
-async def test_resolver_refuses_a_name_that_resolves_to_loopback():
+async def test_resolver_refuses_a_name_that_resolves_to_loopback() -> None:
     resolver = PublicAddressResolver()
     try:
         with pytest.raises(BlockedAddressError, match="localhost"):
@@ -71,18 +75,23 @@ async def test_resolver_refuses_a_name_that_resolves_to_loopback():
 
 
 class FakeResponse:
-    def __init__(self, status, location=None, url=PUBLIC_URL):
+    def __init__(self, status: int, location: str | None = None, url: str = PUBLIC_URL) -> None:
         self.status = status
         self.headers = {"Location": location} if location else {}
         self.url = URL(url)
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
         return False
 
-    def raise_for_status(self):
+    def raise_for_status(self) -> None:
         pass
 
     content_type = "text/html"
@@ -90,47 +99,50 @@ class FakeResponse:
     charset = None
 
     @property
-    def content(self):
+    def content(self) -> Self:
         return self
 
-    async def iter_chunked(self, size):
+    async def iter_chunked(self, size: int) -> AsyncIterator[bytes]:
         yield b"page"
 
 
 class FakeSession:
     """Answers each GET with the next canned response and records the URLs asked for."""
 
-    def __init__(self, *responses):
+    def __init__(self, *responses: FakeResponse) -> None:
         self.responses = list(responses)
-        self.asked = []
+        self.asked: list[str] = []
 
-    def get(self, url, **kwargs):
+    def get(self, url: str, **kwargs: Any) -> FakeResponse:
         self.asked.append(url)
         assert kwargs["allow_redirects"] is False
         return self.responses.pop(0)
 
 
-async def test_redirect_to_a_metadata_address_is_refused_before_it_is_fetched():
+async def test_redirect_to_a_metadata_address_is_refused_before_it_is_fetched() -> None:
     session = FakeSession(FakeResponse(302, "http://169.254.169.254/latest/meta-data/"))
     strategy = GetRequestStrategy(check_addresses=True)
     with pytest.raises(BlockedAddressError):
-        await strategy.execute(session, {"url": PUBLIC_URL})
+        await strategy.execute(cast(aiohttp.ClientSession, session), {"url": PUBLIC_URL})
     assert session.asked == [PUBLIC_URL]
 
 
-async def test_relative_redirect_is_followed_and_checked():
+async def test_relative_redirect_is_followed_and_checked() -> None:
     session = FakeSession(FakeResponse(301, "/next"), FakeResponse(200))
     strategy = GetRequestStrategy(check_addresses=True)
-    assert await strategy.execute(session, {"url": PUBLIC_URL}) == "page"
+    fetched = await strategy.execute(cast(aiohttp.ClientSession, session), {"url": PUBLIC_URL})
+    assert fetched == "page"
     assert session.asked == [PUBLIC_URL, "http://93.184.216.34/next"]
 
 
 @asynccontextmanager
-async def local_server(handler):
+async def local_server(
+    handler: Callable[[web.Request], Awaitable[web.StreamResponse]],
+) -> AsyncIterator[tuple[str, list[str]]]:
     """A real HTTP server on 127.0.0.1; yields (base_url, list of paths requested)."""
     hits: list[str] = []
 
-    async def record(request):
+    async def record(request: web.Request) -> web.StreamResponse:
         hits.append(request.path)
         return await handler(request)
 
@@ -147,11 +159,11 @@ async def local_server(handler):
         await runner.cleanup()
 
 
-async def hello(request):
+async def hello(request: web.Request) -> web.Response:
     return web.Response(text="hello", content_type="text/html")
 
 
-async def test_default_client_never_reaches_a_local_server():
+async def test_default_client_never_reaches_a_local_server() -> None:
     async with local_server(hello) as (base, hits):
         client = NetworkClient()
         try:
@@ -164,7 +176,7 @@ async def test_default_client_never_reaches_a_local_server():
         assert hits == []
 
 
-async def test_the_flag_allows_a_local_server():
+async def test_the_flag_allows_a_local_server() -> None:
     async with local_server(hello) as (base, hits):
         client = NetworkClient(allow_private_addresses=True)
         try:
@@ -174,8 +186,8 @@ async def test_the_flag_allows_a_local_server():
         assert hits == ["/page"]
 
 
-async def test_endless_redirects_stop_at_the_bound():
-    async def loop(request):
+async def test_endless_redirects_stop_at_the_bound() -> None:
+    async def loop(request: web.Request) -> web.StreamResponse:
         raise web.HTTPFound("/again")
 
     async with local_server(loop) as (base, hits):
