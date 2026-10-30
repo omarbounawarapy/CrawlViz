@@ -447,6 +447,15 @@ class FetchConfig(BaseModel):
         effect="Each header is sent on every request and replaces a default header of the same name.",
     )
 
+    allow_private_addresses: bool = _f(
+        False,
+        "Fetch pages from private, loopback and link-local addresses.",
+        "Fetch",
+        "toggle",
+        advanced=True,
+        effect="Off: links to this machine, your local network or a cloud metadata address are refused. On: they are fetched, which only a crawl of your own test site needs.",
+    )
+
     @model_validator(mode="after")
     def _ordered(self) -> "FetchConfig":
         if self.backoff_start > self.backoff_max:

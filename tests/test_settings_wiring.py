@@ -86,6 +86,13 @@ def test_fetch_settings_reach_requests_pipeline(tmp_path):
     assert r.network_client.total_timeout == 30
 
 
+def test_private_addresses_are_blocked_unless_the_config_allows_them(tmp_path):
+    _, blocked = build(tmp_path)
+    assert blocked["requests"].network_client.allow_private_addresses is False
+    _, allowed = build(tmp_path, {"fetch": {"allow_private_addresses": True}})
+    assert allowed["requests"].network_client.allow_private_addresses is True
+
+
 def test_worker_counts_reach_every_pipeline(tmp_path):
     crawler, p = build(tmp_path)
     assert p["filtering"].max_concurrency == 2

@@ -1,5 +1,10 @@
 from .anthropic_translator import AnthropicTranslator
 from .async_file_handler import AsyncFileHandler
+from .fetch_errors import (
+    BlockedAddressError,
+    FetchRejectedError,
+    TooManyRedirectsError,
+)
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
 from .key_manager import KeyManager
@@ -13,6 +18,8 @@ from .openai_translator import OpenAITranslator
 __all__ = [
     "AnthropicTranslator",
     "AsyncFileHandler",
+    "BlockedAddressError",
+    "FetchRejectedError",
     "GeminiTranslator",
     "GroqTranslator",
     "KeyManager",
@@ -22,4 +29,5 @@ __all__ = [
     "NvidiaTranslator",
     "OpenAITranslator",
     "OpenRouterTranslator",
+    "TooManyRedirectsError",
 ]
