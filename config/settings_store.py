@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from utils import write_text_atomic
+from utils import save_json
 
 from .runtime_config import RuntimeConfig, default_runtime_config
 
@@ -87,7 +87,7 @@ def read_stored(path: Path) -> dict:
 
 
 def _write(path: Path, data: dict) -> None:
-    write_text_atomic(path, json.dumps(data, indent=2, sort_keys=True))
+    save_json(path, data, sort_keys=True)
 
 
 def load_runtime_config(

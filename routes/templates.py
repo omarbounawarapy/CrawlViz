@@ -1,11 +1,10 @@
-import json
 import os
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any
 from config import TEMPLATES_DIR
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
-from utils import write_text_atomic
+from utils import load_json, save_json
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -37,7 +36,7 @@ def _validated(content: Any) -> Any:
 
 def _write_template(path: str, content: Any) -> None:
     """Save a blueprint so a failed write never replaces the stored one."""
-    write_text_atomic(path, json.dumps(content, indent=2))
+    save_json(path, content)
 
 
 @router.get("")
@@ -51,8 +50,7 @@ def get_template(name: str):
     path = _path(_safe_name(name))
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Template not found")
-    with open(path) as f:
-        return json.load(f)
+    return load_json(path)
 
 
 @router.post("")

@@ -2,7 +2,6 @@
 subprocess, stream its log tail, and survive a backend restart."""
 
 import asyncio
-import json
 import logging
 import re
 import sys
@@ -16,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from benchmark import POLICIES
+from utils import load_json, save_json
 
 from .benchmark_paths import BENCH_DIR, RESULTS_DIR, ROOT
 
@@ -183,8 +183,7 @@ async def _pump(job: _Job) -> None:
     job.returncode = await proc.wait()
     job.ended = time.time()
     try:  # the finished job survives a backend restart
-        LAST_JOB_FILE.parent.mkdir(parents=True, exist_ok=True)
-        LAST_JOB_FILE.write_text(json.dumps(job.snapshot()))
+        save_json(LAST_JOB_FILE, job.snapshot(), indent=None)
     except OSError:
         logger.warning(
             "could not save the finished %s job to %s",
@@ -217,7 +216,7 @@ def current_job() -> dict[str, Any]:
         return _slot.job.snapshot()
     if LAST_JOB_FILE.is_file():
         try:
-            last = json.loads(LAST_JOB_FILE.read_text())
+            last = load_json(LAST_JOB_FILE)
             state = "interrupted" if last["state"] == "running" else last["state"]
             return {**last, "state": state}
         except (OSError, ValueError, KeyError):
