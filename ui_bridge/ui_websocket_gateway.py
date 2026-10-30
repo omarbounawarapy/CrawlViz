@@ -72,7 +72,11 @@ class UIWebSocketGateway:
             ping_timeout=10,
         )
         log.info("UIWebSocketGateway listening on ws://%s:%d", self._host, self._port)
-        await self._server.wait_closed()
+        try:
+            await self._server.wait_closed()
+        finally:
+            # A cancelled start() must not leave the port bound for the next crawl.
+            await self.stop()
 
     async def stop(self) -> None:
         if self._server:

@@ -117,6 +117,10 @@ class StoppingPipeline(BasePipeline):
         if now - self.last_activity_time >= self.no_progress_timeout:
             await self._stop("NO_PROGRESS")
 
+    async def stop_on_request(self) -> None:
+        """Stop the crawl because the user asked to (POST /stop)."""
+        await self._stop("MANUAL_STOP")
+
     async def _stop(self, reason: str, detail: str | None = None) -> None:
         async with self._stop_lock:
             if self.stopped:
