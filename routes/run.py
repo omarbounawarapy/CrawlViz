@@ -105,7 +105,7 @@ async def _ended_within(task: asyncio.Task, seconds: float) -> bool:
 
 
 @router.post("/stop")
-async def stop_crawl():
+async def stop_crawl() -> dict[str, bool | str]:
     task = _current_task
     if task is None or task.done():
         return {"stopped": False, "detail": "No active crawl"}
