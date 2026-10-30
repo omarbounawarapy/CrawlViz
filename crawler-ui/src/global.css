@@ -1,5 +1,8 @@
-/* Global plate styles. Tokens live in theme/themes/plate.js; the few values
-   repeated here are the ones the browser (not React) needs. */
+/* Global plate styles. The design tokens are generated from DESIGN.md into
+   shared/theme/tokens.css; components migrated off theme/themes/plate.js read them.
+   The few values repeated below are the ones the browser (not React) needs. */
+@import url("./shared/theme/tokens.css");
+
 :root {
   --paper: #f3f5f7;
   --ink: #0f1b2d;

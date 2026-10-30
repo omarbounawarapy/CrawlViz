@@ -9,14 +9,50 @@ colors:
   ink: "#0f1b2d"
   ink-2: "#33435a"
   muted: "#566478"
+  control: "#707d90"
+  on-ink: "#fbfcfd"
   vermilion: "#c7311a"
+  selection: "#c7311a2e"
   plum-error: "#7a1f5c"
+  on-plum: "#ffffff"
   stage-created: "#e3e8ee"
   stage-fetched: "#b7c1cd"
   stage-filtered: "#8794a5"
   stage-scored: "#56657a"
-  edge: "#a3adba"
+  stage-expanded: "#0f1b2d"
+  stage-created-stroke: "#7b889a"
+  stage-fetched-stroke: "#56657a"
+  stage-filtered-stroke: "#3d4c62"
+  stage-scored-stroke: "#26364d"
+  stage-expanded-stroke: "#0f1b2d"
+  edge: "#707d90"
   scrollbar: "#aab4c0"
+colors-dark:
+  paper: "#10161f"
+  sheet: "#161e29"
+  rule: "#2c3747"
+  row-rule: "#212a37"
+  ink: "#e8edf3"
+  ink-2: "#c3ccd8"
+  muted: "#8794a7"
+  control: "#6b7a8f"
+  on-ink: "#10161f"
+  vermilion: "#f2694c"
+  selection: "#f2694c3d"
+  plum-error: "#d98bbd"
+  on-plum: "#10161f"
+  stage-created: "#263142"
+  stage-fetched: "#3a4759"
+  stage-filtered: "#5f6e84"
+  stage-scored: "#94a2b5"
+  stage-expanded: "#e8edf3"
+  stage-created-stroke: "#7a889c"
+  stage-fetched-stroke: "#98a5b7"
+  stage-filtered-stroke: "#bcc6d3"
+  stage-scored-stroke: "#dbe2ea"
+  stage-expanded-stroke: "#e8edf3"
+  edge: "#6b7a8f"
+  scrollbar: "#4a5668"
 typography:
   wordmark:
     fontFamily: "'Source Serif 4', Georgia, serif"
@@ -51,16 +87,19 @@ typography:
     fontFamily: "'Public Sans', system-ui, sans-serif"
     fontSize: "13px"
     fontWeight: 400
+    lineHeight: 1.45
   label:
     fontFamily: "'Public Sans', system-ui, sans-serif"
     fontSize: "12px"
     fontWeight: 500
     letterSpacing: "0"
+    lineHeight: 1.35
   data:
     fontFamily: "'JetBrains Mono', ui-monospace, monospace"
     fontSize: "12px"
     fontWeight: 400
     fontFeature: "tabular-nums"
+    lineHeight: 1.45
 rounded:
   sm: "2px"
   md: "3px"
@@ -72,6 +111,25 @@ spacing:
   md: "12px"
   lg: "16px"
   xl: "24px"
+  xxl: "32px"
+sizes:
+  target-min: "24px"
+  target-touch: "44px"
+  control: "30px"
+  field: "34px"
+  panel-max: "380px"
+  measure: "65ch"
+strokes:
+  hairline: "1px"
+  focus-ring: "2px"
+motion:
+  quick: "120ms"
+  glide: "300ms"
+  ease-out: "cubic-bezier(0.16, 1, 0.3, 1)"
+layers:
+  sticky: 10
+  popover: 20
+  toast: 60
 components:
   nav-tab:
     backgroundColor: "transparent"
@@ -89,10 +147,10 @@ components:
     padding: "0 12px"
   button-outline-pressed:
     backgroundColor: "{colors.ink}"
-    textColor: "{colors.sheet}"
+    textColor: "{colors.on-ink}"
   button-destructive-armed:
     backgroundColor: "{colors.plum-error}"
-    textColor: "#ffffff"
+    textColor: "{colors.on-plum}"
     rounded: "{rounded.md}"
     height: "30px"
   floating-key:
@@ -148,17 +206,33 @@ A near-monochrome ink-on-paper palette with one hot spot colour.
 ### Neutral
 - **Cool Paper** (`paper`): app ground and annotation panel.
 - **Sheet** (`sheet`): raised-by-tone surfaces: top rule, timeline dock, floating key and filter bar.
-- **Hairline Rule** (`rule`): every border and divider. `row-rule` for quieter row dividers.
+- **Hairline Rule** (`rule`): every border and divider. `row-rule` for quieter row dividers. Rules are decoration, not boundaries; a control's own edge uses `control`.
 - **Blue-Black Ink** (`ink`): primary text, active nav, focus outline, the EXPANDED node fill.
-- **Slate Ink** (`ink-2`): body and secondary text (8.6:1 on paper).
-- **Muted Slate** (`muted`): tertiary text and captions (5.4:1 on paper).
-- **Stage Ramp** (`stage-created` to `stage-scored`, then `ink`): node fills, light = early, dark = further along. Node strokes use a darker companion per stage.
-- **Edge Grey** (`edge`): graph edges at 1.2px, 0.7 opacity.
+- **Slate Ink** (`ink-2`): body and secondary text (9.2:1 on paper).
+- **Muted Slate** (`muted`): tertiary text and captions (5.5:1 on paper).
+- **Control Slate** (`control`): the edge of an input, checkbox or outline control, and any mark that must be seen (3.8:1 on paper, WCAG 1.4.11).
+- **On-ink and on-plum** (`on-ink`, `on-plum`): text on an ink-filled (pressed) or plum-filled (armed) control.
+- **Stage Ramp** (`stage-created` to `stage-expanded`): node fills, ordered from least to most contrast with the ground. Each stage has a `-stroke` companion that reaches 3:1 on paper, so a node's outline is always seen even when its fill is close to the ground.
+- **Edge** (`edge`): graph edges, the same value as `control`, so a 1px edge still reaches 3:1.
+- **Selection** (`selection`): the vermilion text-selection tint.
+
+### Night plate (dark theme)
+The same plate printed in reverse: blue-black ground, pale ink, hairline rules, one vermilion. It is for reading in a dim room, not a different look: no glow, no neon, no gradient, no shadow. `colors-dark` gives every colour token its night value, with the same names, so components never ask which theme they are in.
+- Ground and sheet stay a step apart in tone (`#10161f`, `#161e29`), as on paper.
+- Vermilion is lifted to `#f2694c` so the score figure keeps 4.5:1; plum is lifted to `#d98bbd` and its armed fill takes dark `on-plum` text.
+- The stage ramp runs the other way in lightness, because progress is contrast with the ground, not darkness: a found page is close to the ground, an expanded page is pale ink.
+
+The theme is chosen by `data-theme` on the root element: `light` (or no attribute), `dark`, or `system`, which follows `prefers-color-scheme`. With no attribute the app stays light, so a screen that is not migrated to tokens never shows half a night plate.
+
+### Tokens and contrast
+`crawler-ui/scripts/build-tokens.mjs` reads this front matter and writes `crawler-ui/src/shared/theme/tokens.css` (custom properties: `--color-*`, `--space-*`, `--radius-*`, `--size-*`, `--stroke-*`, `--type-<role>-*`, `--motion-*`, `--layer-*`) and `tokens.ts` (the same values for code that draws on a canvas or in SVG). Both files are generated: edit this file, then run the script. Spacing, sizes and type sizes are written in `rem` (16px base); radii and strokes stay in px.
+
+The script checks every text and mark pair the components use, in both themes, and refuses to write tokens that miss: 4.5:1 for text, 3:1 for control edges, focus rings and graph marks (A11Y-1). The pairs are listed in the script beside the check; a new pairing in a component is added there in the same commit.
 
 ### Named Rules
 **The Relevance-Only Vermilion Rule.** Vermilion means "the crawler thinks this is promising" and nothing else. Never use it for buttons, links, errors, warnings or branding.
 
-**The Lightness-Is-Progress Rule.** Lifecycle stage is encoded by one neutral ramp, never by new hues.
+**The Lightness-Is-Progress Rule.** Lifecycle stage is encoded by one neutral ramp, never by new hues. Further along means more contrast with the ground: darker on paper, paler on the night plate.
 
 **The Shape-Not-Hue Rule.** Dropped candidates are hollow dashed squares, trusted-on-NLP candidates are filled diamonds, selection is a dashed ring. Add a new distinction by shape or stroke, not colour.
 
@@ -240,14 +314,15 @@ A dashed circle sized by log of its page count, labelled "+N pages", paper fill 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep every surface on paper or sheet with a 1px `rule` border.
+- **Do** keep every surface on paper or sheet with a 1px `rule` border, in both themes.
 - **Do** reserve vermilion for relevance and pair every error with plum plus a word.
 - **Do** encode any new graph distinction by shape, stroke or dash pattern.
 - **Do** put numbers in tabular figures and use literal sentence-case labels.
 - **Do** use the 2px ink focus outline and honour `prefers-reduced-motion`.
 
 ### Don't:
-- **Don't** use dark backgrounds, neon accents, glows or gradients.
+- **Don't** use dark backgrounds outside the night plate, or neon accents, glows or gradients in either theme.
+- **Don't** write a colour, size or font value in a component; use the generated tokens.
 - **Don't** add hue to the stage ramp or use colour alone to carry meaning.
 - **Don't** replace the labelled text nav with an icon rail.
 - **Don't** set body text lighter than `muted` or below 11px.
@@ -255,6 +330,8 @@ A dashed circle sized by log of its page count, labelled "+N pages", paper fill 
 ## Known Gaps
 
 - Run, Config and Data are redesigned in the plate grammar on a shared page frame (`src/features/common/Page.jsx`): serif title, one-sentence lead, ruled rows, no cards. Data is a specimen list (serif title, URL, excerpt, field census, expandable fields, and the LLM score plus "Open in graph" when the page is in the current graph). Blueprints is a six-step editor (About, Sources, Relevance, Extraction, Limits, Review) on shared form components (`src/features/common/Form.jsx`). Page titles are 22px serif and section titles 17px. Plum on a destructive control appears only when it is armed.
+- The night plate exists as tokens and shared components only. Every feature still reads `theme/themes/plate.js` through inline styles, so the theme switch stays out of the shell until the features have moved to tokens, one per commit.
+- The three faces still load from Google Fonts in `index.html`; self-hosting them under `public/fonts/` is pending.
 - The bridge-node ring is deferred: the backend emits no bridge signal. The crawl-topic title in the top rule is deferred: app state carries no blueprint name.
 
 - Large crawls: edges draw on a canvas under the SVG, pages outside the window are not painted, dispatch is batched per frame. Verified to 3,000 synthetic pages (`?demo=N`). Nodes are drawn as SVG, and the event log is held in memory without a size limit.
