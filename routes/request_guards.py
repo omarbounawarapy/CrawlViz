@@ -34,7 +34,7 @@ STATUS_FORBIDDEN = 403
 STATUS_UNSUPPORTED_MEDIA_TYPE = 415
 
 
-class RequestRefusal(Exception):
+class RequestRefusalError(Exception):
     """A request failed a guard; carries the reply to send."""
 
     def __init__(self, status_code: int, detail: str) -> None:
@@ -53,7 +53,7 @@ def host_name(host_header: str) -> str:
 
 
 class RequestGuards:
-    """The Host, Origin and content type rules, as plain checks that raise `RequestRefusal`."""
+    """The Host, Origin and content type rules, as plain checks that raise `RequestRefusalError`."""
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class RequestGuards:
         )
 
     def check(self, method: str, headers: Headers) -> None:
-        """Raise `RequestRefusal` unless the request passes all three checks."""
+        """Raise `RequestRefusalError` unless the request passes all three checks."""
         self._check_host(headers.get("host", ""))
         self._check_origin(headers.get("origin"))
         if method.upper() in STATE_CHANGING_METHODS:
@@ -76,7 +76,7 @@ class RequestGuards:
 
     def _check_host(self, host_header: str) -> None:
         if host_name(host_header) not in self._allowed_hosts:
-            raise RequestRefusal(
+            raise RequestRefusalError(
                 STATUS_MISDIRECTED_REQUEST,
                 "This API answers only to localhost. Open the app from http://localhost.",
             )
@@ -84,7 +84,7 @@ class RequestGuards:
     def _check_origin(self, origin: str | None) -> None:
         if origin is None or self._is_allowed_origin(origin):
             return
-        raise RequestRefusal(
+        raise RequestRefusalError(
             STATUS_FORBIDDEN,
             "This request came from a page the API does not trust. Use the CrawlViz app.",
         )
@@ -99,7 +99,7 @@ class RequestGuards:
     def _check_json_content_type(content_type: str) -> None:
         media_type = content_type.partition(";")[0].strip().lower()
         if media_type != JSON_MEDIA_TYPE:
-            raise RequestRefusal(
+            raise RequestRefusalError(
                 STATUS_UNSUPPORTED_MEDIA_TYPE,
                 "Requests that change state must send Content-Type: application/json.",
             )
@@ -126,7 +126,7 @@ class RequestGuardMiddleware:
             return
         try:
             self._guards.check(scope["method"], Headers(scope=scope))
-        except RequestRefusal as refusal:
+        except RequestRefusalError as refusal:
             logger.warning("Refused %s %r: %s", scope["method"], scope["path"], refusal.detail)
             response = JSONResponse({"detail": refusal.detail}, status_code=refusal.status_code)
             await response(scope, receive, send)
