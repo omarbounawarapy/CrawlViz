@@ -16,11 +16,9 @@ from pathlib import Path
 
 import aiohttp
 
-from infrastructure import KeyManager, LlmHandler
-
 from .graph import FrozenGraph, page_key
 from .judge import judge
-from .llm_cache import CachedLlm
+from .llm_cache import CachedLlm, retry_free_handler
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
@@ -51,7 +49,7 @@ def done(labels: Path) -> dict[str, int]:
 async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
     got = done(labels)
     todo = [n for n in sorted(graph.pages) if n not in got]
-    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
+    llm = CachedLlm(retry_free_handler(keys), CACHE)
     failures = 0
     for s in range(0, len(todo), BATCH):
         batch = todo[s : s + BATCH]

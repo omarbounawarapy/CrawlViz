@@ -1422,3 +1422,22 @@ async def test_the_cascade_refuses_a_graph_without_a_topic_before_any_call(tmp_p
             tmp_path / "space",
             allow_empty_topic=False,
         )
+
+
+async def test_benchmark_handlers_leave_retries_to_the_benchmark(tmp_path, monkeypatch):
+    from benchmark import llm_cache
+    from infrastructure import LlmHandler
+
+    class NoKeys:
+        def __init__(self, keys_file):
+            self.keys_file = keys_file
+
+    monkeypatch.setattr(llm_cache, "KeyManager", NoKeys)
+    handler = llm_cache.retry_free_handler(tmp_path / "provider_keys")
+    try:
+        assert handler.retry_policy.max_retries == 0
+        assert handler.key_manager.keys_file == tmp_path / "provider_keys"
+        # The crawler's handlers keep their own retries.
+        assert LlmHandler.retry_policy.max_retries > 0
+    finally:
+        await handler.client.close()
