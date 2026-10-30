@@ -3,7 +3,7 @@
 import pytest
 from pydantic import BaseModel
 
-from src.crawlviz.score.llm.json_output import (
+from crawlviz.score.llm.json_output import (
     MAX_REPLY_CHARS,
     LlmOutputError,
     parse_llm_json,

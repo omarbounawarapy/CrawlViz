@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from src.crawlviz.score.llm import (
+from crawlviz.score.llm import (
     CallOutcome,
     ChatRole,
     LlmCallError,
