@@ -1,6 +1,7 @@
 from .anthropic_translator import AnthropicTranslator
 from .async_file_handler import AsyncFileHandler
 from .fetch_errors import (
+    REJECTION_ERROR_NAMES,
     BlockedAddressError,
     FetchRejectedError,
     ResponseTooLargeError,
@@ -18,6 +19,7 @@ from .open_router_translator import OpenRouterTranslator
 from .openai_translator import OpenAITranslator
 
 __all__ = [
+    "REJECTION_ERROR_NAMES",
     "AnthropicTranslator",
     "AsyncFileHandler",
     "BlockedAddressError",

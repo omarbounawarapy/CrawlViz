@@ -70,3 +70,26 @@ async def test_request_retry_is_delayed_not_immediate():
     assert reqs.queue.empty()
     await asyncio.gather(*rp._pending)
     assert reqs.queue.get_nowait() is node
+
+
+class FailableNode(FakeNode):
+    def __init__(self):
+        super().__init__()
+        self.failed = False
+
+    def fail(self):
+        self.failed = True
+
+
+async def test_request_the_fetch_policy_refused_is_not_retried():
+    for error_type in ("BlockedAddressError", "ResponseTooLargeError", "UnsupportedContentTypeError"):
+        rp, _, reqs = make()
+        node = FailableNode()
+        await rp._process(
+            RequestFailedEvent(
+                correlation_id="1", node=node, error_type=error_type, error_message="refused"
+            ),
+            0,
+        )
+        await asyncio.gather(*rp._pending)
+        assert node.failed and reqs.queue.empty()
