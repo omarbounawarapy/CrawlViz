@@ -4,6 +4,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from main import app
 from routes.request_guards import RequestGuardMiddleware, host_name
 
 UI_ORIGIN = "http://localhost:5173"
@@ -47,7 +48,7 @@ def make_client(base_url: str = "http://localhost:8000") -> TestClient:
         ("", ""),
     ],
 )
-def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header, expected):
+def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header: str, expected: str) -> None:
     assert host_name(header) == expected
 
 
@@ -55,7 +56,7 @@ def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header, expected):
     "base_url",
     ["http://localhost:8000", "http://127.0.0.1:8000", "http://crawl.example"],
 )
-def test_local_and_configured_hosts_are_answered(base_url):
+def test_local_and_configured_hosts_are_answered(base_url: str) -> None:
     assert make_client(base_url).get("/ping").status_code == 200
 
 
@@ -69,69 +70,63 @@ def test_the_ipv6_loopback_host_is_answered() -> None:
     "base_url",
     ["http://evil.example:8000", "http://localhost.evil.example", "http://10.0.0.5:8000"],
 )
-def test_other_hosts_get_421_even_for_a_read(base_url):
+def test_other_hosts_get_421_even_for_a_read(base_url: str) -> None:
     reply = make_client(base_url).get("/ping")
     assert reply.status_code == 421
     assert "localhost" in reply.json()["detail"]
 
 
-def test_a_cross_site_form_post_to_stop_is_refused_by_origin():
-    reply = make_client().post(
-        "/stop", headers={**FORM_HEADERS, "Origin": "https://evil.example"}
-    )
+def test_a_cross_site_form_post_to_stop_is_refused_by_origin() -> None:
+    reply = make_client().post("/stop", headers={**FORM_HEADERS, "Origin": "https://evil.example"})
     assert reply.status_code == 403
 
 
-def test_a_null_origin_is_refused():
+def test_a_null_origin_is_refused() -> None:
     reply = make_client().post("/stop", headers={**JSON_HEADERS, "Origin": "null"})
     assert reply.status_code == 403
 
 
-def test_a_cross_origin_read_is_refused():
+def test_a_cross_origin_read_is_refused() -> None:
     reply = make_client().get("/ping", headers={"Origin": "https://evil.example"})
     assert reply.status_code == 403
 
 
 @pytest.mark.parametrize("origin", [UI_ORIGIN, "http://localhost:5174", "http://127.0.0.1:5173"])
-def test_ui_origins_may_post_json(origin):
+def test_ui_origins_may_post_json(origin: str) -> None:
     reply = make_client().post("/stop", headers={**JSON_HEADERS, "Origin": origin})
     assert reply.status_code == 200
 
 
-def test_a_script_without_an_origin_may_post_json():
+def test_a_script_without_an_origin_may_post_json() -> None:
     assert make_client().post("/stop", headers=JSON_HEADERS).status_code == 200
 
 
 @pytest.mark.parametrize("headers", [{}, FORM_HEADERS, {"Content-Type": "text/plain"}])
-def test_a_bodyless_post_without_json_content_type_gets_415(headers):
+def test_a_bodyless_post_without_json_content_type_gets_415(headers: dict[str, str]) -> None:
     assert make_client().post("/stop", headers=headers).status_code == 415
 
 
-def test_delete_needs_json_content_type_too():
+def test_delete_needs_json_content_type_too() -> None:
     client = make_client()
     assert client.delete("/thing").status_code == 415
     assert client.delete("/thing", headers=JSON_HEADERS).status_code == 200
 
 
-def test_json_content_type_with_a_charset_is_accepted():
+def test_json_content_type_with_a_charset_is_accepted() -> None:
     headers = {"Content-Type": "application/json; charset=utf-8"}
     assert make_client().post("/stop", headers=headers).status_code == 200
 
 
-def test_a_read_needs_no_content_type():
+def test_a_read_needs_no_content_type() -> None:
     assert make_client().get("/ping").status_code == 200
 
 
-def test_the_real_app_refuses_an_unknown_host():
-    from main import app
-
+def test_the_real_app_refuses_an_unknown_host() -> None:
     reply = TestClient(app, base_url="http://evil.example:8000").get("/templates")
     assert reply.status_code == 421
 
 
-def test_the_real_app_refuses_a_cross_site_stop():
-    from main import app
-
+def test_the_real_app_refuses_a_cross_site_stop() -> None:
     reply = TestClient(app, base_url="http://localhost:8000").post(
         "/stop", headers={**FORM_HEADERS, "Origin": "https://evil.example"}
     )
