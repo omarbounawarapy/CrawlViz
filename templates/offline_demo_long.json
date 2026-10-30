@@ -1,0 +1,62 @@
+{
+  "blueprint_id": "offline_demo_long",
+  "id": "pfe",
+  "target_topic": "diabetes insulin glucose pancreas care",
+  "seeds": [
+    {
+      "url": "https://frozen.test/p0",
+      "domain": "https://frozen.test"
+    }
+  ],
+  "domains": {
+    "frozen_site": {
+      "base_url": "https://frozen.test",
+      "link_selector": ".//a"
+    }
+  },
+  "scoring": {
+    "strategy": "PATHFINDING",
+    "params": {
+      "scoring_type": "openrouter",
+      "model_information": "openai/gpt-oss-120b:free"
+    }
+  },
+  "expansion": {
+    "style": "rich",
+    "num_descriptions": 50,
+    "llm_type": "openrouter",
+    "llm_model": "openai/gpt-oss-120b:free"
+  },
+  "extraction": {
+    "mode": "document",
+    "fields": {
+      "title": {
+        "selector": "//h1[@id='firstHeading']",
+        "type": "scalar",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      },
+      "paragraphs": {
+        "selector": "//div[contains(@class, 'mw-parser-output')]//p[normalize-space()]",
+        "type": "list",
+        "transform": [
+          {
+            "type": "strip"
+          }
+        ],
+        "export_type": "text"
+      }
+    }
+  },
+  "stop_conditions": {
+    "max_nodes": 400,
+    "max_depth": 12,
+    "max_duration": 180,
+    "no_progress_timeout": 60,
+    "stop_url": "https://frozen.test/offline_demo_long_stop"
+  }
+}
