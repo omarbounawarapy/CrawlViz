@@ -6,7 +6,9 @@ fixtures fails here instead of leaving the UI tests green against a stale shape.
 """
 
 import json
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -24,7 +26,10 @@ HOW_TO_REFRESH = (
     ("fixture_name", "serve"),
     [("schema.json", get_config_schema), ("defaults.json", get_defaults)],
 )
-def test_committed_config_fixture_matches_the_backend(fixture_name, serve) -> None:
+def test_committed_config_fixture_matches_the_backend(
+    fixture_name: str,
+    serve: Callable[[], Any],  # route functions return JSON-shaped data
+) -> None:
     committed = json.loads((FIXTURES / fixture_name).read_text(encoding="utf-8"))
     # A JSON round trip makes both sides plain data (tuples become lists, as on the wire).
     assert json.loads(json.dumps(serve())) == committed, f"{fixture_name}: {HOW_TO_REFRESH}"
