@@ -15,7 +15,7 @@ from routes.session_token import (
 
 
 @pytest.fixture(autouse=True)
-def no_environment_token(monkeypatch: pytest.MonkeyPatch):
+def no_environment_token(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(TOKEN_ENV_VAR, raising=False)
 
 
@@ -46,14 +46,14 @@ def test_authorization_matches_only_the_session_token(monkeypatch: pytest.Monkey
     assert not authorization_matches(None)
 
 
-def test_session_serves_the_generated_token(client) -> None:
+def test_session_serves_the_generated_token(client: TestClient) -> None:
     reply = client.get("/session")
     assert reply.status_code == 200
     assert reply.json() == {"token": get_session_token()}
 
 
 def test_session_does_not_serve_a_token_set_in_the_environment(
-    client, monkeypatch: pytest.MonkeyPatch
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv(TOKEN_ENV_VAR, "s3cret")
     reply = client.get("/session")
@@ -86,25 +86,27 @@ def guarded_client() -> TestClient:
 @pytest.mark.parametrize(
     ("method", "path"), [("GET", "/config"), ("POST", "/stop"), ("GET", "/keys")]
 )
-def test_a_request_without_the_token_gets_401(guarded_client, method, path) -> None:
+def test_a_request_without_the_token_gets_401(
+    guarded_client: TestClient, method: str, path: str
+) -> None:
     reply = guarded_client.request(method, path)
     assert reply.status_code == 401
     assert reply.headers["www-authenticate"] == "Bearer"
 
 
-def test_a_wrong_token_gets_401(guarded_client) -> None:
+def test_a_wrong_token_gets_401(guarded_client: TestClient) -> None:
     reply = guarded_client.get("/config", headers={"Authorization": "Bearer nope"})
     assert reply.status_code == 401
 
 
-def test_the_generated_token_opens_every_route(guarded_client) -> None:
+def test_the_generated_token_opens_every_route(guarded_client: TestClient) -> None:
     headers = {"Authorization": f"Bearer {get_session_token()}"}
     assert guarded_client.get("/config", headers=headers).status_code == 200
     assert guarded_client.post("/stop", headers=headers).status_code == 200
 
 
 def test_the_environment_token_replaces_the_generated_one(
-    guarded_client, monkeypatch: pytest.MonkeyPatch
+    guarded_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     generated = {"Authorization": f"Bearer {get_session_token()}"}
     monkeypatch.setenv(TOKEN_ENV_VAR, "s3cret")
@@ -114,7 +116,7 @@ def test_the_environment_token_replaces_the_generated_one(
 
 
 @pytest.mark.parametrize("path", ["/session", "/openapi.json", "/docs"])
-def test_session_and_documentation_need_no_token(guarded_client, path) -> None:
+def test_session_and_documentation_need_no_token(guarded_client: TestClient, path: str) -> None:
     assert guarded_client.get(path).status_code == 200
 
 
