@@ -1,6 +1,5 @@
 import asyncio
 import random
-import time
 
 import aiohttp
 
@@ -19,6 +18,7 @@ from traceability.trace_context import bind_node
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
+from .host_pacer import HostPacer, host_of
 from .robots import RobotsPolicy
 
 ROBOTS_DISALLOWED = "RobotsDisallowed"
@@ -31,7 +31,7 @@ def is_rate_limited(error: Exception) -> bool:
 
 class RequestsPipeline:
     """Fetches page content for every node, one HTTP request at a time
-    per worker, with global rate limiting and 429 backoff shared across
+    per worker, with per-host rate limiting and 429 backoff shared across
     all workers.
 
     Deliberately not a BasePipeline subclass: unlike the event-dispatch
@@ -93,8 +93,8 @@ class RequestsPipeline:
             NodeAddedEvent: self._on_node_added,
         }
 
-        self.min_delay = min_delay  # minimum seconds between requests
-        self.last_request_time = 0.0
+        self.min_delay = min_delay  # minimum seconds between requests to one host
+        self.pacer = HostPacer()
         self.backoff_delay = 0.0  # dynamic (grows on 429)
         self.max_backoff = max_backoff
         self.jitter_max = jitter_max
@@ -213,19 +213,19 @@ class RequestsPipeline:
                     )
                     continue
 
-                # Rate limiting (global pace): minimum inter-request delay,
-                # plus any active backoff, plus jitter to avoid workers
-                # bursting in sync.
-                now = time.monotonic()
-                elapsed = now - self.last_request_time
-                delay = max(self.min_delay - elapsed, 0)
-                delay += self.backoff_delay
-                delay += self.rng.uniform(0, self.jitter_max)
+                # Rate limiting, per host: the slot is claimed before
+                # sleeping, so concurrent workers queue behind each other
+                # instead of all seeing the same idle host. Backoff and
+                # jitter are added to this request's wait (jitter keeps
+                # workers from bursting in sync).
+                wait = self.pacer.reserve(
+                    host_of(node.get_full_url()),
+                    spacing=self.min_delay,
+                    lead=self.backoff_delay + self.rng.uniform(0, self.jitter_max),
+                )
+                if wait > 0:
+                    await asyncio.sleep(wait)
 
-                if delay > 0:
-                    await asyncio.sleep(delay)
-
-                self.last_request_time = time.monotonic()
                 response = await self.network_client.emit_request(
                     {
                         "url": node.get_full_url(),
