@@ -115,7 +115,9 @@ describe("REST client session token", () => {
   });
 
   it("fetches /session once, keeps the token, and sends it with a JSON content type on every call", async () => {
-    const fn = vi.fn((url) => Promise.resolve(url.endsWith("/session") ? reply(200, { token: "abc" }) : reply(200, {})));
+    const fn = vi.fn((url) =>
+      Promise.resolve(url.endsWith("/session") ? reply(200, { token: "abc" }) : reply(200, {})),
+    );
     vi.stubGlobal("fetch", fn);
     const { fetchTemplates: list, deleteTemplate: remove, stopCrawl: stop } = await freshClient();
     await Promise.all([list(), list()]);
@@ -146,7 +148,9 @@ describe("REST client session token", () => {
   it("shows the backend's message when the retry is refused too", async () => {
     const fn = vi.fn((url) =>
       Promise.resolve(
-        url.endsWith("/session") ? reply(200, { token: "abc" }) : reply(401, { detail: "The API token is missing or wrong." }),
+        url.endsWith("/session")
+          ? reply(200, { token: "abc" })
+          : reply(401, { detail: "The API token is missing or wrong." }),
       ),
     );
     vi.stubGlobal("fetch", fn);
@@ -160,7 +164,11 @@ describe("REST client session token", () => {
     const fn = vi.fn((url) => {
       if (url.endsWith("/session")) {
         sessionCalls += 1;
-        return Promise.resolve(sessionCalls === 1 ? reply(404, { detail: "Token comes from the environment." }) : reply(200, { token: "abc" }));
+        return Promise.resolve(
+          sessionCalls === 1
+            ? reply(404, { detail: "Token comes from the environment." })
+            : reply(200, { token: "abc" }),
+        );
       }
       return Promise.resolve(reply(200, {}));
     });
