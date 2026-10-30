@@ -4,8 +4,10 @@ port bound, the event log open or the semantic space buffer unsaved."""
 import asyncio
 import json
 import socket
+from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import numpy as np
 import pytest
@@ -44,7 +46,7 @@ def _can_bind(port: int) -> bool:
     return True
 
 
-async def _until(condition) -> None:
+async def _until(condition: Callable[[], bool]) -> None:
     async def poll() -> None:
         while not condition():
             await asyncio.sleep(POLL_SECONDS)
@@ -55,7 +57,7 @@ async def _until(condition) -> None:
 class _Fetcher:
     """A page fetcher that is never asked for a page."""
 
-    async def emit_request(self, params: dict) -> str:
+    async def emit_request(self, params: dict[str, Any]) -> str:
         raise AssertionError("no page should be requested")
 
     async def close(self) -> None:
@@ -66,11 +68,13 @@ class _SpaceOwner:
     """What SpaceUpdater needs from the service that owns the space."""
 
     def __init__(self) -> None:
-        self.space = SimpleNamespace(add_vector=self._add, version=0)
+        self.space: Any = SimpleNamespace(
+            add_vector=self._add, version=0
+        )  # stands in for VectorSpace
         self.added: list[str] = []
         self.saves = 0
 
-    def _add(self, key, vector, metadata) -> None:
+    def _add(self, key: str, vector: object, metadata: object) -> None:
         self.added.append(key)
 
     def save_space(self) -> None:
@@ -99,7 +103,7 @@ class _CrawlHarness:
         )
         updater = SpaceUpdater(self.owner, self.buffer, flush_interval=3600)
 
-        async def build_nlp(traced_llm, tracer):
+        async def build_nlp(traced_llm: object, tracer: object) -> tuple[Fake, SpaceUpdater, Fake]:
             return Fake(), updater, Fake()
 
         monkeypatch.setattr(self.crawler, "_build_nlp_subsystem", build_nlp)
@@ -118,11 +122,11 @@ class _CrawlHarness:
             await self.buffer.add(f"k{i}", vector, {})
 
     @property
-    def events(self) -> list[dict]:
+    def events(self) -> list[dict[str, Any]]:  # parsed JSON lines
         path = self.paths.export_dir / self.crawler.crawl_id / "events.jsonl"
         return [json.loads(line) for line in path.read_text().splitlines()]
 
-    async def start(self) -> asyncio.Task:
+    async def start(self) -> asyncio.Task[None]:
         task = asyncio.create_task(self.crawler._run_session(FAKE_BLUEPRINT))
         await _until(lambda: not _can_bind(self.port))
         return task
@@ -193,7 +197,9 @@ class _StubCrawler:
         return True
 
 
-def _install_running_task(monkeypatch: pytest.MonkeyPatch, obeys: bool):
+def _install_running_task(
+    monkeypatch: pytest.MonkeyPatch, obeys: bool
+) -> tuple[asyncio.Task[None], _StubCrawler, dict[str, bool]]:
     release = asyncio.Event()
     crawler = _StubCrawler(release, obeys)
     outcome = {"cancelled": False, "cleaned": False}
