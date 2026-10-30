@@ -12,11 +12,11 @@ from infrastructure.key_manager import KeyManager
 pytestmark = pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
 
 
-def mode_of(path) -> int:
+def mode_of(path: Path) -> int:
     return stat.S_IMODE(path.stat().st_mode)
 
 
-def write_keys(path, mode: int) -> None:
+def write_keys(path: Path, mode: int) -> None:
     path.write_text(json.dumps({"groq": ["k1"]}), encoding="utf-8")
     path.chmod(mode)
 
