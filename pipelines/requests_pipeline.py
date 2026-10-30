@@ -181,6 +181,21 @@ class RequestsPipeline:
 
         await self.queue.put(event.node)
 
+    async def _wait_for_slot(self, url: str) -> None:
+        """Rate limit, per host: the slot is claimed before sleeping, so
+        concurrent workers queue behind each other instead of all seeing the
+        same idle host. The spacing is the configured delay or the site's
+        Crawl-delay, whichever is longer; backoff and jitter are added to this
+        request's wait (jitter keeps workers from bursting in sync)."""
+        crawl_delay = await self.robots.crawl_delay(url) if self.robots else None
+        wait = self.pacer.reserve(
+            host_of(url),
+            spacing=max(self.min_delay, crawl_delay or 0.0),
+            lead=self.backoff_delay + self.rng.uniform(0, self.jitter_max),
+        )
+        if wait > 0:
+            await asyncio.sleep(wait)
+
     # =========================================================
     # WORKER LOOP (FULL TRACE)
     # =========================================================
@@ -213,18 +228,7 @@ class RequestsPipeline:
                     )
                     continue
 
-                # Rate limiting, per host: the slot is claimed before
-                # sleeping, so concurrent workers queue behind each other
-                # instead of all seeing the same idle host. Backoff and
-                # jitter are added to this request's wait (jitter keeps
-                # workers from bursting in sync).
-                wait = self.pacer.reserve(
-                    host_of(node.get_full_url()),
-                    spacing=self.min_delay,
-                    lead=self.backoff_delay + self.rng.uniform(0, self.jitter_max),
-                )
-                if wait > 0:
-                    await asyncio.sleep(wait)
+                await self._wait_for_slot(node.get_full_url())
 
                 response = await self.network_client.emit_request(
                     {
