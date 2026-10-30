@@ -30,6 +30,19 @@ _current_task: asyncio.Task | None = None
 _current_crawler: Crawler | None = None
 
 
+def _refuse_endpoint_overrides(overrides: dict | None) -> None:
+    """Per-run overrides may not redirect an LLM provider: the request carries the API key,
+    so a changed URL would send the key to whoever runs that server. Saved settings
+    (PUT /config, behind the session token) are the only place endpoints change."""
+    providers = (overrides or {}).get("providers")
+    if isinstance(providers, dict) and "endpoints" in providers:
+        raise HTTPException(
+            status_code=422,
+            detail="Provider endpoints cannot be changed for a single run. "
+            "Change them on the Configuration page, which saves them.",
+        )
+
+
 class RunRequest(BaseModel):
     templateName: str
     # Partial RuntimeConfig deep-merged over the saved settings for this run.
@@ -71,6 +84,8 @@ async def run_crawl(body: RunRequest):
 
     if _current_task and not _current_task.done():
         raise HTTPException(status_code=409, detail="A crawl is already running")
+
+    _refuse_endpoint_overrides(body.overrides)
 
     try:
         template_path = resolve_template_path(TEMPLATES_DIR, body.templateName)
