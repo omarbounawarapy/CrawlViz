@@ -22,7 +22,16 @@ describe("parseNumberText", () => {
   });
 });
 
-function Controlled({ initial, onChange, ...props }: { initial: number | null; onChange: (v: number | null) => void; integer?: boolean; nullable?: boolean }) {
+function Controlled({
+  initial,
+  onChange,
+  ...props
+}: {
+  initial: number | null;
+  onChange: (v: number | null) => void;
+  integer?: boolean;
+  nullable?: boolean;
+}) {
   const [value, setValue] = useState(initial);
   return (
     <NumberField

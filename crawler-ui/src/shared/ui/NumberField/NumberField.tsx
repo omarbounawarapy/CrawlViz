@@ -56,9 +56,7 @@ export function NumberField({
   const editing = draft !== null && draft.base === value;
   const text = editing ? draft.text : numberToEditableText(value);
   const problem = editing ? problemWith(draft.text, nullable, integer) : null;
-  const describedBy = [describedByCaller, unit ? unitId : null, problem ? problemId : null]
-    .filter(Boolean)
-    .join(" ");
+  const describedBy = [describedByCaller, unit ? unitId : null, problem ? problemId : null].filter(Boolean).join(" ");
 
   const handleChange = (typed: string) => {
     const parsed = parseNumberText(typed);
