@@ -151,6 +151,9 @@ export function applyEvent(state, event) {
         if (event.queue_size != null) next.queue_size = event.queue_size;
       } else if (event.phase === "started") {
         next.started = prev.started + 1;
+        // An item leaving the queue: the backend sends the depth only when it enqueues, so without
+        // this the queue length never falls.
+        next.queue_size = event.queue_size != null ? event.queue_size : Math.max(0, prev.queue_size - 1);
       } else if (event.phase === "completed") {
         next.completed = prev.completed + 1;
         if (event.duration_ms != null) {
