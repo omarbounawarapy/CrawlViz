@@ -48,7 +48,7 @@ def make_client(base_url: str = "http://localhost:8000") -> TestClient:
         ("", ""),
     ],
 )
-def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header, expected) -> None:
+def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header: str, expected: str) -> None:
     assert host_name(header) == expected
 
 
@@ -56,7 +56,7 @@ def test_host_name_drops_the_port_and_keeps_ipv6_brackets(header, expected) -> N
     "base_url",
     ["http://localhost:8000", "http://127.0.0.1:8000", "http://crawl.example"],
 )
-def test_local_and_configured_hosts_are_answered(base_url) -> None:
+def test_local_and_configured_hosts_are_answered(base_url: str) -> None:
     assert make_client(base_url).get("/ping").status_code == 200
 
 
@@ -70,7 +70,7 @@ def test_the_ipv6_loopback_host_is_answered() -> None:
     "base_url",
     ["http://evil.example:8000", "http://localhost.evil.example", "http://10.0.0.5:8000"],
 )
-def test_other_hosts_get_421_even_for_a_read(base_url) -> None:
+def test_other_hosts_get_421_even_for_a_read(base_url: str) -> None:
     reply = make_client(base_url).get("/ping")
     assert reply.status_code == 421
     assert "localhost" in reply.json()["detail"]
@@ -92,7 +92,7 @@ def test_a_cross_origin_read_is_refused() -> None:
 
 
 @pytest.mark.parametrize("origin", [UI_ORIGIN, "http://localhost:5174", "http://127.0.0.1:5173"])
-def test_ui_origins_may_post_json(origin) -> None:
+def test_ui_origins_may_post_json(origin: str) -> None:
     reply = make_client().post("/stop", headers={**JSON_HEADERS, "Origin": origin})
     assert reply.status_code == 200
 
@@ -102,7 +102,7 @@ def test_a_script_without_an_origin_may_post_json() -> None:
 
 
 @pytest.mark.parametrize("headers", [{}, FORM_HEADERS, {"Content-Type": "text/plain"}])
-def test_a_bodyless_post_without_json_content_type_gets_415(headers) -> None:
+def test_a_bodyless_post_without_json_content_type_gets_415(headers: dict[str, str]) -> None:
     assert make_client().post("/stop", headers=headers).status_code == 415
 
 
