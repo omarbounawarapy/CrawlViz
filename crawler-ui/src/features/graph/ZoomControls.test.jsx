@@ -27,7 +27,7 @@ describe("zoom utility", () => {
   it("offers zoom in, out, fit and centre-on-selection, with a level readout", () => {
     setup();
     expect(screen.getByRole("group", { name: "Zoom" })).toBeTruthy();
-    for (const name of ["Zoom in", "Zoom out", "Fit the whole plate", "Centre on the selected page"]) {
+    for (const name of ["Zoom in", "Zoom out", "Fit the whole graph", "Centre on the selected page"]) {
       expect(screen.getByRole("button", { name })).toBeTruthy();
     }
     expect(screen.getByLabelText("Zoom level").textContent).toMatch(/%$/);
@@ -48,7 +48,7 @@ describe("zoom utility", () => {
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
       fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
-      fireEvent.click(screen.getByRole("button", { name: "Fit the whole plate" }));
+      fireEvent.click(screen.getByRole("button", { name: "Fit the whole graph" }));
       for (const key of ["+", "-", "0", "f"]) fireEvent.keyDown(window, { key });
     });
   });

@@ -7,7 +7,7 @@ const TIPS = [
   "A local embedding pass runs first. It costs milliseconds.",
   "Only mid-confidence links reach the language model.",
   "Every decision is logged, so the crawl can be replayed.",
-  "Vermilion marks the links the crawler judged most promising.",
+  "Red rings mark the links the crawler judged most promising.",
 ];
 
 const SPOKES = 12;

@@ -269,7 +269,7 @@ function ZoomControls({ k, canFocus, onIn, onOut, onFit, onFocus }) {
       </output>
       <ZoomButton label="Zoom in" icon="in" shortcut="+" onClick={onIn} disabled={k >= ZOOM_MAX * 0.99} />
       <ZoomButton label="Zoom out" icon="out" shortcut="-" onClick={onOut} disabled={k <= ZOOM_MIN * 1.01} />
-      <ZoomButton label="Fit the whole plate" icon="fit" shortcut="0" onClick={onFit} />
+      <ZoomButton label="Fit the whole graph" icon="fit" shortcut="0" onClick={onFit} />
       <ZoomButton
         label="Centre on the selected page"
         icon="focus"
