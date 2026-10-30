@@ -32,7 +32,6 @@ construction. Fields flagged ``ui_apply: live`` can also be pushed to the
 running crawl with PATCH /config/live (not persisted; PUT /config does that).
 """
 
-import json
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -44,6 +43,7 @@ from core.live_settings import LiveSettingsError
 from infrastructure.llm_handler import LlmHandler
 from models.link import Link
 from models.prompts import STRATEGIES, PromptBuilder
+from utils import load_json
 
 from . import run as run_routes
 from .config_presets import router as presets_router
@@ -221,8 +221,7 @@ def get_providers() -> dict:
         if not name.endswith(".json"):
             continue
         try:
-            with open(os.path.join(templates_dir, name), encoding="utf-8") as f:
-                bp = json.load(f)
+            bp = load_json(os.path.join(templates_dir, name))
             pairs = [
                 (
                     bp["scoring"]["params"]["scoring_type"],

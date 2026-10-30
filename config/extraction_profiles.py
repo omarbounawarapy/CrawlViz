@@ -8,9 +8,10 @@ the same way a manual one does.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
+
+from utils import load_json
 
 PROFILES_FILE = Path(__file__).with_name("extraction_profiles.json")
 
@@ -21,9 +22,8 @@ class ProfileError(ValueError):
 
 def load_profiles(path: Path = PROFILES_FILE) -> dict[str, Any]:
     """Read the profile registry (profile_id to profile) from its JSON file."""
-    with path.open(encoding="utf-8") as handle:
-        # JSON boundary: the registry file is hand-edited data.
-        profiles: dict[str, Any] = json.load(handle).get("profiles", {})
+    # JSON boundary: the registry file is hand-edited data.
+    profiles: dict[str, Any] = load_json(path).get("profiles", {})
     return profiles
 
 
