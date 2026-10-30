@@ -50,6 +50,26 @@ describe("crawlReducer — V2 message types", () => {
     expect(state.pipelineStats.scoring.last_duration_ms).toBe(20);
   });
 
+  it("the queue length falls when an item starts, never below zero, unless the event carries the depth", () => {
+    let state = INITIAL_STATE;
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "enqueued", queue_size: 2 });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "started", node_id: "1" });
+    expect(state.pipelineStats.request.queue_size).toBe(1);
+
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "started", node_id: "2" });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "started", node_id: "3" });
+    expect(state.pipelineStats.request.queue_size).toBe(0);
+
+    state = crawlReducer(state, {
+      type: "PIPELINE_EVENT",
+      stage: "request",
+      phase: "started",
+      node_id: "4",
+      queue_size: 7,
+    });
+    expect(state.pipelineStats.request.queue_size).toBe(7);
+  });
+
   it("a completed tick without a duration still counts and leaves the average empty", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "started", node_id: "1" });
