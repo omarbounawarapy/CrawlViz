@@ -1,12 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import {
-  fetchTemplates,
-  fetchValidationSample,
-  runCrawl,
-  saveConfig,
-  isAbortError,
-  API_STATUS_EVENT,
-} from "./client";
+import { fetchTemplates, fetchValidationSample, runCrawl, saveConfig, isAbortError, API_STATUS_EVENT } from "./client";
 
 afterEach(() => {
   vi.unstubAllGlobals();

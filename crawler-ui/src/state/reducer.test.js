@@ -126,7 +126,11 @@ describe("crawlReducer — V2 message types", () => {
 
 describe("crawlReducer — stop detail", () => {
   it("CRAWL_STOPPED keeps the detail next to the reason, and a new snapshot clears it", () => {
-    let state = crawlReducer(INITIAL_STATE, { type: "CRAWL_STOPPED", reason: "MAX_NODES", detail: "Reached 500 pages" });
+    let state = crawlReducer(INITIAL_STATE, {
+      type: "CRAWL_STOPPED",
+      reason: "MAX_NODES",
+      detail: "Reached 500 pages",
+    });
     expect(state.stop_reason).toBe("MAX_NODES");
     expect(state.stop_detail).toBe("Reached 500 pages");
 
