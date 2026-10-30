@@ -88,6 +88,11 @@ typography:
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.45
+  strong:
+    fontFamily: "'Public Sans', system-ui, sans-serif"
+    fontSize: "13px"
+    fontWeight: 600
+    lineHeight: 1.2
   label:
     fontFamily: "'Public Sans', system-ui, sans-serif"
     fontSize: "12px"
