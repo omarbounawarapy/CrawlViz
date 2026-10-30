@@ -71,7 +71,7 @@ export function NumberField({
   };
 
   return (
-    <span className={classNames(styles.numberField, className)}>
+    <span className={classNames(styles.root, className)}>
       <TextInput
         {...rest}
         type="text"
