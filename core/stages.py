@@ -138,6 +138,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
             fetch.http_total_timeout,
             fetch.http_connect_timeout,
             allow_private_addresses=fetch.allow_private_addresses,
+            max_response_bytes=fetch.max_response_bytes,
         ),
         min_delay=fetch.min_delay,
         user_agent=fetch.user_agent,

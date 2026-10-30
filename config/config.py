@@ -58,6 +58,8 @@ USER_AGENT: str = (
     "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)"
 )
 RESPECT_ROBOTS: bool = True
+# Largest page body read, after decompression; a bigger response is refused.
+MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
 
 # =========================================================================
 # SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")

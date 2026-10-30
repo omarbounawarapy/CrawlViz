@@ -447,6 +447,15 @@ class FetchConfig(BaseModel):
         effect="Each header is sent on every request and replaces a default header of the same name.",
     )
 
+    max_response_bytes: int = _f(
+        _config.MAX_RESPONSE_BYTES,
+        "Largest page body read, counted after decompression.",
+        "Fetch",
+        unit="bytes",
+        advanced=True,
+        gt=0,
+        effect="A page or robots.txt larger than this is refused instead of read, which protects memory from huge or compressed-bomb responses.",
+    )
     allow_private_addresses: bool = _f(
         False,
         "Fetch pages from private, loopback and link-local addresses.",

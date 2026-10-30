@@ -85,8 +85,16 @@ class FakeResponse:
     def raise_for_status(self):
         pass
 
-    async def text(self):
-        return "page"
+    content_type = "text/html"
+    content_length = None
+    charset = None
+
+    @property
+    def content(self):
+        return self
+
+    async def iter_chunked(self, size):
+        yield b"page"
 
 
 class FakeSession:
