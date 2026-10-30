@@ -72,6 +72,3 @@ class SpaceStore:
 
     def get_metadata(self, blueprint_id: str) -> dict | None:
         return self._index.get(self._key(blueprint_id))
-
-    def list_spaces(self) -> list[str]:
-        return list(self._index.keys())
