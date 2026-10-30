@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { fetchTemplates, fetchTemplate, runCrawl, stopCrawl, crawlStatus } from "../../api/client";
 import { getTheme } from "../../theme";
 import { formatDuration } from "../../utils/formatters";
+import { crawlStatusWords } from "../../state/crawlStatus";
 import { Page, SectionTitle, Row } from "../common/Page";
 import { buttonPrimary, buttonOutline } from "../common/buttons";
 import RunOverrides from "./RunOverrides";
@@ -59,6 +60,7 @@ function BlueprintPreview({ blueprint }) {
 
 function SessionSummary({ state, metrics }) {
   if (!state || state.nodes.size === 0) return null;
+  const statusWords = crawlStatusWords(state);
   return (
     <section aria-labelledby="run-session-title">
       <SectionTitle id="run-session-title">
@@ -67,9 +69,9 @@ function SessionSummary({ state, metrics }) {
       <Row label="Pages discovered">{state.nodes.size}</Row>
       <Row label="Elapsed">{formatDuration((metrics?.elapsed_seconds || 0) * 1000)}</Row>
       <Row label="Errors">{state.errors.length}</Row>
-      {state.stop_reason && (
-        <Row label="Ended because">{String(state.stop_reason).toLowerCase().replace(/_/g, " ")}</Row>
-      )}
+      <Row label="Status">{statusWords.word}</Row>
+      {statusWords.reason && <Row label="Ended because">{statusWords.reason}</Row>}
+      {state.stop_detail && <Row label="Detail">{state.stop_detail}</Row>}
     </section>
   );
 }

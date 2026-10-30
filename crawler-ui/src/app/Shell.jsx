@@ -2,6 +2,7 @@ import Spider from "../features/loading/Spider";
 import { useState } from "react";
 import { getTheme } from "../theme";
 import { Hint } from "../features/common/Hint";
+import { crawlStatusWords } from "../state/crawlStatus";
 
 const theme = getTheme();
 const { shell, typography: type } = theme;
@@ -41,8 +42,6 @@ function StatusMark({ status }) {
     </svg>
   );
 }
-
-const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", IDLE: "Idle" };
 
 // The wordmark is also the way back to the landing page.
 function Wordmark() {
@@ -114,7 +113,7 @@ function NavTab({ section, active, onClick, hasAlert }) {
  *
  * Props:
  *   activeSection, onNavigate(sectionId)
- *   status, connectionStatus, stopReason, summary (short right-aligned fact line)
+ *   status, connectionStatus, stopReason, stoppedByUser, summary (short right-aligned fact line)
  *   errorCount: lights a mark on the Run tab
  *   measuresOpen, onToggleMeasures: the Measurements drawer toggle
  *   banner: optional full-width strip under the top rule (sample-mode notice)
@@ -127,6 +126,7 @@ export default function Shell({
   status,
   connectionStatus,
   stopReason,
+  stoppedByUser = false,
   summary,
   errorCount = 0,
   measuresOpen,
@@ -142,6 +142,7 @@ export default function Shell({
   const live = activeSection === "graph" || activeSection === "run";
   const sample = connectionStatus === "SAMPLE";
   const connected = connectionStatus === "CONNECTED";
+  const statusWords = crawlStatusWords({ status, stop_reason: stopReason, stopped_by_user: stoppedByUser });
   // Stopping a crawl is not undoable: the first click arms it, the second confirms. It stays
   // armed until pressed, blurred or cancelled with Escape: no timer to race (WCAG 2.2.1).
   const [armed, setArmed] = useState(false);
@@ -224,14 +225,12 @@ export default function Shell({
             }}
           >
             <StatusMark status={status} />
-            {sample ? "Sample playback" : (STATUS_WORD[status] ?? String(status).toLowerCase())}
+            {sample ? "Sample playback" : statusWords.word}
             {status === "IDLE" && !sample && (
               <span style={{ color: shell.textMuted, fontWeight: 400 }}>· waiting for a crawl</span>
             )}
-            {stopReason && (
-              <span style={{ color: shell.textMuted, fontWeight: 400 }}>
-                · {String(stopReason).toLowerCase().replace(/_/g, " ")}
-              </span>
+            {statusWords.reason && (
+              <span style={{ color: shell.textMuted, fontWeight: 400 }}>· {statusWords.reason}</span>
             )}
           </span>
           <span className="shell-detail" style={{ fontSize: 12, color: shell.textMuted }}>

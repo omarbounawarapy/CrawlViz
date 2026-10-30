@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "../../state/nodeStates";
+import { crawlStatusWords } from "../../state/crawlStatus";
 import { formatDuration } from "../../utils/formatters";
 
 const theme = getTheme();
@@ -15,7 +16,6 @@ const FUNNEL_LABEL = {
   SCORED: "Scored",
   EXPANDED: "Expanded",
 };
-const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", IDLE: "Idle" };
 
 function FunnelBar({ label, count, max, color }) {
   const pct = max > 0 ? Math.max(2, (count / max) * 100) : 0;
@@ -71,6 +71,7 @@ function FunnelBar({ label, count, max, color }) {
 
 export default function OverviewPage({ state, metrics }) {
   const stateCounts = metrics.stateCounts;
+  const statusWords = crawlStatusWords(state);
 
   // Monotonic "reached at least this stage" funnel -- a node currently
   // sitting at SCORED has already passed through FETCHED and FILTERED, so
@@ -114,7 +115,7 @@ export default function OverviewPage({ state, metrics }) {
             [
               "Elapsed",
               formatDuration(elapsed * 1000),
-              `${STATUS_WORD[state.status] ?? state.status}${state.stop_reason ? ` (${String(state.stop_reason).toLowerCase().replace(/_/g, " ")})` : ""}`,
+              statusWords.reason ? `${statusWords.word} (${statusWords.reason})` : statusWords.word,
             ],
             [
               "Links skipped",
