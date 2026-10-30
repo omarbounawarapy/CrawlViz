@@ -39,7 +39,12 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, ValidationError
 
-from .config import DEFAULT_PRIORITY_STRATEGY
+from .config import (
+    DEFAULT_MAX_DEPTH,
+    DEFAULT_MAX_DURATION_SECONDS,
+    DEFAULT_MAX_NODES,
+    DEFAULT_PRIORITY_STRATEGY,
+)
 from .extraction_profiles import ProfileError, resolve_profile_fields
 from priority.strategy import STRATEGY_REGISTRY
 
@@ -192,9 +197,9 @@ class DomainConfig(BaseModel):
 
 
 class StopConditions(BaseModel):
-    max_nodes: int
-    max_depth: int
-    max_duration: float
+    max_nodes: int = DEFAULT_MAX_NODES
+    max_depth: int = DEFAULT_MAX_DEPTH
+    max_duration: float = DEFAULT_MAX_DURATION_SECONDS  # seconds, as the stopping stage reads it
     no_progress_timeout: float
     stop_url: str = ""
     # This default, and the validator below, are exactly what issue #2

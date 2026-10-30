@@ -7,8 +7,11 @@ demonstrate the schema pass is adding real coverage, not just duplicating
 what was already there.
 """
 
+import json
+
 import pytest
 
+from core.boot_strapper import BootStrapper
 from config.blueprint_schema import (
     Blueprint,
     BlueprintSchemaError,
@@ -49,6 +52,28 @@ class TestStopConditionsModelDirectly:
                 no_progress_timeout=1,
                 priority_strategy="not_real",
             )
+
+
+class TestCrawlLimitDefaults:
+    def test_a_blueprint_without_limits_gets_500_pages_depth_5_and_one_hour(self):
+        sc = StopConditions(no_progress_timeout=60)
+        assert (sc.max_nodes, sc.max_depth, sc.max_duration) == (500, 5, 3600)
+
+    def test_limits_the_blueprint_sets_are_kept(self):
+        sc = StopConditions(max_nodes=7, max_depth=2, max_duration=30, no_progress_timeout=60)
+        assert (sc.max_nodes, sc.max_depth, sc.max_duration) == (7, 2, 30)
+
+    def test_the_bootstrapper_fills_in_the_limits_a_blueprint_left_out(self, tmp_path):
+        blueprint = translate()
+        for limit in ("max_nodes", "max_depth", "max_duration"):
+            del blueprint["stop_conditions"][limit]
+        (tmp_path / "limits.json").write_text(json.dumps(blueprint))
+        bootstrapper = BootStrapper(None, None, "limits.json", templates_dir=tmp_path)
+
+        loaded = bootstrapper.load_template()
+
+        stop = loaded["stop_conditions"]
+        assert (stop["max_nodes"], stop["max_depth"], stop["max_duration"]) == (500, 5, 3600)
 
 
 class TestBlueprintModelAcceptsRealAssembledOutput:

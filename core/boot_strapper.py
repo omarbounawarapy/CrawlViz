@@ -18,6 +18,9 @@ from models import Domain, Node
 
 logger = logging.getLogger(__name__)
 
+# The stop conditions that have a default in the blueprint schema.
+CRAWL_LIMIT_KEYS = ("max_nodes", "max_depth", "max_duration")
+
 
 class BootStrapper:
     def __init__(self, event_broker, storage, template_file: str, templates_dir=TEMPLATES_DIR):
@@ -42,7 +45,13 @@ class BootStrapper:
         with open(self.template_file, "r", encoding="utf-8") as file:
             self.template = json.load(file)
 
-        validate_blueprint(self.template)
+        validated = validate_blueprint(self.template)
+        # The crawl reads the raw dict, so a limit the blueprint left out is filled in
+        # from the schema's default here.
+        for limit in CRAWL_LIMIT_KEYS:
+            self.template["stop_conditions"].setdefault(
+                limit, getattr(validated.stop_conditions, limit)
+            )
         # Profile-mode blueprints carry a profile id, not fields; the crawl reads fields.
         self.template["extraction"] = resolve_extraction_profile(self.template["extraction"])
         return self.template
