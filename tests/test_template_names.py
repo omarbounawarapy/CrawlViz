@@ -33,7 +33,7 @@ HOSTILE_NAMES = [
 
 
 @pytest.fixture
-def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setattr(template_routes, "TEMPLATES_DIR", str(tmp_path))
     monkeypatch.setattr(run_routes, "TEMPLATES_DIR", str(tmp_path))
     app = FastAPI()
@@ -45,29 +45,31 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 @pytest.mark.parametrize(
     "name", ["isi.json", "wikiMD.json", "offline_demo.json", "my blueprint.v2.json"]
 )
-def test_plain_names_are_accepted(name, tmp_path: Path) -> None:
+def test_plain_names_are_accepted(name: str, tmp_path: Path) -> None:
     assert validate_template_name(name) == name
     assert resolve_template_path(tmp_path, name) == tmp_path / name
 
 
 @pytest.mark.parametrize("name", HOSTILE_NAMES)
-def test_hostile_names_are_refused(name, tmp_path: Path) -> None:
+def test_hostile_names_are_refused(name: str, tmp_path: Path) -> None:
     with pytest.raises(InvalidTemplateNameError):
         resolve_template_path(tmp_path, name)
 
 
 @pytest.mark.parametrize("name", HOSTILE_NAMES)
-def test_run_refuses_a_hostile_template_name(client, name) -> None:
+def test_run_refuses_a_hostile_template_name(client: TestClient, name: str) -> None:
     assert client.post("/run", json={"templateName": name}).status_code == 422
 
 
-def test_run_does_not_reach_files_outside_the_templates_directory(client, tmp_path: Path) -> None:
+def test_run_does_not_reach_files_outside_the_templates_directory(
+    client: TestClient, tmp_path: Path
+) -> None:
     (tmp_path.parent / "outside.json").write_text("{}")
     response = client.post("/run", json={"templateName": f"../{tmp_path.parent.name}/outside.json"})
     assert response.status_code == 422
 
 
-def test_template_routes_refuse_hostile_names(client) -> None:
+def test_template_routes_refuse_hostile_names(client: TestClient) -> None:
     assert client.post("/templates?name=../evil", json={"content": {}}).status_code == 422
     assert client.put("/templates/..%5Cevil", json={"content": {}}).status_code == 422
     assert client.get("/templates/.hidden").status_code == 422
