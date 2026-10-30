@@ -2,6 +2,7 @@
 return, not wait for room that never comes."""
 
 import asyncio
+from typing import Any
 
 import pytest
 
@@ -17,10 +18,10 @@ class _StuckPipeline(BasePipeline):
 
     def __init__(self) -> None:
         super().__init__(max_concurrency=1)
-        self.queue: asyncio.Queue = asyncio.Queue(maxsize=1)
+        self.queue: asyncio.Queue[Any] = asyncio.Queue(maxsize=1)
         self.entered = asyncio.Event()
 
-    async def _process(self, item, worker_id: int) -> None:
+    async def _process(self, item: Any, worker_id: int) -> None:
         self.entered.set()
         await asyncio.Event().wait()
 
