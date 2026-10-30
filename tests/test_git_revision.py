@@ -1,22 +1,23 @@
 import subprocess
+from pathlib import Path
 
 from utils import get_git_revision
 
 GIT_IDENTITY = ["-c", "user.name=test", "-c", "user.email=test@example.com"]
 
 
-def _git(repo, *args):
+def _git(repo: Path, *args: str) -> None:
     subprocess.run(["git", *GIT_IDENTITY, *args], cwd=repo, check=True, capture_output=True)
 
 
-def _make_repo(path):
+def _make_repo(path: Path) -> None:
     _git(path, "init", "-q")
     (path / "tracked.txt").write_text("one")
     _git(path, "add", "tracked.txt")
     _git(path, "commit", "-q", "-m", "first")
 
 
-def test_revision_is_the_head_commit(tmp_path):
+def test_revision_is_the_head_commit(tmp_path: Path) -> None:
     _make_repo(tmp_path)
     head = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=tmp_path, capture_output=True, text=True, check=True
@@ -24,7 +25,7 @@ def test_revision_is_the_head_commit(tmp_path):
     assert get_git_revision(tmp_path) == head
 
 
-def test_dirty_marker_appears_only_when_asked_and_tracked_files_changed(tmp_path):
+def test_dirty_marker_appears_only_when_asked_and_tracked_files_changed(tmp_path: Path) -> None:
     _make_repo(tmp_path)
     clean = get_git_revision(tmp_path, mark_dirty=True)
     assert clean is not None and not clean.endswith("+dirty")
@@ -33,5 +34,5 @@ def test_dirty_marker_appears_only_when_asked_and_tracked_files_changed(tmp_path
     assert get_git_revision(tmp_path) == clean
 
 
-def test_outside_a_repository_the_revision_is_none(tmp_path):
+def test_outside_a_repository_the_revision_is_none(tmp_path: Path) -> None:
     assert get_git_revision(tmp_path / "missing") is None
