@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+from collections.abc import Sequence
 from typing import Set
 
 try:
@@ -28,9 +30,26 @@ try:
 except ImportError:
     raise ImportError("The 'websockets' package is required. Install with: pip install websockets")
 
+from config import CORS_ORIGIN_REGEX, CORS_ORIGINS
+
 from .crawl_state_snapshot import CrawlStateSnapshot
 
 log = logging.getLogger("ui_bridge.gateway")
+
+# An entry the websockets library accepts: an exact origin, a pattern, or None for a client
+# that sends no Origin header (a script, not a browser page).
+OriginRule = str | re.Pattern[str] | None
+
+
+def default_allowed_origins() -> list[OriginRule]:
+    """The origins the API allows for CORS, plus clients that send no Origin.
+
+    A browser page always sends its Origin on a WebSocket handshake, and a WebSocket is not
+    bound by CORS, so without this check any web page could read the live crawl."""
+    rules: list[OriginRule] = [*CORS_ORIGINS, None]
+    if CORS_ORIGIN_REGEX:
+        rules.append(re.compile(CORS_ORIGIN_REGEX))
+    return rules
 
 
 class UIWebSocketGateway:
@@ -44,10 +63,14 @@ class UIWebSocketGateway:
         snapshot: CrawlStateSnapshot,
         host: str = "localhost",
         port: int = 8765,
+        allowed_origins: Sequence[OriginRule] | None = None,
     ) -> None:
         self._snapshot: CrawlStateSnapshot = snapshot
         self._host: str = host
         self._port: int = port
+        self._allowed_origins: Sequence[OriginRule] = (
+            allowed_origins if allowed_origins is not None else default_allowed_origins()
+        )
         self._clients: Set[ServerConnection] = set()
         self._server = None
 
@@ -68,6 +91,7 @@ class UIWebSocketGateway:
             self._on_client_connected,
             self._host,
             self._port,
+            origins=self._allowed_origins,
             ping_interval=20,
             ping_timeout=10,
         )
