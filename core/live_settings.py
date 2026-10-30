@@ -103,3 +103,14 @@ def apply_live(config: RuntimeConfig, pipelines: dict, patch: dict) -> RuntimeCo
         else:
             setattr(pipeline, attr, value)
     return new
+
+
+class LiveSettingsApplier:
+    """Applies live setting patches to the stages of one running crawl."""
+
+    def __init__(self, stages: dict) -> None:
+        self._stages = stages
+
+    def apply(self, config: RuntimeConfig, patch: dict) -> RuntimeConfig:
+        """The new config after `patch`, with its live fields pushed onto the stages."""
+        return apply_live(config, self._stages, patch)

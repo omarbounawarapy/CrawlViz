@@ -30,6 +30,7 @@ from ui_bridge.event_recorder import EventRecorder, RecordingGateway
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
+from .live_settings import LiveSettingsApplier
 from .run_manifest import RunManifestWriter
 from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 
@@ -159,9 +160,8 @@ class Crawler:
     def apply_live(self, patch: dict) -> RuntimeConfig:
         """Change live-flagged settings of the running crawl (see
         core/live_settings.py)."""
-        from core.live_settings import apply_live
-
-        self.config = apply_live(self.config, getattr(self, "_pipelines", {}), patch)
+        applier = LiveSettingsApplier(getattr(self, "_pipelines", {}))
+        self.config = applier.apply(self.config, patch)
         return self.config
 
     async def _run_until_stopped(self, tasks: list, grace: float = 5.0) -> None:
