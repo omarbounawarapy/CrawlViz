@@ -10,6 +10,7 @@ from events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationComp
 from models import Node
 
 from .base_pipeline import SHUTDOWN
+from .export_tables import ensure_table
 
 logger = logging.getLogger(__name__)
 
@@ -225,35 +226,8 @@ class ExportingPipeline:
     def _ensure_table(self, table_name: str, extraction_blueprint: dict) -> None:
         if table_name in self._initialized_tables:
             return
-        fields = extraction_blueprint.get("fields", {})
-        columns = ["id TEXT", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
-        for field_name, spec in fields.items():
-            store_type = spec.get("export_type", "text")
-            sql_type = self._map_type(store_type)
-            columns.append(f"{field_name} {sql_type}")
-        columns.append("PRIMARY KEY (crawl_id, id)")
-        sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
-        self.cursor.execute(sql)
-        self._migrate_primary_key(table_name)
+        ensure_table(self.cursor, table_name, extraction_blueprint)
         self._initialized_tables.add(table_name)
-
-    def _migrate_primary_key(self, table_name: str) -> None:
-        """Tables created before runs were isolated key rows on `id` alone, so a
-        second crawl overwrote the first's rows. Rebuild them on (crawl_id, id)."""
-        info = self.cursor.execute(f"PRAGMA table_info({table_name})").fetchall()
-        pk = {row[1] for row in info if row[5]}
-        if pk == {"crawl_id", "id"}:
-            return
-        cols = ", ".join(row[1] for row in info)
-        defs = ", ".join(f"{row[1]} {row[2]}" for row in info)
-        legacy = f"{table_name}__legacy"
-        self.cursor.execute(f"ALTER TABLE {table_name} RENAME TO {legacy}")
-        self.cursor.execute(f"CREATE TABLE {table_name} ({defs}, PRIMARY KEY (crawl_id, id))")
-        self.cursor.execute(
-            f"INSERT OR REPLACE INTO {table_name} ({cols}) SELECT {cols} FROM {legacy}"
-        )
-        self.cursor.execute(f"DROP TABLE {legacy}")
-        logger.info("Migrated %s to primary key (crawl_id, id)", table_name)
 
     def _cast(self, value, t: str, field: str):
         if value is None:
@@ -273,14 +247,6 @@ class ExportingPipeline:
         except Exception:
             logger.warning("Failed to cast field=%s value=%r as %s", field, value, t)
             return None
-
-    def _map_type(self, t: str) -> str:
-        return {
-            "real": "REAL",
-            "int": "INTEGER",
-            "json": "TEXT",
-            "text": "TEXT",
-        }.get(t, "TEXT")
 
     def _insert_row(
         self, table: str, node: Node, item: dict, extraction_blueprint: dict, item_hash: str
