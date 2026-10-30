@@ -15,7 +15,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from benchmark import audit as audit_mod
 from benchmark.analyze import (
     by_policy,
     dedupe_records,
@@ -28,7 +27,9 @@ from benchmark.graph import FrozenGraph
 from benchmark.graph_stats import stats as graph_stats
 from benchmark.results import RunRecord
 
+from .benchmark_audit_score import audit_result, labels_of
 from .benchmark_jobs import router as jobs_router
+from .benchmark_json import nan_to_none
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR
 from .benchmark_protocol import read_protocol
 
@@ -36,10 +37,6 @@ router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 router.include_router(jobs_router)
 
 PROTOCOL_FILE = BENCH_DIR / "PROTOCOL.md"
-
-
-def _nan(v):
-    return None if isinstance(v, float) and math.isnan(v) else v
 
 
 def _file(name: str, suffix: str) -> Path:
@@ -158,7 +155,7 @@ def get_curves(
         points = []
         for k in range(1, max_k + 1):
             mean, ci = mean_ci([harvest_at(r.labels, k, min_grade) for r in runs])
-            points.append({"k": k, "mean": _nan(mean), "ci95": _nan(ci)})
+            points.append({"k": k, "mean": nan_to_none(mean), "ci95": nan_to_none(ci)})
         eff = [efficiency(r) for r in runs]
 
         def avg(vals):
@@ -206,7 +203,7 @@ def overview():
     return {
         "protocol": read_protocol(PROTOCOL_FILE),
         "graphs": graphs,
-        "audit": _audit_result(key, DATA_DIR / "audit_filled.tsv") if key.is_file() else None,
+        "audit": audit_result(key, DATA_DIR / "audit_filled.tsv") if key.is_file() else None,
         "runs": len(_records()),
     }
 
@@ -329,14 +326,10 @@ def _audit_rows(annotator: str = "1") -> list[dict]:
     return rows[:SECOND_ANNOTATOR_ITEMS] if annotator == "2" else rows
 
 
-def _labels_of(path: Path) -> dict[str, int]:
-    return audit_mod.read_labels(path) if path.is_file() else {}
-
-
 @router.get("/audit")
 def get_audit(annotator: str = "1"):
     """The sample for a human. The judge's label is never sent (blind audit)."""
-    labels = _labels_of(_audit_paths(annotator))
+    labels = labels_of(_audit_paths(annotator))
     items = [
         {
             "id": r["id"],
@@ -365,7 +358,7 @@ def put_audit(item_id: str, body: LabelBody, annotator: str = "1"):
     rows = _audit_rows(annotator)
     if item_id not in {r["id"] for r in rows}:
         raise HTTPException(status_code=404, detail="unknown item id")
-    labels = _labels_of(path)
+    labels = labels_of(path)
     if body.human_label is None:
         labels.pop(item_id, None)
     else:
@@ -380,51 +373,6 @@ def put_audit(item_id: str, body: LabelBody, annotator: str = "1"):
     return {"id": item_id, "human_label": body.human_label, "done": len(labels)}
 
 
-def _audit_result(
-    key_path: Path, tsv: Path, total: int | None = None, other: Path | None = None
-) -> dict | None:
-    key = json.loads(key_path.read_text())
-    human = _labels_of(tsv)
-    ids = sorted((i for i in human if i in key["items"]), key=int)
-    if not ids:
-        return None
-    pairs = [(key["items"][i]["judge_label"], human[i]) for i in ids]
-    bp = audit_mod.binary(pairs)
-    counts = {int(g): n for g, n in key["graph_label_counts"].items()}
-    prec, rec = audit_mod.per_class(bp, (1,))[1]
-    return {
-        "n": len(pairs),
-        "sampled": total or len(key["items"]),
-        "confusion": audit_mod.confusion(pairs, (0, 1, 2)),
-        "confusion_binary": audit_mod.confusion(bp, (0, 1)),
-        "agreement": _nan(audit_mod.agreement(pairs)),
-        "kappa": _nan(audit_mod.kappa(pairs)),
-        "agreement_binary": _nan(audit_mod.agreement(bp)),
-        "kappa_binary": _nan(audit_mod.kappa(bp)),
-        "kappa_ci": [_nan(v) for v in audit_mod.bootstrap_ci(pairs, audit_mod.kappa)],
-        "relevant_precision": _nan(prec),
-        "relevant_recall": _nan(rec),
-        "reweighted": _nan(audit_mod.reweighted_agreement(pairs, counts)[0]),
-        "human_vs_annotator1": _human_pair(human, other),
-    }
-
-
-def _human_pair(human: dict[str, int], other: Path | None) -> dict | None:
-    """Annotator 2 against annotator 1 on the ids both labelled ."""
-    first = _labels_of(other) if other else {}
-    both = sorted(set(human) & set(first), key=int)
-    if not both:
-        return None
-    pairs = [(first[i], human[i]) for i in both]
-    return {
-        "n": len(pairs),
-        "agreement": _nan(audit_mod.agreement(pairs)),
-        "kappa": _nan(audit_mod.kappa(pairs)),
-        "agreement_binary": _nan(audit_mod.agreement(audit_mod.binary(pairs))),
-        "kappa_binary": _nan(audit_mod.kappa(audit_mod.binary(pairs))),
-    }
-
-
 @router.post("/audit/score")
 def score_audit(annotator: str = "1", source: str = "ui"):
     """Judge against a human. ``source=filled`` scores the original audit_filled.tsv."""
@@ -433,7 +381,7 @@ def score_audit(annotator: str = "1", source: str = "ui"):
         raise HTTPException(status_code=404, detail="no audit key")
     tsv = DATA_DIR / "audit_filled.tsv" if source == "filled" else _audit_paths(annotator)
     second = annotator == "2" and source != "filled"
-    result = _audit_result(
+    result = audit_result(
         key,
         tsv,
         SECOND_ANNOTATOR_ITEMS if second else None,
