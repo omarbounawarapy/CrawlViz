@@ -3,6 +3,7 @@
 import pytest
 
 from benchmark import POLICIES, run_policy, synthetic_graph
+from benchmark.graph import ABSENT_PAGE_MODES
 
 
 @pytest.mark.slow
@@ -54,6 +55,21 @@ async def test_recorded_pages_are_served_as_the_markup_extraction_expects():
     assert 'id="firstHeading">Alpha<' in body
     assert "About &lt;alpha&gt;." in body
     assert 'href="/B">Beta &amp; co<' in body
+
+
+@pytest.mark.parametrize("absent", ABSENT_PAGE_MODES)
+async def test_frozen_graph_has_no_robots_file_so_robots_allows_its_pages(absent):
+    # A real server without robots.txt answers 404, which RobotsPolicy reads as
+    # "allow all". The read is not a page of the graph: no budget, no absent hit.
+    from benchmark import FrozenGraph
+    from benchmark.graph import GraphFetcher
+    from pipelines.robots import RobotsPolicy
+
+    graph = FrozenGraph(seed="A", pages={"A": {"label": 0, "links": []}})
+    fetcher = GraphFetcher(graph, absent=absent)
+    assert await RobotsPolicy(fetcher, "CrawlViz/1.0").allowed("https://frozen.test/A")
+    assert fetcher.fetched == []
+    assert fetcher.absent_hits == 0
 
 
 def test_wiki_name_keeps_only_articles():
