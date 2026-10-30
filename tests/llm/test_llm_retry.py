@@ -56,7 +56,7 @@ def key_manager(monkeypatch: pytest.MonkeyPatch) -> KeyManager:
 
 @pytest.fixture
 async def network() -> AsyncIterator[NetworkClient]:
-    client = NetworkClient()
+    client = NetworkClient(allow_private_addresses=True)  # the scripted provider is on loopback
     yield client
     await client.close()
 
