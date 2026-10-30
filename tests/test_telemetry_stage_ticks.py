@@ -2,6 +2,7 @@
 shows how long each took."""
 
 from types import SimpleNamespace
+from typing import Any
 
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge
 
@@ -16,7 +17,7 @@ PRIORITY = 0.5
 
 
 class _Gateway:
-    async def broadcast(self, message: dict) -> None:
+    async def broadcast(self, message: dict[str, Any]) -> None:  # a wire message (JSON)
         pass
 
 
@@ -28,7 +29,7 @@ def _node() -> SimpleNamespace:
     return SimpleNamespace(get_id=lambda: NODE_ID)
 
 
-def _ticks(messages: list[dict], stage: str) -> list[dict]:
+def _ticks(messages: list[dict[str, Any]], stage: str) -> list[dict[str, Any]]:
     return [m for m in messages if m["type"] == "PIPELINE_EVENT" and m["stage"] == stage]
 
 
