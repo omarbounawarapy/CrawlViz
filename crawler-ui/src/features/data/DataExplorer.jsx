@@ -9,6 +9,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { fetchValidationTables, fetchValidationCrawls, fetchValidationSample, isAbortError } from "../../api/client";
 import { getTheme } from "../../theme";
+import { hasScore } from "../../utils/formatters";
 import { Page } from "../common/Page";
 import { Field, Select, Button } from "../common/Form";
 
@@ -104,7 +105,7 @@ function Specimen({ row, fields, node, onOpenNode }) {
   const title = row.title || row.name || row.url || row.id;
   const excerpt = excerptOf(row);
   const census = censusOf(row, fields);
-  const score = node && (node.llm_score || node.llm_score === 0) ? node.llm_score : null;
+  const score = node && hasScore(node.llm_score) ? node.llm_score : null;
 
   return (
     <article style={{ borderTop: `1px solid ${background.border}`, padding: "18px 0 6px" }}>
