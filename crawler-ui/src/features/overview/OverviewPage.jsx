@@ -15,7 +15,7 @@ const FUNNEL_LABEL = {
   SCORED: "Scored",
   EXPANDED: "Expanded",
 };
-const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", IDLE: "Idle", CONNECTING: "Waiting for backend" };
+const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", IDLE: "Idle" };
 
 function FunnelBar({ label, count, max, color }) {
   const pct = max > 0 ? Math.max(2, (count / max) * 100) : 0;

@@ -42,7 +42,7 @@ function StatusMark({ status }) {
   );
 }
 
-const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", CONNECTING: "Waiting for backend", IDLE: "Idle" };
+const STATUS_WORD = { RUNNING: "Crawling", STOPPED: "Finished", IDLE: "Idle" };
 
 // The wordmark is also the way back to the landing page.
 function Wordmark() {
