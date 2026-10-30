@@ -4,10 +4,18 @@ from typing import Any
 import aiohttp
 from yarl import URL
 
-from .fetch_errors import FetchRejectedError, TooManyRedirectsError
+from .fetch_errors import (
+    FetchRejectedError,
+    ResponseTooLargeError,
+    TooManyRedirectsError,
+    UnsupportedContentTypeError,
+)
 from .url_guard import PublicAddressResolver, ensure_public_url
 
 MAX_REDIRECTS = 5
+DEFAULT_MAX_RESPONSE_BYTES = 5 * 1024 * 1024
+READ_CHUNK_BYTES = 64 * 1024
+DEFAULT_TEXT_ENCODING = "utf-8"
 REDIRECT_STATUSES = (301, 302, 303, 307, 308)
 
 
@@ -19,8 +27,11 @@ class RequestStrategy(ABC):
     connect to.
     """
 
-    def __init__(self, check_addresses: bool = False):
+    def __init__(
+        self, check_addresses: bool = False, max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES
+    ):
         self.check_addresses = check_addresses
+        self.max_response_bytes = max_response_bytes
 
     @abstractmethod
     async def execute(self, session: aiohttp.ClientSession, params: dict) -> Any:
@@ -44,11 +55,42 @@ class GetRequestStrategy(RequestStrategy):
                 location = response.headers.get("Location")
                 if response.status not in REDIRECT_STATUSES or not location:
                     response.raise_for_status()
-                    return await response.text()
+                    return await self._read_text(response, params.get("content_types"))
                 url = str(response.url.join(URL(location)))
         raise TooManyRedirectsError(
             f"More than {MAX_REDIRECTS} redirects from {params['url']}; the page was not fetched."
         )
+
+    async def _read_text(
+        self, response: aiohttp.ClientResponse, content_types: tuple[str, ...] | None
+    ) -> str:
+        """The body as text, refused unread when its type is not in
+        `content_types` (None accepts any) and abandoned once it passes
+        `max_response_bytes`. The count is of decompressed bytes, read chunk
+        by chunk, so a small compressed bomb stops at the limit too.
+        """
+        if content_types is not None and response.content_type not in content_types:
+            raise UnsupportedContentTypeError(
+                f"{response.url} is {response.content_type!r}, not one of "
+                f"{', '.join(content_types)}; it was not read."
+            )
+        if (response.content_length or 0) > self.max_response_bytes:
+            raise ResponseTooLargeError(
+                f"{response.url} announces {response.content_length} bytes, over the "
+                f"limit of {self.max_response_bytes}; it was not read."
+            )
+        body = bytearray()
+        async for chunk in response.content.iter_chunked(READ_CHUNK_BYTES):
+            body += chunk
+            if len(body) > self.max_response_bytes:
+                raise ResponseTooLargeError(
+                    f"{response.url} is over the limit of {self.max_response_bytes} bytes; "
+                    "reading stopped."
+                )
+        try:
+            return body.decode(response.charset or DEFAULT_TEXT_ENCODING, errors="replace")
+        except LookupError:  # a charset name Python does not know
+            return body.decode(DEFAULT_TEXT_ENCODING, errors="replace")
 
 
 class PostRequestStrategy(RequestStrategy):
@@ -76,6 +118,9 @@ class NetworkClient:
     public addresses (infrastructure/url_guard.py): a link on a crawled page
     must not reach loopback, the local network or a cloud metadata service.
     Operator-chosen servers, such as a local LLM endpoint, need the flag.
+
+    A GET reads at most `max_response_bytes` of body (after decompression),
+    and with `params["content_types"]` only accepts those content types.
     """
 
     def __init__(
@@ -83,6 +128,7 @@ class NetworkClient:
         total_timeout: float = 30,
         connect_timeout: float = 10,
         allow_private_addresses: bool = False,
+        max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
     ):
         self.total_timeout = total_timeout
         self.connect_timeout = connect_timeout
@@ -90,7 +136,7 @@ class NetworkClient:
         self.session: aiohttp.ClientSession | None = None
         check_addresses = not allow_private_addresses
         self._strategies = {
-            "GET": GetRequestStrategy(check_addresses),
+            "GET": GetRequestStrategy(check_addresses, max_response_bytes),
             "POST": PostRequestStrategy(check_addresses),
         }
 

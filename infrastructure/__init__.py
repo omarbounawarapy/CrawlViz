@@ -3,7 +3,9 @@ from .async_file_handler import AsyncFileHandler
 from .fetch_errors import (
     BlockedAddressError,
     FetchRejectedError,
+    ResponseTooLargeError,
     TooManyRedirectsError,
+    UnsupportedContentTypeError,
 )
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
@@ -29,5 +31,7 @@ __all__ = [
     "NvidiaTranslator",
     "OpenAITranslator",
     "OpenRouterTranslator",
+    "ResponseTooLargeError",
     "TooManyRedirectsError",
+    "UnsupportedContentTypeError",
 ]

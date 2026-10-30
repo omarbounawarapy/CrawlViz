@@ -22,6 +22,8 @@ from .frontier_queue import FrontierQueue
 from .robots import RobotsPolicy
 
 ROBOTS_DISALLOWED = "RobotsDisallowed"
+# Content types the extraction can parse; anything else is refused unread.
+PAGE_CONTENT_TYPES = ("text/html", "application/xhtml+xml")
 
 
 def is_rate_limited(error: Exception) -> bool:
@@ -232,6 +234,7 @@ class RequestsPipeline:
                         "headers": self.headers,
                         "data": "",
                         "method": "GET",
+                        "content_types": PAGE_CONTENT_TYPES,
                     }
                 )
 

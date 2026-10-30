@@ -18,3 +18,11 @@ class BlockedAddressError(FetchRejectedError, OSError):
 class TooManyRedirectsError(FetchRejectedError):
     """A GET followed more redirects than the client allows."""
 
+
+
+class ResponseTooLargeError(FetchRejectedError):
+    """The body is larger than the client's size limit (counted after decompression)."""
+
+
+class UnsupportedContentTypeError(FetchRejectedError):
+    """The response is not one of the content types the caller can parse."""
