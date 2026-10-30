@@ -34,6 +34,7 @@ files' worth of implicit dict-shape agreement.
 
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, ValidationError
@@ -78,6 +79,10 @@ _PARAMETERISED_TRANSFORMS: dict[str, list[str]] = {
 ALLOWED_TRANSFORMS: frozenset[str] = frozenset(
     _NO_CONFIG_TRANSFORMS | set(_PARAMETERISED_TRANSFORMS)
 )
+
+
+# What the embedding engines tokenise as a word (nlp/embedding_engine.py).
+_WORD_CHARACTER = re.compile(r"\w")
 
 
 class BlueprintSchemaError(ValueError):
@@ -212,6 +217,18 @@ class Blueprint(BaseModel):
     expansion: ExpansionConfig
     extraction: ExtractionConfig
     stop_conditions: StopConditions
+
+    @field_validator("target_topic")
+    @classmethod
+    def _require_word_in_target_topic(cls, topic: str) -> str:
+        # A topic with no word character embeds to an all-zero vector, and every link
+        # scored against it gets priority 0 (docs/research/phase-b-method-review.md).
+        if not _WORD_CHARACTER.search(topic):
+            raise ValueError(
+                "the target topic has no letters or digits; enter the subject the crawl "
+                "should follow, for example 'type 2 diabetes'"
+            )
+        return topic
 
 
 def validate_blueprint(data: object) -> Blueprint:
