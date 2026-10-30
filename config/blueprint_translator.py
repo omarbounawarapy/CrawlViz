@@ -335,37 +335,15 @@ class BlueprintTranslator:
         Raises:
             BlueprintValidationError: On any constraint violation.
         """
-        # Re-validate strategy (belt-and-suspenders).
-        _validate_strategy(blueprint["scoring"]["strategy"])
-        _validate_priority_strategy(blueprint["stop_conditions"]["priority_strategy"])
-
-        # Validate every field in extraction.
+        # Strategies, field types, export types, seeds and domains are checked by the
+        # schema pass below (and the strategies also in step 1). Only the transform
+        # parameters are not: the schema accepts any extra keys on a step.
         for field_name, field_def in blueprint["extraction"]["fields"].items():
-            _validate_export_type(field_def.get("export_type", ""), field_name)
-            _validate_field_type(field_def.get("type", ""), field_name)
             _validate_transform_pipeline(field_def.get("transform", []), field_name)
 
-        # Validate seeds structure.
-        for i, seed in enumerate(blueprint["seeds"]):
-            for sk in ("url", "domain"):
-                if sk not in seed:
-                    raise BlueprintValidationError(f"seeds[{i}] is missing required key {sk!r}.")
-
-        # Validate domains structure.
-        for domain_name, domain_cfg in blueprint["domains"].items():
-            for dk in ("base_url", "link_selector"):
-                if dk not in domain_cfg:
-                    raise BlueprintValidationError(
-                        f"domains[{domain_name!r}] is missing required key {dk!r}."
-                    )
-
         # Schema pass: validates the *assembled* blueprint against
-        # blueprint_schema.Blueprint -- on top of, not instead of, the
-        # checks above. This is what actually catches the next instance
-        # of the "producer/consumer shape drifted apart" bug class (see
-        # blueprint_schema.py's docstring for the three times that's
-        # already happened), even for a field nobody remembered to add
-        # a hand-written check for above.
+        # blueprint_schema.Blueprint, the one place the shape is defined (see its
+        # docstring for the "producer/consumer shape drifted apart" bug class).
         try:
             Blueprint.model_validate(blueprint)
         except pydantic.ValidationError as e:
