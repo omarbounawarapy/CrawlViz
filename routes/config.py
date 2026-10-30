@@ -35,7 +35,7 @@ running crawl with PATCH /config/live (not persisted; PUT /config does that).
 import json
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import settings_store as store
