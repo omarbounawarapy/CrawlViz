@@ -21,11 +21,10 @@ from pathlib import Path
 
 import aiohttp
 
-from infrastructure import KeyManager, LlmHandler
 from models.llm_context import LlmContext
 
 from .graph import FrozenGraph
-from .llm_cache import CachedLlm
+from .llm_cache import CachedLlm, retry_free_handler
 
 PROVIDER, MODEL = (
     "groq",
@@ -104,7 +103,7 @@ async def judge(llm, topic: str, batch: list[tuple[str, dict]]) -> dict[str, boo
 
 
 async def label_graph(graph: FrozenGraph, cache: Path, keys: Path, limit: int | None) -> CachedLlm:
-    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), cache)
+    llm = CachedLlm(retry_free_handler(keys), cache)
     items = sorted(graph.pages.items())[:limit]
     for start in range(0, len(items), BATCH):
         batch = items[start : start + BATCH]
