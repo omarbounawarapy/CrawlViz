@@ -14,8 +14,12 @@ export function applyEvent(state, event) {
   switch (event.type) {
     case "SNAPSHOT_FULL": {
       const nodes = new Map();
+      // A client that joins mid-crawl never saw the NODE_ADDED events, so the edges come from the
+      // parent of each node the snapshot lists.
+      const edges = new Set();
       (event.nodes || []).forEach((n) => {
         nodes.set(n.node_id, { ...n });
+        if (n.parent_id) edges.add(`${n.parent_id}→${n.node_id}`);
       });
 
       // V2: hydrate the telemetry slices too, so a client that connects
@@ -47,7 +51,7 @@ export function applyEvent(state, event) {
       return {
         ...state,
         nodes,
-        edges: new Set(),
+        edges,
         status: event.status || "RUNNING",
         stop_reason: event.stop_reason || null,
         metrics: event.metrics || state.metrics,
