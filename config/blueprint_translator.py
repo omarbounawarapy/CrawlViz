@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 from typing import Any
 
 import pydantic
@@ -33,27 +32,7 @@ from config.blueprint_schema import (
     Blueprint,
 )
 from config.blueprint_schema import _PARAMETERISED_TRANSFORMS  # noqa: F401 (used below)
-
-# =========================================================
-# PROFILE REGISTRY
-# =========================================================
-
-# Profiles are loaded once from the static JSON file that lives alongside this
-# module. The registry maps profile_id -> profile dict.
-_PROFILES_FILE = os.path.join(os.path.dirname(__file__), "extraction_profiles.json")
-
-
-def _load_profiles() -> dict[str, Any]:
-    """Load profiles from the static JSON file; return empty dict on error."""
-    if not os.path.exists(_PROFILES_FILE):
-        return {}
-    with open(_PROFILES_FILE, encoding="utf-8") as fh:
-        data = json.load(fh)
-    return data.get("profiles", {})
-
-
-_PROFILE_REGISTRY: dict[str, Any] = _load_profiles()
-
+from config.extraction_profiles import ProfileError, resolve_profile_fields
 
 # =========================================================
 # VALIDATION HELPERS
@@ -158,23 +137,6 @@ def _build_field(field_name: str, field_def: dict[str, Any]) -> dict[str, Any]:
         "type": field_def["type"],
         "transform": list(field_def.get("transform", [])),
         "export_type": field_def["export_type"],
-    }
-
-
-def _build_field_from_profile(field_name: str, profile_field: dict[str, Any]) -> dict[str, Any]:
-    """Return a fully-specified field dict resolved from a profile definition.
-
-    Expected keys in `profile_field`:
-        selector: str
-        type: "scalar" | "list"
-        default_transforms: list of transform-step dicts
-        export_type: "text" | "real" | "int" | "json"
-    """
-    return {
-        "selector": profile_field["selector"],
-        "type": profile_field["type"],
-        "transform": list(profile_field.get("default_transforms", [])),
-        "export_type": profile_field["export_type"],
     }
 
 
@@ -298,32 +260,10 @@ class BlueprintTranslator:
 
     def _resolve_profile_fields(self) -> dict[str, Any]:
         """Load the selected profile and return its resolved field definitions."""
-        if not self._selected_profile:
-            raise BlueprintValidationError(
-                "extraction_mode is 'profile' but no selected_profile was provided."
-            )
-        if self._selected_profile not in _PROFILE_REGISTRY:
-            raise BlueprintValidationError(
-                f"Profile {self._selected_profile!r} not found in registry. "
-                f"Available: {list(_PROFILE_REGISTRY)}"
-            )
-        profile = _PROFILE_REGISTRY[self._selected_profile]
-        all_fields: dict[str, Any] = profile["fields"]
-
-        # Apply checklist filter if provided.
-        if self._profile_field_checklist is not None:
-            unknown = set(self._profile_field_checklist) - set(all_fields)
-            if unknown:
-                raise BlueprintValidationError(
-                    f"Profile {self._selected_profile!r} does not contain "
-                    f"field(s): {sorted(unknown)}"
-                )
-            all_fields = {k: v for k, v in all_fields.items() if k in self._profile_field_checklist}
-
-        resolved: dict[str, Any] = {}
-        for field_name, profile_field in all_fields.items():
-            resolved[field_name] = _build_field_from_profile(field_name, profile_field)
-        return resolved
+        try:
+            return resolve_profile_fields(self._selected_profile, self._profile_field_checklist)
+        except ProfileError as exc:
+            raise BlueprintValidationError(str(exc)) from exc
 
     def _resolve_manual_fields(self) -> dict[str, Any]:
         """Validate and build field definitions from manually supplied data."""
