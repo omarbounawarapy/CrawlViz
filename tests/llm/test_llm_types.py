@@ -36,7 +36,7 @@ def make_request(**changes: object) -> LlmRequest:
         "node_id": "node-7",
     }
     fields.update(changes)
-    return LlmRequest(**fields)
+    return LlmRequest.model_validate(fields)
 
 
 def test_request_needs_at_least_one_message() -> None:
@@ -101,14 +101,16 @@ def test_record_round_trips_through_json() -> None:
 
 def test_record_refuses_an_unknown_schema_version() -> None:
     with pytest.raises(ValidationError):
-        LlmCallRecord(
-            schema_version=2,
-            started_at=STARTED,
-            provider="p",
-            model="m",
-            latency_ms=0.0,
-            attempts=1,
-            outcome=CallOutcome.OK,
+        LlmCallRecord.model_validate(
+            {
+                "schema_version": 2,
+                "started_at": STARTED,
+                "provider": "p",
+                "model": "m",
+                "latency_ms": 0.0,
+                "attempts": 1,
+                "outcome": "ok",
+            }
         )
 
 
