@@ -12,7 +12,6 @@ mid-request, and the crawl's own cleanup (core/crawler.py) still runs.
 import asyncio
 import json
 import logging
-import os
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
@@ -20,6 +19,7 @@ from pydantic import BaseModel, ValidationError
 from config import TEMPLATES_DIR, default_runtime_paths
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
 from config.settings_store import load_runtime_config
+from config.template_names import InvalidTemplateNameError, resolve_template_path
 from core import Crawler
 from offline import build_offline_session, is_offline
 
@@ -35,6 +35,19 @@ router = APIRouter(tags=["run"])
 
 _current_task: asyncio.Task | None = None
 _current_crawler: Crawler | None = None
+
+
+def _refuse_endpoint_overrides(overrides: dict | None) -> None:
+    """Per-run overrides may not redirect an LLM provider: the request carries the API key,
+    so a changed URL would send the key to whoever runs that server. Saved settings
+    (PUT /config, behind the session token) are the only place endpoints change."""
+    providers = (overrides or {}).get("providers")
+    if isinstance(providers, dict) and "endpoints" in providers:
+        raise HTTPException(
+            status_code=422,
+            detail="Provider endpoints cannot be changed for a single run. "
+            "Change them on the Configuration page, which saves them.",
+        )
 
 
 class RunRequest(BaseModel):
@@ -79,8 +92,13 @@ async def run_crawl(body: RunRequest):
     if _current_task and not _current_task.done():
         raise HTTPException(status_code=409, detail="A crawl is already running")
 
-    template_path = os.path.join(TEMPLATES_DIR, body.templateName)
-    if not os.path.exists(template_path):
+    _refuse_endpoint_overrides(body.overrides)
+
+    try:
+        template_path = resolve_template_path(TEMPLATES_DIR, body.templateName)
+    except InvalidTemplateNameError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if not template_path.exists():
         raise HTTPException(status_code=404, detail=f"Template '{body.templateName}' not found")
 
     try:
