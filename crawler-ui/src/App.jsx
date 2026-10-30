@@ -196,7 +196,7 @@ export default function App() {
     ) : null;
 
   const summary =
-    state.nodes.size > 0 ? `${state.nodes.size} pages · ${metrics.candidatesDropped} links skipped` : null;
+    state.nodes.size > 0 ? `${metrics.nodes_fetched} fetched · ${state.nodes.size} found` : null;
 
   const offline =
     apiDown && !demoMode ? (
