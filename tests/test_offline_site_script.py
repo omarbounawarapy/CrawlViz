@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 import aiohttp
 import pytest
@@ -17,15 +18,18 @@ from pipelines.requests_pipeline import is_rate_limited
 LONG_DEMO = "offline_demo_long.json"
 
 
-def _blueprint() -> dict:
-    return json.loads((Path(TEMPLATES_DIR) / LONG_DEMO).read_text(encoding="utf-8"))
+def _blueprint() -> dict[str, Any]:  # parsed JSON
+    blueprint: dict[str, Any] = json.loads(
+        (Path(TEMPLATES_DIR) / LONG_DEMO).read_text(encoding="utf-8")
+    )
+    return blueprint
 
 
-def _request(url: str) -> dict:
+def _request(url: str) -> dict[str, Any]:
     return {"url": url, "headers": {}, "data": "", "method": "GET"}
 
 
-def _script(episodes: list[dict]) -> SiteScript:
+def _script(episodes: list[dict[str, int]]) -> SiteScript:
     return SiteScript.model_validate(
         {
             "schema_version": 1,
