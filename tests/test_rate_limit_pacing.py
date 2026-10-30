@@ -53,14 +53,14 @@ def gaps(times: list[float]) -> list[float]:
     return [later - earlier for earlier, later in pairwise(sorted(times))]
 
 
-async def test_concurrent_workers_keep_the_delay_between_requests_to_one_host():
+async def test_concurrent_workers_keep_the_delay_between_requests_to_one_host() -> None:
     nodes = [make_node(i, "a.test") for i in range(4)]
     times = await fetch_all(nodes, workers=4)
     assert len(times["a.test"]) == 4
     assert min(gaps(times["a.test"])) >= MIN_DELAY - TOLERANCE
 
 
-async def test_different_hosts_do_not_wait_for_each_other():
+async def test_different_hosts_do_not_wait_for_each_other() -> None:
     nodes = [make_node(0, "a.test"), make_node(1, "b.test")]
     times = await fetch_all(nodes, workers=2)
     assert abs(times["a.test"][0] - times["b.test"][0]) < MIN_DELAY
