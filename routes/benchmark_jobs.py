@@ -16,7 +16,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from benchmark import POLICIES
-
 from config import TEMPLATES_DIR
 
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR, ROOT
@@ -39,9 +38,7 @@ def _path_inside(value: str, *allowed_dirs: Path) -> str:
     resolved = (ROOT / value).resolve()
     if not any(resolved.is_relative_to(directory.resolve()) for directory in allowed_dirs):
         allowed = ", ".join(str(d.relative_to(ROOT)) for d in allowed_dirs)
-        raise HTTPException(
-            status_code=422, detail=f"path {value!r} must be inside {allowed}"
-        )
+        raise HTTPException(status_code=422, detail=f"path {value!r} must be inside {allowed}")
     return value
 
 
