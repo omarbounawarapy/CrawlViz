@@ -15,7 +15,8 @@ POST /config/effective  saved settings with per-run overrides applied
 GET  /config/export     the stored settings, for download
 GET  /config/presets    built-in and saved presets
 PUT  /config/presets/{name}          save a preset (body: values, or empty for the current settings)
-POST /config/presets/{name}/apply    replace the settings with a preset
+POST /config/presets/{name}/preview  what applying a preset would change (nothing is saved)
+POST /config/presets/{name}/apply    merge a preset over the current settings; replies with the config and `changes`
 DELETE /config/presets/{name}
 PATCH /config/live      change ui_apply=live fields of the running crawl
 POST /config/reset      drop one section (?section=) or everything
