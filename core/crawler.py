@@ -211,8 +211,13 @@ class Crawler:
                 keys_file=self.paths.keys_file,
             )
         fetch = self.config.fetch
+        # LLM endpoints are chosen by the operator (a local server is allowed),
+        # unlike page URLs, which come from crawled pages.
         traced_network = TracedNetworkClient(
-            NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout), tracer
+            NetworkClient(
+                fetch.http_total_timeout, fetch.http_connect_timeout, allow_private_addresses=True
+            ),
+            tracer,
         )
         traced_llm = TracedLlmHandler(
             LlmHandler(
