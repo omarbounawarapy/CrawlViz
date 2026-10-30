@@ -11,7 +11,6 @@ pipeline noticing a flag change.
 import asyncio
 import json
 import logging
-import os
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
@@ -19,6 +18,7 @@ from pydantic import BaseModel, ValidationError
 from config import TEMPLATES_DIR, default_runtime_paths
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
 from config.settings_store import load_runtime_config
+from config.template_names import InvalidTemplateNameError, resolve_template_path
 from core import Crawler
 from offline import build_offline_session, is_offline
 
@@ -72,8 +72,11 @@ async def run_crawl(body: RunRequest):
     if _current_task and not _current_task.done():
         raise HTTPException(status_code=409, detail="A crawl is already running")
 
-    template_path = os.path.join(TEMPLATES_DIR, body.templateName)
-    if not os.path.exists(template_path):
+    try:
+        template_path = resolve_template_path(TEMPLATES_DIR, body.templateName)
+    except InvalidTemplateNameError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if not template_path.exists():
         raise HTTPException(status_code=404, detail=f"Template '{body.templateName}' not found")
 
     try:
