@@ -205,7 +205,6 @@ module = [
     "benchmark.results",
     "benchmark.runner",
     "benchmark.seed_probe",
-    "config.blueprint_translator",
     "config.paths",
     "config.runtime_config",
     "config.settings_store",
