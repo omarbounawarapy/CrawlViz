@@ -7,7 +7,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ### Recent changes
 - Blueprints reject a topic with no word characters.
 - Landing and graph copy uses plain words.
-- The dev server reload ignores `.claude`, so agent worktrees no longer restart the API.
+- The development server no longer restarts when files under a local `.claude` folder change.
 - New `offline_demo_long.json` blueprint for a longer offline run with two 429 episodes and an LLM call budget (see the README).
 - Security and politeness hardening in progress, see SECURITY.md.
 
