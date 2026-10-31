@@ -1381,3 +1381,44 @@ def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_pat
     items = json.loads(page.split("const ITEMS = ", 1)[1].split(";\nconst KEY", 1)[0])
     assert items == [{"id": "1", "title": "A </script> B", "excerpt": "x <!-- y"}]
     assert r"/[\t\r\n]+/g" in page and '"id\\ttitle' in page  # escapes reach the script unchanged
+
+
+@pytest.mark.parametrize("topic", ["", "   ", "--- / ()", "\n"])
+def test_a_topic_without_a_word_is_refused(topic):
+    from benchmark.runner import require_topic
+
+    with pytest.raises(ValueError, match="has no word in it"):
+        require_topic(topic)
+
+
+@pytest.mark.parametrize("topic", ["diabetes", "ISI (tunisia / ariana)", "école", "x"])
+def test_a_topic_with_a_word_is_accepted(topic):
+    from benchmark.runner import require_topic
+
+    require_topic(topic)
+
+
+def test_an_empty_topic_runs_only_when_the_caller_allows_it():
+    from benchmark.runner import require_topic
+
+    require_topic("", allow_empty=True)
+
+
+async def test_the_cascade_refuses_a_graph_without_a_topic_before_any_call(tmp_path):
+    from benchmark.runner import run_cascade
+
+    graph = synthetic_graph(n_pages=10, seed=1)
+    assert graph.topic == ""
+    with pytest.raises(ValueError, match="has no word in it"):
+        await run_cascade(
+            graph,
+            5,
+            0,
+            None,  # never reached: the refusal comes first
+            {},
+            {},
+            "balanced",
+            ("groq", "m"),
+            tmp_path / "space",
+            allow_empty_topic=False,
+        )
