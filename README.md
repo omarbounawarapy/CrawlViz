@@ -108,7 +108,7 @@ cp keys.example.json keys.json    # add a key for the LLM provider you use
 make dev                          # API on :8000, UI on :5173
 ```
 
-To try a full crawl without keys or network, start with `CRAWLVIZ_OFFLINE=1 make dev` and run the `offline_demo.json` blueprint. It crawls a frozen copy of the ISI Wikipedia graph with hashing embeddings and a scripted LLM, so the scores are arbitrary but repeatable.
+To try a full crawl without keys or network, start with `CRAWLVIZ_OFFLINE=1 make dev` and run the `offline_demo.json` blueprint. It crawls a frozen copy of the ISI Wikipedia graph with hashing embeddings and a scripted LLM, so the scores are arbitrary but repeatable. For a longer run, start the `offline_demo_long.json` blueprint. It crawls a generated 600-page site with one fetch worker at one page per second and stops on its 180-second time limit. The site answers 429 Too Many Requests twice (after 20 and after 70 fetched pages) and the run has an LLM call budget of 40 calls, so rate-limit backoff and the budget run-out can be watched in the health view and changed live. Pace, budget and 429 episodes come from `offline/scripts/offline_demo_long.json`; a setting changed on the settings page or in run overrides wins over the script.
 
 Open <http://localhost:5173>. The landing page has a **Load a sample replay** button that plays a synthetic crawl in the browser, so you can explore the interface before running a real crawl. Full setup, providers and tests: [`docs/08-developer-guide.md`](docs/08-developer-guide.md).
 

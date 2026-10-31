@@ -42,7 +42,8 @@ async def _run_crawler(template_name: str, config=None, seed: int | None = None)
     try:
         if is_offline():
             session = build_offline_session(
-                config or load_runtime_config(default_runtime_paths().settings_file)
+                config or load_runtime_config(default_runtime_paths().settings_file),
+                template_name,
             )
             spider = Crawler(
                 template_name,
