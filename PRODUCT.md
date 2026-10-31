@@ -35,22 +35,18 @@ WCAG AA: contrast, keyboard access, and non-color-only encoding (graph relevance
 
 ## Context of use
 
-Written to ISO 9241-210 (clause 6.2, understanding and specifying the context of use) and
-ISO 9241-11 (users, goals, tasks, resources, environment). It is the basis for the task
-inventory in `docs/ux/tasks.md` and the requirements in `docs/ux/requirements.md`.
+Who uses CrawlViz, what for, and under which limits. The structure follows ISO 9241-210
+(clause 6.2, understanding and specifying the context of use) and ISO 9241-11 (users,
+goals, tasks, resources, environment).
 
 ### Users
 
 | User group | Who | What they know | What they do not know | Frequency |
 |---|---|---|---|---|
-| U1 Crawl researcher (primary) | Omar, and a researcher who runs a focused crawl for a topic: builds a corpus, studies how a topic spreads across a site, or tests the cascade | The topic and the site; how to read a graph | Often not Python, IR terms (cosine, DBSCAN, percentile) or LLM operations (rate caps, tokens, providers) | Several sessions a week while a study runs; long sessions |
+| U1 Crawl researcher (primary) | A researcher who runs a focused crawl for a topic: builds a corpus, studies how a topic spreads across a site, or tests the scoring cascade | The topic and the site; how to read a graph | Often not Python, IR terms (cosine, DBSCAN, percentile) or LLM operations (rate caps, tokens, providers) | Several sessions a week while a study runs; long sessions |
 | U2 Score reviewer (primary) | A supervisor, co-author or paper reviewer who audits why the crawler scored, followed or skipped pages, and compares benchmark arms | Research method, statistics, the paper's claims | The code; which number on screen is which scale | Occasional, focused sessions; often on a recorded run, not a live one |
 | U3 Developer (secondary) | A Python developer extending the crawler (a new stage, provider or strategy) and checking the result in the UI | The code | IR and the research question | While developing |
 | U4 Demo visitor (secondary) | A recruiter or engineer opening the project to judge it | Neither the domain nor the code | Everything; has a few minutes | Once |
-
-The personas used in the October config pass (Python dev, non-Python researcher, PhD who
-does not know AI engineering) map to U3, U1 and U2. They were agent walkthroughs, not real
-users, and they supplement rather than replace Omar and real testers.
 
 ### Goals
 
@@ -65,7 +61,7 @@ users, and they supplement rather than replace Omar and real testers.
 
 ### Tasks
 
-Eight core tasks, detailed with journeys in `docs/ux/tasks.md`:
+The eight tasks CrawlViz is built around:
 
 1. Start a crawl from a blueprint.
 2. Watch progress and system health.
@@ -80,30 +76,38 @@ Eight core tasks, detailed with journeys in `docs/ux/tasks.md`:
 
 - **Technical:** one machine. FastAPI on `localhost:8000`, the Vite UI on `:5173`, and a
   crawl WebSocket on `:8765` that exists only while a crawl runs. Desktop Chrome or Firefox,
-  usually a laptop screen (about 1366 to 1920 px wide); the UI must still work at 360 px and
-  400% zoom (A11Y-2). Only a light theme exists today; a dark theme is planned (F1) and
-  A11Y-1 contrast applies to both.
-- **Single user.** No accounts. The backend trusts the local browser, so another web page
-  open in the same browser is part of the threat model (SEC-1).
+  usually a laptop screen (about 1366 to 1920 px wide). The UI must still work, with
+  nothing cut off, on a 360 px wide screen and at 400% zoom. Only a light theme exists
+  today. Text needs a contrast of at least 4.5:1, and controls and graph marks 3:1 (WCAG
+  2.2 AA), in this theme and in any theme added later.
+- **Single user.** No accounts. The backend serves the local browser only, and another web
+  page open in the same browser could try to call it. The API must refuse a request that
+  lacks the session token, or whose Host or Origin header is not the local app's.
 - **Network:** real crawls need the target site and, for scoring, a hosted LLM provider
   (Groq, OpenRouter, NVIDIA, OpenAI-compatible) or, once built, a local one. The embedding
   model is downloaded once (`make model`) and then loaded offline.
 - **Offline mode:** `CRAWLVIZ_OFFLINE=1` swaps in a frozen site (`benchmark/data/isi.json`),
   a scripted LLM and hashing embeddings. The `offline_demo.json` blueprint runs a 40-page
-  crawl in about ten seconds. This is the environment for agents, CI and demos.
-- **Social and organisational:** a research project heading for a paper. Results must be
-  reproducible, so settings, prompts and models are recorded per run, and method changes
-  need sign-off (AGENTS.md, How we work, item 8).
+  crawl in about ten seconds. This is the environment for tests, CI and demos.
+- **Social and organisational:** a research project heading for a paper. A change to
+  scoring, ranking or prompts changes the research results, so it is reviewed and recorded
+  before a release. The tests that pin scores and crawl order fail until their expected
+  results are updated on purpose. A researcher can then tell which version of the code
+  produced which results.
 
 ### Constraints
 
 - **LLM caps.** Free tiers limit calls and tokens (Groq: about 200k tokens a day). A crawl
   has a per-crawl call budget (`llm.max_calls_per_crawl`); cost is a first-class quantity.
-- **Politeness.** robots.txt, crawl delay, per-host rate limits and an honest User-Agent
-  (ETH-1). The UI must not invite users to impersonate a browser.
+- **Politeness.** The crawler must obey robots.txt, and treat a robots.txt that cannot be
+  read (a server error or no answer) as a refusal. It must honour Crawl-delay and
+  Retry-After, limit its requests per host, and send an honest User-Agent with a contact
+  address. The UI must not invite users to impersonate a browser.
 - **Single process.** Not distributed; local SQLite and files. One crawl at a time.
 - **Reproducibility.** A run is defined by its blueprint, settings, prompts, model ids and
-  random seed; the manifest records them (REPRO-1).
+  random seed. To reproduce a run, its manifest has to record the seeds, model versions,
+  prompt hashes, library versions and hardware. Today each crawl's manifest records the
+  blueprint, the settings, the embedding and LLM model names, the git commit and the seed.
 - **Privacy.** Crawled pages and LLM replies stay on the machine unless the user exports
   them.
 
