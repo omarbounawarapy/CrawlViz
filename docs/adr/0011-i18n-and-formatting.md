@@ -12,11 +12,11 @@ Status: proposed, 2026-10-30
   `features/benchmark/BenchmarkPage.jsx:29`), next to constants such as `DAILY_CAP`
   (`features/benchmark/RunsTab.jsx:29`).
 - The backend sends sentences that the UI shows as they are: `detail=str(exc)` in
-  `routes/run.py:83` and `:88` (UX-1: no raw errors).
+  `routes/run.py:83` and `:88`, so users see raw exception text with no next step.
 - There is one language (`index.html` has `lang="en"`), and no requirement asks for a
   second. No i18n library is installed.
-- R-SCALE needs one score display everywhere. R-HEALTH needs the backend's subsystem reason
-  codes (ADR 8) turned into sentences with a next step.
+- Showing every score on one scale needs one score formatter. The planned health strip needs
+  the backend's subsystem reason codes (ADR 8) turned into sentences with a next step.
 
 ## Decision
 
@@ -26,15 +26,15 @@ Status: proposed, 2026-10-30
    (through `Intl.PluralRules`). Formatter instances are cached per locale. ESLint
    (`no-restricted-syntax`) rejects `toFixed`, `toLocaleString` and `new Intl.*` anywhere else.
 2. **Locale.** Numbers and dates follow the browser locale (`navigator.language`, falling back
-   to `en`), as in the standards example ("1,234" in en, "1 234" in fr). The copy is English
+   to `en`), for example "1,234" in `en` and "1 234" in `fr`. The copy is English
    only. There is no language switcher.
 3. **Catalogs.** Each feature has `messages.ts`: a typed object of strings and functions that
    take typed parameters, for example `exportFailed({ reason })`. Plurals go through `plural`.
    Copy shared by several features, such as the API error messages, is in `shared/i18n/`.
-   Terms come from `docs/glossary.md` (NAME-4).
+   Domain terms come from the project glossary (`docs/glossary.md`).
 4. **Backend codes, UI words.** The backend sends a code and parameters, never a sentence for
    the UI. This covers API errors (ADR 12), subsystem reasons (ADR 8), crawl outcomes and skip
-   reasons (R-SKIP-REASON). The UI maps each code through a `Record<Code, Message>` typed
+   reasons. The UI maps each code through a `Record<Code, Message>` typed
    against the generated enums (ADR 5), so a new backend code that has no message fails
    `tsc`. An unknown code at run time shows a generic message that names the code. The
    backend's English `message` field is for the CLI and the logs.
@@ -44,10 +44,11 @@ Status: proposed, 2026-10-30
 ## Alternatives considered
 
 - **react-intl, i18next or Lingui.** They solve many languages and ICU plurals; there is one
-  language, and `Intl.PluralRules` covers the plurals (CODE-3). If a second language becomes a
-  requirement, the catalogs are already keyed, and an ADR chooses a library then.
-- **One global catalog.** Every feature's copy in one file breaks ARCH-1, and the file would
-  become a merge hotspot.
+  language, `Intl.PluralRules` covers the plurals, and nothing is built before a requirement
+  asks for it. If a second language becomes a requirement, the catalogs are already keyed, and
+  an ADR chooses a library then.
+- **One global catalog.** Every feature's copy in one file goes against grouping code by
+  feature, and the file would become a merge hotspot.
 - **Sentences from the backend.** One fewer mapping, but the UI could not keep its voice or
   its next-step wording, and raw exception text would leak into the UI.
 
@@ -56,18 +57,23 @@ Status: proposed, 2026-10-30
 - `formatters.js` splits. The formatting functions move into `format.ts`; `eventSummary` is
   copy, so it moves to the timeline catalog; `shortId`, `hostnameOf` and `pathOf` move to
   `shared/lib/url.ts`.
-- I18N-1 gets its unit tests: each `format.ts` function in `en` and `fr`.
-- Copy review (ux-researcher) reads one `messages.ts` per feature instead of searching JSX.
-- The CLI (R-CLI) prints the backend `message`, so its wording is written in the backend
-  error table (ADR 12) and checked against UX-1 there.
+- `format.ts` gets unit tests: each function in `en` and `fr`.
+- A copy review reads one `messages.ts` per feature instead of searching JSX.
+- A planned command-line tool prints the backend `message`, so its wording is written in the
+  backend error table (ADR 12) and checked there: it says what happened and what to do next.
 
 ## Standards affected
 
-I18N-1, UX-1, NAME-4, NAME-2, TS-1, CODE-1, CODE-3.
+- All number and date formatting goes through `shared/lib/format.ts`; user-facing strings
+  live in per-feature catalogs.
+- Every error says what happened and what to do next; no raw errors.
+- Domain terms come from the glossary.
+- No magic numbers: named constants live in the module that owns them.
+- Strict TypeScript with no `any`.
+- No logic in two places.
+- Only what a requirement asks for is built.
 
 ## Migration and commit plan
-
-Phase F; frontend-engineer, platform-engineer for the lint rule.
 
 1. `UI format`: `format.ts` with `en` and `fr` tests; `formatters.js` re-exports its
    formatting functions from it.
