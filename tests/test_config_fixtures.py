@@ -24,7 +24,7 @@ HOW_TO_REFRESH = (
     ("fixture_name", "serve"),
     [("schema.json", get_config_schema), ("defaults.json", get_defaults)],
 )
-def test_committed_config_fixture_matches_the_backend(fixture_name, serve):
+def test_committed_config_fixture_matches_the_backend(fixture_name, serve) -> None:
     committed = json.loads((FIXTURES / fixture_name).read_text(encoding="utf-8"))
     # A JSON round trip makes both sides plain data (tuples become lists, as on the wire).
     assert json.loads(json.dumps(serve())) == committed, f"{fixture_name}: {HOW_TO_REFRESH}"
