@@ -10,7 +10,7 @@
       files stay under `.claude/` or untracked), and the scan below finds nothing in the added lines
       or the PR text. A hit is rewritten in plain words (a code is explained, not just dropped) and
       fixed in a new commit once the branch is pushed:
-      `git diff origin/main...HEAD -U0 | grep -E '^\+' | grep -vE '^\+\+\+' | grep -nEi "omar|ux-researcher|research-scientist|architect|lead agent|backend-engineer|frontend-engineer|Phase [A-H]\b|\b[A-Z]{2,6}-[0-9]+\b|AGENTS\.md|CLAUDE\.md|proposed, not approved|questions for"`
+      `git diff origin/main...HEAD -U0 | grep -E '^\+' | grep -vE '^\+\+\+' | grep -nEi "omar|ux-researcher|research-scientist|architect|lead agent|backend-engineer|frontend-engineer|Phase [A-H]\b|\b[A-Z][A-Z0-9]{1,5}-[0-9]+\b|AGENTS\.md|CLAUDE\.md|proposed, not approved|questions for"`
       and every path the added text links to exists in the diff or on `main`
 - [ ] `.left-undone.json` updated
 - [ ] PR text: one or two sentences, plus `Closes #N` when there is an issue; checked with no-ai-slop
