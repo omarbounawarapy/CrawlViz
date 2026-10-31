@@ -80,7 +80,7 @@ function EmptyCanvas({ onRun, onDemo }) {
             marginBottom: 14,
           }}
         >
-          No crawl on the plate yet.
+          No crawl to show yet.
         </h1>
         <p
           style={{
@@ -92,7 +92,7 @@ function EmptyCanvas({ onRun, onDemo }) {
           }}
         >
           CrawlViz scores every link before it fetches it. Start a crawl to watch the graph grow, then select a page to
-          read why the crawler followed it. Vermilion marks the links it judged most promising.
+          read why the crawler followed it. Red rings mark the links it judged most promising.
         </p>
         <div style={{ display: "flex", gap: 12 }}>
           <button

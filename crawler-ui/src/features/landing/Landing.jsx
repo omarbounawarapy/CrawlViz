@@ -62,7 +62,7 @@ function Plate({ seed, branches, compact = false, selective = true }) {
       role="img"
       aria-label={
         selective
-          ? "Illustrative crawl graph. Darker discs are pages further along; vermilion rings mark links judged most relevant; dashed squares are links dropped before fetching."
+          ? "Illustrative crawl graph. Darker circles are pages further along; red rings mark links judged most relevant; dashed squares are links dropped before fetching."
           : "Illustrative crawl graph that follows every link: the frontier fans out by structure alone, with no relevance marks."
       }
     >
@@ -220,7 +220,7 @@ export default function Landing({ onEnter, instant = false }) {
           </a>
         </nav>
         <a className="lp-btn lp-btn-sm" href="#/graph" onClick={open(false)}>
-          Open the plate
+          Open the graph
         </a>
       </header>
 
@@ -234,7 +234,7 @@ export default function Landing({ onEnter, instant = false }) {
             </p>
             <div className="lp-actions">
               <a className="lp-btn lp-btn-solid" href="#/graph" onClick={open(false)}>
-                Open the plate
+                Open the graph
               </a>
               <a className="lp-btn" href="#/graph?demo" onClick={open(true)}>
                 Load a sample replay
@@ -245,7 +245,7 @@ export default function Landing({ onEnter, instant = false }) {
           <figure className="lp-plate">
             <Plate seed={12489193} branches={5} />
             <figcaption>
-              Illustrative plate, not a real crawl. Darker discs are further along; vermilion rings mark links judged
+              Illustrative graph, not a real crawl. Darker circles are further along; red rings mark links judged
               relevant.
             </figcaption>
           </figure>
@@ -352,7 +352,7 @@ export default function Landing({ onEnter, instant = false }) {
               width="1440"
               height="900"
               loading="lazy"
-              alt="The CrawlViz graph workspace showing a sample crawl: pages as discs, vermilion rings and scores on the most relevant, and a timeline scrubber along the bottom."
+              alt="The CrawlViz graph workspace showing a sample crawl: pages as circles, red rings and scores on the most relevant, and a timeline scrubber along the bottom."
             />
             <figcaption>The workspace, loaded with the built-in synthetic sample. Not a real crawl.</figcaption>
           </figure>
@@ -407,7 +407,7 @@ export default function Landing({ onEnter, instant = false }) {
           </p>
           <div className="lp-actions">
             <a className="lp-btn lp-btn-solid" href="#/graph" onClick={open(false)}>
-              Open the plate
+              Open the graph
             </a>
             <a className="lp-btn" href={REPO} target="_blank" rel="noreferrer">
               Read the source<span className="sr-only"> (opens GitHub in a new tab)</span>
