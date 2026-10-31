@@ -4,10 +4,7 @@ The eight core tasks from the context of use (`PRODUCT.md`, Context of use). Eac
 its users, goal, success criterion, the journey as it works today and the journey it
 should become. "Today" comes from a walkthrough of the running app in offline mode on
 2026-10-29 (`CRAWLVIZ_OFFLINE=1`, `offline_demo.json`, Chrome on a 1568 px wide window).
-Steps marked **(not observed)** were read from code or the plan, not seen in the app.
-
-Requirement ids (`R-…`) point to `docs/ux/requirements.md`. Usability goals and the
-baseline are in `docs/usability-log.md`.
+Steps marked **(not observed)** were read from the code, not seen in the app.
 
 ## T1. Start a crawl from a blueprint
 
@@ -35,8 +32,7 @@ use two formats on one screen; the start gap looks like a failure.
 
 **Should become:** pick a blueprint by name and topic, see mode (offline or live, which
 provider), limits and an LLM cost estimate with a warning over a safe default, start, and
-see a "starting: loading model, building space" state until the first page (R-HEALTH,
-R-PREFLIGHT).
+see a "starting: loading model, building space" state until the first page.
 
 ## T2. Watch progress and system health
 
@@ -63,7 +59,7 @@ robots state is shown anywhere.
 **Should become:** a health strip with one state per subsystem (embedder, space, LLM,
 fetch backoff, robots, export) and a plain next step when one needs action; pages fetched
 vs found; LLM calls and budget left; an ending that says "stopped by you", "finished: page
-limit" or "failed: <reason, next step>" (R-HEALTH, R-COST-LIVE, R-STATE-TRUTH).
+limit" or "failed: <reason, next step>".
 
 ## T3. Understand why a page scored X, or why a link was skipped
 
@@ -87,12 +83,11 @@ NLP similarity was 0.00 while the target similarity bar shows 0.09; the LLM's pr
 reply are not shown, so "why 91" cannot be answered; the activity line "0 sent to LLM"
 contradicts the headline for a reader who does not know it refers to the page's own links;
 the title is percent-encoded (`/Universit%C3%A9_de_Leipzig`); no skip reason per link
-(the skip reason is not recorded by the backend yet, plan E3).
+(the backend does not record a skip reason yet).
 
 **Should become:** a "Why this score" tab with the plain-words reason, the real prompt and
 reply, the cascade bucket and thresholds that sent it there, NLP signals with glossary
-terms, one score scale, and for a skipped link its skip reason (R-WHY, R-SKIP-REASON,
-R-SCALE).
+terms, one score scale, and for a skipped link its skip reason.
 
 ## T4. Replay or compare past runs
 
@@ -114,7 +109,7 @@ R-SCALE).
 
 **Should become:** a Runs page listing past runs with blueprint, date, mode, pages, cost
 and end reason; open one into the same graph and scrubber; compare two; rerun from its
-manifest (R-RUNS, R-RUN-DIFF, R-RERUN).
+manifest.
 
 ## T5. Change a setting live
 
@@ -139,7 +134,7 @@ from the running graph without leaving it.
 
 **Should become:** change a live field from the running crawl (drawer or health strip),
 choose "this run" or "this run and future runs", and see the change acknowledged in the
-event stream (R-LIVE). Needs a longer offline fixture to measure (R-DEMO-LONG).
+event stream. Measuring this task needs an offline crawl that runs for longer.
 
 ## T6. Run with a local LLM
 
@@ -150,11 +145,11 @@ event stream (R-LIVE). Needs a longer offline fixture to measure (R-DEMO-LONG).
   crawl that uses it.
 
 **Today (not observed in the app):** no local provider exists in the backend (no keyless
-provider, no Ollama endpoint; plan E1). The Config page has a Providers section and API
+provider, no Ollama endpoint). The Config page has a Providers section and API
 keys; a user could try an OpenAI-compatible base URL, but this was not tried.
 
 **Should become:** a "Local model" preset with endpoint, model name and a connection test
-that says what is wrong and what to do (R-LOCAL-LLM).
+that says what is wrong and what to do.
 
 ## T7. Export results
 
@@ -174,11 +169,11 @@ table names; "25 pages from fr_wikipedia_org_offline_demo" reads as a total but 
 size.
 
 **Should become:** "Export CSV" and "Export JSONL" for a dataset or a run, plus the
-scores and skip reasons as a second table (R-EXPORT).
+scores and skip reasons as a second table.
 
 ## T8. Compare benchmark arms
 
-- **Users:** U2, Omar.
+- **Users:** U2.
 - **Goal:** see whether the cascade beats the baselines, by how much, at what token cost,
   with the uncertainty.
 - **Success:** the user reads harvest and cost per arm on one chart and table, with run
@@ -188,7 +183,7 @@ scores and skip reasons as a second table (R-EXPORT).
 1. Benchmark page, tabs Overview, Results, Runs, Graph, Audit.
 2. Overview: "No study protocol has been written yet", then graph statistics for
    `ball.json` and `isi.json` (labels 0/1/2 not explained; refers to `GRAPH_RULE.md`).
-3. Results: "No valid runs yet." (no runs exist after the pilot was archived).
+3. Results: "No valid runs yet." (no benchmark runs are recorded yet).
 4. Runs: a form to start an arm (`Cascade (live LLM)`, `llm_all`, `no_llm`, baselines),
    budget, repeats, LLM cache, recorded runs file; a token estimate note about Groq's cap.
 
@@ -198,18 +193,5 @@ would use the network.
 
 **Should become:** arms named in plain words with the code name as secondary text; the
 Results chart with run counts, intervals and tokens per relevant page; a clear mode line
-(live, cached, offline); valid and invalid runs separated (R-BENCH-COMPARE). Real data
-arrives with Phase G.
-
-## Task to requirement map
-
-| Task | Requirements |
-|---|---|
-| T1 | R-PREFLIGHT, R-HEALTH, R-MODE, R-PRECEDENCE |
-| T2 | R-HEALTH, R-COST-LIVE, R-STATE-TRUTH, R-SUMMARY |
-| T3 | R-WHY, R-SKIP-REASON, R-SCALE |
-| T4 | R-RUNS, R-RUN-DIFF, R-RERUN, R-REPLAY-CACHE |
-| T5 | R-LIVE, R-DEMO-LONG |
-| T6 | R-LOCAL-LLM |
-| T7 | R-EXPORT |
-| T8 | R-BENCH-COMPARE, R-MODE, R-REPLAY-CACHE |
+(live, cached, offline); valid and invalid runs separated. A real comparison needs
+recorded benchmark runs, and there are none yet.
