@@ -1,4 +1,4 @@
-"""A page fetch reads a bounded body, and only of a type the extraction can parse (SEC-2)."""
+"""A page fetch reads a bounded body, and only of a type the extraction can parse."""
 
 import gzip
 from collections.abc import AsyncIterator, Callable

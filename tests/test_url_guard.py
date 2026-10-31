@@ -1,4 +1,4 @@
-"""Page fetches refuse private, loopback, link-local and metadata addresses (SEC-2)."""
+"""Page fetches refuse private, loopback, link-local and metadata addresses, so a crawl cannot be pointed at the local network."""
 
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
