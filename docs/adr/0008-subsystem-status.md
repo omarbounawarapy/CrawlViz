@@ -6,15 +6,15 @@ Status: proposed, 2026-10-29
 
 - No subsystem reports its state. `SUBSYSTEM_STATUS` does not exist in the code (grep, 2026-10-29).
 - The WebSocket gateway is built after the NLP subsystem (`core/crawler.py:110-116`): the model
-  loads and the space is built while nothing listens, so the UI shows "Waiting for backend"
-  (R-HEALTH acceptance 4; H-09, H-11).
+  loads and the space is built while nothing listens, so during a normal start the UI shows
+  "Waiting for backend", which reads as a failure.
 - `/status` (`routes/run.py:105-121`) returns `running`, `llm_calls` and `queues`, nothing else.
   A crawl that raises is logged and dropped (`routes/run.py:62-63`), so neither the API nor the
-  UI can say "Failed" (R-STATE-TRUTH acceptance 4; CODE-5).
+  UI can say "Failed", and the user never learns what went wrong.
 - The UI polls `/status` (`crawler-ui/src/api/client.js:66`) while it also has the stream, so
-  two sources can disagree (R-HEALTH acceptance 5).
-- Rate limits, budget exhaustion and fetch backoff are visible only in logs (R-HEALTH 1 and 3,
-  R-COST-LIVE).
+  two sources can disagree.
+- Rate limits, budget exhaustion and fetch backoff are visible only in logs, so a user cannot
+  tell a rate-limited crawl from a stalled one, or see how much LLM budget is left.
 
 ## Decision
 
@@ -22,7 +22,7 @@ Status: proposed, 2026-10-29
    creates it before the crawl is built and keeps it after the crawl ends, until the next
    crawl starts.
 2. **Subsystems are one fixed list**: `embedder`, `space`, `llm`, `fetch`, `robots`, `export`.
-   A new one is one entry in that list (ARCH-6).
+   A new one is one entry in that list, the only list of subsystems.
 3. **Each entry** is a typed model: `subsystem`, `state`, `reason`, `since`, `retry_at`
    (optional) and `facts`. `state` is one of `off`, `starting`, `ready`, `waiting`, `failed`.
    `reason` is a snake_case code from a closed list per subsystem (`loading_model`,
@@ -37,8 +37,8 @@ Status: proposed, 2026-10-29
    `SNAPSHOT_FULL` carries the whole board. `GET /status` reads the same board.
 6. **Copy lives in the UI.** The backend sends codes and facts, never sentences. The UI catalog
    turns `llm` / `waiting` / `rate_limited` with `retry_at` into "LLM rate limited by Groq,
-   waiting 40 s. Lower the call rate or add a key." (UX-1, I18N-1). An unknown code shows a
-   generic message with the code.
+   waiting 40 s. Lower the call rate or add a key." Each message says what happened and what
+   to do next. An unknown code shows a generic message with the code.
 7. **The gateway starts first.** The crawl starts the gateway, sends `SNAPSHOT_FULL` with the
    board (embedder `starting`, `loading_model`), then builds the NLP subsystem and the stages.
 8. **The crawl outcome is recorded.** The controller keeps the crawl state: `idle`,
@@ -55,36 +55,42 @@ Status: proposed, 2026-10-29
   ends. A board can be read at any time.
 - **Health derived in the UI from existing messages.** That is how the UI shows "Waiting for
   backend" today: it guesses from silence.
-- **Sentences from the backend.** Simpler at first, but it breaks I18N-1, and the CLI can print
-  the code with its own text.
+- **Sentences from the backend.** Simpler at first, but user-facing copy belongs in the UI
+  catalogs (ADR 11), and a command-line tool can print the code with its own text.
 
 ## Consequences
 
-- `SUBSYSTEM_STATUS` is a new wire message (ADR 5, contracts-steward), and `SNAPSHOT_FULL`
-  gains `board` and `crawl_state`. The wire golden changes; the pin update is reviewed by the
-  research-scientist and is not a method change. Producers must not change scheduling: a
-  report is a synchronous, non-blocking call that writes to memory.
+- `SUBSYSTEM_STATUS` is a new wire message, versioned under ADR 5, and `SNAPSHOT_FULL` gains
+  `board` and `crawl_state`. The wire golden changes; that pin update goes in its own reviewed
+  commit and is not a method change. Producers must not change scheduling: a report is a
+  synchronous, non-blocking call that writes to memory.
 - The benchmark runner passes a reporter that discards reports, and the pins do not record
   the board.
-- R-HEALTH, R-STATE-TRUTH (end states), R-COST-LIVE (LLM facts) and R-MODE (ADR 9) read this
-  board. OBS-2 is met when all six subsystems report.
+- The health strip, the crawl end states, the live LLM cost figures and the run mode (ADR 9)
+  read this board. Subsystem reporting is complete when all six subsystems report.
 - The gateway port is in use for the whole crawl, model load included.
 
 ## Standards affected
 
-OBS-2, OBS-1, CODE-5, UX-1, I18N-1, ARCH-5, ARCH-6, CONTRACT-1, PERF-3 (reports are O(1)
-and never block).
+- Long-running or failure-prone subsystems report their state, and the UI shows it.
+- Structured JSON logs carry `crawl_id`.
+- No swallowed errors: a failed crawl is logged and shown.
+- Every error says what happened and what to do next.
+- User-facing copy lives in the UI catalogs.
+- Dependencies point one way: producers get an injected reporter instead of importing
+  `telemetry`.
+- Each list has one source: the subsystem list.
+- Wire messages carry a version, with a migration chain.
+- No blocking work on the event loop: a report is O(1) and never blocks.
 
 ## Migration and commit plan
 
-Phase E (E3), backend-engineer; wire changes through contracts-steward.
-
 1. `Telemetry`: `StatusBoard` and `StatusReporter` with unit tests; nothing reports yet.
 2. `Crawl`: the controller records the crawl state and outcome, and a failed crawl is
-   recorded instead of dropped (TEST-1: a test that fails today).
+   recorded instead of dropped, starting with a test that fails today.
 3. `Crawl`: the gateway starts before the NLP build and sends the board in `SNAPSHOT_FULL`.
 4. `Wire`: `SUBSYSTEM_STATUS` message, generated types, pin update reviewed.
 5. One commit per subsystem: `embedder`, `space`, `llm`, `fetch`, `robots`, `export` report.
 6. `API`: `/status` reads the board, the crawl state and the mode (ADR 9, ADR 12).
-7. UI (Phase F): the health strip reads the board, and `/status` polling stops while a stream
-   is connected.
+7. UI, in the feature series of ADR 10: the health strip reads the board, and `/status`
+   polling stops while a stream is connected.
