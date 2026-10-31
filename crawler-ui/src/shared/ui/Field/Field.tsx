@@ -17,7 +17,7 @@ export interface FieldProps {
   label: ReactNode;
   /** One sentence on what to enter, shown under the label. */
   hint?: ReactNode;
-  /** What is wrong and what to type instead (UX-1). Set only while the value is invalid. */
+  /** What is wrong and what to type instead. Set only while the value is invalid. */
   error?: ReactNode;
   required?: boolean;
   /** The control's id; one is made when absent. */
