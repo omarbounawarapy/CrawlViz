@@ -1,5 +1,5 @@
 /**
- * Design tokens for code (ARCH-2: the only import path into `shared/theme`).
+ * Design tokens for code. Other modules import `shared/theme` only through this file.
  *
  * Styles read the CSS custom properties in `tokens.css`, which `global.css` loads once.
  * These values are for code that cannot use CSS variables: canvas drawing, SVG attributes

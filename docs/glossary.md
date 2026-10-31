@@ -1,15 +1,14 @@
 # Glossary
 
 The words CrawlViz uses for its own ideas. The UI, the API errors, the docs and the code
-comments use the word in the **Say** column, with the meaning given here (NAME-4). The
-**Key** is the one snake_case name the code, settings, wire and catalogs use for it
-(NAME-5). The **Not** column lists words that must not stand in for it, usually because
-they already mean something else here.
+comments use the word in the **Say** column, with the meaning given here. The **Key** is
+the one snake_case name the code, settings, wire and catalogs use for it. The **Not**
+column lists words that must not stand in for it, usually because they already mean
+something else here.
 
-Owner: design-system-engineer. A new term, or a change of meaning, is added here before it
-appears in the UI. The UI's `Term` component (`crawler-ui/src/shared/ui/Term.tsx`) shows the
-**Meaning** text as the explanation, so write it as one or two plain sentences a first-time
-reader understands.
+A new term, or a change of meaning, is added here before it appears in the UI. The UI's
+`Term` component (`crawler-ui/src/shared/ui/Term.tsx`) shows the **Meaning** text as the
+explanation, so write it as one or two plain sentences a first-time reader understands.
 
 ## Crawl setup
 
@@ -24,8 +23,8 @@ reader understands.
 | run override | `overrides` | A settings value changed for one crawl only, at start, without changing the stored settings. | |
 
 "Template" is no longer a separate idea: every saved crawl description is a blueprint. The
-`templates/` folder and the `/templates` routes keep their names until the API v2 move
-(ADR 12); the UI says "blueprint" everywhere.
+`templates/` folder and the `/templates` routes keep their names until the next major
+version of the API; the UI says "blueprint" everywhere.
 
 "Seed" on its own is ambiguous and is never shown to a user. Say "seed page" for where the
 crawl starts and "random seed" for the number.
@@ -42,7 +41,7 @@ crawl starts and "random seed" for the number.
 | priority | `priority` | A page's place in the frontier. Higher priority is fetched sooner. | rank, importance |
 | fetch | `fetch` | Downloading one page. "Pages fetched" counts downloads that succeeded. | crawl (for one page), visit, request |
 | pages found | | Pages the crawl knows about, fetched or not. Always shown beside "pages fetched", never instead of it. | nodes, total |
-| relevant page | | A page judged on topic. In the benchmark, a page labelled 1 or 2. For a live crawl the rule is not fixed yet; it is written here when the runs list (R-RUNS) defines it. | hit, good page |
+| relevant page | | A page judged on topic. In the benchmark, a page labelled 1 or 2. For a live crawl the rule is not fixed yet; it is written here when the runs list defines it. | hit, good page |
 | depth | `depth` | How many links away from a seed page a page is. Seed pages are depth 0. | level, distance |
 | spanning tree | | The drawing of the crawl as a tree: each page hangs from the first page that linked to it, so the graph shows one path from a seed page to every page. Links from other pages exist but are not drawn as tree branches. | graph (when the tree is meant), hierarchy |
 
@@ -64,7 +63,7 @@ crawl starts and "random seed" for the number.
 
 ### Score scale
 
-Scores are stored as each source produces them and shown on one scale (R-SCALE, ADR 12):
+Scores are stored as each source produces them and shown on one scale:
 
 | Score | Stored as | Shown as |
 |---|---|---|
@@ -75,7 +74,7 @@ Scores are stored as each source produces them and shown on one scale (R-SCALE, 
 Shown scores are whole numbers ("72"), formatted only by `formatScore` in
 `crawler-ui/src/shared/lib/format.ts`. Where a raw value matters, it is shown after the
 score as secondary text with its name ("cosine 0.61"). The conversion factors come from the
-backend (`score_scales` in `/ui-config`, ADR 9), so the UI never has its own copy of them.
+backend (`score_scales` in `/ui-config`), so the UI never has its own copy of them.
 
 ### NLP signals
 
@@ -100,7 +99,7 @@ as its `Term` explanation; the key appears only in exports and the API.
 
 ## Skip reasons
 
-Every link that was not followed has exactly one of these reasons (R-SKIP-REASON, ADR 12).
+Every link that was not followed has exactly one of these reasons.
 The UI shows the **Say** text; the key is the wire and API value.
 
 | Say | Key | Meaning |
@@ -116,8 +115,8 @@ The UI shows the **Say** text; the key is the wire and API value.
 
 ## Pipeline parts
 
-The crawler is a set of parts that pass events to each other (ADR 6, NAME-5). Each part has
-one role:
+The crawler is a set of parts that pass events to each other. Each part has one role, and
+its class name ends in the suffix for that role:
 
 | Say | Suffix | Meaning | Examples |
 |---|---|---|---|

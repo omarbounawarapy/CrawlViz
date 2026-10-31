@@ -232,7 +232,7 @@ The theme is chosen by `data-theme` on the root element: `light` (or no attribut
 ### Tokens and contrast
 `crawler-ui/scripts/build-tokens.mjs` reads this front matter and writes `crawler-ui/src/shared/theme/tokens.css` (custom properties: `--color-*`, `--space-*`, `--radius-*`, `--size-*`, `--stroke-*`, `--type-<role>-*`, `--motion-*`, `--layer-*`) and `tokens.ts` (the same values for code that draws on a canvas or in SVG). Both files are generated: edit this file, then run the script. Spacing, sizes and type sizes are written in `rem` (16px base); radii and strokes stay in px.
 
-The script checks every text and mark pair the components use, in both themes, and refuses to write tokens that miss: 4.5:1 for text, 3:1 for control edges, focus rings and graph marks (A11Y-1). The pairs are listed in the script beside the check; a new pairing in a component is added there in the same commit.
+The script checks every text and mark pair the components use, in both themes, and refuses to write tokens that miss: 4.5:1 for text, 3:1 for control edges, focus rings and graph marks, the WCAG 2.2 AA minimums. The pairs are listed in the script beside the check; a new pairing in a component is added there in the same commit.
 
 ### Named Rules
 **The Relevance-Only Vermilion Rule.** Vermilion means "the crawler thinks this is promising" and nothing else. Never use it for buttons, links, errors, warnings or branding.
