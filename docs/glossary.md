@@ -6,9 +6,9 @@ the one snake_case name the code, settings, wire and catalogs use for it. The **
 column lists words that must not stand in for it, usually because they already mean
 something else here.
 
-A new term, or a change of meaning, is added here before it appears in the UI. The UI's
-`Term` component (`crawler-ui/src/shared/ui/Term.tsx`) shows the **Meaning** text as the
-explanation, so write it as one or two plain sentences a first-time reader understands.
+A new term, or a change of meaning, is added here before it appears in the UI. The UI
+explains each term where it appears, using the **Meaning** text, so write it as one or two
+plain sentences a first-time reader understands.
 
 ## Crawl setup
 
@@ -71,16 +71,16 @@ Scores are stored as each source produces them and shown on one scale:
 | LLM score | 0 to 100 | 0 to 100 |
 | final priority | 0 to 1 | 0 to 100 |
 
-Shown scores are whole numbers ("72"), formatted only by `formatScore` in
-`crawler-ui/src/shared/lib/format.ts`. Where a raw value matters, it is shown after the
-score as secondary text with its name ("cosine 0.61"). The conversion factors come from the
-backend (`score_scales` in `/ui-config`), so the UI never has its own copy of them.
+Shown scores are whole numbers ("72"), and the UI formats every score the same way, on
+one scale. Where a raw value matters, it is shown after the score as secondary text with
+its name ("cosine 0.61"). The conversion factors come from the backend, so the UI never has
+its own copy of them.
 
 ### NLP signals
 
 The NLP score is built from these signals. Each is a number from the link's text, its
-context and what the crawl has seen so far. The UI shows the **Say** name and the meaning
-as its `Term` explanation; the key appears only in exports and the API.
+context and what the crawl has seen so far. The UI shows the **Say** name, with the meaning
+as its explanation; the key appears only in exports and the API.
 
 | Say | Key | Meaning |
 |---|---|---|
