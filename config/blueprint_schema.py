@@ -241,8 +241,9 @@ class Blueprint(BaseModel):
     @field_validator("target_topic")
     @classmethod
     def _require_word_in_target_topic(cls, topic: str) -> str:
-        # A topic with no word character embeds to an all-zero vector, and every link
-        # scored against it gets priority 0 (docs/research/phase-b-method-review.md).
+        # A topic with no word character embeds to an all-zero vector. Its similarity to
+        # any link is then zero, so every link would get priority 0 and the crawl could
+        # not tell relevant links from irrelevant ones.
         if not _WORD_CHARACTER.search(topic):
             raise ValueError(
                 "the target topic has no letters or digits; enter the subject the crawl "

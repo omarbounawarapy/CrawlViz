@@ -103,7 +103,7 @@ NLP_COMPOSITE_WEIGHTS: dict[str, float] = {
 DEFAULT_PRIORITY_STRATEGY: str = "balanced"
 
 # Stop conditions a blueprint gets when it does not set its own: a crawl that ends on
-# its own after a modest, bounded amount of work (ETH-1).
+# its own after a modest, bounded amount of work, so a default run is polite to the sites it visits.
 DEFAULT_MAX_NODES: int = 500
 DEFAULT_MAX_DEPTH: int = 5
 DEFAULT_MAX_DURATION_SECONDS: float = 3600.0
