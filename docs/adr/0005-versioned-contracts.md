@@ -11,8 +11,8 @@ Status: proposed, 2026-10-29
   presets, blueprint files and benchmark run records are all unversioned.
 - Names are about to change. ADR 6 renames the wire stage `request` to `fetch` and
   `extraction` to `extract`; the pin goldens hold those names
-  (`tests/pins/golden/synthetic/wire_messages.jsonl`: 208 `"stage": "request"`). R-RUNS
-  acceptance 4 requires an older recording to open or say why not.
+  (`tests/pins/golden/synthetic/wire_messages.jsonl`: 208 `"stage": "request"`). A planned
+  runs page has to open a recording made before such a rename, or say why it cannot.
 - The wire contract is hand-written TypeScript (`docs/crawl_messages.ts`), checked against the
   bridge by `tests/test_wire_protocol.py`. The UI does not import it; `crawler-ui/src/api/client.js`
   is untyped.
@@ -37,8 +37,8 @@ Status: proposed, 2026-10-29
 4. **Writers write the current version only.** A migrated settings file is written back only
    on the next save, never silently on load.
 5. **Strict models.** Every config and stored-format model sets `extra="forbid"`. An unknown
-   key left after migration fails the load with the key path and the next step (UX-1), instead
-   of being dropped.
+   key left after migration fails the load with the key path and the next step, instead of
+   being dropped.
 6. **What bumps a version.** Renaming or removing a field, or changing its meaning or unit,
    bumps the version and adds a migration with a fixture. Adding an optional field does not.
    A breaking change to a REST resource after the API v2 freeze needs an ADR.
@@ -49,39 +49,43 @@ Status: proposed, 2026-10-29
    - Every route declares `response_model`. `openapi.json` is generated and committed, and
      `crawler-ui/src/shared/api/openapi.ts` is generated from it.
    - The config-fixture types the UI tests use come from the same JSON Schema.
-   - CI regenerates all three and fails on any diff (CONTRACT-2).
+   - CI regenerates all three and fails on any diff.
 
 ## Alternatives considered
 
 - **Version in the file name or folder** (`runs/v2/...`). Breaks every path already recorded,
   and a file copied elsewhere loses its version.
-- **Migrate in the UI.** The reducer would carry every old protocol forever, and the CLI
-  export (R-CLI) would need a second copy of the migrations.
+- **Migrate in the UI.** The reducer would carry every old protocol forever, and a planned
+  command-line export would need a second copy of the migrations.
 - **A schema registry or Protobuf.** Built for many services and languages; here one Python
-  process feeds one UI (CODE-2).
+  process feeds one UI, and a version number with a migration list is enough.
 - **Hand-written TypeScript kept in sync by tests.** This is today's state. The test catches
   drift in message names, not in field types.
 
 ## Consequences
 
 - Each format gets `tests/fixtures/contracts/<format>/v<N>.json` fixtures and a test that every
-  fixture loads and migrates (CONTRACT-1). Fixtures are test-engineer's area.
-- Adding `protocol` to `SNAPSHOT_FULL` changes the wire golden. That pin update is reviewed by
-  the research-scientist; it is not a method change. ADR 6 decides how the rename reaches the
-  pins.
+  fixture loads and migrates.
+- Adding `protocol` to `SNAPSHOT_FULL` changes the wire golden. That pin update goes in its own
+  reviewed commit; it is not a method change. ADR 6 decides how the rename reaches the pins.
 - The generators for TypeScript (`openapi-typescript`, `json-schema-to-typescript`, or
-  equivalent) are dependencies for platform-engineer to add.
-- The contracts-steward owns the chains, fixtures and generated files. A new version is a
-  CHANGE-REQUEST to them.
+  equivalent) are new development dependencies.
+- A new version is one reviewed change: the model, its migration, a fixture and the
+  regenerated types land together.
 
 ## Standards affected
 
-CONTRACT-1, CONTRACT-2, TS-1, TEST-3, UX-1, CODE-1 (one migration mechanism), REPRO-1
-(manifests are versioned).
+- Stored files and wire messages carry a version with a migration chain; config models forbid
+  unknown keys.
+- REST endpoints declare their response model; OpenAPI, wire and config-fixture types are
+  generated, and CI fails on drift.
+- Strict TypeScript, with API types generated rather than written by hand.
+- Test coverage only goes up: every format version has a fixture.
+- Every error says what happened and what to do next.
+- No logic in two places: one migration mechanism.
+- Run manifests are versioned, so a recorded run stays reproducible.
 
 ## Migration and commit plan
-
-Phase D (D4), contracts-steward unless noted.
 
 1. `Contracts`: `MigrationChain` with unit tests; no format uses it yet.
 2. `Settings`: the settings file carries `schema_version` 1; version 0 migrates unchanged, with
@@ -95,6 +99,6 @@ Phase D (D4), contracts-steward unless noted.
    `docs/crawl_messages.ts` is removed in its own commit.
 7. `Wire`: `SNAPSHOT_FULL` carries `protocol` 1 (pin update, reviewed).
 8. `API`: `response_model` on each router, one router per commit, then `openapi.ts` generation
-   and the CI drift check (platform-engineer).
+   and the CI drift check.
 9. `Config`: `extra="forbid"` on every section that still lacks it, with fixtures for the
    keys older files used.
