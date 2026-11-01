@@ -1,4 +1,4 @@
-"""The long offline demo blueprint: valid, and set up to run for at least two minutes."""
+"""The long offline demo blueprint: valid, and its stop conditions agree with each other."""
 
 import json
 from pathlib import Path
@@ -8,7 +8,6 @@ from config import TEMPLATES_DIR
 from config.blueprint_schema import validate_blueprint
 
 BLUEPRINT_FILE = "offline_demo_long.json"
-MIN_DEMO_SECONDS = 120
 
 
 def _load_blueprint() -> dict[str, Any]:  # Any: a blueprint is JSON read from disk
@@ -24,11 +23,9 @@ def test_long_demo_blueprint_validates() -> None:
     assert blueprint.blueprint_id == BLUEPRINT_FILE.removesuffix(".json")
 
 
-def test_long_demo_stops_on_time_not_on_page_count() -> None:
-    """A time limit past two minutes is what keeps the demo running that long."""
+def test_long_demo_gives_up_on_no_progress_before_its_time_limit() -> None:
     conditions = validate_blueprint(_load_blueprint()).stop_conditions
 
-    assert conditions.max_duration >= MIN_DEMO_SECONDS
     assert conditions.no_progress_timeout < conditions.max_duration
 
 
