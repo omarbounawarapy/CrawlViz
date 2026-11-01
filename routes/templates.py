@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from typing import Any
 from config import TEMPLATES_DIR
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
+from config.template_names import TEMPLATE_SUFFIX, InvalidTemplateNameError, resolve_template_path
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -12,14 +13,13 @@ os.makedirs(TEMPLATES_DIR, exist_ok=True)
 
 
 def _path(name: str) -> str:
-    # Ensure .json extension
-    if not name.endswith(".json"):
-        name = name + ".json"
-    return os.path.join(TEMPLATES_DIR, name)
-
-
-def _safe_name(name: str) -> str:
-    return os.path.basename(name)
+    """The blueprint file for ``name`` (suffix optional); 422 unless it is a plain name."""
+    if not name.endswith(TEMPLATE_SUFFIX):
+        name = name + TEMPLATE_SUFFIX
+    try:
+        return str(resolve_template_path(TEMPLATES_DIR, name))
+    except InvalidTemplateNameError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
 
 
 class TemplateBody(BaseModel):
@@ -42,7 +42,7 @@ def list_templates():
 
 @router.get("/{name}")
 def get_template(name: str):
-    path = _path(_safe_name(name))
+    path = _path(name)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Template not found")
     with open(path) as f:
@@ -51,7 +51,7 @@ def get_template(name: str):
 
 @router.post("")
 def create_template(name: str, body: TemplateBody):
-    path = _path(_safe_name(name))
+    path = _path(name)
     if os.path.exists(path):
         raise HTTPException(status_code=409, detail="Template already exists")
     content = _validated(body.content)
@@ -62,7 +62,7 @@ def create_template(name: str, body: TemplateBody):
 
 @router.put("/{name}")
 def update_template(name: str, body: TemplateBody):
-    path = _path(_safe_name(name))
+    path = _path(name)
     content = _validated(body.content)
     with open(path, "w") as f:
         json.dump(content, f, indent=2)
@@ -71,7 +71,7 @@ def update_template(name: str, body: TemplateBody):
 
 @router.delete("/{name}")
 def delete_template(name: str):
-    path = _path(_safe_name(name))
+    path = _path(name)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Template not found")
     os.remove(path)

@@ -16,8 +16,9 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from benchmark import POLICIES
+from config import TEMPLATES_DIR
 
-from .benchmark_paths import BENCH_DIR, RESULTS_DIR, ROOT
+from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR, ROOT
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +29,32 @@ LOG_TAIL = 400
 _SAFE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./:-]*$")
 
 
-def _path_arg(value: str) -> str:
+def _path_inside(value: str, *allowed_dirs: Path) -> str:
+    """``value`` (relative to the project root) when it resolves inside one of ``allowed_dirs``.
+
+    Resolving follows symlinks, so a link cannot lead out of the directory."""
     if not isinstance(value, str) or not _SAFE.match(value) or ".." in value:
         raise HTTPException(status_code=422, detail=f"bad path argument: {value!r}")
     resolved = (ROOT / value).resolve()
-    if ROOT not in resolved.parents:
-        raise HTTPException(status_code=422, detail=f"path outside the project: {value!r}")
+    if not any(resolved.is_relative_to(directory.resolve()) for directory in allowed_dirs):
+        allowed = ", ".join(str(d.relative_to(ROOT)) for d in allowed_dirs)
+        raise HTTPException(status_code=422, detail=f"path {value!r} must be inside {allowed}")
     return value
+
+
+def _graph_arg(value: str) -> str:
+    """A frozen graph file in benchmark/data."""
+    return _path_inside(value, DATA_DIR)
+
+
+def _template_arg(value: str) -> str:
+    """A blueprint in the templates directory."""
+    return _path_inside(value, TEMPLATES_DIR)
+
+
+def _output_arg(value: str) -> str:
+    """A file or folder a job writes: only benchmark/data and benchmark/results may be written."""
+    return _path_inside(value, DATA_DIR, RESULTS_DIR)
 
 
 def _word(value: str) -> str:
@@ -47,7 +67,7 @@ def _word(value: str) -> str:
 FlagSpecs = dict[str, Callable[[Any], Any]]
 
 RUN_FLAGS: FlagSpecs = {
-    "graph": _path_arg,
+    "graph": _graph_arg,
     "budget": int,
     "reps": int,
     "cascade": bool,
@@ -57,18 +77,18 @@ RUN_FLAGS: FlagSpecs = {
     "flush_every": int,
     "provider": _word,
     "model": _word,
-    "llm_cache": _path_arg,
-    "runs_file": _path_arg,
-    "template": _path_arg,
+    "llm_cache": _output_arg,
+    "runs_file": _output_arg,
+    "template": _template_arg,
     "low_pct": float,
     "high_pct": float,
     "low": float,
     "high": float,
-    "results_dir": _path_arg,
-    "save_sequences": _path_arg,
+    "results_dir": _output_arg,
+    "save_sequences": _output_arg,
 }
 ANALYZE_FLAGS: FlagSpecs = {"k": int, "test_k": int, "ndcg": bool, "no_dedupe": bool}
-LABEL_FLAGS: FlagSpecs = {"graph": _path_arg, "merge": bool}
+LABEL_FLAGS: FlagSpecs = {"graph": _graph_arg, "merge": bool}
 JOBS: dict[str, tuple[str, FlagSpecs]] = {
     "run": ("benchmark", RUN_FLAGS),
     "analyze": ("benchmark.analyze", ANALYZE_FLAGS),

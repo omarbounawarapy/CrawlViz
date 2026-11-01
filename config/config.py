@@ -14,8 +14,10 @@ from pathlib import Path
 # PATHS
 # =========================================================================
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
-EXPORT_PATH: Path = BASE_DIR / "export"
-ITEMS_DB_PATH: Path = BASE_DIR / "items.db"
+EXPORT_DIR_NAME = "export"
+ITEMS_DB_NAME = "items.db"
+EXPORT_PATH: Path = BASE_DIR / EXPORT_DIR_NAME
+ITEMS_DB_PATH: Path = BASE_DIR / ITEMS_DB_NAME
 TEMPLATES_DIR: Path = BASE_DIR / "templates"
 
 # =========================================================================
@@ -34,6 +36,20 @@ CORS_ORIGINS: list[str] = os.environ.get("CRAWLVIZ_CORS_ORIGINS", "http://localh
 CORS_ORIGIN_REGEX: str | None = (
     os.environ.get("CRAWLVIZ_CORS_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1)(:\d+)?")
     or None
+)
+
+# Host names the API answers to. A request whose Host header names anything else is refused,
+# which stops DNS rebinding (a page on evil.example resolving to 127.0.0.1 and reading the API
+# as its own origin). CRAWLVIZ_ALLOWED_HOSTS adds comma-separated names, without ports, for a
+# deployment behind a proxy.
+LOCAL_HOST_NAMES: tuple[str, ...] = ("localhost", "127.0.0.1", "[::1]")
+ALLOWED_HOSTS: tuple[str, ...] = (
+    *LOCAL_HOST_NAMES,
+    *(
+        name.strip().lower()
+        for name in os.environ.get("CRAWLVIZ_ALLOWED_HOSTS", "").split(",")
+        if name.strip()
+    ),
 )
 
 # =========================================================================

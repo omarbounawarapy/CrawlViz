@@ -1,5 +1,6 @@
 from .paths import RuntimePaths, default_runtime_paths
 from .config import (
+    ALLOWED_HOSTS,
     BASE_DIR,
     BUFFER_MAX_SIZE,
     CORS_ORIGIN_REGEX,
@@ -33,6 +34,7 @@ from .config import (
 )
 
 __all__ = [
+    "ALLOWED_HOSTS",
     "CORS_ORIGIN_REGEX",
     "RuntimePaths",
     "default_runtime_paths",
