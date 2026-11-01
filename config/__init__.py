@@ -1,6 +1,7 @@
 from .paths import RuntimePaths, default_runtime_paths
 from .content_types import parse_content_types
 from .config import (
+    ALLOWED_HOSTS,
     BASE_DIR,
     BUFFER_MAX_SIZE,
     CORS_ORIGIN_REGEX,
@@ -37,6 +38,7 @@ from .config import (
 )
 
 __all__ = [
+    "ALLOWED_HOSTS",
     "parse_content_types",
     "CORS_ORIGIN_REGEX",
     "RuntimePaths",

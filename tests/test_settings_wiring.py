@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 import routes.config as config_routes
 from routes import config_support
+from routes.session_token import get_session_token
 import routes.run as run_routes
 from config import settings_store as store
 from config.paths import RuntimePaths
@@ -20,6 +21,14 @@ from core.crawler import Crawler
 from infrastructure.key_manager import KeyManager
 from infrastructure.llm_handler import LlmHandler
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
+
+# The API refuses any Host but a local one, and TestClient's default is "testserver".
+LOCAL_API_URL = "http://localhost:8000"
+
+
+def api_headers() -> dict[str, str]:
+    return {"Authorization": f"Bearer {get_session_token()}"}
+
 
 OVERRIDES = {
     "fetch": {
@@ -365,7 +374,7 @@ def test_robots_ttl_refetches_after_expiry():
     assert asyncio.run(run(50.0)) == 2
 
 
-def test_presets_export_and_token(client, monkeypatch):
+def test_presets_and_export(client):
     client = client[0]
     r = client.get("/config/presets")
     assert r.status_code == 200 and "polite" in r.json()["builtin"]
@@ -389,12 +398,6 @@ def test_presets_export_and_token(client, monkeypatch):
         ]
         == 0.1
     )
-
-    monkeypatch.setenv("CRAWLVIZ_API_TOKEN", "s3cret")
-    assert client.get("/config").status_code == 401
-    assert client.get("/config", headers={"Authorization": "Bearer nope"}).status_code == 401
-    assert client.get("/config", headers={"Authorization": "Bearer s3cret"}).status_code == 200
-    assert client.get("/keys").status_code == 401
 
 
 def test_prompts_and_endpoints_reach_their_objects(tmp_path):
@@ -476,7 +479,7 @@ def test_prompt_preview_uses_draft_wording_and_matches_builder():
     from main import app
     from models.prompts import PromptBuilder
 
-    client = TestClient(app)
+    client = TestClient(app, base_url=LOCAL_API_URL, headers=api_headers())
     res = client.post(
         "/config/prompts/preview",
         json={
