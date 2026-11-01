@@ -753,6 +753,24 @@ class ObservabilityConfig(BaseModel):
         le=65535,
         effect="Changing it means the live graph page has to connect to the new port.",
     )
+    ui_ping_interval: float = _f(
+        20.0,
+        "Seconds between keep-alive pings to the live graph.",
+        "Observability",
+        unit="s",
+        advanced=True,
+        gt=0.0,
+        effect="Shorter notices a closed browser tab sooner but sends more small messages.",
+    )
+    ui_ping_timeout: float = _f(
+        10.0,
+        "Seconds the live graph has to answer a ping before the connection is dropped.",
+        "Observability",
+        unit="s",
+        advanced=True,
+        gt=0.0,
+        effect="Longer keeps a slow browser connected; shorter drops a vanished one sooner.",
+    )
     snapshot_max_candidates: int = _f(
         4000,
         "Scoring decisions kept for the live view.",
