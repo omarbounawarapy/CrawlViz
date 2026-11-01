@@ -22,6 +22,7 @@ import json
 import logging
 import re
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Set
 
 try:
@@ -36,9 +37,14 @@ from .crawl_state_snapshot import CrawlStateSnapshot
 
 log = logging.getLogger("ui_bridge.gateway")
 
-# Keep-alive pings detect a UI tab that vanished without closing its socket.
-PING_INTERVAL_SECONDS = 20
-PING_TIMEOUT_SECONDS = 10
+
+@dataclass(frozen=True)
+class KeepAlive:
+    """Seconds between keep-alive pings, and to wait for an answer, so a vanished tab is noticed."""
+
+    interval: float
+    timeout: float
+
 
 # An entry the websockets library accepts: an exact origin, a pattern, or None for a client
 # that sends no Origin header (a script, not a browser page).
@@ -65,11 +71,13 @@ class UIWebSocketGateway:
     def __init__(
         self,
         snapshot: CrawlStateSnapshot,
+        keep_alive: KeepAlive,
         host: str = "localhost",
         port: int = 8765,
         allowed_origins: Sequence[OriginRule] | None = None,
     ) -> None:
         self._snapshot: CrawlStateSnapshot = snapshot
+        self._keep_alive: KeepAlive = keep_alive
         self._host: str = host
         self._port: int = port
         self._allowed_origins: Sequence[OriginRule] = (
@@ -96,8 +104,8 @@ class UIWebSocketGateway:
             self._host,
             self._port,
             origins=self._allowed_origins,
-            ping_interval=PING_INTERVAL_SECONDS,
-            ping_timeout=PING_TIMEOUT_SECONDS,
+            ping_interval=self._keep_alive.interval,
+            ping_timeout=self._keep_alive.timeout,
         )
         log.info("UIWebSocketGateway listening on ws://%s:%d", self._host, self._port)
         await self._server.wait_closed()
