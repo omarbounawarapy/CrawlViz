@@ -5,6 +5,14 @@ from pydantic import ValidationError
 
 from config.runtime_config import default_runtime_config
 from core.live_settings import LIVE_BINDINGS, LiveSettingsError, apply_live, live_fields
+from routes.session_token import get_session_token
+
+# The API refuses any Host but a local one, and TestClient's default is "testserver".
+LOCAL_API_URL = "http://localhost:8000"
+
+
+def api_headers() -> dict[str, str]:
+    return {"Authorization": f"Bearer {get_session_token()}"}
 
 
 def test_every_live_field_has_a_binding():
@@ -46,7 +54,8 @@ def test_patch_live_route_without_crawl_is_409(monkeypatch):
     from routes import run as run_routes
 
     monkeypatch.setattr(run_routes, "_current_crawler", None)
-    r = TestClient(app).patch("/config/live", json={"values": {"fetch": {"min_delay": 0.5}}})
+    client = TestClient(app, base_url=LOCAL_API_URL, headers=api_headers())
+    r = client.patch("/config/live", json={"values": {"fetch": {"min_delay": 0.5}}})
     assert r.status_code == 409
 
 
@@ -59,7 +68,7 @@ def test_patch_live_route_applies_to_running_crawler(monkeypatch):
     crawler = Crawler("x.json")
     crawler._pipelines = _pipes()
     monkeypatch.setattr(run_routes, "_current_crawler", crawler)
-    c = TestClient(app)
+    c = TestClient(app, base_url=LOCAL_API_URL, headers=api_headers())
     r = c.patch("/config/live", json={"values": {"fetch": {"min_delay": 0.5}}})
     assert r.status_code == 200 and crawler._pipelines["requests"].min_delay == 0.5
     r = c.patch("/config/live", json={"values": {"fetch": {"user_agent": "x"}}})
