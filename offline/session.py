@@ -1,5 +1,6 @@
 """Everything an offline crawl swaps in for the outside world."""
 
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +10,8 @@ from config.runtime_config import RuntimeConfig
 
 from .scripted_llm import ScriptedLlm
 from .site_script import RateLimitedFetcher, SiteScript
+
+logger = logging.getLogger(__name__)
 
 OFFLINE_ENV_VAR = "CRAWLVIZ_OFFLINE"
 OFFLINE_EMBEDDING_BACKEND = "hashing"
@@ -48,6 +51,10 @@ def build_offline_session(
     """
     script = find_site_script(template_name)
     if script is None:
+        logger.info(
+            "Offline: no site script for blueprint %r, so the frozen ISI graph is served",
+            template_name,
+        )
         fetcher: GraphFetcher | RateLimitedFetcher = FrozenGraph.load(OFFLINE_GRAPH).fetcher()
     else:
         fetcher = script.build_fetcher()
