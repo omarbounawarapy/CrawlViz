@@ -18,7 +18,7 @@ describe("Root", () => {
     sessionStorage.setItem("crawlviz:boot-seen", "1");
     render(<Root />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toMatch(/links worth following/i);
-    expect(screen.getAllByRole("link", { name: /open the plate/i }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: /open the graph/i }).length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /load a sample replay/i })).toBeTruthy();
   });
 
