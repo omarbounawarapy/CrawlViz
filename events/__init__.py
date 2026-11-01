@@ -88,6 +88,7 @@ from .transform_events import (
     TransformationFailedEvent,
     TransformationInputSnapshotEvent,
     TransformationStartedEvent,
+    TransformationStepSkippedEvent,
 )
 
 # =========================================================
@@ -174,6 +175,7 @@ __all__ = [
     "TransformationFailedEvent",
     "TransformationInputSnapshotEvent",
     "TransformationStartedEvent",
+    "TransformationStepSkippedEvent",
     # Export
     "ExportBatchCompletedEvent",
     "ExportBatchFailedEvent",

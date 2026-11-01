@@ -29,6 +29,7 @@ from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
+from .manifest_redaction import redact_manifest
 from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 
 # Traceability is a second, finer-grained event stream (see
@@ -213,8 +214,13 @@ class Crawler:
                 keys_file=self.paths.keys_file,
             )
         fetch = self.config.fetch
+        # LLM endpoints are chosen by the operator (a local server is allowed),
+        # unlike page URLs, which come from crawled pages.
         traced_network = TracedNetworkClient(
-            NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout), tracer
+            NetworkClient(
+                fetch.http_total_timeout, fetch.http_connect_timeout, allow_private_addresses=True
+            ),
+            tracer,
         )
         traced_llm = TracedLlmHandler(
             LlmHandler(
@@ -337,7 +343,7 @@ class Crawler:
         )
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
-        recorder.write_manifest(self._run_manifest())
+        recorder.write_manifest(redact_manifest(self._run_manifest()))
         telemetry = TelemetryBridge(
             snapshot,
             RecordingGateway(ui_gateway, recorder),
