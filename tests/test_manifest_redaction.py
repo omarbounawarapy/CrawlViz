@@ -18,10 +18,9 @@ def test_extra_header_values_are_redacted_and_names_kept() -> None:
     assert cleaned["runtime_config"]["fetch"]["user_agent"] == "Bot/1 (+mailto:ops@example.org)"
 
 
-def test_secret_looking_keys_are_redacted_anywhere() -> None:
+def test_a_cookie_key_is_redacted_and_its_sibling_kept() -> None:
     manifest = {
-        "blueprint": {"source": {"headers": {"Cookie": "session=1", "Accept": "text/html"}}},
-        "llm_model": {"provider": "groq", "api_key": "sk-secret", "list": [{"x-api-key": "k"}]},
+        "blueprint": {"source": {"headers": {"Cookie": "session=1", "Accept": "text/html"}}}
     }
 
     cleaned = redact_manifest(manifest)
@@ -30,9 +29,30 @@ def test_secret_looking_keys_are_redacted_anywhere() -> None:
         "Cookie": REDACTED,
         "Accept": "text/html",
     }
-    assert cleaned["llm_model"]["api_key"] == REDACTED
-    assert cleaned["llm_model"]["list"] == [{"x-api-key": REDACTED}]
-    assert cleaned["llm_model"]["provider"] == "groq"
+
+
+def test_an_api_key_is_redacted() -> None:
+    cleaned = redact_manifest({"llm_model": {"api_key": "sk-secret"}})
+
+    assert cleaned == {"llm_model": {"api_key": REDACTED}}
+
+
+def test_an_x_api_key_header_inside_a_list_is_redacted() -> None:
+    cleaned = redact_manifest({"requests": [{"x-api-key": "k"}]})
+
+    assert cleaned == {"requests": [{"x-api-key": REDACTED}]}
+
+
+def test_a_password_is_redacted() -> None:
+    cleaned = redact_manifest({"login": {"password": "hunter2"}})
+
+    assert cleaned == {"login": {"password": REDACTED}}
+
+
+def test_a_key_with_no_secret_in_its_name_is_kept() -> None:
+    manifest = {"llm_model": {"name": "example-model"}}
+
+    assert redact_manifest(manifest) == manifest
 
 
 def test_counts_named_tokens_are_kept() -> None:
