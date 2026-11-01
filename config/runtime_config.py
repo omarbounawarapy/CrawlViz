@@ -536,6 +536,20 @@ class PipelineSettings(BaseModel):
         return None if v == 0 else v
 
 
+class TransformationSettings(PipelineSettings):
+    """Worker count and queue bound of the transformation pipeline, and its regex input cap."""
+
+    max_regex_input_chars: int = _f(
+        _config.MAX_REGEX_INPUT_CHARS,
+        "Longest text a regex transform step runs on.",
+        "Pipelines",
+        unit="characters",
+        advanced=True,
+        gt=0,
+        effect="A regex step skips a field longer than this and reports it as an error on the page, which keeps a slow pattern from stalling a worker. Raising it lets longer fields be transformed.",
+    )
+
+
 def _pl(workers: int) -> Any:
     return Field(default_factory=lambda: PipelineSettings(workers=workers))
 
@@ -550,7 +564,9 @@ class PipelinesConfig(BaseModel):
     storage: PipelineSettings = _pl(1)
     filtering: PipelineSettings = _pl(10)
     priority: PipelineSettings = _pl(10)
-    transformation: PipelineSettings = _pl(3)
+    transformation: TransformationSettings = Field(
+        default_factory=lambda: TransformationSettings(workers=3)
+    )
     debugging: PipelineSettings = _pl(2)
     retry: PipelineSettings = _pl(1)
 

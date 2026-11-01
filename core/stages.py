@@ -236,6 +236,7 @@ def _transformation(inputs: StageInputs, built: Built) -> CrawlStage:
         inputs.extraction,
         max_queue_size=_queue_size(settings.max_queue_size),
         max_concurrency=settings.workers,
+        max_regex_input_chars=settings.max_regex_input_chars,
     )
 
 
