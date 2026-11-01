@@ -2,12 +2,13 @@
 
 Pins record what a crawl does today so a later refactor can prove it changed
 nothing it did not mean to. Each pin runs a full cascade crawl offline and
-compares four things with golden files.
+compares four things with golden files (the `crawler` pin compares less, see below).
 
 | Pin | Graph | Pages | Golden files |
 |---|---|---|---|
 | `isi` | `benchmark/data/isi.json` (frozen) | 50 | `golden/isi/` |
 | `synthetic` | 200 pages generated in `synthetic_site.py` from a fixed seed | 60 | `golden/synthetic/` |
+| `crawler` | `benchmark/data/isi.json` through the real `Crawler` (see below) | 5 | `golden/crawler/` |
 
 Per pin, one JSON-lines file each:
 
@@ -22,6 +23,24 @@ Timestamps, durations and worker ids are replaced by `<volatile>`, floats are
 rounded to 6 places, and recording stops when the last page of the budget is
 requested (what follows races with the stop). See `golden_files.py` and
 `pin_observer.py`.
+
+### The `crawler` pin
+
+`isi` and `synthetic` run `benchmark.runner`, which builds its own stages. The `crawler`
+pin runs `Crawler.start()` itself, so `core/crawler.py` and `core/stages.py` are covered.
+It crawls the `offline_demo.json` blueprint with a budget of 5 pages, one fetch worker
+and one scoring worker, on the doubles of `CRAWLVIZ_OFFLINE=1` (`build_offline_session`).
+`Crawler` has no lockstep, so the stop event races the next fetch and a run may fetch one
+page more than the budget. The pin records only what that race cannot change
+(`pin_crawler.py`):
+
+- `composition.jsonl`: the stages in start order, then each event type with its consumers in
+  dispatch order.
+- `fetch_order.jsonl`: the first 5 pages fetched.
+- `llm_requests.jsonl`: the first 2 prompts (the expansion and the first scoring call).
+
+It takes about 7 seconds. It has no `link_scores` or `wire_messages` golden: their length
+depends on the race.
 
 ## How a run is compared
 
