@@ -24,7 +24,7 @@ from models import Storage
 from nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
+from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
@@ -329,7 +329,12 @@ class Crawler:
         snapshot = CrawlStateSnapshot(
             max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
         )
-        ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
+        ui_gateway = UIWebSocketGateway(
+            snapshot,
+            KeepAlive(obs.ui_ping_interval, obs.ui_ping_timeout),
+            host="localhost",
+            port=self.ui_port,
+        )
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
         recorder.write_manifest(self._run_manifest())

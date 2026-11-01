@@ -385,11 +385,11 @@ async def test_scoring_finishes_after_stop_with_a_node_in_flight():
 
 
 async def test_gateway_stops_when_the_crawl_stops():
-    from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
+    from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
 
     broker = EventBroker()
     snapshot = CrawlStateSnapshot()
-    gateway = UIWebSocketGateway(snapshot, port=0)
+    gateway = UIWebSocketGateway(snapshot, KeepAlive(20, 10), port=0)
     telemetry = TelemetryBridge(snapshot, gateway)
     telemetry.register_handlers()
     broker.subscribe(telemetry, [StopCrawlEvent])

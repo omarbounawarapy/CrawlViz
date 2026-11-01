@@ -27,14 +27,20 @@ export default function RunOverrides({ onPatch, disabled }) {
 
   useEffect(() => {
     if (!open || schema) return;
+    // An answer that arrives after the panel has closed or the page has gone must not touch state.
+    let cancelled = false;
     Promise.all([fetchConfigSchema(), fetchConfig(), fetchConfigDefaults()])
       .then(([s, v, d]) => {
+        if (cancelled) return;
         setSchema(s);
         setSaved(v);
         setDraft(v);
         setDefaults(d);
       })
-      .catch((e) => setError(e.message));
+      .catch((e) => !cancelled && setError(e.message));
+    return () => {
+      cancelled = true;
+    };
   }, [open, schema]);
 
   const fields = useMemo(() => (schema ? buildFields(schema) : []), [schema]);
