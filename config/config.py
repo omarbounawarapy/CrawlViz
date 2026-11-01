@@ -60,6 +60,8 @@ USER_AGENT: str = (
 RESPECT_ROBOTS: bool = True
 # Largest page body read, after decompression; a bigger response is refused.
 MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
+# Redirects followed per page; each target is checked before it is fetched.
+MAX_REDIRECTS: int = 5
 
 # =========================================================================
 # SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")

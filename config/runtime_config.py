@@ -456,6 +456,15 @@ class FetchConfig(BaseModel):
         gt=0,
         effect="A page or robots.txt larger than this is refused instead of read, which protects memory from huge or compressed-bomb responses.",
     )
+    max_redirects: int = _f(
+        _config.MAX_REDIRECTS,
+        "Redirects followed for one page.",
+        "Fetch",
+        unit="",
+        advanced=True,
+        ge=0,
+        effect="A page that redirects more often than this is given up on, which stops a redirect loop. Each redirect is another request to the site.",
+    )
     allow_private_addresses: bool = _f(
         False,
         "Fetch pages from private, loopback and link-local addresses.",

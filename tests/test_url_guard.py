@@ -11,7 +11,7 @@ from aiohttp import web
 from yarl import URL
 
 from infrastructure import BlockedAddressError, NetworkClient, TooManyRedirectsError
-from infrastructure.network_client import MAX_REDIRECTS, GetRequestStrategy
+from infrastructure.network_client import GetRequestStrategy
 from infrastructure.url_guard import PublicAddressResolver, ensure_public_url, is_blocked_address
 
 PUBLIC_URL = "http://93.184.216.34/start"  # a public literal, so no DNS lookup is needed
@@ -186,15 +186,15 @@ async def test_the_flag_allows_a_local_server() -> None:
         assert hits == ["/page"]
 
 
-async def test_endless_redirects_stop_at_the_bound() -> None:
+async def test_endless_redirects_stop_at_the_configured_bound() -> None:
     async def loop(request: web.Request) -> web.StreamResponse:
         raise web.HTTPFound("/again")
 
     async with local_server(loop) as (base, hits):
-        client = NetworkClient(allow_private_addresses=True)
+        client = NetworkClient(allow_private_addresses=True, max_redirects=3)
         try:
             with pytest.raises(TooManyRedirectsError):
                 await client.emit_request({"url": base + "/start"})
         finally:
             await client.close()
-        assert len(hits) == MAX_REDIRECTS + 1
+        assert len(hits) == 3 + 1

@@ -4,6 +4,8 @@ from typing import Any
 import aiohttp
 from yarl import URL
 
+from config import MAX_REDIRECTS, MAX_RESPONSE_BYTES
+
 from .fetch_errors import (
     FetchRejectedError,
     ResponseTooLargeError,
@@ -12,8 +14,6 @@ from .fetch_errors import (
 )
 from .url_guard import PublicAddressResolver, ensure_public_url
 
-MAX_REDIRECTS = 5
-DEFAULT_MAX_RESPONSE_BYTES = 5 * 1024 * 1024
 READ_CHUNK_BYTES = 64 * 1024
 DEFAULT_TEXT_ENCODING = "utf-8"
 REDIRECT_STATUSES = (301, 302, 303, 307, 308)
@@ -28,10 +28,14 @@ class RequestStrategy(ABC):
     """
 
     def __init__(
-        self, check_addresses: bool = False, max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES
+        self,
+        check_addresses: bool = False,
+        max_response_bytes: int = MAX_RESPONSE_BYTES,
+        max_redirects: int = MAX_REDIRECTS,
     ):
         self.check_addresses = check_addresses
         self.max_response_bytes = max_response_bytes
+        self.max_redirects = max_redirects
 
     @abstractmethod
     async def execute(self, session: aiohttp.ClientSession, params: dict) -> Any:
@@ -40,11 +44,11 @@ class RequestStrategy(ABC):
 
 class GetRequestStrategy(RequestStrategy):
     async def execute(self, session: aiohttp.ClientSession, params: dict) -> Any:
-        """GET `params["url"]`, following at most `MAX_REDIRECTS` redirects
+        """GET `params["url"]`, following at most `max_redirects` redirects
         itself so each target is checked before it is connected to.
         """
         url = params["url"]
-        for _ in range(MAX_REDIRECTS + 1):
+        for _ in range(self.max_redirects + 1):
             if self.check_addresses:
                 ensure_public_url(url)
             async with session.get(
@@ -58,7 +62,8 @@ class GetRequestStrategy(RequestStrategy):
                     return await self._read_text(response, params.get("content_types"))
                 url = str(response.url.join(URL(location)))
         raise TooManyRedirectsError(
-            f"More than {MAX_REDIRECTS} redirects from {params['url']}; the page was not fetched."
+            f"More than {self.max_redirects} redirects from {params['url']}; "
+            "the page was not fetched."
         )
 
     async def _read_text(
@@ -119,8 +124,9 @@ class NetworkClient:
     must not reach loopback, the local network or a cloud metadata service.
     Operator-chosen servers, such as a local LLM endpoint, need the flag.
 
-    A GET reads at most `max_response_bytes` of body (after decompression),
-    and with `params["content_types"]` only accepts those content types.
+    A GET follows at most `max_redirects` redirects, reads at most `max_response_bytes`
+    of body (after decompression), and with `params["content_types"]` only accepts
+    those content types.
     """
 
     def __init__(
@@ -128,7 +134,8 @@ class NetworkClient:
         total_timeout: float = 30,
         connect_timeout: float = 10,
         allow_private_addresses: bool = False,
-        max_response_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
+        max_response_bytes: int = MAX_RESPONSE_BYTES,
+        max_redirects: int = MAX_REDIRECTS,
     ):
         self.total_timeout = total_timeout
         self.connect_timeout = connect_timeout
@@ -136,7 +143,7 @@ class NetworkClient:
         self.session: aiohttp.ClientSession | None = None
         check_addresses = not allow_private_addresses
         self._strategies = {
-            "GET": GetRequestStrategy(check_addresses, max_response_bytes),
+            "GET": GetRequestStrategy(check_addresses, max_response_bytes, max_redirects),
             "POST": PostRequestStrategy(check_addresses),
         }
 
