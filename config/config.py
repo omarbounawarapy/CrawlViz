@@ -60,6 +60,8 @@ USER_AGENT: str = (
 RESPECT_ROBOTS: bool = True
 # Largest page body read, after decompression; a bigger response is refused.
 MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
+# Content types a page fetch accepts, comma-separated; anything else is refused unread.
+ACCEPTED_CONTENT_TYPES: str = "text/html, application/xhtml+xml"
 # Redirects followed per page; each target is checked before it is fetched.
 MAX_REDIRECTS: int = 5
 

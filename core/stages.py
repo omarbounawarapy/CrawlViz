@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from config import parse_content_types
 from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig
 from infrastructure import NetworkClient
@@ -156,6 +157,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         accept=fetch.accept,
         accept_encoding=fetch.accept_encoding,
         accept_language=fetch.accept_language,
+        content_types=parse_content_types(fetch.accepted_content_types),
     )
 
 

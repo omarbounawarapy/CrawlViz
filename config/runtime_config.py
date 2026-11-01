@@ -456,6 +456,15 @@ class FetchConfig(BaseModel):
         gt=0,
         effect="A page or robots.txt larger than this is refused instead of read, which protects memory from huge or compressed-bomb responses.",
     )
+    accepted_content_types: str = _f(
+        _config.ACCEPTED_CONTENT_TYPES,
+        "Content types a page fetch accepts, separated by commas.",
+        "Fetch",
+        "text",
+        advanced=True,
+        min_length=1,
+        effect="A page of any other content type is refused unread. Add a type here, for example text/plain, to crawl pages served that way.",
+    )
     max_redirects: int = _f(
         _config.MAX_REDIRECTS,
         "Redirects followed for one page.",
@@ -473,6 +482,12 @@ class FetchConfig(BaseModel):
         advanced=True,
         effect="Off: links to this machine, your local network or a cloud metadata address are refused. On: they are fetched, which only a crawl of your own test site needs.",
     )
+
+    @field_validator("accepted_content_types")
+    @classmethod
+    def _content_types_are_media_types(cls, v: str) -> str:
+        _config.parse_content_types(v)
+        return v
 
     @model_validator(mode="after")
     def _ordered(self) -> "FetchConfig":

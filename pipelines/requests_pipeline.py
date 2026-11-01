@@ -4,6 +4,7 @@ import time
 
 import aiohttp
 
+from config import ACCEPTED_CONTENT_TYPES, parse_content_types
 from events import (
     NodeAddedEvent,
     PageFetchedEvent,
@@ -22,8 +23,6 @@ from .frontier_queue import FrontierQueue
 from .robots import RobotsPolicy
 
 ROBOTS_DISALLOWED = "RobotsDisallowed"
-# Content types the extraction can parse; anything else is refused unread.
-PAGE_CONTENT_TYPES = ("text/html", "application/xhtml+xml")
 
 
 def is_rate_limited(error: Exception) -> bool:
@@ -66,11 +65,17 @@ class RequestsPipeline:
         accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         accept_encoding: str = "gzip, deflate",
         accept_language: str = "",
+        content_types: tuple[str, ...] | None = None,
     ):
         self.event_broker = event_broker
         self.rng = rng if rng is not None else random.Random()
 
         self.queue = FrontierQueue(maxsize=max_queue_size)
+        self.content_types: tuple[str, ...] = (
+            content_types
+            if content_types is not None
+            else parse_content_types(ACCEPTED_CONTENT_TYPES)
+        )
         self.network_client: Fetcher = fetcher if fetcher is not None else NetworkClient()
 
         self.max_concurrency = max_concurrency
@@ -234,7 +239,7 @@ class RequestsPipeline:
                         "headers": self.headers,
                         "data": "",
                         "method": "GET",
-                        "content_types": PAGE_CONTENT_TYPES,
+                        "content_types": self.content_types,
                     }
                 )
 
