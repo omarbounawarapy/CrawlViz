@@ -1,0 +1,84 @@
+{"class": "LoggingPipeline", "stage": "logging"}
+{"class": "CanonicalizationPipeline", "stage": "canon"}
+{"class": "DebuggingPipeline", "stage": "debug"}
+{"class": "ProcessingPipeline", "stage": "processing"}
+{"class": "RequestsPipeline", "stage": "requests"}
+{"class": "RetryProcessor", "stage": "retry"}
+{"class": "ScoringPipeline", "stage": "scoring"}
+{"class": "FilteringPipeline", "stage": "filtering"}
+{"class": "PriorityPipeline", "stage": "priority"}
+{"class": "TransformationPipeline", "stage": "transformation"}
+{"class": "StoragePipeline", "stage": "storage"}
+{"class": "ExportingPipeline", "stage": "exporting"}
+{"class": "StoppingPipeline", "stage": "stopping"}
+{"consumers": ["logging", "requests", "scoring", "stopping", "TelemetryBridge"], "event": "NodeAddedEvent"}
+{"consumers": ["logging", "canon", "processing", "storage", "stopping", "TelemetryBridge"], "event": "PageFetchedEvent"}
+{"consumers": ["logging", "transformation", "TelemetryBridge"], "event": "ContentFilteredEvent"}
+{"consumers": ["logging", "debug", "storage", "exporting", "TelemetryBridge"], "event": "TransformationCompletedEvent"}
+{"consumers": ["logging", "exporting", "stopping", "SpaceUpdater", "TelemetryBridge"], "event": "StopCrawlEvent"}
+{"consumers": ["logging", "priority", "TelemetryBridge"], "event": "LinksScoredEvent"}
+{"consumers": ["logging", "debug", "storage", "TelemetryBridge"], "event": "PriorityCalculatedEvent"}
+{"consumers": ["logging", "TelemetryBridge"], "event": "ExportBatchCompletedEvent"}
+{"consumers": ["logging", "scoring"], "event": "ScoreRescheduledEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "RequestStartedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "RequestResponseReceivedEvent"}
+{"consumers": ["debug", "retry", "TelemetryBridge"], "event": "RequestFailedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ExtractionStartedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "LinkExtractionCompletedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ItemExtractionCompletedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ProcessingExtractionFailedEvent"}
+{"consumers": ["debug"], "event": "FilteringInputSnapshotEvent"}
+{"consumers": ["debug"], "event": "LinkFilteringCompletedEvent"}
+{"consumers": ["debug"], "event": "ItemFilteringCompletedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "FilteringPipelineErrorEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "TransformationStartedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "TransformationFailedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ScoringStartedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ScoringCompletedEvent"}
+{"consumers": ["debug", "retry", "TelemetryBridge"], "event": "ScoringFailedEvent"}
+{"consumers": ["debug", "retry"], "event": "EmptyScoreResultsEvent"}
+{"consumers": ["debug"], "event": "NoLinksToScoreEvent"}
+{"consumers": ["debug"], "event": "NodeContentSetEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "PriorityCalculationStartedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "PriorityCalculationFailedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ExportRowFailedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ExportBatchFailedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "ExportBatchStartedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "RetryOperationFailedEvent"}
+{"consumers": ["debug"], "event": "NLP_InputReceived"}
+{"consumers": ["debug"], "event": "NLP_FeaturesExtracted"}
+{"consumers": ["debug"], "event": "NLP_SimilarityScored"}
+{"consumers": ["debug"], "event": "NLP_VectorComposed"}
+{"consumers": ["debug"], "event": "NLP_ScoreEmitted"}
+{"consumers": ["debug"], "event": "LLM_PromptBuilt"}
+{"consumers": ["debug"], "event": "LLM_RequestDispatched"}
+{"consumers": ["debug"], "event": "LLM_ResponseReceived"}
+{"consumers": ["debug"], "event": "LLM_ResponseParsed"}
+{"consumers": ["debug"], "event": "LLM_RequestFailed"}
+{"consumers": ["debug"], "event": "NET_RequestCreated"}
+{"consumers": ["debug"], "event": "NET_RequestDispatched"}
+{"consumers": ["debug"], "event": "NET_ResponseReceived"}
+{"consumers": ["debug"], "event": "NET_RequestFailed"}
+{"consumers": ["debug"], "event": "NET_RetryAttempted"}
+{"consumers": ["debug"], "event": "EXP_Triggered"}
+{"consumers": ["debug"], "event": "EXP_PromptBuilt"}
+{"consumers": ["debug"], "event": "EXP_SeedsGenerated"}
+{"consumers": ["debug"], "event": "EXP_CandidateScored"}
+{"consumers": ["debug"], "event": "EXP_CandidatePruned"}
+{"consumers": ["debug"], "event": "EXP_SpaceBootstrapped"}
+{"consumers": ["filtering"], "event": "ContentExtractedEvent"}
+{"consumers": ["priority", "TelemetryBridge"], "event": "HighScoreLinksEvent"}
+{"consumers": ["stopping", "TelemetryBridge"], "event": "StorageNodeUpdatedEvent"}
+{"consumers": ["TelemetryBridge"], "event": "RequestEnqueuedEvent"}
+{"consumers": ["TelemetryBridge"], "event": "FilteringEnqueuedEvent"}
+{"consumers": ["TelemetryBridge"], "event": "FilteringWorkerCycleStartedEvent"}
+{"consumers": ["TelemetryBridge"], "event": "ScoringEnqueuedEvent"}
+{"consumers": ["TelemetryBridge"], "event": "LowScoreLinksEvent"}
+{"consumers": ["TelemetryBridge"], "event": "StorageOperationFailedEvent"}
+{"consumers": [], "event": "ExtractionInputSnapshotEvent"}
+{"consumers": [], "event": "StorageItemStoredEvent"}
+{"consumers": [], "event": "StorageLinkStoredEvent"}
+{"consumers": [], "event": "ScoringInputSnapshotEvent"}
+{"consumers": [], "event": "PriorityInputSnapshotEvent"}
+{"consumers": [], "event": "StorageNodeCreatedEvent"}
+{"consumers": [], "event": "StorageNodeAddedEvent"}

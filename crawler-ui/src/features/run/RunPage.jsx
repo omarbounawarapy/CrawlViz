@@ -84,23 +84,31 @@ export default function RunPage({ onNavigate, state, metrics }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // An answer that arrives after the page has gone must not touch state.
+    let cancelled = false;
     const poll = async () => {
       try {
         const s = await crawlStatus();
+        if (cancelled) return;
         setRunning(s.running);
         setLlmCalls(s.llm_calls ?? null);
       } catch (err) {
-        console.warn("Status poll failed:", err);
+        if (!cancelled) console.warn("Status poll failed:", err);
       }
     };
     poll();
     const id = setInterval(poll, 3000);
-    return () => clearInterval(id);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     fetchTemplates()
       .then((d) => {
+        if (cancelled) return;
         setTemplates(d.templates);
         // Blueprints can hand over "run this one" through sessionStorage.
         let wanted = null;
@@ -112,7 +120,10 @@ export default function RunPage({ onNavigate, state, metrics }) {
         }
         if (d.templates.length > 0) setSelected(d.templates.includes(wanted) ? wanted : d.templates[0]);
       })
-      .catch((e) => setMsg({ ok: false, text: e.message }));
+      .catch((e) => !cancelled && setMsg({ ok: false, text: e.message }));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

@@ -20,17 +20,46 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Set
 
 try:
-    from websockets.asyncio.server import ServerConnection, serve
+    from websockets.asyncio.server import Server, ServerConnection, serve
     from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 except ImportError:
     raise ImportError("The 'websockets' package is required. Install with: pip install websockets")
 
+from config import CORS_ORIGIN_REGEX, CORS_ORIGINS
+
 from .crawl_state_snapshot import CrawlStateSnapshot
 
 log = logging.getLogger("ui_bridge.gateway")
+
+
+@dataclass(frozen=True)
+class KeepAlive:
+    """Seconds between keep-alive pings, and to wait for an answer, so a vanished tab is noticed."""
+
+    interval: float
+    timeout: float
+
+
+# An entry the websockets library accepts: an exact origin, a pattern, or None for a client
+# that sends no Origin header (a script, not a browser page).
+OriginRule = str | re.Pattern[str] | None
+
+
+def default_allowed_origins() -> list[OriginRule]:
+    """The origins the API allows for CORS, plus clients that send no Origin.
+
+    A browser page always sends its Origin on a WebSocket handshake, and a WebSocket is not
+    bound by CORS, so without this check any web page could read the live crawl."""
+    rules: list[OriginRule] = [*CORS_ORIGINS, None]
+    if CORS_ORIGIN_REGEX:
+        rules.append(re.compile(CORS_ORIGIN_REGEX))
+    return rules
 
 
 class UIWebSocketGateway:
@@ -42,14 +71,20 @@ class UIWebSocketGateway:
     def __init__(
         self,
         snapshot: CrawlStateSnapshot,
+        keep_alive: KeepAlive,
         host: str = "localhost",
         port: int = 8765,
+        allowed_origins: Sequence[OriginRule] | None = None,
     ) -> None:
         self._snapshot: CrawlStateSnapshot = snapshot
+        self._keep_alive: KeepAlive = keep_alive
         self._host: str = host
         self._port: int = port
+        self._allowed_origins: Sequence[OriginRule] = (
+            allowed_origins if allowed_origins is not None else default_allowed_origins()
+        )
         self._clients: Set[ServerConnection] = set()
-        self._server = None
+        self._server: Server | None = None
 
     @property
     def port(self) -> int:
@@ -68,8 +103,9 @@ class UIWebSocketGateway:
             self._on_client_connected,
             self._host,
             self._port,
-            ping_interval=20,
-            ping_timeout=10,
+            origins=self._allowed_origins,
+            ping_interval=self._keep_alive.interval,
+            ping_timeout=self._keep_alive.timeout,
         )
         log.info("UIWebSocketGateway listening on ws://%s:%d", self._host, self._port)
         try:

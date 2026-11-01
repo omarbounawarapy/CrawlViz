@@ -17,6 +17,7 @@ from datetime import datetime
 
 from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
+from config.template_names import template_stem
 from utils.html_utils import configure_url_normalization
 from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
@@ -24,7 +25,7 @@ from models import Storage
 from nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
+from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
@@ -40,6 +41,10 @@ from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
 logger = logging.getLogger(__name__)
+
+# Crawl ids name directories under logs, debug and export, so they use only
+# letters, digits, hyphens and underscores (no colons).
+CRAWL_ID_TIME_FORMAT = "%Y-%m-%d_%H-%M-%S"
 
 
 class Crawler:
@@ -90,11 +95,8 @@ class Crawler:
         # (see the offline package). Without them the crawl needs keys and network.
         self.llm = llm
         self.fetcher = fetcher
-        self.crawl_id = (
-            template_file[: template_file.find(".")]
-            + "-"
-            + datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        )
+        started_at = datetime.now().strftime(CRAWL_ID_TIME_FORMAT)
+        self.crawl_id = f"{template_stem(template_file)}-{started_at}"
 
     async def start(self) -> None:
         blueprint = await BootStrapper(
@@ -342,7 +344,12 @@ class Crawler:
         snapshot = CrawlStateSnapshot(
             max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
         )
-        ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
+        ui_gateway = UIWebSocketGateway(
+            snapshot,
+            KeepAlive(obs.ui_ping_interval, obs.ui_ping_timeout),
+            host="localhost",
+            port=self.ui_port,
+        )
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
         recorder.write_manifest(self._run_manifest())

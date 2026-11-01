@@ -23,7 +23,7 @@ dev:
 	wait
 
 dev-backend:
-	uv run uvicorn main:app --reload --port 8000
+	uv run uvicorn main:app --reload --reload-exclude "$(CURDIR)/.claude" --port 8000
 
 dev-frontend:
 	cd crawler-ui && npm run dev
