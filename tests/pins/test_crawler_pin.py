@@ -6,7 +6,8 @@ from pathlib import Path
 from pin_crawler import LLM_PROMPTS_PINNED, run_pin_crawler
 
 PIN = "crawler"
-# The demo blueprint's own budget is 40 pages; a small one keeps the pin to a few seconds.
+# offline_demo.json (the short demo, not offline_demo_long.json) has its own budget of 40
+# pages; a small one keeps the pin to a few seconds.
 PAGE_BUDGET = 5
 
 
