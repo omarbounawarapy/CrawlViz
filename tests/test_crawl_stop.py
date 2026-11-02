@@ -20,7 +20,7 @@ from core.crawler import Crawler
 from nlp import BufferManager, SpaceUpdater
 from routes import run as run_routes
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
-from ui_bridge import CrawlStateSnapshot, UIWebSocketGateway
+from ui_bridge import CrawlStateSnapshot, KeepAlive, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder
 
 STARTUP_WAIT_SECONDS = 10
