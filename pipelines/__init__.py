@@ -3,7 +3,7 @@ from .debugging_pipeline import DebuggingPipeline
 from .exporting_pipeline import ExportingPipeline
 from .extract_stage import ProcessingPipeline
 from .fetch_stage import RequestsPipeline
-from .filtering_pipeline import FilteringPipeline
+from .filter_stage import FilteringPipeline
 from .logging_pipeline import LoggingPipeline
 from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryProcessor

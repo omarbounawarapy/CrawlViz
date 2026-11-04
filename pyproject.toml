@@ -237,7 +237,7 @@ module = [
     "pipelines.contracts",
     "pipelines.debugging_pipeline",
     "pipelines.exporting_pipeline",
-    "pipelines.filtering_pipeline",
+    "pipelines.filter_stage",
     "pipelines.frontier_queue",
     "pipelines.logging_pipeline",
     "pipelines.priority_pipeline",
