@@ -7,7 +7,7 @@ from typing import Any
 
 from core.event_broker import EventBroker
 from models import Domain, Node
-from pipelines.requests_pipeline import RequestsPipeline
+from pipelines.fetch_stage import RequestsPipeline
 
 MIN_DELAY = 0.05
 # Timer granularity: a gap this far under the delay still counts as honoured.

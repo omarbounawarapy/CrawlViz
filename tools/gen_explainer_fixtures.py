@@ -22,10 +22,10 @@ from multidict import CIMultiDict, CIMultiDictProxy
 from sklearn.cluster import DBSCAN
 from yarl import URL
 
-import pipelines.requests_pipeline as rp
+import pipelines.fetch_stage as rp
 from models.links_extractor import LinkExtractor
 from pipelines import host_pacer
-from pipelines.requests_pipeline import RequestsPipeline
+from pipelines.fetch_stage import RequestsPipeline
 from pipelines.scoring_pipeline import ScoringPipeline
 from priority import strategy as strat
 

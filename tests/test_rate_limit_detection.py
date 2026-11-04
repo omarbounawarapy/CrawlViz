@@ -1,7 +1,7 @@
 import aiohttp
 from yarl import URL
 
-from pipelines.requests_pipeline import is_rate_limited
+from pipelines.fetch_stage import is_rate_limited
 
 
 def _err(status):

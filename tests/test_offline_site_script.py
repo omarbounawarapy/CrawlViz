@@ -13,7 +13,7 @@ from config.runtime_config import default_runtime_config
 from offline import build_offline_session
 from offline.session import SITE_SCRIPTS_DIR, find_site_script
 from offline.site_script import SiteScript
-from pipelines.requests_pipeline import is_rate_limited
+from pipelines.fetch_stage import is_rate_limited
 
 LONG_DEMO = "offline_demo_long.json"
 
