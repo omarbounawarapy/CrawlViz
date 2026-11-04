@@ -3,7 +3,7 @@
 import asyncio
 
 from events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
-from pipelines.retry_processor import RetryProcessor
+from pipelines.retry_stage import RetryProcessor
 
 
 class FakeNode:

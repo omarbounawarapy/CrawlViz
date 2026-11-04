@@ -98,7 +98,7 @@ max-complexity = 10
 "pipelines/priority_pipeline.py" = ["PLR0913"]
 "pipelines/processing_pipeline.py" = ["I001"]
 "pipelines/fetch_stage.py" = ["I001", "PLR0913"]
-"pipelines/retry_processor.py" = ["PLR0913"]
+"pipelines/retry_stage.py" = ["PLR0913"]
 "pipelines/scoring_pipeline.py" = ["I001", "PLR0913"]
 "priority/__init__.py" = ["RUF022"]
 "priority/strategy.py" = ["PLR0913"]
@@ -243,7 +243,7 @@ module = [
     "pipelines.priority_pipeline",
     "pipelines.processing_pipeline",
     "pipelines.fetch_stage",
-    "pipelines.retry_processor",
+    "pipelines.retry_stage",
     "pipelines.robots",
     "pipelines.scoring_pipeline",
     "pipelines.stopping_pipeline",
