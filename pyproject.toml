@@ -233,7 +233,7 @@ module = [
     "nlp.space_updater",
     "nlp.vector_space",
     "pipelines.base_pipeline",
-    "pipelines.canonicalization_pipeline",
+    "pipelines.canonicalize_stage",
     "pipelines.contracts",
     "pipelines.debugging_pipeline",
     "pipelines.exporting_pipeline",
