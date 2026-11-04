@@ -6,7 +6,7 @@ space updater and the telemetry bridge and gateway) described in the
 project report's architecture chapters, wires them together through one
 :class:`~core.event_broker.EventBroker`, and runs them concurrently
 until a stop condition fires and every pipeline has drained (see
-``pipelines.stopping_pipeline``), or until the task is cancelled from
+``pipelines.stop_controller``), or until the task is cancelled from
 outside (the manual STOP endpoint in ``routes.run``).
 """
 

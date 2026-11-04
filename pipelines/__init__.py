@@ -8,7 +8,7 @@ from .filter_stage import FilteringPipeline
 from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryProcessor
 from .scoring_pipeline import ScoringPipeline
-from .stopping_pipeline import StopConditions, StoppingPipeline
+from .stop_controller import StopConditions, StoppingPipeline
 from .storage_sink import StoragePipeline
 from .transform_stage import TransformationPipeline
 

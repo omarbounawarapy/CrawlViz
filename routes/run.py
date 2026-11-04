@@ -3,7 +3,7 @@
 Only one crawl runs at a time, tracked by the module-level
 ``_current_task``. Manual stop (POST /stop) works in two phases: it asks the
 crawl to stop the way a stop condition does (a StopCrawlEvent, see
-pipelines/stopping_pipeline.py), so every stage drains and flushes, and waits
+pipelines/stop_controller.py), so every stage drains and flushes, and waits
 for the task to end; only if the crawl does not end in time does it cancel the
 task and wait for that too. Cancellation works even when a pipeline is stuck
 mid-request, and the crawl's own cleanup (core/crawler.py) still runs.

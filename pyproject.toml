@@ -246,7 +246,7 @@ module = [
     "pipelines.retry_stage",
     "pipelines.robots",
     "pipelines.scoring_pipeline",
-    "pipelines.stopping_pipeline",
+    "pipelines.stop_controller",
     "pipelines.storage_sink",
     "pipelines.transform_stage",
     "priority.strategy",
