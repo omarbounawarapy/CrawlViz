@@ -1,6 +1,6 @@
 from .canonicalize_stage import CanonicalizationPipeline
 from .crawl_log_sink import LoggingPipeline
-from .debugging_pipeline import DebuggingPipeline
+from .debug_log_sink import DebuggingPipeline
 from .export_sink import ExportingPipeline
 from .extract_stage import ProcessingPipeline
 from .fetch_stage import RequestsPipeline

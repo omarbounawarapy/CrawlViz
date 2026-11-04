@@ -22,7 +22,7 @@ class LoggingPipeline(BasePipeline):
     """Renders each node-lifecycle event into one human-readable line,
     written to both the console and a per-crawl log file (see
     infrastructure.LogWriter). This is the crawl's narrative log --
-    fine-grained trace events live in pipelines.debugging_pipeline instead.
+    fine-grained trace events live in pipelines.debug_log_sink instead.
 
     Lines are JSON objects. Concurrency is 1 on purpose: the file order is
     then the broker's dispatch order.

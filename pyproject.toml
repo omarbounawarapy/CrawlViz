@@ -93,7 +93,7 @@ max-complexity = 10
 "nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
 "nlp/space_updater.py" = ["SIM105", "UP041"]
 "nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
-"pipelines/debugging_pipeline.py" = ["I001", "PLR0913", "RUF010"]
+"pipelines/debug_log_sink.py" = ["I001", "PLR0913", "RUF010"]
 "pipelines/export_sink.py" = ["PLR0911", "PLR0913", "PLW2901", "SIM105"]
 "pipelines/priority_pipeline.py" = ["PLR0913"]
 "pipelines/extract_stage.py" = ["I001"]
@@ -235,7 +235,7 @@ module = [
     "pipelines.base_pipeline",
     "pipelines.canonicalize_stage",
     "pipelines.contracts",
-    "pipelines.debugging_pipeline",
+    "pipelines.debug_log_sink",
     "pipelines.export_sink",
     "pipelines.filter_stage",
     "pipelines.frontier_queue",
