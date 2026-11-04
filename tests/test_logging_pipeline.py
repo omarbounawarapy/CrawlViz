@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from events import StopCrawlEvent
-from pipelines.logging_pipeline import LoggingPipeline
+from pipelines.crawl_log_sink import LoggingPipeline
 
 
 def test_lines_are_json_in_event_order(tmp_path):

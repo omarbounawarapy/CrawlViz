@@ -239,7 +239,7 @@ module = [
     "pipelines.export_sink",
     "pipelines.filter_stage",
     "pipelines.frontier_queue",
-    "pipelines.logging_pipeline",
+    "pipelines.crawl_log_sink",
     "pipelines.priority_pipeline",
     "pipelines.extract_stage",
     "pipelines.fetch_stage",

@@ -81,7 +81,7 @@ class DebuggingPipeline(BasePipeline):
     """Renders every business and trace event into a dense one-line
     ``[TAG] STATUS field=value ...`` log entry, written to a per-crawl
     debug file. This is the granular, high-volume counterpart to
-    pipelines.logging_pipeline's narrative crawl log; see
+    pipelines.crawl_log_sink's narrative crawl log; see
     traceability.emitter.TraceEmitter for how trace-event volume is
     controlled (TRACE_MODE).
 
