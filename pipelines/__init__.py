@@ -9,7 +9,7 @@ from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryProcessor
 from .scoring_pipeline import ScoringPipeline
 from .stopping_pipeline import StopConditions, StoppingPipeline
-from .storage_pipeline import StoragePipeline
+from .storage_sink import StoragePipeline
 from .transform_stage import TransformationPipeline
 
 __all__ = [

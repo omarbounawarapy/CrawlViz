@@ -247,7 +247,7 @@ module = [
     "pipelines.robots",
     "pipelines.scoring_pipeline",
     "pipelines.stopping_pipeline",
-    "pipelines.storage_pipeline",
+    "pipelines.storage_sink",
     "pipelines.transform_stage",
     "priority.strategy",
     "routes.benchmark",
