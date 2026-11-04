@@ -44,7 +44,7 @@ _BLOCKED_TABLES = frozenset(
     }
 )
 
-# Columns every crawler table is guaranteed to have (from exporting_pipeline.py).
+# Columns every crawler table is guaranteed to have (from export_sink.py).
 _REQUIRED_CRAWLER_COLUMNS = frozenset({"id", "crawl_id", "url", "created_at"})
 
 

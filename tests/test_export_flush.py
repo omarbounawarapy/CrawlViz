@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from core.event_broker import EventBroker
-from pipelines.exporting_pipeline import ExportingPipeline
+from pipelines.export_sink import ExportingPipeline
 
 BLUEPRINT = {"extraction": {"fields": {"title": {"export_type": "text"}}}}
 

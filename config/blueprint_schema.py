@@ -2,7 +2,7 @@
 blueprint_schema.py
 --------------------
 Pydantic schema for the *assembled* blueprint dict -- the shape every
-consumer (core.Crawler, pipelines.exporting_pipeline.ExportingPipeline,
+consumer (core.Crawler, pipelines.export_sink.ExportingPipeline,
 models.item_extractor.ItemExtractor, nlp.SpaceUpdater's caller, ...)
 actually reads.
 
@@ -104,7 +104,7 @@ class BlueprintSchemaError(ValueError):
 # FIELD-LEVEL SHAPE
 # =========================================================
 # This is the exact shape models.item_extractor.FieldExtractor and
-# pipelines.exporting_pipeline.ExportingPipeline both read -- issue #1
+# pipelines.export_sink.ExportingPipeline both read -- issue #1
 # above was this shape drifting between the translator and
 # ExportingPipeline specifically.
 

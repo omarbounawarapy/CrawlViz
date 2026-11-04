@@ -10,7 +10,7 @@ import pytest
 
 from core.event_broker import EventBroker
 from nlp import SpaceStore, VectorSpace
-from pipelines.exporting_pipeline import ExportingPipeline
+from pipelines.export_sink import ExportingPipeline
 from services.nlp_service import NLPService
 
 
