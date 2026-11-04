@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from pipelines.transformation_pipeline import MAX_REGEX_INPUT_CHARS, TransformationPipeline
+from pipelines.transform_stage import MAX_REGEX_INPUT_CHARS, TransformationPipeline
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "templates" / "wikiMD.json"
 
@@ -33,7 +33,7 @@ def _pipeline() -> TransformationPipeline:
 
 def test_regex_skips_input_over_the_limit_and_logs(caplog):
     long_text = "a" * (MAX_REGEX_INPUT_CHARS + 1)
-    with caplog.at_level(logging.WARNING, logger="pipelines.transformation_pipeline"):
+    with caplog.at_level(logging.WARNING, logger="pipelines.transform_stage"):
         result = _pipeline()._regex(long_text, {"type": "regex", "pattern": "(a+)"})
 
     assert result == long_text
@@ -42,7 +42,7 @@ def test_regex_skips_input_over_the_limit_and_logs(caplog):
 
 def test_regex_extract_skips_input_over_the_limit_and_logs(caplog):
     long_text = "a" * (MAX_REGEX_INPUT_CHARS + 1)
-    with caplog.at_level(logging.WARNING, logger="pipelines.transformation_pipeline"):
+    with caplog.at_level(logging.WARNING, logger="pipelines.transform_stage"):
         result = _pipeline()._regex_extract(long_text, {"type": "regex_extract", "pattern": "a"})
 
     assert result == long_text

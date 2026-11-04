@@ -10,7 +10,7 @@ from .retry_stage import RetryProcessor
 from .scoring_pipeline import ScoringPipeline
 from .stopping_pipeline import StopConditions, StoppingPipeline
 from .storage_pipeline import StoragePipeline
-from .transformation_pipeline import TransformationPipeline
+from .transform_stage import TransformationPipeline
 
 __all__ = [
     "CanonicalizationPipeline",

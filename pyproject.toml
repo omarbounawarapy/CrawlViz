@@ -248,7 +248,7 @@ module = [
     "pipelines.scoring_pipeline",
     "pipelines.stopping_pipeline",
     "pipelines.storage_pipeline",
-    "pipelines.transformation_pipeline",
+    "pipelines.transform_stage",
     "priority.strategy",
     "routes.benchmark",
     "routes.config",
