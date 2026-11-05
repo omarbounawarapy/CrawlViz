@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 from crawlviz.nlp.embedding_engine import HashingEmbeddingEngine, create_embedding_engine
-from models.link import Link
+from crawlviz.shared import Link
 from services.nlp_service import NLPService
 
 TOPIC = "insulin resistance and type 2 diabetes treatment"

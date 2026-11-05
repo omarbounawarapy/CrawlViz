@@ -87,7 +87,6 @@ max-complexity = 10
 "main.py" = ["I001"]
 "models/links_extractor.py" = ["SIM108"]
 "models/prompts.py" = ["RUF001"]
-"models/storage.py" = ["I001"]
 "src/crawlviz/nlp/embedding_engine.py" = ["PLC0415"]
 "src/crawlviz/nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
 "src/crawlviz/nlp/space_updater.py" = ["SIM105", "UP041"]

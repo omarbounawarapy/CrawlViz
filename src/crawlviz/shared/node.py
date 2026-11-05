@@ -2,9 +2,8 @@ import logging
 from asyncio import Future
 from typing import Any
 
-from crawlviz.shared import build_url
-
 from .domain import Domain
+from .html_utils import build_url
 from .link import Link
 
 logger = logging.getLogger(__name__)

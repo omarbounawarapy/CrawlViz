@@ -11,7 +11,7 @@ from crawlviz.nlp import (
     VectorSpace,
     create_embedding_engine,
 )
-from models.link import Link
+from crawlviz.shared import Link
 
 from .link_features import FeatureSettings, LinkFeatureScorer
 from .space_bootstrap import SpaceBootstrapper

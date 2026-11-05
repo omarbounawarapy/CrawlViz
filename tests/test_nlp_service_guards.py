@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from models.link import Link
+from crawlviz.shared import Link
 from services.nlp_service import NLPService
 from tests.test_nlp_service import make
 

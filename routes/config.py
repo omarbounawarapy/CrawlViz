@@ -41,8 +41,7 @@ from config import settings_store as store
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core.live_settings import LiveSettingsError
 from crawlviz.llm.llm_handler import LlmHandler
-from crawlviz.shared import load_json
-from models.link import Link
+from crawlviz.shared import Link, load_json
 from models.prompts import STRATEGIES, PromptBuilder
 
 from . import run as run_routes

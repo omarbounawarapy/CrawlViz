@@ -6,7 +6,7 @@ from itertools import pairwise
 from typing import Any
 
 from core.event_broker import EventBroker
-from models import Domain, Node
+from crawlviz.shared import Domain, Node
 from pipelines.fetch_stage import FetchStage
 
 MIN_DELAY = 0.05

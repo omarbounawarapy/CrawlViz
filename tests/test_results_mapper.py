@@ -2,7 +2,7 @@
 responsible for defensively parsing LLM JSON output onto Link objects.
 """
 
-from models import Link
+from crawlviz.shared import Link
 from services.results_mapper import ResultMapper
 from services.scoring_service import ScoringService
 

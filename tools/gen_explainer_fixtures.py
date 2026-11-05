@@ -176,7 +176,7 @@ async def _backoff_run(cfg: dict, outcomes: list[str]) -> list[float]:
             backoff_success_decay=cfg["backoff_success_decay"],
             backoff_failure_decay=cfg["backoff_failure_decay"],
         )
-        from models import Domain, Node
+        from crawlviz.shared import Domain, Node
 
         domain = Domain("d", "https://example.test", ".//a")
         for i in range(len(outcomes)):

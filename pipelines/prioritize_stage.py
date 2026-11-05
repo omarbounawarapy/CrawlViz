@@ -10,7 +10,7 @@ from crawlviz.events import (
     PriorityInputSnapshotEvent,
 )
 from crawlviz.priority import StrategyFn, get_strategy
-from models import Node
+from crawlviz.shared import Node
 
 from .base_pipeline import BasePipeline
 

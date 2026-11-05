@@ -7,8 +7,7 @@ from datetime import UTC, datetime
 
 from config import ITEMS_DB_PATH
 from crawlviz.events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
-from crawlviz.shared import BackgroundTasks
-from models import Node
+from crawlviz.shared import BackgroundTasks, Node
 
 from .base_pipeline import SHUTDOWN
 from .export_tables import ensure_table

@@ -1,12 +1,14 @@
 """The shared kernel: code every other area may use and that imports no other area.
 
-Atomic file writes and JSON files, background task tracking, hashing, URL and HTML helpers,
-log redaction, the trace context, and the guarded HTTP client with the errors it raises.
+The `Link`, `Node` and `Domain` types the crawl graph is built from, atomic file writes and
+JSON files, background task tracking, hashing, URL and HTML helpers, log redaction, the
+trace context, and the guarded HTTP client with the errors it raises.
 Other areas import from `crawlviz.shared`, never from a module inside it (ARCH-2).
 """
 
 from .atomic_write import atomic_open, write_text_atomic
 from .background_tasks import BackgroundTasks
+from .domain import Domain
 from .fetch_errors import (
     REJECTION_ERROR_NAMES,
     BlockedAddressError,
@@ -27,6 +29,7 @@ from .html_utils import (
     normalize_url,
 )
 from .jsonio import load_json, save_json
+from .link import Link
 from .log_redaction import (
     MIN_SECRET_LENGTH,
     REDACTED,
@@ -36,6 +39,7 @@ from .log_redaction import (
     register_secrets,
 )
 from .network_client import MAX_REDIRECTS, GetRequestStrategy, NetworkClient
+from .node import Node
 from .trace_context import bind_node, get_trace, new_trace_id, set_trace
 from .url_guard import PublicAddressResolver, ensure_public_url, is_blocked_address
 
@@ -46,9 +50,12 @@ __all__ = [
     "REJECTION_ERROR_NAMES",
     "BackgroundTasks",
     "BlockedAddressError",
+    "Domain",
     "FetchRejectedError",
     "GetRequestStrategy",
+    "Link",
     "NetworkClient",
+    "Node",
     "PublicAddressResolver",
     "ResponseTooLargeError",
     "TooManyRedirectsError",

@@ -43,7 +43,8 @@ from crawlviz.events import (
     ScoringFailedEvent,
     StopCrawlEvent,
 )
-from models import Domain, Link, Node, Storage
+from crawlviz.shared import Domain, Link, Node
+from models import Storage
 from pipelines import (
     FilterStage,
     PrioritizeStage,

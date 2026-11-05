@@ -3,9 +3,7 @@ from typing import Any
 
 from lxml import html as lxml_html
 
-from crawlviz.shared import build_url, is_relative_url
-
-from .link import Link
+from crawlviz.shared import Link, build_url, is_relative_url
 
 logger = logging.getLogger(__name__)
 

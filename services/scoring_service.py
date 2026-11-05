@@ -1,6 +1,7 @@
 import os
 
-from models import Link, Node, PromptBuilder, ScoringContext
+from crawlviz.shared import Link, Node
+from models import PromptBuilder, ScoringContext
 
 from .results_mapper import ResultMapper
 

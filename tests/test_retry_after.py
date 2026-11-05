@@ -10,7 +10,7 @@ from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
 from crawlviz.events import RequestFailedEvent
-from models import Domain, Node
+from crawlviz.shared import Domain, Node
 from pipelines.fetch_stage import FetchStage, is_rate_limited
 from pipelines.http_failure import MAX_RETRY_AFTER_SECONDS, retry_after_seconds, status_of
 

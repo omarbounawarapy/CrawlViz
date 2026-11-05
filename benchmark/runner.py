@@ -33,7 +33,8 @@ from crawlviz.events import (
     StopCrawlEvent,
     StorageOperationFailedEvent,
 )
-from models import Domain, Node, Storage
+from crawlviz.shared import Domain, Node
+from models import Storage
 from pipelines import (
     ExtractStage,
     FetchStage,
