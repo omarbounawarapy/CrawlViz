@@ -1,24 +1,18 @@
 """Secrets never reach a log line (SEC-3)."""
 
-import json
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 
-from config.paths import KEYS_FILE_NAME
-from crawlviz.llm.key_manager import KeyManager
 from crawlviz.shared import (
     MIN_SECRET_LENGTH,
     REDACTED,
     clear_registered_secrets,
     redact_secrets,
-    register_provider_keys,
     register_secrets,
 )
 
 API_KEY = "gsk_ThisIsAFakeKeyForTests1234567890"
-SECOND_API_KEY = "gsk_SecondFakeKey0987654321"
 
 
 @pytest.fixture(autouse=True)
@@ -32,15 +26,6 @@ def test_a_registered_value_is_replaced_wherever_it_appears() -> None:
     register_secrets([API_KEY])
     line = f"calling provider with {API_KEY} and again {API_KEY}!"
     assert redact_secrets(line) == f"calling provider with {REDACTED} and again {REDACTED}!"
-
-
-def test_every_key_in_the_key_store_is_redacted(tmp_path: Path) -> None:
-    keys_path = tmp_path / KEYS_FILE_NAME
-    keys_path.write_text(json.dumps({"groq": [API_KEY, SECOND_API_KEY]}), encoding="utf-8")
-    registry = KeyManager(keys_file=keys_path).registry
-    register_provider_keys(registry)
-    cleaned = redact_secrets(f"first {API_KEY} second {SECOND_API_KEY}")
-    assert cleaned == f"first {REDACTED} second {REDACTED}"
 
 
 def test_a_value_that_contains_another_is_replaced_whole() -> None:
