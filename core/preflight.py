@@ -10,7 +10,7 @@ from pathlib import Path
 
 from config import LLM_DEFAULT_ENDPOINTS
 from config.runtime_config import RuntimeConfig
-from infrastructure import KeyManager
+from crawlviz.llm import KeyManager
 
 # The host the live-graph WebSocket gateway binds (Crawler._build_ui_layer).
 GATEWAY_HOST = "localhost"

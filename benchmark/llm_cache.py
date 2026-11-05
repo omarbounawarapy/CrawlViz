@@ -26,7 +26,7 @@ from pathlib import Path
 
 import aiohttp
 
-from infrastructure import KeyManager, LlmHandler
+from crawlviz.llm import KeyManager, LlmHandler
 
 
 def retry_free_handler(keys_file: Path) -> LlmHandler:

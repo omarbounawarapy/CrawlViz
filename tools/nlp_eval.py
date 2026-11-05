@@ -19,7 +19,7 @@ import numpy as np
 
 import models.links_extractor as le
 from config.paths import RuntimePaths
-from infrastructure import KeyManager, LlmHandler
+from crawlviz.llm import KeyManager, LlmHandler
 from models import ScoringContext
 from services.nlp_service import NLPService
 from services.scoring_service import ScoringService

@@ -15,7 +15,7 @@ import aiohttp
 import pytest
 from models import ExpansionContext, ScoringContext
 
-from infrastructure import (
+from crawlviz.llm import (
     AnthropicTranslator,
     GeminiTranslator,
     GroqTranslator,

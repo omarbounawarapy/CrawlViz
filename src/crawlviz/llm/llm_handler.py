@@ -9,13 +9,13 @@ from email.utils import parsedate_to_datetime
 import aiohttp
 from aiohttp import hdrs
 
-from config import LLM_DEFAULT_ENDPOINTS
+from infrastructure.network_client import NetworkClient
 
 from .anthropic_translator import AnthropicTranslator
+from .endpoints import default_llm_endpoints
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
 from .key_manager import KeyManager
-from .network_client import NetworkClient
 from .nvidia_translator import NvidiaTranslator
 from .open_router_translator import OpenRouterTranslator
 from .openai_translator import OpenAITranslator
@@ -187,7 +187,7 @@ class LlmHandler:
         self.temperature = temperature
         # Only entries that differ from the built-in URL are applied.
         self.endpoints = {
-            p: u for p, u in (endpoints or {}).items() if u and u != LLM_DEFAULT_ENDPOINTS.get(p)
+            p: u for p, u in (endpoints or {}).items() if u and u != default_llm_endpoints().get(p)
         }
 
     def _apply_options(self, llm_type: str, params: dict) -> None:

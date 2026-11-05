@@ -18,8 +18,8 @@ from config.paths import RuntimePaths
 from crawlviz.priority.strategy import DEFAULT_WEIGHTS
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core.crawler import Crawler
-from infrastructure.key_manager import KeyManager
-from infrastructure.llm_handler import LlmHandler
+from crawlviz.llm.key_manager import KeyManager
+from crawlviz.llm.llm_handler import LlmHandler
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
 
 # The API refuses any Host but a local one, and TestClient's default is "testserver".
@@ -430,7 +430,7 @@ def test_prompts_and_endpoints_reach_their_objects(tmp_path):
     assert text.startswith("SYS") and "- only this" in text and "custom ctx" in text
     assert "OUTPUT FORMAT" in text and "Score range" not in text
 
-    from infrastructure.llm_handler import LlmHandler
+    from crawlviz.llm.llm_handler import LlmHandler
 
     h = LlmHandler(None, endpoints=cfg.providers.endpoints)
     assert h.endpoints == {"groq": "http://localhost:9/v1/chat"}

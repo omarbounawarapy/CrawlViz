@@ -12,7 +12,7 @@ from .llm_trace_events import (
 from .trace_context import get_trace
 
 if TYPE_CHECKING:
-    from infrastructure import LlmHandler
+    from crawlviz.llm import LlmHandler
 
     from .emitter import TraceEmitter
 

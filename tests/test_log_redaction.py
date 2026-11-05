@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from config.paths import KEYS_FILE_NAME
-from infrastructure.key_manager import KeyManager
+from crawlviz.llm.key_manager import KeyManager
 from utils.log_redaction import (
     MIN_SECRET_LENGTH,
     REDACTED,

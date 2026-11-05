@@ -6,8 +6,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from infrastructure.key_manager import KeyManager
-from infrastructure.llm_handler import LlmHandler
+from crawlviz.llm.key_manager import KeyManager
+from crawlviz.llm.llm_handler import LlmHandler
 
 from . import run as run_routes
 from .config_support import get_paths

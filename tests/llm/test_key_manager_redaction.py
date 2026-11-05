@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 
 from config.paths import KEYS_FILE_NAME
-from infrastructure.key_manager import KEYS_FILE_MODE, KeyManager
+from crawlviz.llm.key_manager import KEYS_FILE_MODE, KeyManager
 from traceability.logging_setup import JsonLineFormatter
 from utils.log_redaction import REDACTED, clear_registered_secrets
 

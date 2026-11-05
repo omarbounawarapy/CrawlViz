@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from crawlviz.llm import LlmHandler
 from crawlviz.nlp import (
     BaseEmbeddingEngine,
     BufferManager,
@@ -10,7 +11,6 @@ from crawlviz.nlp import (
     VectorSpace,
     create_embedding_engine,
 )
-from infrastructure import LlmHandler
 from models.link import Link
 
 from .link_features import FeatureSettings, LinkFeatureScorer

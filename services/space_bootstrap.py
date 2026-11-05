@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+from crawlviz.llm import LlmHandler
 from crawlviz.nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
-from infrastructure import LlmHandler
 from models import ExpansionContext
 from traceability.expansion_trace_events import (
     EXP_CandidatePruned,

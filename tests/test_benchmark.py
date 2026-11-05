@@ -1441,7 +1441,7 @@ async def test_the_cascade_refuses_a_graph_without_a_topic_before_any_call(tmp_p
 
 async def test_benchmark_handlers_leave_retries_to_the_benchmark(tmp_path, monkeypatch):
     from benchmark import llm_cache
-    from infrastructure import LlmHandler
+    from crawlviz.llm import LlmHandler
 
     class NoKeys:
         def __init__(self, keys_file):
