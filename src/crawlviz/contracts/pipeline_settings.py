@@ -7,7 +7,8 @@ step that moves a settings patch from the old names to the new ones. It is one s
 every format that holds a settings patch: the settings file, each saved preset and the
 ``runtime_config`` of a run manifest.
 
-The settings file registers it as its step from version 1 to 2.
+The settings file registers it as its step from version 1 to 2; the presets file applies it
+to each saved preset in the same step.
 """
 
 from __future__ import annotations

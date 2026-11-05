@@ -38,7 +38,7 @@ def test_saved_presets_are_nested_under_one_key_with_the_version(
 ) -> None:
     assert client.put("/config/presets/mine", json={"values": PRESET_VALUES}).status_code == 200
     stored = json.loads(_presets_file(paths).read_text(encoding="utf-8"))
-    assert stored == {"schema_version": 1, "presets": {"mine": PRESET_VALUES}}
+    assert stored == {"schema_version": 2, "presets": {"mine": PRESET_VALUES}}
 
 
 def test_an_unversioned_presets_file_still_lists_its_presets(
@@ -63,7 +63,7 @@ def test_deleting_a_preset_rewrites_the_versioned_file(
     client.put("/config/presets/mine", json={"values": PRESET_VALUES})
     assert client.delete("/config/presets/mine").status_code == 200
     stored = json.loads(_presets_file(paths).read_text(encoding="utf-8"))
-    assert stored == {"schema_version": 1, "presets": {}}
+    assert stored == {"schema_version": 2, "presets": {}}
 
 
 def test_a_newer_presets_file_is_refused_and_left_alone(

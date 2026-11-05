@@ -1,4 +1,5 @@
 {
   "night crawl": {"fetch": {"min_delay": 3.0}},
-  "cheap": {"scoring_cascade": {"low_score_sample_fraction": 0.0}}
+  "cheap": {"scoring_cascade": {"low_score_sample_fraction": 0.0}},
+  "few fetchers": {"pipelines": {"requests": {"workers": 2}, "storage": {"workers": 1}}}
 }

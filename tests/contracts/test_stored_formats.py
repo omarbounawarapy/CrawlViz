@@ -127,18 +127,18 @@ def test_settings_survive_a_write_and_read_unchanged() -> None:
     assert load_settings_document(dump_settings_document(patch)) == patch
 
 
-@pytest.mark.parametrize("version", [0, 1])
+@pytest.mark.parametrize("version", [0, 1, 2])
 def test_each_presets_version_loads_as_the_same_presets(version: int) -> None:
     presets = load_presets_document(_fixture("presets", version))
-    assert presets == _fixture("presets", 1)["presets"]
+    assert presets == _fixture("presets", 2)["presets"]
     for values in presets.values():
         _assert_applied(values, load_runtime_config(None, values).model_dump())
 
 
 def test_presets_are_written_at_the_current_version() -> None:
     presets = load_presets_document(_fixture("presets", 0))
-    assert dump_presets_document(presets) == _fixture("presets", 1)
-    assert PRESETS_FILE.version_of(dump_presets_document(presets)) == 1
+    assert dump_presets_document(presets) == _fixture("presets", 2)
+    assert PRESETS_FILE.version_of(dump_presets_document(presets)) == 2
 
 
 def test_a_version_zero_preset_named_like_the_version_key_keeps_its_name() -> None:
@@ -146,6 +146,31 @@ def test_a_version_zero_preset_named_like_the_version_key_keeps_its_name() -> No
     presets = load_presets_document({SCHEMA_VERSION_KEY: patch, "other": {}})
     assert presets == {SCHEMA_VERSION_KEY: patch, "other": {}}
     assert load_presets_document(dump_presets_document(presets)) == presets
+
+
+def test_a_version_zero_preset_named_like_the_version_key_is_migrated_too() -> None:
+    old = {"pipelines": {"scoring": {"workers": 2}}}
+    presets = load_presets_document({SCHEMA_VERSION_KEY: old, "other": old})
+    renamed = {"pipelines": {"score": {"workers": 2}}}
+    assert presets == {SCHEMA_VERSION_KEY: renamed, "other": renamed}
+
+
+def test_a_version_one_preset_with_a_section_under_both_names_is_refused() -> None:
+    both: dict[str, Any] = {"pipelines": {"filtering": {}, "filter": {}}}
+    stored = {SCHEMA_VERSION_KEY: 1, "presets": {"ok": {}, "both": both}}
+    expected = (
+        r"In the saved preset 'both': pipelines\.filtering and pipelines\.filter are the same "
+        r"setting under its old and new name\. Keep only pipelines\.filter\."
+    )
+    with pytest.raises(StoredFormatError, match=expected):
+        load_presets_document(stored)
+
+
+def test_a_malformed_preset_is_left_for_validation_to_report() -> None:
+    stored = {SCHEMA_VERSION_KEY: 1, "presets": {"broken": ["requests"]}}
+    # Typed as object: the reader passes a malformed preset through as stored.
+    presets: object = load_presets_document(stored)
+    assert presets == {"broken": ["requests"]}
 
 
 def test_a_presets_file_with_the_wrong_shape_says_how_to_recover() -> None:
