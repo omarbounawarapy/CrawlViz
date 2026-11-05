@@ -1,6 +1,7 @@
 # ADR 6: Every pipeline part has one name and one snake_case key, from class to UI label
 
-Status: proposed, 2026-10-29
+Status: accepted in part, 2026-11-05. Classes, modules and the `pipelines.<key>` settings
+keys are renamed; registry keys, wire `stage` values and event names are not yet.
 
 ## Context
 
@@ -19,9 +20,10 @@ Status: proposed, 2026-10-29
   `StorageNodeAddedEvent` both exist (`events/storage_events.py:25`, `:73`).
 - Since ADR 2, each stage is one `STAGES` entry, so a key rename is a one-line registry change
   plus its config, wire and UI copies.
-- No pin golden stores a class or event name (grep of `tests/pins/golden/`). The wire golden
-  stores stage keys: `request`, `extraction`, `filtering`, `scoring`, `priority`,
-  `transformation`.
+- One pin golden stores class names: `tests/pins/golden/crawler/composition.jsonl` holds
+  `type(stage).__name__` for each stage (`tests/pins/pin_crawler.py`, `describe_composition`),
+  and event class names for the consumers. The wire golden stores stage keys: `request`,
+  `extraction`, `filtering`, `scoring`, `priority`, `transformation`.
 
 ## Decision
 
@@ -79,11 +81,22 @@ Status: proposed, 2026-10-29
 
 ## Consequences
 
-- Class and event renames change no pin. The wire key rename changes the `stage` values in
-  `wire_messages.jsonl`. Preferred: the pin comparison migrates each golden through the
-  recording migration chain (ADR 5) before comparing, so the goldens stay byte-identical and
-  the migration is tested on real data. The fallback is a one-time `--update-pins` with the
-  rename as the reason. Test-engineer and research-scientist choose between them.
+- The class renames changed the 13 `"class"` values in `composition.jsonl` and nothing else.
+  They went in as a one-time `--update-pins`, one commit per class, each commit holding its
+  own golden line, with the owner's approval and a research-scientist sign-off. Event class
+  names also appear in that golden, so the event renames will need the same treatment.
+- The wire key rename changes the `stage` values in `wire_messages.jsonl`. Preferred: the
+  pin comparison migrates each golden through the recording migration chain (ADR 5) before
+  comparing, so the goldens stay byte-identical and the migration is tested on real data.
+  The fallback is a one-time `--update-pins` with the rename as the reason. Test-engineer and
+  research-scientist choose between them; the migration route is recommended because it
+  also exercises old recordings.
+- Done on 2026-11-05: the `pipelines.<key>` settings keys now use the stage keys (`fetch`,
+  `extract`, `filter`, `transform`, `score`, `prioritize`, `debug_log`), and the old names
+  are still read in settings files, presets, REST patches and live patches. Both names for
+  one section is refused. The `queues` object of `GET /status` follows the new keys. Still
+  open: registry keys, wire `stage` values and event names. Two asyncio task names still
+  carry old class names (`pipelines/fetch_stage.py`, `pipelines/stop_controller.py`).
 - The settings keys `pipelines.requests`, `pipelines.processing`, `pipelines.debugging` and
   the others move through the settings migration (ADR 5), so stored files and presets keep
   loading.

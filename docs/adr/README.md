@@ -11,7 +11,7 @@ commit plan. An accepted ADR is not rewritten; a later ADR supersedes it.
 | [3](0003-nlp-service-split.md) | NLPService keeps its interface and hands bootstrap and link features to two helpers | accepted |
 | [4](0004-dependency-direction.md) | Backend layers import downwards only, and import-linter enforces the order | proposed |
 | [5](0005-versioned-contracts.md) | Stored files and wire messages carry a version, migrate on read, and generate their types | proposed |
-| [6](0006-pipeline-naming.md) | Every pipeline part has one name and one snake_case key, from class to UI label | proposed |
+| [6](0006-pipeline-naming.md) | Every pipeline part has one name and one snake_case key, from class to UI label | accepted in part |
 | [7](0007-split-large-modules.md) | Each setting has one definition in its domain, and the large backend modules split by responsibility | proposed |
 | [8](0008-subsystem-status.md) | One status board per crawl feeds `/status` and `SUBSYSTEM_STATUS`, and the gateway starts first | proposed |
 | [9](0009-ui-runtime-config.md) | The UI reads its runtime settings and the run mode from one `/ui-config` endpoint | proposed |
