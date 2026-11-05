@@ -11,7 +11,7 @@ inside a crawl carries them without being passed down:
 
 ``CRAWLVIZ_LOG_FORMAT=text`` switches to one readable line per record for development;
 ``CRAWLVIZ_LOG_LEVEL`` sets the level. Both formats pass the text through
-``utils.log_redaction`` first, so a registered secret never reaches a handler.
+``crawlviz.shared.log_redaction`` first, so a registered secret never reaches a handler.
 """
 
 import json

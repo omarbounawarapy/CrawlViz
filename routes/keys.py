@@ -1,6 +1,5 @@
 """Masked API key management. Full keys are never returned."""
 
-import os
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -16,12 +15,7 @@ router = APIRouter(tags=["config"])
 
 
 def get_key_manager() -> KeyManager:
-    path = get_paths().keys_file
-    if not path.exists():
-        path.write_text("{}", encoding="utf-8")
-        os.chmod(path, 0o600)
-    manager = KeyManager(keys_file=path)
-    return manager
+    return KeyManager.load_or_create(get_paths().keys_file)
 
 
 def _reload_running_keys() -> None:
