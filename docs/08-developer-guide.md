@@ -24,7 +24,7 @@ Link relevance scoring and topic expansion call an LLM. Six providers are suppor
 cp keys.example.json keys.json
 ```
 
-`infrastructure/key_manager.py` supports multiple keys in this file and rotates between them with a cooldown policy. Listing more than one key gives the manager a small pool to draw from under load.
+`src/crawlviz/llm/key_manager.py` supports multiple keys in this file and rotates between them with a cooldown policy. Listing more than one key gives the manager a small pool to draw from under load.
 
 ### Pre-cache the embedding model
 
@@ -175,8 +175,10 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `models/` | Domain objects: `Node`, `Link`, `Domain`, `Storage`, extractors, prompt/context builders |
 | `pipelines/` | The ~13 event-driven processing stages |
 | `src/crawlviz/nlp/` | Embedding engine, vector space, feature extraction, expansion buffering |
-| `infrastructure/` | Network client, LLM handler, key manager, provider translators, async file I/O |
+| `infrastructure/` | Network client, URL guard, async file I/O |
 | `src/crawlviz/priority/` | The three named priority strategies |
+| `src/crawlviz/llm/` | LLM handler, six provider translators, key manager, endpoints, call budget, token usage, and the typed layer (`LlmClient`, request and response types, JSON output validation, prompt registry, call recorder, cost table) |
+| `src/crawlviz/contracts/` | Stored-format versions and the pipeline settings migration |
 | `ui_bridge/` | WebSocket gateway, telemetry bridge, server-side state snapshot |
 | `traceability/` | Correlation-ID-based causal tracing, two-tier logging |
 | `config/` | Tuning constants, runtime config schema, persisted settings |
@@ -188,4 +190,4 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `docs/` | These guides and `crawl_messages.ts` (WS wire protocol) |
 | `crawler-ui/` | React/Vite frontend |
 
-**Where things moved.** The backend is moving into `src/crawlviz/` one package at a time. `events`, `nlp`, `priority` and `offline` are there now, so import them as `from crawlviz.events import ...`, `from crawlviz.nlp import ...`, `from crawlviz.priority import ...` and `from crawlviz.offline import ...`. The other packages in the table still sit at the repository root and import as before.
+**Where things moved.** The backend is moving into `src/crawlviz/` one package at a time. `contracts`, `events`, `llm`, `nlp`, `priority` and `offline` are there now, so import them as `from crawlviz.llm import ...` and the same form for the others. The other packages in the table still sit at the repository root and import as before.
