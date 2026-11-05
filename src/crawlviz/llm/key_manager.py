@@ -5,6 +5,7 @@ import logging
 import os
 import time
 from pathlib import Path
+from typing import Self
 
 from crawlviz.shared import register_provider_keys
 
@@ -21,12 +22,17 @@ def _write_new_owner_only_file(path: Path, text: str) -> None:
     """Create ``path`` readable by its owner only, write ``text`` and flush it to disk.
 
     Raises ``FileExistsError`` if anything, a symlink included, is already at ``path``.
+    If writing fails the new file is deleted, so a part-written file is never left.
     """
     fd = os.open(path, NEW_FILE_FLAGS, KEYS_FILE_MODE)
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write(text)
-        handle.flush()
-        os.fsync(handle.fileno())
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
 
 
 class KeyManager:
@@ -48,6 +54,22 @@ class KeyManager:
         self.indexes = {p: 0 for p in self.registry}
         self.timestamps = {p: {k: 0 for k in self.registry[p]} for p in self.registry}
         self.lock = asyncio.Lock()
+
+    @classmethod
+    def load_or_create(cls, keys_file: Path, cooldown: float = 0) -> Self:
+        """Open the store at ``keys_file``, creating it empty and owner-only if it is missing.
+
+        This is the one place a keys file is created. It is created with mode 0600 in a
+        single step, so it is never readable by other users, not even for a moment.
+        """
+        try:
+            _write_new_owner_only_file(Path(keys_file), json.dumps({}))
+        except FileExistsError:
+            pass  # the usual case: the file is there already
+        except OSError:
+            logger.exception("Could not create the API keys file %s", keys_file)
+            raise
+        return cls(keys_file=keys_file, cooldown=cooldown)
 
     async def next_key(self, provider_name: str) -> str | None:
         """Return the next key due for `provider_name`, or None if it has no keys.

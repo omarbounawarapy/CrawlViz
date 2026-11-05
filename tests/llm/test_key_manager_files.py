@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import stat
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,10 @@ def temp_path_of(keys_path: Path) -> Path:
 
 
 def fail_replace(source: object, target: object) -> None:
+    raise OSError("disk full")
+
+
+def fail_fsync(fd: int) -> None:
     raise OSError("disk full")
 
 
@@ -64,6 +69,37 @@ def test_a_save_does_not_write_through_a_symlink_left_at_the_temp_path(
     KeyManager(keys_file=keys_path).add_key("groq", API_KEY)
     assert API_KEY not in elsewhere.read_text(encoding="utf-8")
     assert json.loads(keys_path.read_text(encoding="utf-8")) == {"groq": [API_KEY]}
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
+def test_a_missing_keys_file_is_created_empty_and_owner_only(tmp_path: Path) -> None:
+    keys_path = tmp_path / KEYS_FILE_NAME
+    old_umask = os.umask(0)
+    try:
+        manager = KeyManager.load_or_create(keys_path)
+    finally:
+        os.umask(old_umask)
+    assert manager.registry == {}
+    assert json.loads(keys_path.read_text(encoding="utf-8")) == {}
+    assert stat.S_IMODE(keys_path.stat().st_mode) == KEYS_FILE_MODE
+
+
+def test_an_existing_keys_file_is_loaded_as_it_is(keys_path: Path) -> None:
+    keys_path.write_text(json.dumps({"groq": [API_KEY]}), encoding="utf-8")
+    manager = KeyManager.load_or_create(keys_path, cooldown=5)
+    assert manager.registry == {"groq": [API_KEY]}
+    assert manager.cooldown == 5
+    assert json.loads(keys_path.read_text(encoding="utf-8")) == {"groq": [API_KEY]}
+
+
+def test_a_keys_file_that_cannot_be_created_whole_is_not_left_behind(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    keys_path = tmp_path / KEYS_FILE_NAME
+    monkeypatch.setattr(os, "fsync", fail_fsync)
+    with pytest.raises(OSError, match="disk full"):
+        KeyManager.load_or_create(keys_path)
+    assert not keys_path.exists()
 
 
 def refuse_chmod(path: object, mode: int) -> None:
