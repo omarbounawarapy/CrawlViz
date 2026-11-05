@@ -47,12 +47,12 @@ OVERRIDES = {
         "extra_headers": {"X-Test": "1"},
     },
     "pipelines": {
-        "filtering": {"workers": 2, "max_queue_size": 5},
-        "priority": {"workers": 3},
-        "transformation": {"workers": 5},
-        "debugging": {"workers": 1},
-        "requests": {"workers": 6},
-        "scoring": {"workers": 2},
+        "filter": {"workers": 2, "max_queue_size": 5},
+        "prioritize": {"workers": 3},
+        "transform": {"workers": 5},
+        "debug_log": {"workers": 1},
+        "fetch": {"workers": 6},
+        "score": {"workers": 2},
         "retry": {"workers": 2},
     },
     "retries": {
@@ -157,7 +157,7 @@ def test_explicit_ctor_args_beat_config(tmp_path):
         {"fetch": {"http_connect_timeout": 99, "http_total_timeout": 5}},
         {"scoring_cascade": {"low_percentile": 80, "high_percentile": 20}},
         {"scoring_cascade": {"low_threshold": 0.9, "high_threshold": 0.1}},
-        {"pipelines": {"filtering": {"workers": 0}}},
+        {"pipelines": {"filter": {"workers": 0}}},
         {"priority": {"nlp_bias": 0, "llm_bias": 0}},
     ],
 )
@@ -170,11 +170,11 @@ def test_store_persists_only_the_difference(tmp_path):
     f = tmp_path / "settings.json"
     store.save_settings(f, {"fetch": {"min_delay": 3.0}})
     assert json.loads(f.read_text()) == {"schema_version": 1, "fetch": {"min_delay": 3.0}}
-    store.save_settings(f, {"pipelines": {"filtering": {"workers": 4}}})
+    store.save_settings(f, {"pipelines": {"filter": {"workers": 4}}})
     cfg = store.load_runtime_config(f, {"fetch": {"min_delay": 0.0}})
     assert cfg.fetch.min_delay == 0.0  # override beats stored
-    assert cfg.pipelines.filtering.workers == 4  # stored beats default
-    assert cfg.pipelines.priority.workers == 10  # untouched stays default
+    assert cfg.pipelines.filter.workers == 4  # stored beats default
+    assert cfg.pipelines.prioritize.workers == 10  # untouched stays default
     store.reset_settings(f, "fetch")
     assert "fetch" not in json.loads(f.read_text())
     store.reset_settings(f)
@@ -217,9 +217,9 @@ def test_config_routes_round_trip(client):
 
 def test_config_validation_errors_are_structured(client):
     c, _ = client
-    r = c.put("/config", json={"values": {"pipelines": {"filtering": {"workers": 0}}}})
+    r = c.put("/config", json={"values": {"pipelines": {"filter": {"workers": 0}}}})
     assert r.status_code == 422
-    assert r.json()["detail"]["errors"][0]["path"].startswith("pipelines.filtering.workers")
+    assert r.json()["detail"]["errors"][0]["path"].startswith("pipelines.filter.workers")
     v = c.post("/config/validate", json={"values": {"fetch": {"min_delay": -1}}}).json()
     assert v["valid"] is False and v["errors"]
 
@@ -465,10 +465,10 @@ def test_running_crawl_sees_key_changes(tmp_path):
 
 
 def test_queue_bound_none_is_unbounded_and_legacy_zero_migrates(tmp_path):
-    cfg = store.load_runtime_config(None, {"pipelines": {"filtering": {"max_queue_size": 0}}})
-    assert cfg.pipelines.filtering.max_queue_size is None
-    assert default_runtime_config().pipelines.requests.max_queue_size is None
-    _, p = build(tmp_path, {"pipelines": {"filtering": {"max_queue_size": 5}}})
+    cfg = store.load_runtime_config(None, {"pipelines": {"filter": {"max_queue_size": 0}}})
+    assert cfg.pipelines.filter.max_queue_size is None
+    assert default_runtime_config().pipelines.fetch.max_queue_size is None
+    _, p = build(tmp_path, {"pipelines": {"filter": {"max_queue_size": 5}}})
     assert p["filtering"].queue.maxsize == 5
     assert p["requests"].queue.maxsize == 0
 

@@ -54,14 +54,14 @@ def test_an_unknown_section_key_names_its_whole_path() -> None:
 
 def test_an_unknown_key_two_levels_down_names_its_whole_path() -> None:
     with pytest.raises(ValidationError) as raised:
-        load_runtime_config(None, {"pipelines": {"requests": {"workerz": 2}}})
-    assert _locations(raised.value) == [("pipelines", "requests", "workerz")]
+        load_runtime_config(None, {"pipelines": {"fetch": {"workerz": 2}}})
+    assert _locations(raised.value) == [("pipelines", "fetch", "workerz")]
 
 
 def test_every_unknown_key_is_reported_not_only_the_first() -> None:
     with pytest.raises(ValidationError) as raised:
-        load_runtime_config(None, {"pipelines": {"fetch": {"workers": 2}}, "bogus": 1})
-    assert sorted(_locations(raised.value)) == [("bogus",), ("pipelines", "fetch")]
+        load_runtime_config(None, {"pipelines": {"fetchh": {"workers": 2}}, "bogus": 1})
+    assert sorted(_locations(raised.value)) == [("bogus",), ("pipelines", "fetchh")]
 
 
 def test_the_defaults_survive_a_round_trip() -> None:

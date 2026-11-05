@@ -15,15 +15,15 @@ vi.mock("../../api/client", () => ({
 }));
 
 const PIPES = {
-  requests: { workers: 4, max_queue_size: null },
-  processing: { workers: 1, max_queue_size: 50 },
-  filtering: { workers: 10, max_queue_size: null },
-  transformation: { workers: 3, max_queue_size: null },
-  scoring: { workers: 1, max_queue_size: null },
-  priority: { workers: 10, max_queue_size: null },
+  fetch: { workers: 4, max_queue_size: null },
+  extract: { workers: 1, max_queue_size: 50 },
+  filter: { workers: 10, max_queue_size: null },
+  transform: { workers: 3, max_queue_size: null },
+  score: { workers: 1, max_queue_size: null },
+  prioritize: { workers: 10, max_queue_size: null },
   storage: { workers: 1, max_queue_size: null },
   retry: { workers: 1, max_queue_size: null },
-  debugging: { workers: 2, max_queue_size: null },
+  debug_log: { workers: 2, max_queue_size: null },
 };
 
 const FETCH = {

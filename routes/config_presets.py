@@ -28,11 +28,11 @@ router = APIRouter(tags=["config"])
 BUILTIN_PRESETS: dict[str, dict[str, Any]] = {
     "polite": {
         "fetch": {"min_delay": 2.0, "jitter_max": 0.5},
-        "pipelines": {"requests": {"workers": 2}},
+        "pipelines": {"fetch": {"workers": 2}},
     },
     "fast": {
         "fetch": {"min_delay": 0.2, "jitter_max": 0.05},
-        "pipelines": {"requests": {"workers": 8}},
+        "pipelines": {"fetch": {"workers": 8}},
     },
     "frugal": {
         "scoring_cascade": {"high_score_llm_fraction": 0.1, "low_score_sample_fraction": 0.0},
@@ -51,7 +51,7 @@ def _pct(fraction: float) -> str:
 
 def _pace(values: dict[str, Any]) -> str:
     fetch = values["fetch"]
-    workers = values["pipelines"]["requests"]["workers"]
+    workers = values["pipelines"]["fetch"]["workers"]
     return (
         f"{_num(fetch['min_delay'])} s between requests "
         f"(plus up to {_num(fetch['jitter_max'])} s random) "

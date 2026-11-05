@@ -14,7 +14,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from config.runtime_config import RuntimeConfig
-from config.settings_store import deep_merge
+from config.settings_store import deep_merge, with_current_names
 
 RESIZE = "@resize"
 
@@ -25,14 +25,14 @@ LIVE_BINDINGS: dict[str, tuple[str, str]] = {
     "fetch.backoff_max": ("requests", "max_backoff"),
     "retries.max_request_retries": ("retry", "max_request_retries"),
     "retries.max_scoring_retries": ("retry", "max_scoring_retries"),
-    "pipelines.processing.workers": ("processing", RESIZE),
-    "pipelines.requests.workers": ("requests", RESIZE),
-    "pipelines.scoring.workers": ("scoring", RESIZE),
+    "pipelines.extract.workers": ("processing", RESIZE),
+    "pipelines.fetch.workers": ("requests", RESIZE),
+    "pipelines.score.workers": ("scoring", RESIZE),
     "pipelines.storage.workers": ("storage", RESIZE),
-    "pipelines.filtering.workers": ("filtering", RESIZE),
-    "pipelines.priority.workers": ("priority", RESIZE),
-    "pipelines.transformation.workers": ("transformation", RESIZE),
-    "pipelines.debugging.workers": ("debug", RESIZE),
+    "pipelines.filter.workers": ("filtering", RESIZE),
+    "pipelines.prioritize.workers": ("priority", RESIZE),
+    "pipelines.transform.workers": ("transformation", RESIZE),
+    "pipelines.debug_log.workers": ("debug", RESIZE),
     "pipelines.retry.workers": ("retry", RESIZE),
 }
 
@@ -86,6 +86,7 @@ def apply_live(config: RuntimeConfig, pipelines: dict, patch: dict) -> RuntimeCo
     `pipelines`, and return the new config. Raises ``LiveSettingsError``
     for a field that cannot change mid-run and ``ValidationError`` for an
     invalid value; nothing is applied in either case."""
+    patch = with_current_names(patch)
     wanted = _flatten(patch)
     for path in wanted:
         if path not in LIVE_BINDINGS:

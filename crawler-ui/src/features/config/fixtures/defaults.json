@@ -44,15 +44,15 @@
     "allow_private_addresses": false
   },
   "pipelines": {
-    "processing": {
+    "extract": {
       "workers": 1,
       "max_queue_size": null
     },
-    "requests": {
+    "fetch": {
       "workers": 4,
       "max_queue_size": null
     },
-    "scoring": {
+    "score": {
       "workers": 1,
       "max_queue_size": null
     },
@@ -60,19 +60,19 @@
       "workers": 1,
       "max_queue_size": null
     },
-    "filtering": {
+    "filter": {
       "workers": 10,
       "max_queue_size": null
     },
-    "priority": {
+    "prioritize": {
       "workers": 10,
       "max_queue_size": null
     },
-    "transformation": {
+    "transform": {
       "workers": 3,
       "max_queue_size": null
     },
-    "debugging": {
+    "debug_log": {
       "workers": 2,
       "max_queue_size": null
     },

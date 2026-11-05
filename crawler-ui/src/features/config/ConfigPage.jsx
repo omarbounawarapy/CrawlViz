@@ -325,7 +325,7 @@ export default function ConfigPage() {
     Fetch: (d) => (
       <FetchExplainers
         cfg={d.fetch}
-        workers={d.pipelines.requests.workers}
+        workers={d.pipelines.fetch.workers}
         maxRetries={d.retries.max_request_retries}
         onChange={change}
       />

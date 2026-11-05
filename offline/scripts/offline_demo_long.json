@@ -12,7 +12,7 @@
   ],
   "config": {
     "fetch": {"min_delay": 1.0},
-    "pipelines": {"requests": {"workers": 1}},
+    "pipelines": {"fetch": {"workers": 1}},
     "llm": {"max_calls_per_crawl": 40}
   }
 }

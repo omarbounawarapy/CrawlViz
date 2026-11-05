@@ -43,6 +43,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 import config as _config
 from config.user_agent import require_contact
+from crawlviz.contracts import StoredFormatError, rename_pipeline_settings
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
 from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
@@ -540,18 +541,32 @@ def _pl(workers: int) -> Any:
 
 
 class PipelinesConfig(ConfigSection):
-    """Per-pipeline parallelism (core/stages.py:build_stages). Logging
-    and canonicalization stay single-worker so output order is preserved."""
+    """Per-stage parallelism (core/stages.py:build_stages), one section per stage.
+    Logging and canonicalization stay single-worker so output order is preserved."""
 
-    processing: PipelineSettings = _pl(1)
-    requests: PipelineSettings = _pl(4)
-    scoring: PipelineSettings = _pl(1)
+    extract: PipelineSettings = _pl(1)
+    fetch: PipelineSettings = _pl(4)
+    score: PipelineSettings = _pl(1)
     storage: PipelineSettings = _pl(1)
-    filtering: PipelineSettings = _pl(10)
-    priority: PipelineSettings = _pl(10)
-    transformation: PipelineSettings = _pl(3)
-    debugging: PipelineSettings = _pl(2)
+    filter: PipelineSettings = _pl(10)
+    prioritize: PipelineSettings = _pl(10)
+    transform: PipelineSettings = _pl(3)
+    debug_log: PipelineSettings = _pl(2)
     retry: PipelineSettings = _pl(1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_old_section_names(cls, data: Any) -> Any:
+        """Move sections under their old names (``requests`` for ``fetch``) to the new ones,
+        so presets, stored settings and patches from older clients keep working. A section
+        given under both names is refused, naming both keys, because either value could be
+        the one meant."""
+        if not isinstance(data, dict):
+            return data
+        try:
+            return rename_pipeline_settings({"pipelines": data})["pipelines"]
+        except StoredFormatError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class RetryConfig(ConfigSection):

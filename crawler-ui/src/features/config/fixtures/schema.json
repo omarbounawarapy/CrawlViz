@@ -590,30 +590,30 @@
     },
     "PipelinesConfig": {
       "additionalProperties": false,
-      "description": "Per-pipeline parallelism (core/stages.py:build_stages). Logging\nand canonicalization stay single-worker so output order is preserved.",
+      "description": "Per-stage parallelism (core/stages.py:build_stages), one section per stage.\nLogging and canonicalization stay single-worker so output order is preserved.",
       "properties": {
-        "processing": {
+        "extract": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "requests": {
+        "fetch": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "scoring": {
+        "score": {
           "$ref": "#/$defs/PipelineSettings"
         },
         "storage": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "filtering": {
+        "filter": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "priority": {
+        "prioritize": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "transformation": {
+        "transform": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "debugging": {
+        "debug_log": {
           "$ref": "#/$defs/PipelineSettings"
         },
         "retry": {

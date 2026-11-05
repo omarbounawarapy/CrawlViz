@@ -5,9 +5,9 @@ const RULES = [
   {
     id: "gentle-delay",
     section: "Fetch",
-    when: (c) => c.fetch.min_delay < 1 && c.pipelines.requests.workers >= 4,
+    when: (c) => c.fetch.min_delay < 1 && c.pipelines.fetch.workers >= 4,
     text: (c) =>
-      `A pause of ${c.fetch.min_delay}s with ${c.pipelines.requests.workers} request workers is fast enough to draw 429 responses from small sites.`,
+      `A pause of ${c.fetch.min_delay}s with ${c.pipelines.fetch.workers} request workers is fast enough to draw 429 responses from small sites.`,
     fix: { label: "Set the pause to 1 s", set: [["fetch.min_delay", 1]] },
   },
   {

@@ -59,10 +59,7 @@ describe("preset and goal diffs", () => {
   });
 
   it("names pipeline stages as the Pipelines table does", () => {
-    const [change] = presetChanges(
-      { pipelines: { requests: { workers: 2 } } },
-      { pipelines: { requests: { workers: 4 } } },
-    );
+    const [change] = presetChanges({ pipelines: { fetch: { workers: 2 } } }, { pipelines: { fetch: { workers: 4 } } });
     expect(change.label).toBe("Pipelines › Fetch › Workers");
   });
 
@@ -79,9 +76,14 @@ describe("preset and goal diffs", () => {
 
 describe("stage names", () => {
   it("gives the diagram and the table one name per stage", () => {
-    expect(STAGE_NAMES.requests).toBe("Fetch");
-    expect(stageName("priority")).toBe("Order queue");
+    expect(STAGE_NAMES.fetch).toBe("Fetch");
+    expect(stageName("prioritize")).toBe("Order queue");
     expect(stageName("unknown_stage")).toBe("unknown stage");
+  });
+
+  it("names every pipeline the backend defaults carry", () => {
+    for (const key of Object.keys(defaults.pipelines)) expect(STAGE_NAMES).toHaveProperty(key);
+    expect(stageName("debug_log")).toBe("Debug trace");
   });
 });
 

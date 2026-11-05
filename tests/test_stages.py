@@ -72,7 +72,7 @@ def test_build_stages_follows_the_registry_order(tmp_path: Path) -> None:
 
 def test_settings_reach_the_stage_they_name(tmp_path: Path) -> None:
     config = default_runtime_config()
-    config.pipelines.filtering.workers = 7
+    config.pipelines.filter.workers = 7
     stages = build_stages(inputs(tmp_path, config))
     filtering, retry = stages["filtering"], stages["retry"]
     assert isinstance(filtering, FilterStage) and filtering.max_concurrency == 7

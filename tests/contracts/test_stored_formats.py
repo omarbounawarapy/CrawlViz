@@ -14,6 +14,7 @@ from crawlviz.contracts import (
     MigrationChain,
     SchemaVersionError,
     StoredFormatError,
+    rename_pipeline_settings,
 )
 from crawlviz.contracts.stored_formats import (
     BLUEPRINT_FILE,
@@ -91,14 +92,15 @@ def test_each_settings_version_loads_as_the_same_valid_patch(version: int) -> No
     assert SCHEMA_VERSION_KEY not in patch
     assert patch == SETTINGS_FILE.strip(_fixture("settings", 1))
     # The loaded patch is what RuntimeConfig accepts today, every value taking effect.
-    _assert_applied(patch, load_runtime_config(None, patch).model_dump())
+    _assert_applied(rename_pipeline_settings(patch), load_runtime_config(None, patch).model_dump())
 
 
 def test_an_unversioned_settings_file_on_disk_still_loads(tmp_path: Path) -> None:
     settings_file = tmp_path / "settings.json"
     settings_file.write_text((FIXTURES / "settings" / "v0.json").read_text(encoding="utf-8"))
     patch = load_settings_document(read_stored(settings_file))
-    assert patch == SETTINGS_FILE.strip(_fixture("settings", 1))
+    # `read_stored` already renames the pipeline sections to their current names.
+    assert patch == rename_pipeline_settings(SETTINGS_FILE.strip(_fixture("settings", 1)))
     _assert_applied(patch, load_runtime_config(None, patch).model_dump())
 
 

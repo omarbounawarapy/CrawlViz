@@ -29,13 +29,13 @@ def test_apply_keeps_settings_the_preset_does_not_mention(
 ) -> None:
     c, paths = client
     c.put("/config", json={"values": {"fetch": {"user_agent": MY_AGENT, "min_delay": 4.0}}})
-    c.put("/config", json={"values": {"pipelines": {"filtering": {"workers": 5}}}})
+    c.put("/config", json={"values": {"pipelines": {"filter": {"workers": 5}}}})
 
     applied = c.post("/config/presets/polite/apply").json()
 
     assert applied["fetch"]["min_delay"] == 2.0
     assert applied["fetch"]["user_agent"] == MY_AGENT
-    assert applied["pipelines"]["filtering"]["workers"] == 5
+    assert applied["pipelines"]["filter"]["workers"] == 5
     assert store.read_stored(paths.settings_file)["fetch"]["user_agent"] == MY_AGENT
 
 

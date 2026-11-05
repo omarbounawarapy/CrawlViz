@@ -79,12 +79,12 @@ class Crawler:
         self.fetch_concurrency = (
             fetch_concurrency
             if fetch_concurrency is not None
-            else self.config.pipelines.requests.workers
+            else self.config.pipelines.fetch.workers
         )
         self.scoring_concurrency = (
             scoring_concurrency
             if scoring_concurrency is not None
-            else self.config.pipelines.scoring.workers
+            else self.config.pipelines.score.workers
         )
         self.paths = paths if paths is not None else default_runtime_paths()
         self.storage = Storage()

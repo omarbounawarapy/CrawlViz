@@ -15,12 +15,14 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
 
 from crawlviz.contracts import (
     SchemaVersionError,
     StoredFormatError,
     dump_settings_document,
     load_settings_document,
+    rename_pipeline_settings,
 )
 from utils import save_json
 
@@ -36,6 +38,27 @@ def deep_merge(base: dict, over: dict) -> dict:
         else:
             out[key] = value
     return out
+
+
+def with_current_names(patch: dict) -> dict:
+    """``patch`` with its ``pipelines`` sections under the ADR 6 keys.
+
+    A patch from an older client, preset or file names the stages ``requests``, ``scoring``
+    and so on. Merged onto the defaults as written it would sit beside the new key, so it
+    is renamed first. Raises ``ValidationError`` for one section given under both names."""
+    try:
+        return rename_pipeline_settings(patch)
+    except StoredFormatError as exc:
+        raise ValidationError.from_exception_data(
+            RuntimeConfig.__name__,
+            [
+                {
+                    "type": PydanticCustomError("setting_given_twice", str(exc)),
+                    "loc": ("pipelines",),
+                    "input": patch["pipelines"],
+                }
+            ],
+        ) from exc
 
 
 def diff(base: dict, new: dict) -> dict:
@@ -125,7 +148,7 @@ def read_stored(path: Path) -> dict:
             "from the Config page, which replaces it with the defaults."
         )
     try:
-        return load_settings_document(data)
+        return rename_pipeline_settings(load_settings_document(data))
     except (SchemaVersionError, StoredFormatError) as exc:
         raise SettingsFileError(
             f"{exc} The file is {path}. To start over instead, reset the settings from "
@@ -176,7 +199,7 @@ def load_runtime_config(
     stored = read_stored(settings_file) if settings_file is not None else {}
     merged = deep_merge(merged, stored)
     if overrides:
-        merged = deep_merge(merged, overrides)
+        merged = deep_merge(merged, with_current_names(overrides))
     return _validate(merged, settings_file, stored)
 
 
@@ -187,7 +210,8 @@ def save_settings(settings_file: Path, patch: dict) -> RuntimeConfig:
     ``SettingsFileError`` when the stored settings already were."""
     defaults = default_runtime_config().model_dump()
     stored = read_stored(settings_file)
-    cfg = _validate(deep_merge(deep_merge(defaults, stored), patch), settings_file, stored)
+    merged = deep_merge(deep_merge(defaults, stored), with_current_names(patch))
+    cfg = _validate(merged, settings_file, stored)
     _write(settings_file, diff(defaults, cfg.model_dump()))
     return cfg
 
@@ -195,7 +219,7 @@ def save_settings(settings_file: Path, patch: dict) -> RuntimeConfig:
 def replace_settings(settings_file: Path, full: dict) -> RuntimeConfig:
     """Replace the stored settings with `full` (a complete config)."""
     defaults = default_runtime_config().model_dump()
-    cfg = RuntimeConfig.model_validate(deep_merge(defaults, full))
+    cfg = RuntimeConfig.model_validate(deep_merge(defaults, with_current_names(full)))
     _write(settings_file, diff(defaults, cfg.model_dump()))
     return cfg
 

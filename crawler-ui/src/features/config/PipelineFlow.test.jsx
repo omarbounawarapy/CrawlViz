@@ -9,7 +9,7 @@ afterEach(cleanup);
 describe("pipeline picture", () => {
   it("shows the items waiting in each queue while a crawl runs", () => {
     const { container } = render(
-      <PipelineFlow pipelines={defaults.pipelines} batchSize={10} queues={{ requests: { size: 4, max: 50 } }} />,
+      <PipelineFlow pipelines={defaults.pipelines} batchSize={10} queues={{ fetch: { size: 4, max: 50 } }} />,
     );
     expect(container.textContent).toContain("4 waiting now");
   });

@@ -8,8 +8,8 @@ const byPath = Object.fromEntries(fields.map((f) => [f.path, f]));
 
 describe("buildFields", () => {
   it("flattens nested pipeline settings with their group", () => {
-    const f = byPath["pipelines.filtering.workers"];
-    expect(f).toMatchObject({ group: "filtering", topKey: "pipelines", type: "integer", minimum: 1, maximum: 64 });
+    const f = byPath["pipelines.filter.workers"];
+    expect(f).toMatchObject({ group: "filter", topKey: "pipelines", type: "integer", minimum: 1, maximum: 64 });
   });
 
   it("reads hints and unwraps nullable numbers", () => {
@@ -40,12 +40,12 @@ describe("buildFields", () => {
 
 describe("patching", () => {
   it("builds a nested patch of only the changed leaves", () => {
-    const draft = setIn(setIn(defaults, "fetch.min_delay", 3), "pipelines.priority.workers", 2);
+    const draft = setIn(setIn(defaults, "fetch.min_delay", 3), "pipelines.prioritize.workers", 2);
     expect(buildPatch(fields, draft, defaults)).toEqual({
       fetch: { min_delay: 3 },
-      pipelines: { priority: { workers: 2 } },
+      pipelines: { prioritize: { workers: 2 } },
     });
-    expect(getIn(draft, "pipelines.filtering.workers")).toBe(10);
+    expect(getIn(draft, "pipelines.filter.workers")).toBe(10);
   });
 
   it("sends a cleared nullable value as null", () => {
@@ -89,7 +89,7 @@ describe("effect hint", () => {
 
 describe("validation and search", () => {
   it("applies the schema bounds", () => {
-    const w = byPath["pipelines.filtering.workers"];
+    const w = byPath["pipelines.filter.workers"];
     expect(validateField(w, 0)).toMatch(/At least 1/);
     expect(validateField(w, 100)).toMatch(/At most 64/);
     expect(validateField(w, 1.5)).toMatch(/whole number/);

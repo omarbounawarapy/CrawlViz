@@ -75,7 +75,7 @@ def test_the_script_budget_and_pace_apply_over_the_defaults() -> None:
     config = script.apply_config(default_runtime_config())
 
     assert config.llm.max_calls_per_crawl == script.config["llm"]["max_calls_per_crawl"]
-    assert config.pipelines.requests.workers == script.config["pipelines"]["requests"]["workers"]
+    assert config.pipelines.fetch.workers == script.config["pipelines"]["fetch"]["workers"]
 
 
 def test_a_setting_the_caller_changed_wins_over_the_script() -> None:
@@ -88,7 +88,7 @@ def test_a_setting_the_caller_changed_wins_over_the_script() -> None:
     config = script.apply_config(chosen)
 
     assert config.llm.max_calls_per_crawl == caller_budget
-    assert config.pipelines.requests.workers == script.config["pipelines"]["requests"]["workers"]
+    assert config.pipelines.fetch.workers == script.config["pipelines"]["fetch"]["workers"]
 
 
 async def test_the_site_answers_429_during_an_episode_then_recovers() -> None:

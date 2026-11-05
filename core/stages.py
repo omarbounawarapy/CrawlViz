@@ -105,7 +105,7 @@ def _canonicalization(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.debugging
+    settings = inputs.config.pipelines.debug_log
     return DebugLogSink(
         inputs.broker,
         inputs.crawl_id,
@@ -117,7 +117,7 @@ def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _processing(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.processing
+    settings = inputs.config.pipelines.extract
     return ExtractStage(
         inputs.broker,
         inputs.extraction,
@@ -132,7 +132,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
     return FetchStage(
         inputs.broker,
         max_concurrency=inputs.fetch_concurrency,
-        max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),
+        max_queue_size=_queue_size(inputs.config.pipelines.fetch.max_queue_size),
         fetcher=inputs.fetcher
         or NetworkClient(
             fetch.http_total_timeout,
@@ -187,7 +187,7 @@ def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
         high_score_llm_fraction=cascade.high_score_llm_fraction,
         low_score_sample_fraction=cascade.low_score_sample_fraction,
         high_score_random_fraction=cascade.high_score_random_fraction,
-        max_queue_size=_queue_size(inputs.config.pipelines.scoring.max_queue_size),
+        max_queue_size=_queue_size(inputs.config.pipelines.score.max_queue_size),
         percentile_bucketing=cascade.percentile_bucketing,
         low_percentile=cascade.low_percentile,
         high_percentile=cascade.high_percentile,
@@ -201,7 +201,7 @@ def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _filtering(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.filtering
+    settings = inputs.config.pipelines.filter
     return FilterStage(
         inputs.broker,
         inputs.storage,
@@ -211,7 +211,7 @@ def _filtering(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _priority(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.priority
+    settings = inputs.config.pipelines.prioritize
     priority = inputs.config.priority
     strategy = inputs.priority_strategy
     return PrioritizeStage(
@@ -227,7 +227,7 @@ def _priority(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _transformation(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.transformation
+    settings = inputs.config.pipelines.transform
     return TransformStage(
         inputs.broker,
         inputs.extraction,
@@ -285,14 +285,14 @@ class StageSpec:
 STAGES: tuple[StageSpec, ...] = (
     StageSpec("logging", None, _logging),
     StageSpec("canon", None, _canonicalization),
-    StageSpec("debug", "debugging", _debugging),
-    StageSpec("processing", "processing", _processing),
-    StageSpec("requests", "requests", _requests),
+    StageSpec("debug", "debug_log", _debugging),
+    StageSpec("processing", "extract", _processing),
+    StageSpec("requests", "fetch", _requests),
     StageSpec("retry", "retry", _retry),
-    StageSpec("scoring", "scoring", _scoring),
-    StageSpec("filtering", "filtering", _filtering),
-    StageSpec("priority", "priority", _priority),
-    StageSpec("transformation", "transformation", _transformation),
+    StageSpec("scoring", "score", _scoring),
+    StageSpec("filtering", "filter", _filtering),
+    StageSpec("priority", "prioritize", _priority),
+    StageSpec("transformation", "transform", _transformation),
     StageSpec("storage", "storage", _storage),
     StageSpec("exporting", None, _exporting),
     StageSpec("stopping", None, _stopping),
