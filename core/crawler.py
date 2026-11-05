@@ -39,7 +39,7 @@ from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 # clients that emit it -- this is what produces the granular
 # "[NLP] SCORE_EMITTED" / "[LLM] DISPATCHED" trace log lines.
 from traceability.emitter import TraceEmitter
-from traceability.logging_setup import configure_logging, log_context
+from traceability.logging_setup import log_context
 from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
@@ -373,9 +373,3 @@ class Crawler:
             ui_gateway.start(),
             space_updater.start(),
         ]
-
-
-if __name__ == "__main__":
-    configure_logging()
-    crawler = Crawler("wikiMD.json")
-    asyncio.run(crawler.start())
