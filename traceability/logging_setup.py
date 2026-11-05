@@ -7,7 +7,7 @@ inside a crawl carries them without being passed down:
 
 * ``crawl_id`` is bound by `log_context` for the whole run (``Crawler.start``).
 * ``trace_id`` and ``node_id`` are the pair the stages bind per node with
-  ``traceability.trace_context.bind_node``.
+  ``crawlviz.shared.trace_context.bind_node``.
 
 ``CRAWLVIZ_LOG_FORMAT=text`` switches to one readable line per record for development;
 ``CRAWLVIZ_LOG_LEVEL`` sets the level. Both formats pass the text through
@@ -24,9 +24,7 @@ from contextvars import ContextVar
 from datetime import UTC, datetime
 from typing import Any
 
-from utils.log_redaction import redact_secrets
-
-from .trace_context import get_trace, set_trace
+from crawlviz.shared import get_trace, redact_secrets, set_trace
 
 LOG_FORMAT_ENV_VAR = "CRAWLVIZ_LOG_FORMAT"
 LOG_LEVEL_ENV_VAR = "CRAWLVIZ_LOG_LEVEL"
@@ -49,7 +47,7 @@ def log_context(
     """Stamp the log lines of the enclosed code with these ids, then restore the old ones.
 
     An id left as None keeps the value already bound. The trace pair belongs to
-    ``traceability.trace_context``, which the stages also write; it is restored on exit
+    ``crawlviz.shared.trace_context``, which the stages also write; it is restored on exit
     like the crawl id.
     """
     crawl_token = _crawl_id.set(crawl_id) if crawl_id is not None else None

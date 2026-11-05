@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from utils import BackgroundTasks
+from crawlviz.shared import BackgroundTasks
 
 logger = logging.getLogger(__name__)
 

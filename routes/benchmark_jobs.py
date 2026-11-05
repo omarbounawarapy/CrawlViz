@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from benchmark import POLICIES
 from config import TEMPLATES_DIR
-from utils import load_json, save_json
+from crawlviz.shared import load_json, save_json
 
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR, ROOT
 

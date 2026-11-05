@@ -10,7 +10,7 @@ import os
 from typing import Any
 
 from crawlviz.contracts import dump_blueprint_document, load_blueprint_document
-from utils import load_json, save_json
+from crawlviz.shared import load_json, save_json
 
 
 def read_blueprint_document(stored: Any) -> Any:  # Any: a blueprint file is untyped JSON.

@@ -7,6 +7,13 @@ from collections.abc import Iterator
 
 import pytest
 
+from crawlviz.shared import (
+    REDACTED,
+    bind_node,
+    clear_registered_secrets,
+    get_trace,
+    register_secrets,
+)
 from traceability.logging_setup import (
     FORMAT_TEXT,
     LOG_FORMAT_ENV_VAR,
@@ -14,8 +21,6 @@ from traceability.logging_setup import (
     get_log_ids,
     log_context,
 )
-from traceability.trace_context import bind_node, get_trace
-from utils.log_redaction import REDACTED, clear_registered_secrets, register_secrets
 
 API_KEY = "gsk_ThisIsAFakeKeyForTests1234567890"
 

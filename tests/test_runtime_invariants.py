@@ -510,7 +510,7 @@ async def test_decision_events_keep_values_after_rescore():
 
 async def test_scoring_runs_under_a_trace_bound_to_the_node():
     """Trace events emitted while scoring a node carry a non-empty trace_id."""
-    from traceability import get_trace
+    from crawlviz.shared import get_trace
 
     seen = []
 

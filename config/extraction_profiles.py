@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from utils import load_json
+from crawlviz.shared import load_json
 
 PROFILES_FILE = Path(__file__).with_name("extraction_profiles.json")
 

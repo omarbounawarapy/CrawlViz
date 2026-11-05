@@ -3,7 +3,7 @@ from typing import Any
 
 from lxml import html as lxml_html
 
-from utils import build_url, is_relative_url
+from crawlviz.shared import build_url, is_relative_url
 
 from .link import Link
 

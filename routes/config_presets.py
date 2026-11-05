@@ -17,7 +17,7 @@ from crawlviz.contracts import (
     dump_presets_document,
     load_presets_document,
 )
-from utils import save_json
+from crawlviz.shared import save_json
 
 from .config_support import ConfigPatch, get_paths, validation_http_error
 

@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import ALLOWED_HOSTS, CORS_ORIGIN_REGEX, CORS_ORIGINS
 from traceability.logging_setup import configure_logging
-from utils.log_redaction import register_secrets
+from crawlviz.shared import register_secrets
 from routes.request_guards import RequestGuardMiddleware
 from routes.session_token import SessionTokenMiddleware
 from routes.session_token import get_session_token

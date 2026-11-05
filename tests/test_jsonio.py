@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from utils import load_json, save_json
+from crawlviz.shared import load_json, save_json
 
 
 def test_saved_json_loads_back_with_non_ascii_text(tmp_path: Path) -> None:

@@ -8,7 +8,7 @@ from crawlviz.events import (
     StopCrawlEvent,
     StorageNodeUpdatedEvent,
 )
-from utils import BackgroundTasks
+from crawlviz.shared import BackgroundTasks
 
 from .base_pipeline import BasePipeline
 

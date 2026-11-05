@@ -16,7 +16,7 @@ from aiohttp import test_utils, web
 
 from crawlviz.llm import KeyManager, LlmHandler
 from crawlviz.llm.llm_handler import RetryPolicy, parse_retry_after
-from infrastructure import NetworkClient
+from crawlviz.shared import NetworkClient
 from models import ScoringContext
 
 PROVIDER = "openai"

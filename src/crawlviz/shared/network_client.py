@@ -115,7 +115,7 @@ class NetworkClient:
     the crawl; call `close()` once the crawl finishes.
 
     Unless `allow_private_addresses` is set, the client only connects to
-    public addresses (infrastructure/url_guard.py): a link on a crawled page
+    public addresses (url_guard.py): a link on a crawled page
     must not reach loopback, the local network or a cloud metadata service.
     Operator-chosen servers, such as a local LLM endpoint, need the flag.
 

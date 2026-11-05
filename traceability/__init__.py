@@ -29,7 +29,6 @@ from .nlp_trace_events import (
     NLP_SimilarityScored,
     NLP_VectorComposed,
 )
-from .trace_context import bind_node, get_trace, new_trace_id, set_trace
 from .traced_llm_handler import TracedLlmHandler
 from .traced_network_client import TracedNetworkClient
 
@@ -38,10 +37,6 @@ __all__ = [
     "TraceEmitter",
     "TracedLlmHandler",
     "TracedNetworkClient",
-    "bind_node",
-    "get_trace",
-    "new_trace_id",
-    "set_trace",
     # Structured JSON logging with crawl, node and trace ids
     "configure_logging",
     "log_context",

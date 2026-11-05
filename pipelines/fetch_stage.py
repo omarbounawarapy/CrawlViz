@@ -10,10 +10,7 @@ from crawlviz.events import (
     RequestResponseReceivedEvent,
     RequestStartedEvent,
 )
-from infrastructure import NetworkClient
-
-from traceability.trace_context import bind_node
-from utils import BackgroundTasks
+from crawlviz.shared import BackgroundTasks, NetworkClient, bind_node
 
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher

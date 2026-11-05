@@ -2,7 +2,7 @@ from typing import Any
 
 from .domain import Domain
 from .node import Node
-from utils.html_utils import build_url, normalize_url
+from crawlviz.shared import build_url, normalize_url
 
 
 class Storage:

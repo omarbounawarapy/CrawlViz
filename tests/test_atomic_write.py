@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from crawlviz.nlp import SpaceStore
+from crawlviz.shared import atomic_open, write_text_atomic
 from ui_bridge.event_recorder import EventRecorder
-from utils import atomic_open, write_text_atomic
 
 
 def test_write_text_atomic_replaces_the_file_and_leaves_no_temp(tmp_path: Path) -> None:
@@ -45,7 +45,7 @@ def test_space_index_write_failure_keeps_the_previous_index(
     def explode(*args: object, **kwargs: object) -> str:
         raise OSError("disk full")
 
-    monkeypatch.setattr("utils.jsonio.json.dumps", explode)
+    monkeypatch.setattr("crawlviz.shared.jsonio.json.dumps", explode)
     with pytest.raises(OSError):
         store.record_save("bp", 5, 2)
     assert (tmp_path / "index.json").read_text() == before

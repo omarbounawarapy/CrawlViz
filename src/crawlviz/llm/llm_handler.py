@@ -9,7 +9,7 @@ from email.utils import parsedate_to_datetime
 import aiohttp
 from aiohttp import hdrs
 
-from infrastructure.network_client import NetworkClient
+from crawlviz.shared import NetworkClient
 
 from .anthropic_translator import AnthropicTranslator
 from .endpoints import default_llm_endpoints

@@ -13,8 +13,8 @@ from crawlviz.events import (
     StorageOperationFailedEvent,
     TransformationCompletedEvent,
 )
+from crawlviz.shared import build_url
 from models import Node
-from utils import build_url
 
 from .base_pipeline import BasePipeline
 

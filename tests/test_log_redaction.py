@@ -8,7 +8,7 @@ import pytest
 
 from config.paths import KEYS_FILE_NAME
 from crawlviz.llm.key_manager import KeyManager
-from utils.log_redaction import (
+from crawlviz.shared import (
     MIN_SECRET_LENGTH,
     REDACTED,
     clear_registered_secrets,

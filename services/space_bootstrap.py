@@ -15,6 +15,7 @@ import numpy as np
 
 from crawlviz.llm import LlmHandler
 from crawlviz.nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
+from crawlviz.shared import get_trace, new_trace_id
 from models import ExpansionContext
 from traceability.expansion_trace_events import (
     EXP_CandidatePruned,
@@ -23,7 +24,6 @@ from traceability.expansion_trace_events import (
     EXP_SpaceBootstrapped,
     EXP_Triggered,
 )
-from traceability.trace_context import get_trace, new_trace_id
 
 from .llm_contracts import Outcomes, parse_expansion_seeds
 

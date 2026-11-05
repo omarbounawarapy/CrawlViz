@@ -11,7 +11,7 @@ from crawlviz.events import (
 )
 from models import ItemExtractor, LinkExtractor
 
-from traceability.trace_context import bind_node
+from crawlviz.shared import bind_node
 
 from .base_pipeline import BasePipeline
 

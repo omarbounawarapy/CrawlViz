@@ -2,6 +2,8 @@ import time
 import uuid
 from typing import TYPE_CHECKING
 
+from crawlviz.shared import get_trace
+
 from .llm_trace_events import (
     LLM_PromptBuilt,
     LLM_RequestDispatched,
@@ -9,7 +11,6 @@ from .llm_trace_events import (
     LLM_ResponseParsed,
     LLM_ResponseReceived,
 )
-from .trace_context import get_trace
 
 if TYPE_CHECKING:
     from crawlviz.llm import LlmHandler

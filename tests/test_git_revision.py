@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-from utils import get_git_revision
+from crawlviz.shared import get_git_revision
 
 GIT_IDENTITY = ["-c", "user.name=test", "-c", "user.email=test@example.com"]
 

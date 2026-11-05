@@ -8,8 +8,7 @@ from crawlviz.events import (
     ScoreRescheduledEvent,
     ScoringFailedEvent,
 )
-from infrastructure import REJECTION_ERROR_NAMES
-from utils import BackgroundTasks
+from crawlviz.shared import REJECTION_ERROR_NAMES, BackgroundTasks
 
 from .base_pipeline import BasePipeline
 from .http_failure import is_permanent_failure

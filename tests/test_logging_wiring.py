@@ -15,10 +15,10 @@ from config.paths import KEYS_FILE_NAME, RuntimePaths
 from core import Crawler
 from core.boot_strapper import BootStrapper
 from crawlviz.llm.key_manager import KeyManager
+from crawlviz.shared import REDACTED, clear_registered_secrets, redact_secrets
 from routes import config_support
 from routes.session_token import get_session_token
 from traceability.logging_setup import JsonLineFormatter, get_log_ids
-from utils.log_redaction import REDACTED, clear_registered_secrets, redact_secrets
 
 API_KEY = "gsk_ThisIsAFakeKeyForTests1234567890"
 

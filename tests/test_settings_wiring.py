@@ -328,7 +328,7 @@ def test_new_knobs_reach_their_objects(tmp_path):
 
 def test_snapshot_bounds_and_url_rules(tmp_path):
     from ui_bridge import CrawlStateSnapshot
-    from utils.html_utils import configure_url_normalization, normalize_url
+    from crawlviz.shared import configure_url_normalization, normalize_url
 
     snap = CrawlStateSnapshot(max_candidates=7, max_errors=3)
     assert snap._candidates.maxlen == 7 and snap._errors.maxlen == 3

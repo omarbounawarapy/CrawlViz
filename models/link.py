@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from utils.html_utils import normalize_url
+from crawlviz.shared import normalize_url
 
 
 class Link:

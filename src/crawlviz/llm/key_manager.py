@@ -6,7 +6,7 @@ import os
 import time
 from pathlib import Path
 
-from utils.log_redaction import register_provider_keys
+from crawlviz.shared import register_provider_keys
 
 logger = logging.getLogger(__name__)
 

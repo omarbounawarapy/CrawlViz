@@ -13,8 +13,8 @@ import pytest
 
 from config.paths import KEYS_FILE_NAME
 from crawlviz.llm.key_manager import KEYS_FILE_MODE, KeyManager
+from crawlviz.shared import REDACTED, clear_registered_secrets
 from traceability.logging_setup import JsonLineFormatter
-from utils.log_redaction import REDACTED, clear_registered_secrets
 
 API_KEY = "gsk_ThisIsAFakeKeyForTests1234567890"
 SECOND_API_KEY = "AIzaSySecondFakeKey0987654321"

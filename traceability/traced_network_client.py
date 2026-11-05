@@ -2,16 +2,17 @@ import time
 import uuid
 from typing import TYPE_CHECKING
 
+from crawlviz.shared import get_trace
+
 from .network_trace_events import (
     NET_RequestCreated,
     NET_RequestDispatched,
     NET_RequestFailed,
     NET_ResponseReceived,
 )
-from .trace_context import get_trace
 
 if TYPE_CHECKING:
-    from infrastructure import NetworkClient
+    from crawlviz.shared import NetworkClient
 
     from .emitter import TraceEmitter
 

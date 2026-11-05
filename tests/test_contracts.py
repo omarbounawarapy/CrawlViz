@@ -1,6 +1,6 @@
 """The duck-typed collaborators the pipelines consume match their declared Protocols."""
 
-from infrastructure import NetworkClient
+from crawlviz.shared import NetworkClient
 from pipelines.contracts import Annotator, Fetcher, RelevanceScorer
 from services.nlp_service import NLPService
 from services.scoring_service import ScoringService

@@ -2,7 +2,7 @@ import logging
 from asyncio import Future
 from typing import Any
 
-from utils import build_url
+from crawlviz.shared import build_url
 
 from .domain import Domain
 from .link import Link

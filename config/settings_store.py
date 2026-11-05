@@ -24,7 +24,7 @@ from crawlviz.contracts import (
     load_settings_document,
     rename_pipeline_settings,
 )
-from utils import save_json
+from crawlviz.shared import save_json
 
 from .runtime_config import RuntimeConfig, default_runtime_config
 

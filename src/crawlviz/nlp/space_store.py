@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from utils import load_json, save_json
+from crawlviz.shared import load_json, save_json
 
 from .vector_space import VectorSpace
 

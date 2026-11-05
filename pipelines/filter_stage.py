@@ -8,7 +8,7 @@ from crawlviz.events import (
     FilteringPipelineErrorEvent,
     FilteringWorkerCycleStartedEvent,
 )
-from utils import hash_item
+from crawlviz.shared import hash_item
 
 from .base_pipeline import BasePipeline
 

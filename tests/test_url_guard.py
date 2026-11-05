@@ -10,9 +10,16 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from infrastructure import BlockedAddressError, NetworkClient, TooManyRedirectsError
-from infrastructure.network_client import MAX_REDIRECTS, GetRequestStrategy
-from infrastructure.url_guard import PublicAddressResolver, ensure_public_url, is_blocked_address
+from crawlviz.shared import (
+    MAX_REDIRECTS,
+    BlockedAddressError,
+    GetRequestStrategy,
+    NetworkClient,
+    PublicAddressResolver,
+    TooManyRedirectsError,
+    ensure_public_url,
+    is_blocked_address,
+)
 
 PUBLIC_URL = "http://93.184.216.34/start"  # a public literal, so no DNS lookup is needed
 
