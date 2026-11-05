@@ -1,12 +1,7 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
+import { GlossaryContext, useGlossaryDefinitions, type GlossaryDefinitions } from "./glossaryContext";
 import styles from "./Term.module.css";
-
-/** Glossary definitions by lower-case term ("seed page", "backoff"), as the backend serves them. */
-export type GlossaryDefinitions = Readonly<Record<string, string>>;
-
-const NO_DEFINITIONS: GlossaryDefinitions = {};
-const GlossaryContext = createContext<GlossaryDefinitions>(NO_DEFINITIONS);
 
 export interface GlossaryProviderProps {
   definitions: GlossaryDefinitions;
@@ -34,7 +29,7 @@ export interface TermProps {
  * closes the explanation (WCAG 1.4.13). A word the glossary does not have is plain text.
  */
 export function Term({ term, children }: TermProps) {
-  const definitions = useContext(GlossaryContext);
+  const definitions = useGlossaryDefinitions();
   const definition = definitions[term.toLowerCase()];
   const shown = children ?? term;
   if (definition === undefined) return <>{shown}</>;

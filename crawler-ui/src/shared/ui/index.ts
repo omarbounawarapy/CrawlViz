@@ -9,10 +9,5 @@ export { Button, type ButtonProps, type ButtonVariant } from "./Button/Button";
 export { Field, TextInput, type FieldControlProps, type FieldProps, type TextInputProps } from "./Field/Field";
 export { NumberField, type NumberFieldProps } from "./NumberField/NumberField";
 export { parseNumberText, type ParsedNumber } from "./NumberField/parseNumberText";
-export {
-  GlossaryProvider,
-  Term,
-  type GlossaryDefinitions,
-  type GlossaryProviderProps,
-  type TermProps,
-} from "./Term/Term";
+export { GlossaryProvider, Term, type GlossaryProviderProps, type TermProps } from "./Term/Term";
+export type { GlossaryDefinitions } from "./Term/glossaryContext";
