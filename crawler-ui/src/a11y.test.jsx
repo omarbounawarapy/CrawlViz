@@ -157,7 +157,7 @@ import { Landing } from "./features/landing";
 import { SpiderLoader } from "./features/loading";
 import { GraphView } from "./features/graph";
 import { NodeInspector } from "./features/inspector";
-import TimelineDock from "./features/timeline/TimelinePage";
+import { TimelinePage as TimelineDock } from "./features/timeline";
 import ConfigPage from "./features/config/ConfigPage";
 import HeaderPresets from "./features/config/HeaderPresets";
 import RunPage from "./features/run/RunPage";
