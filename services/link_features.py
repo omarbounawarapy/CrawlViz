@@ -13,8 +13,12 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.spatial.distance import cosine
 
-from config import NLP_COMPOSITE_WEIGHTS
-from crawlviz.nlp import BaseEmbeddingEngine, FeatureExtractor, VectorSpace
+from crawlviz.nlp import (
+    BaseEmbeddingEngine,
+    FeatureExtractor,
+    VectorSpace,
+    default_composite_weights,
+)
 from crawlviz.shared import Link, document_text, get_trace
 from traceability.nlp_trace_events import (
     NLP_FeaturesExtracted,
@@ -277,7 +281,7 @@ class LinkFeatureScorer:
         if not features:
             return 0.0
 
-        weights = self.settings.composite_weights or NLP_COMPOSITE_WEIGHTS
+        weights = self.settings.composite_weights or default_composite_weights()
 
         contributions = {k: features.get(k, 0.0) * w for k, w in weights.items()}
         raw_sum = sum(contributions.values())

@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 
 from crawlviz.llm import default_llm_endpoints
+from crawlviz.nlp import default_composite_weights
 
 # =========================================================================
 # PATHS
@@ -107,15 +108,9 @@ PERCENTILE_MIN_LINKS: int = 10
 # provider token limits). Overflow is kept, ranked by NLP score only.
 MAX_LLM_LINKS_PER_NODE: int = 60
 
-# Composite NLP score weights (nlp/feature_extractor signals). Fitted with
-# tools/nlp_eval.py against LLM labels: target similarity carries the score,
-# boilerplate similarity (contact/privacy/... pages) pulls navigation down.
-# The other signals stay in `nlp_vector` for the priority strategies.
-NLP_COMPOSITE_WEIGHTS: dict[str, float] = {
-    "target_similarity": 0.80,
-    "contextual_consistency": 0.05,
-    "boilerplate_score": -0.35,
-}
+# Composite NLP score weights (nlp/feature_extractor signals); the default values live
+# with the scorer in crawlviz.nlp.
+NLP_COMPOSITE_WEIGHTS: dict[str, float] = default_composite_weights()
 
 DEFAULT_PRIORITY_STRATEGY: str = "balanced"
 
