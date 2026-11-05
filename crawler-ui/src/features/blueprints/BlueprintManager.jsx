@@ -25,7 +25,7 @@ import {
   Status,
   ConfirmButton,
 } from "../common";
-import { Explain, useCrawlCost } from "../config";
+import { useCrawlCost } from "../config";
 import FormNumberField from "./FormNumberField";
 import {
   STRATEGIES,
