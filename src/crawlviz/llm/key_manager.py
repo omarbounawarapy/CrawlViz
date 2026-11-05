@@ -36,8 +36,9 @@ class KeyManager:
     ``keys.example.json`` for the expected shape). That file holds
     secrets and is gitignored -- it is never committed.
 
-    Every key the store reads or is given is registered with ``utils.log_redaction``
-    before it can be used, so no log line shows it, whichever code holds the store.
+    Every key the store reads or is given is registered with
+    ``crawlviz.shared.log_redaction`` before it can be used, so no log line shows it,
+    whichever code holds the store.
     """
 
     def __init__(self, keys_file: Path, cooldown: float = 0) -> None:
