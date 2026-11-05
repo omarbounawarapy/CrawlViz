@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from typing import Any
 
 from config.runtime_config import default_runtime_config
 from core.run_manifest import RunManifestWriter
@@ -9,7 +10,7 @@ from crawlviz.contracts import load_run_manifest
 from ui_bridge.event_recorder import EventRecorder
 
 
-def _write_manifest(run_dir: Path) -> dict:
+def _write_manifest(run_dir: Path) -> dict[str, Any]:
     writer = RunManifestWriter(
         crawl_id="crawl-1",
         blueprint={"blueprint_id": "bp"},
@@ -22,7 +23,8 @@ def _write_manifest(run_dir: Path) -> dict:
     recorder = EventRecorder(run_dir)
     writer.write(recorder)
     recorder.close()
-    return json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    manifest: dict[str, Any] = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    return manifest
 
 
 def test_the_manifest_carries_the_schema_version(tmp_path: Path) -> None:
