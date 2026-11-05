@@ -39,7 +39,7 @@ the NLP subsystem. Those parts are short and read well; they are not the problem
    dispatch differently (`CrawlLogSink`, `StopController`, `FilterStage`,
    `TransformStage`) state it; `SpaceUpdater` derives it from its `handlers` and
    `TelemetryBridge` from `_dispatch`. The structural type is `EventConsumer` in
-   `pipelines/contracts.py`.
+   `src/crawlviz/events/contracts.py`.
 2. **The composition root subscribes each consumer to its own `event_types`.** It keeps only
    the order. The hand-written subscription lists and the 80 event imports leave
    `core/crawler.py`.
