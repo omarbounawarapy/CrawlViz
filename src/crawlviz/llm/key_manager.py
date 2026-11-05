@@ -7,32 +7,12 @@ import time
 from pathlib import Path
 from typing import Self
 
-from crawlviz.shared import register_provider_keys
+from crawlviz.shared import atomic_open, register_provider_keys
 
 logger = logging.getLogger(__name__)
 
 KEYS_FILE_MODE = 0o600
 GROUP_AND_OTHER_BITS = 0o077
-TEMP_SUFFIX = ".tmp"
-# Create a new file or fail: never open one that exists, and never follow a symlink.
-NEW_FILE_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-
-
-def _write_new_owner_only_file(path: Path, text: str) -> None:
-    """Create ``path`` readable by its owner only, write ``text`` and flush it to disk.
-
-    Raises ``FileExistsError`` if anything, a symlink included, is already at ``path``.
-    If writing fails the new file is deleted, so a part-written file is never left.
-    """
-    fd = os.open(path, NEW_FILE_FLAGS, KEYS_FILE_MODE)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-    except BaseException:
-        path.unlink(missing_ok=True)
-        raise
 
 
 class KeyManager:
@@ -62,13 +42,14 @@ class KeyManager:
         This is the one place a keys file is created. It is created with mode 0600 in a
         single step, so it is never readable by other users, not even for a moment.
         """
-        try:
-            _write_new_owner_only_file(Path(keys_file), json.dumps({}))
-        except FileExistsError:
-            pass  # the usual case: the file is there already
-        except OSError:
-            logger.exception("Could not create the API keys file %s", keys_file)
-            raise
+        path = Path(keys_file)
+        if not path.exists():
+            try:
+                with atomic_open(path, file_mode=KEYS_FILE_MODE) as handle:
+                    handle.write(json.dumps({}))
+            except OSError:
+                logger.exception("Could not create the API keys file %s", keys_file)
+                raise
         return cls(keys_file=keys_file, cooldown=cooldown)
 
     async def next_key(self, provider_name: str) -> str | None:
@@ -195,13 +176,10 @@ class KeyManager:
         its old content.
         """
         path = Path(self.keys_file)
-        tmp = path.with_name(path.name + TEMP_SUFFIX)
         try:
-            tmp.unlink(missing_ok=True)
-            _write_new_owner_only_file(tmp, json.dumps(self.registry, indent=2))
-            os.replace(tmp, path)
+            with atomic_open(path, file_mode=KEYS_FILE_MODE) as handle:
+                handle.write(json.dumps(self.registry, indent=2))
         except BaseException:
-            tmp.unlink(missing_ok=True)
             logger.exception("Could not save API keys to %s; the file is unchanged", path)
             raise
 
