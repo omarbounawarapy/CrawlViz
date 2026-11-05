@@ -194,6 +194,10 @@ def parse_mypy_modules(output: str) -> set[str]:
     return modules
 
 
+# A file moved and edited across the branch can fall below git's default 50%.
+RENAME_SIMILARITY = "-M40%"
+
+
 def _git(*args: str) -> str:
     result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=False)
     if result.returncode != 0:
@@ -204,7 +208,8 @@ def _git(*args: str) -> str:
 def read_renames(base_revision: str) -> dict[str, str]:
     """Old path to new path for files `git diff -M` shows renamed since the base."""
     renames = {}
-    for line in _git("diff", "-M40%", "--name-status", "--diff-filter=R", base_revision).splitlines():
+    diff = _git("diff", RENAME_SIMILARITY, "--name-status", "--diff-filter=R", base_revision)
+    for line in diff.splitlines():
         _status, old, new = line.split("\t")[:3]
         renames[old] = new
     return renames
