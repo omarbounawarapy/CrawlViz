@@ -8,6 +8,7 @@ Other areas import from here only (ARCH-2).
 from .call_budget import CallBudget
 from .call_recorder import LLM_CALLS_FILE_NAME, LlmCallRecorder, LlmCallTotals
 from .cost_table import CostTable, ModelPrice, load_cost_table
+from .endpoints import default_llm_endpoints
 from .json_output import (
     LlmOutputError,
     RepairCall,
@@ -54,6 +55,7 @@ __all__ = [
     "RepairCall",
     "TokenUsage",
     "ValidatedOutput",
+    "default_llm_endpoints",
     "load_cost_table",
     "parse_and_validate",
     "parse_llm_json",

@@ -8,6 +8,7 @@ from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
+from pathlib import Path
 
 import aiohttp
 import pytest
@@ -51,7 +52,7 @@ class SleepRecorder:
 @pytest.fixture
 def key_manager(monkeypatch: pytest.MonkeyPatch) -> KeyManager:
     monkeypatch.setattr(KeyManager, "load_keys", lambda self: {PROVIDER: [SECRET_KEY]})
-    return KeyManager()
+    return KeyManager(keys_file=Path("unused-keys.json"))
 
 
 @pytest.fixture
@@ -184,7 +185,7 @@ async def test_a_retry_moves_to_the_next_key(
     monkeypatch.setattr(KeyManager, "load_keys", lambda self: {PROVIDER: ["key-a", "key-b"]})
     provider = ScriptedProvider([(429, {})])
 
-    await send(provider, KeyManager(), network, SleepRecorder())
+    await send(provider, KeyManager(keys_file=Path("unused-keys.json")), network, SleepRecorder())
     assert provider.keys == ["key-a", "key-b"]
 
 

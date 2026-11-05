@@ -9,6 +9,8 @@ and KeyManager, to prove each new provider is actually reachable through
 LlmHandler.send(), not just implemented as an unused class.
 """
 
+from pathlib import Path
+
 import aiohttp
 import pytest
 from models import ExpansionContext, ScoringContext
@@ -43,7 +45,7 @@ class FakeNetworkClient:
 def make_key_manager(monkeypatch, keys: dict) -> KeyManager:
     """Builds a real KeyManager without touching keys.json on disk."""
     monkeypatch.setattr(KeyManager, "load_keys", lambda self: keys)
-    return KeyManager()
+    return KeyManager(keys_file=Path("unused-keys.json"))
 
 
 # =====================================================================

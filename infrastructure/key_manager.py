@@ -6,7 +6,6 @@ import os
 import time
 from pathlib import Path
 
-from config import BASE_DIR
 from utils.log_redaction import register_provider_keys
 
 logger = logging.getLogger(__name__)
@@ -26,8 +25,8 @@ class KeyManager:
     before it can be used, so no log line shows it, whichever code holds the store.
     """
 
-    def __init__(self, cooldown: float = 0, keys_file=None):
-        self.keys_file = keys_file if keys_file is not None else BASE_DIR / "keys.json"
+    def __init__(self, keys_file: Path, cooldown: float = 0) -> None:
+        self.keys_file = keys_file
         self.registry = self.load_keys()
         self.cooldown = cooldown
         self.indexes = {p: 0 for p in self.registry}

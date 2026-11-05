@@ -10,6 +10,8 @@ CORS origin) can be overridden with an environment variable.
 import os
 from pathlib import Path
 
+from crawlviz.llm import default_llm_endpoints
+
 # =========================================================================
 # PATHS
 # =========================================================================
@@ -126,16 +128,8 @@ DEFAULT_MAX_DURATION_SECONDS: float = 3600.0
 # =========================================================================
 # LLM PROVIDERS
 # =========================================================================
-# Request URL per provider (Gemini: base URL, the model is appended). The
-# keys are the provider names a blueprint sets as scoring_type / llm_type.
-LLM_DEFAULT_ENDPOINTS: dict[str, str] = {
-    "openrouter": "https://openrouter.ai/api/v1/chat/completions",
-    "openai": "https://api.openai.com/v1/chat/completions",
-    "anthropic": "https://api.anthropic.com/v1/messages",
-    "gemini": "https://generativelanguage.googleapis.com/v1beta/models",
-    "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
-    "groq": "https://api.groq.com/openai/v1/chat/completions",
-}
+# Request URL per provider lives with the LLM adapters; re-exported for config users.
+LLM_DEFAULT_ENDPOINTS: dict[str, str] = default_llm_endpoints()
 
 # =========================================================================
 # EXPORT

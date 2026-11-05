@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 
 import models.links_extractor as le
+from config.paths import RuntimePaths
 from infrastructure import KeyManager, LlmHandler
 from models import ScoringContext
 from services.nlp_service import NLPService
@@ -107,7 +108,7 @@ def _label_prompt(topic: str, prefix: str, batch) -> str:
 async def label():
     topic = _template()[0]["target_topic"]
     labels = json.loads(LABELS.read_text()) if LABELS.exists() else {}
-    handler = LlmHandler(KeyManager())
+    handler = LlmHandler(KeyManager(keys_file=RuntimePaths().keys_file))
     for url in PAGES:
         links, _ = load_page(url)
         if not links:
@@ -136,7 +137,7 @@ async def feature_rows(store_dir: str = ".space_store"):
     svc = NLPService(
         tmpl["blueprint_id"],
         tmpl["target_topic"],
-        LlmHandler(KeyManager()),
+        LlmHandler(KeyManager(keys_file=RuntimePaths().keys_file)),
         tmpl["expansion"],
         store_base_dir=store_dir,
     )
