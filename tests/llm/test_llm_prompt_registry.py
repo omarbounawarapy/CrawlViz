@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from crawlviz.score.llm import ChatRole
-from crawlviz.score.llm.prompt_registry import (
+from crawlviz.llm import ChatRole
+from crawlviz.llm.prompt_registry import (
     MAX_PROMPT_FILE_BYTES,
     PromptFileError,
     PromptRegistry,
