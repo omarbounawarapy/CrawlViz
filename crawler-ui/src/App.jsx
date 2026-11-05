@@ -20,7 +20,7 @@ import { RunPage } from "./features/run";
 import { BlueprintManager } from "./features/blueprints";
 import { DataExplorer } from "./features/data";
 import { ConfigPage } from "./features/config";
-import BenchmarkPage from "./features/benchmark/BenchmarkPage";
+import { BenchmarkPage } from "./features/benchmark";
 import NotFoundPage from "./features/errors/NotFoundPage";
 
 const theme = getTheme();
