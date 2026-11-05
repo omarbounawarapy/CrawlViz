@@ -19,7 +19,7 @@ import TimelineDock from "./features/timeline/TimelinePage";
 import RunPage from "./features/run/RunPage";
 import BlueprintManager from "./features/blueprints/BlueprintManager";
 import DataExplorer from "./features/data/DataExplorer";
-import ConfigPage from "./features/config/ConfigPage";
+import { ConfigPage } from "./features/config";
 import BenchmarkPage from "./features/benchmark/BenchmarkPage";
 import NotFoundPage from "./features/errors/NotFoundPage";
 

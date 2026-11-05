@@ -23,9 +23,7 @@ import {
   Status,
   ConfirmButton,
 } from "../common/Form";
-import NumberField from "../config/NumberField";
-import { Explain } from "../config/Term";
-import { useCrawlCost } from "../config/crawlCost";
+import { Explain, NumberField, useCrawlCost } from "../config";
 import {
   STRATEGIES,
   TRANSFORMS_WITH_CONFIG,

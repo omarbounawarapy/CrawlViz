@@ -6,8 +6,7 @@ import { crawlStatusWords } from "../../state/crawlStatus";
 import { Page, SectionTitle, Row } from "../common/Page";
 import { buttonPrimary, buttonOutline } from "../common/buttons";
 import RunOverrides from "./RunOverrides";
-import { useCrawlCost } from "../config/crawlCost";
-import { Explain } from "../config/Term";
+import { Explain, useCrawlCost } from "../config";
 
 const theme = getTheme();
 

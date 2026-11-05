@@ -3,7 +3,7 @@ import { fetchBenchmarkCurves } from "../../api/client";
 import { getTheme } from "../../theme";
 import { SectionTitle } from "../common/Page";
 import { Tabs, TabPanel } from "../common/Form";
-import { Explain } from "../config/Term";
+import { Explain } from "../config";
 import Loading from "./Loading";
 import { useLoad, POLICY_ORDER, num } from "./shared";
 import ScrollRegion from "../common/ScrollRegion";

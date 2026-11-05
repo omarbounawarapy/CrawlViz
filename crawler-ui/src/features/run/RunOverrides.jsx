@@ -2,9 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
 import { Button, Chip, Select, TextInput } from "../common/Form";
 import { fetchConfig, fetchConfigDefaults, fetchConfigSchema } from "../../api/client";
-import SettingsEditor from "../config/SettingsEditor";
-import { buildFields, buildPatch, buildSections, sectionSlug, setIn } from "../config/configModel";
-import { presetChanges, shown } from "../config/presetModel";
+import {
+  SettingsEditor,
+  buildFields,
+  buildPatch,
+  buildSections,
+  presetChanges,
+  sectionSlug,
+  setIn,
+  shown,
+} from "../config";
 
 const theme = getTheme();
 const { text } = theme.colors;

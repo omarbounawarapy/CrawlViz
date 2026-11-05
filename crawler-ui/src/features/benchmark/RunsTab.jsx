@@ -12,7 +12,7 @@ import { SectionTitle } from "../common/Page";
 import { Button, Chip, Field, Grid, Select, Status, TextInput } from "../common/Form";
 import Loading from "./Loading";
 import { LABEL, useLoad, num } from "./shared";
-import NumberField from "../config/NumberField";
+import { NumberField } from "../config";
 import ScrollRegion from "../common/ScrollRegion";
 import useFocusableWhenScrolling from "../common/useFocusableWhenScrolling";
 
