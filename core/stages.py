@@ -30,7 +30,7 @@ from pipelines import (
     StopConditions,
     StoppingPipeline,
     StoragePipeline,
-    TransformationPipeline,
+    TransformStage,
 )
 from pipelines.contracts import Annotator, CrawlStage, Fetcher, RelevanceScorer
 
@@ -228,7 +228,7 @@ def _priority(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _transformation(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.transformation
-    return TransformationPipeline(
+    return TransformStage(
         inputs.broker,
         inputs.extraction,
         max_queue_size=_queue_size(settings.max_queue_size),

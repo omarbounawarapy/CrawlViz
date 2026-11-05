@@ -54,7 +54,7 @@ from pipelines import (
     StopConditions,
     StoppingPipeline,
     StoragePipeline,
-    TransformationPipeline,
+    TransformStage,
 )
 
 BASE_URL = "https://synthetic.test"
@@ -207,7 +207,7 @@ class Crawl:
             self.requests,
             ExtractStage(b, EXTRACTION),
             FilterStage(b, s),
-            TransformationPipeline(b, EXTRACTION),
+            TransformStage(b, EXTRACTION),
             StoragePipeline(s, b),
             self.scoring,
             PriorityPipeline(s, b),

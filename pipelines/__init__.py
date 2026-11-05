@@ -10,7 +10,7 @@ from .retry_stage import RetryStage
 from .scoring_pipeline import ScoringPipeline
 from .stop_controller import StopConditions, StoppingPipeline
 from .storage_sink import StoragePipeline
-from .transform_stage import TransformationPipeline
+from .transform_stage import TransformStage
 
 __all__ = [
     "CanonicalizeStage",
@@ -26,5 +26,5 @@ __all__ = [
     "StopConditions",
     "StoppingPipeline",
     "StoragePipeline",
-    "TransformationPipeline",
+    "TransformStage",
 ]

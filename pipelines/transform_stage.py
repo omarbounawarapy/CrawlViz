@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 MAX_REGEX_INPUT_CHARS = 100_000
 
 
-class TransformationPipeline(BasePipeline):
+class TransformStage(BasePipeline):
     """Applies each field's configured transform chain to extracted items.
 
     Transform steps are declared per field in the blueprint's extraction

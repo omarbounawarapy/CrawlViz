@@ -42,7 +42,7 @@ from pipelines import (
     RetryStage,
     ScoringPipeline,
     StoragePipeline,
-    TransformationPipeline,
+    TransformStage,
 )
 from pipelines.base_pipeline import SHUTDOWN
 from pipelines.frontier_queue import FrontierQueue
@@ -519,7 +519,7 @@ async def _run(
     )
     processing = ExtractStage(broker, extraction)
     filtering = FilterStage(broker, storage)
-    transformation = TransformationPipeline(broker, extraction)
+    transformation = TransformStage(broker, extraction)
     store = StoragePipeline(storage, broker)
     priority = PriorityPipeline(storage, broker)
     if strategy is not None:

@@ -2,7 +2,7 @@ import json
 import logging
 from pathlib import Path
 
-from pipelines.transform_stage import MAX_REGEX_INPUT_CHARS, TransformationPipeline
+from pipelines.transform_stage import MAX_REGEX_INPUT_CHARS, TransformStage
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "templates" / "wikiMD.json"
 
@@ -17,7 +17,7 @@ def test_wikimd_transforms_are_applied():
     ]
     assert lowered, "wikiMD.json should declare a lowercase transform"
 
-    pipeline = TransformationPipeline(event_broker=None, extraction_blueprint=extraction)
+    pipeline = TransformStage(event_broker=None, extraction_blueprint=extraction)
     item = {name: "  MiXeD Case  " for name in lowered}
     [(out, h)] = pipeline._transform_items([(item, "h")], node=None)
 
@@ -27,8 +27,8 @@ def test_wikimd_transforms_are_applied():
     assert h == "h"
 
 
-def _pipeline() -> TransformationPipeline:
-    return TransformationPipeline(event_broker=None, extraction_blueprint={})
+def _pipeline() -> TransformStage:
+    return TransformStage(event_broker=None, extraction_blueprint={})
 
 
 def test_regex_skips_input_over_the_limit_and_logs(caplog):
