@@ -20,9 +20,9 @@ import {
   ScrollRegion,
   useFocusableWhenScrolling,
 } from "../common";
+import { NumberField } from "../../shared/ui";
 import Loading from "./Loading";
 import { LABEL, useLoad, num } from "./shared";
-import { NumberField } from "../config";
 
 const { text, background } = getTheme().colors;
 
@@ -141,11 +141,10 @@ function JobPanel() {
         <Field label="Repeats">
           <NumberField
             integer
-            min={1}
-            max={10}
+            nullable
             value={form.reps}
             disabled={running}
-            onChange={(v) => setForm((f) => ({ ...f, reps: String(v) }))}
+            onChange={(reps) => setForm((f) => ({ ...f, reps }))}
           />
         </Field>
         <Field label="LLM cache" hint="Replay and no_llm read it; keep it the same across the grid.">
