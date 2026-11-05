@@ -1,7 +1,8 @@
-"""Typed LLM layer, built beside `infrastructure/llm_handler.py`.
+"""The LLM domain: the typed layer and the per-crawl call budget.
 
-No caller uses it yet: callers move to it one at a time, and the old handler
-goes last. Other areas import from here only (ARCH-2).
+The typed layer is built beside `infrastructure/llm_handler.py` and has no
+caller yet: callers move to it one at a time, and the old handler goes last.
+Other areas import from here only (ARCH-2).
 """
 
 from .call_budget import CallBudget

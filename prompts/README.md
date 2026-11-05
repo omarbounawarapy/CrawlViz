@@ -2,12 +2,12 @@
 
 Each prompt the crawler sends to a language model lives here as one file,
 `prompts/<id>.md`, read by `PromptRegistry`
-(`src/crawlviz/score/llm/prompt_registry.py`).
+(`src/crawlviz/llm/prompt_registry.py`).
 
 The prompts in use today are still in `models/prompts.py` and
-`nlp/expansion_prompt_builder.py`. They move here one at a time. A move changes
-how the prompt is rendered, so it needs a golden replay and research-scientist
-sign-off. Nothing in this folder is sent yet.
+`src/crawlviz/nlp/expansion_prompt_builder.py`. They move here one at a time.
+A move changes how the prompt is rendered, so it needs a golden replay and
+research-scientist sign-off. Nothing in this folder is sent yet.
 
 ## File format
 
