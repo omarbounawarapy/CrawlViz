@@ -335,7 +335,8 @@ lists those threats.
 - Evidence: each worker computes its delay from `last_request_time` before it sleeps, and
   only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228`, now `pipelines/fetch_stage.py`, which paces per host). Workers
   that start together compute the same delay and send together. There is no per-host state.
-- **Unverified:** worked out from the code. No test or run showed it.
+- **Status: fixed** by "Fetch: rate limit holds across workers, per host".
+- **Unverified before the fix:** worked out from the code. No test or run showed it.
 - Fix: a per-host limiter that books the next slot under a lock before sleeping.
 - Test: four workers still send at most one request per `min_delay` to a host
   (`docs/standards.md:90`).
@@ -354,6 +355,8 @@ lists those threats.
 **T11. Medium: Retry-After is ignored, and 503 does not trigger backoff.**
 - Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` (now `pipelines/fetch_stage.py`, which also handles 503 and Retry-After) looked only at status 429,
   and the shared backoff ignores the header.
+- **Status: fixed** by "Retry: Retry-After and 503 are honoured, other 4xx are not retried" and
+  "Fetch: a Retry-After answer holds the whole host off, and 503 backs the crawler off".
 - Fix: honour Retry-After in both its forms (seconds or an HTTP date), per host and with a
   cap. Treat 503 like 429.
 
