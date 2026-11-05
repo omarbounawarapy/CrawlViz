@@ -102,6 +102,7 @@ max-complexity = 10
 "pipelines/score_stage.py" = ["I001", "PLR0913"]
 "src/crawlviz/priority/__init__.py" = ["RUF022"]
 "src/crawlviz/priority/strategy.py" = ["PLR0913"]
+"src/crawlviz/shared/html_utils.py" = ["PLW0603"]
 "routes/benchmark.py" = ["E501", "PLR2004"]
 "routes/config.py" = ["B904", "E501"]
 "routes/run.py" = ["B904", "E501", "N815", "PLW0603"]
@@ -141,7 +142,6 @@ max-complexity = 10
 "ui_bridge/event_recorder.py" = ["SIM115"]
 "ui_bridge/telemetry_bridge.py" = ["PLR0913", "UP006", "UP035", "UP045"]
 "ui_bridge/ui_websocket_gateway.py" = ["B904", "UP006", "UP035"]
-"utils/html_utils.py" = ["PLW0603"]
 
 [build-system]
 requires = ["hatchling"]
@@ -178,7 +178,6 @@ files = [
     "tools",
     "traceability",
     "ui_bridge",
-    "utils",
 ]
 
 # Libraries that ship no stubs or py.typed marker. Listed one by one so a new
@@ -220,10 +219,11 @@ module = [
     "crawlviz.llm.key_manager",
     "crawlviz.llm.llm_handler",
     "infrastructure.log_writer",
-    "infrastructure.network_client",
     "crawlviz.llm.nvidia_translator",
     "crawlviz.llm.open_router_translator",
     "crawlviz.llm.openai_translator",
+    "crawlviz.shared.html_utils",
+    "crawlviz.shared.network_client",
     "models.item_extractor",
     "models.link",
     "models.node",
@@ -307,6 +307,5 @@ module = [
     "ui_bridge.event_recorder",
     "ui_bridge.telemetry_bridge",
     "ui_bridge.ui_websocket_gateway",
-    "utils.html_utils",
 ]
 ignore_errors = true
