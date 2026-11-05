@@ -44,6 +44,11 @@ domain's `__init__.py` is its public API (`__all__`); other domains import only 
 | `benchmark` | frozen-graph benchmark, judges, audit, analysis | `benchmark/` |
 | `offline` | offline doubles and session | `offline/` |
 
+**Status.** The `events`, `nlp`, `priority` and `offline` domains have moved: their packages are now
+`src/crawlviz/events/`, `src/crawlviz/nlp/`, `src/crawlviz/priority/` and `src/crawlviz/offline/`.
+The paths in the table's last column are where the files were when this ADR was written; the
+files that were outside those folders (for example `pipelines/base_pipeline.py`) have not moved yet.
+
 - Event types stay in one `events` package, one module per stage, and do not move into the
   stage domains. Stages form a loop (fetch, extract, score, prioritise, fetch), so a stage
   importing the events of the stage before it would make a cycle.
