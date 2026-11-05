@@ -77,7 +77,7 @@ uv run pytest
 
 Tests write only under pytest's `tmp_path`. A `Crawler` can be constructed without `keys.json` (`test_construction_needs_no_keys_and_writes_only_under_tmp` in `test_event_wiring.py`).
 
-`test_event_wiring.py` is worth reading even if you're not modifying this codebase. It is a regression suite that encodes earlier defects (e.g. `TestCascadeSubscriptionGap`, which asserts that `PriorityPipeline` receives `HighScoreLinksEvent`). `test_runtime_invariants.py` covers the runtime guarantees fixed during the stabilization phase; see [`10-stabilization.md`](10-stabilization.md).
+`test_event_wiring.py` is worth reading even if you're not modifying this codebase. It is a regression suite that encodes earlier defects (e.g. `TestCascadeSubscriptionGap`, which asserts that `PrioritizeStage` receives `HighScoreLinksEvent`). `test_runtime_invariants.py` covers the runtime guarantees fixed during the stabilization phase; see [`10-stabilization.md`](10-stabilization.md).
 
 **Frontend:** `crawler-ui/` has `vitest` and `@testing-library/react` configured, with tests present for the reducer (`state/reducer.test.js`) and the app shell (`App.test.jsx`):
 

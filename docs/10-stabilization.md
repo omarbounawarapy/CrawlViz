@@ -62,9 +62,9 @@ P2.5 does not use `asyncio.TaskGroup`. The bounded shutdown in `_run_until_stopp
 | P3.5 | A hashing embedding engine lets NLP scoring be tested without MiniLM | `8d76a01` |
 | P3.6 | Documentation claims the code does not back were removed, including references to the missing `V2_ARCHITECTURE.md` | `e3b1fc5` |
 
-Fixed after the phase: `ExportingPipeline` flushes its buffer when cancelled, so `POST /stop` keeps the rows already collected (`test_cancelled_exporter_flushes_its_buffer`). The CORS origin regex is now `CRAWLVIZ_CORS_ORIGIN_REGEX`, so a deployment can turn off the localhost-only default.
+Fixed after the phase: `ExportSink` flushes its buffer when cancelled, so `POST /stop` keeps the rows already collected (`test_cancelled_exporter_flushes_its_buffer`). The CORS origin regex is now `CRAWLVIZ_CORS_ORIGIN_REGEX`, so a deployment can turn off the localhost-only default.
 
-Two fixes landed alongside the tiers: a `ScoringPipeline` worker stops waiting on `node.ready` once the crawl stops (`3a313c0`), and the UI no longer reconnects a stale WebSocket, so events are not delivered twice (`8c2d4f9`, after the phase).
+Two fixes landed alongside the tiers: a `ScoreStage` worker stops waiting on `node.ready` once the crawl stops (`3a313c0`), and the UI no longer reconnects a stale WebSocket, so events are not delivered twice (`8c2d4f9`, after the phase).
 
 ## Exit criteria
 

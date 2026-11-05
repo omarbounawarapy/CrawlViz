@@ -30,7 +30,7 @@ At the start of a crawl, this basis is thin. Only the seed pages and a short con
 
 `LinkFeatureScorer.composite_score()` (`services/link_features.py`) combines several scalar signals, target similarity (dominant weight), coverage of under-explored regions, novelty versus visited content, contextual coherence with the parent page, and lexical keyword overlap, into a single number per link, `link._nlp_score`. This single score exists for one purpose: **deciding which bucket a link falls into**, not ranking the frontier (that's a separate, later computation, see below).
 
-`ScoringPipeline.bucket_links()` sorts every link in a node against two configurable thresholds (`LOW`, `HIGH`):
+`ScoreStage.bucket_links()` sorts every link in a node against two configurable thresholds (`LOW`, `HIGH`):
 
 | Bucket | Condition | What happens to it |
 |---|---|---|
@@ -59,7 +59,7 @@ Both use the name `exploration` for different concepts. `priority/strategy.py`'s
 - **`balanced`** splits weight evenly between the LLM score and a blend of NLP signals.
 - **`exploration`** weights novelty and coverage-of-underexplored-regions more heavily than raw similarity, favoring breadth over tight topical focus.
 
-`PriorityPipeline` calls the configured strategy with `nlp_bias=60, llm_bias=40` for any link that has an LLM score, or `(1, 0)`, pure NLP, no LLM contribution, for `trusted_no_llm` links that skipped the LLM stage entirely. This second case is a direct implementation of the report's claim, in the same section, that fast-tracked high-confidence links get their priority "computed uniquely from NLP signals depending on the strategy."
+`PrioritizeStage` calls the configured strategy with `nlp_bias=60, llm_bias=40` for any link that has an LLM score, or `(1, 0)`, pure NLP, no LLM contribution, for `trusted_no_llm` links that skipped the LLM stage entirely. This second case is a direct implementation of the report's claim, in the same section, that fast-tracked high-confidence links get their priority "computed uniquely from NLP signals depending on the strategy."
 
 ```mermaid
 flowchart LR
@@ -76,8 +76,8 @@ flowchart LR
     LLM --> LLMScore["link.llm_score"]
     LLM --> Expansions["conceptual expansions"]
     Expansions -.feeds back.-> VS
-    LLMScore --> Priority["PriorityPipeline<br/>strategy(node, link, 60, 40)"]
-    Trusted --> Priority2["PriorityPipeline<br/>strategy(node, link, 1, 0)"]
+    LLMScore --> Priority["PrioritizeStage<br/>strategy(node, link, 60, 40)"]
+    Trusted --> Priority2["PrioritizeStage<br/>strategy(node, link, 1, 0)"]
     Priority --> NewNode["new child Node<br/>priority = computed value"]
     Priority2 --> NewNode
 ```

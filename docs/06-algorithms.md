@@ -171,7 +171,7 @@ Rather than consuming the single bucketing scalar $`\mathrm{nlp\_score}(c)`$, th
 
 The parameters $`\lambda_{\text{nlp}}`$ and $`\lambda_{\text{llm}}`$ are supplied by the caller rather than hard-coded into the strategy function.
 
-In the live pipeline, `PriorityPipeline` always supplies
+In the live pipeline, `PrioritizeStage` always supplies
 
 ```math
 (\lambda_{\text{nlp}},\lambda_{\text{llm}})
@@ -189,7 +189,7 @@ for LLM-scored candidates, and
 
 for `trusted_no_llm` candidates, thereby disabling the LLM contribution.
 
-The default keyword arguments defined by the individual strategy functions, such as the $`0.5/0.5`$ weighting in the balanced strategy, are the values exercised when those functions are called directly, for example in unit tests. They are **not** the values used by the live crawl when `PriorityPipeline` explicitly supplies its own parameters.
+The default keyword arguments defined by the individual strategy functions, such as the $`0.5/0.5`$ weighting in the balanced strategy, are the values exercised when those functions are called directly, for example in unit tests. They are **not** the values used by the live crawl when `PrioritizeStage` explicitly supplies its own parameters.
 
 ### Priority Scale
 
@@ -366,8 +366,8 @@ The ratio between these quantities illustrates why evaluating every discovered l
 The cascade limits LLM evaluation through thresholding, selective sampling, top-$`K`$ confirmation, and `trusted_no_llm` bypasses. Consequently, LLM cost is intended to remain approximately proportional to the number of nodes actually explored rather than to the number of links discovered.
 ## 7. Budget and Depth Semantics
 
-- **`max_nodes`** counts **successfully fetched pages**, not admitted nodes. `StoppingPipeline` increments on `PageFetchedEvent` and emits `StopCrawlEvent("MAX_NODES_REACHED")` when the count reaches `max_nodes`. A run therefore fetches exactly `max_nodes` pages with one request worker; with more workers, up to `max_concurrency - 1` requests already in flight may still complete. Failed fetches do not count.
-- **`max_depth`** is an **admission limit**, not a stop condition. Seeds are depth 0; `StoragePipeline` does not create nodes deeper than `max_depth`. The crawl ends naturally when the frontier drains (or on another stop condition). `MAX_DEPTH_REACHED` is no longer emitted.
+- **`max_nodes`** counts **successfully fetched pages**, not admitted nodes. `StopController` increments on `PageFetchedEvent` and emits `StopCrawlEvent("MAX_NODES_REACHED")` when the count reaches `max_nodes`. A run therefore fetches exactly `max_nodes` pages with one request worker; with more workers, up to `max_concurrency - 1` requests already in flight may still complete. Failed fetches do not count.
+- **`max_depth`** is an **admission limit**, not a stop condition. Seeds are depth 0; `StorageSink` does not create nodes deeper than `max_depth`. The crawl ends naturally when the frontier drains (or on another stop condition). `MAX_DEPTH_REACHED` is no longer emitted.
 
 ## 8. Run Isolation
 
