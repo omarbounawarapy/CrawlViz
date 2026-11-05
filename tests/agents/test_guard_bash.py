@@ -56,6 +56,13 @@ def test_gatekeepers_do_not_commit_or_write() -> None:
     assert bash("code-reviewer", "uv run pytest -q").returncode == 0
 
 
+def test_read_only_agents_may_ask_git_about_ancestry() -> None:
+    """`git merge-base` reads history; only `git merge` changes it."""
+    ancestry = "git merge-base --is-ancestor origin/main HEAD"
+    assert bash("architect", ancestry).returncode == 0
+    assert bash("architect", "git merge main").returncode == BLOCKED
+
+
 def test_platform_engineer_manages_dependencies() -> None:
     assert bash("platform-engineer", "uv add --dev hypothesis").returncode == 0
 

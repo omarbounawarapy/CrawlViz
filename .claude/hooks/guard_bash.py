@@ -47,7 +47,7 @@ DANGEROUS_RM_TARGETS = {"/", "~", "..", ".", "*", ".git", "./", "../", "~/", "$H
 WRITE_COMMANDS = re.compile(
     r"(^|[\s;|&(])(rm|mv|cp|touch|mkdir|tee|truncate|ln|chmod|chown|patch|dd)\s"
     r"|\bsed\s+(-[a-zA-Z]*i|--in-place)|\bgit\s+(add|commit|merge|checkout|switch|stash|restore"
-    r"|apply|am|cherry-pick|revert|tag|branch\s+-[dD])\b|\b(uv\s+sync|npm\s+ci)\b"
+    r"|apply|am|cherry-pick|revert|tag|branch\s+-[dD])(?![\w-])|\b(uv\s+sync|npm\s+ci)\b"
 )
 REDIRECT_TARGET = re.compile(r"(?<![<>&\d])>{1,2}\s*(?P<target>[^\s;|&]+)")
 TEMP_PREFIXES = ("/tmp/", "/dev/null", "/dev/stderr", "/dev/stdout")
