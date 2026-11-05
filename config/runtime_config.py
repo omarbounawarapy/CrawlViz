@@ -300,7 +300,7 @@ class EmbeddingConfig(BaseModel):
 
 
 class ExportConfig(BaseModel):
-    """Item export / persistence batching (pipelines/exporting_pipeline.py)."""
+    """Item export / persistence batching (pipelines/export_sink.py)."""
 
     batch_size: int = _f(
         _config.EXPORT_BATCH_SIZE,
@@ -314,7 +314,7 @@ class ExportConfig(BaseModel):
 
 class FetchConfig(BaseModel):
     """Page fetching: politeness, backoff, timeouts and request headers
-    (pipelines/requests_pipeline.py, infrastructure/network_client.py)."""
+    (pipelines/fetch_stage.py, infrastructure/network_client.py)."""
 
     min_delay: float = _f(
         1.0,
@@ -533,7 +533,7 @@ def _pl(workers: int) -> Any:
 
 
 class PipelinesConfig(BaseModel):
-    """Per-pipeline parallelism (core/crawler.py:_build_pipelines). Logging
+    """Per-pipeline parallelism (core/stages.py:build_stages). Logging
     and canonicalization stay single-worker so output order is preserved."""
 
     processing: PipelineSettings = _pl(1)
@@ -548,7 +548,7 @@ class PipelinesConfig(BaseModel):
 
 
 class RetryConfig(BaseModel):
-    """Retry policy (pipelines/retry_processor.py)."""
+    """Retry policy (pipelines/retry_stage.py)."""
 
     max_request_retries: int = _f(
         3,
@@ -637,7 +637,7 @@ def _weights(name: str) -> Any:
 
 
 class PriorityConfig(BaseModel):
-    """Mix of NLP and LLM scores in a link's priority (priority_pipeline.py)."""
+    """Mix of NLP and LLM scores in a link's priority (prioritize_stage.py)."""
 
     nlp_bias: float = _f(
         60,

@@ -71,7 +71,7 @@
       "type": "object"
     },
     "ExportConfig": {
-      "description": "Item export / persistence batching (pipelines/exporting_pipeline.py).",
+      "description": "Item export / persistence batching (pipelines/export_sink.py).",
       "properties": {
         "batch_size": {
           "default": 1,
@@ -91,7 +91,7 @@
       "type": "object"
     },
     "FetchConfig": {
-      "description": "Page fetching: politeness, backoff, timeouts and request headers\n(pipelines/requests_pipeline.py, infrastructure/network_client.py).",
+      "description": "Page fetching: politeness, backoff, timeouts and request headers\n(pipelines/fetch_stage.py, infrastructure/network_client.py).",
       "properties": {
         "min_delay": {
           "default": 1.0,
@@ -582,7 +582,7 @@
       "type": "object"
     },
     "PipelinesConfig": {
-      "description": "Per-pipeline parallelism (core/crawler.py:_build_pipelines). Logging\nand canonicalization stay single-worker so output order is preserved.",
+      "description": "Per-pipeline parallelism (core/stages.py:build_stages). Logging\nand canonicalization stay single-worker so output order is preserved.",
       "properties": {
         "processing": {
           "$ref": "#/$defs/PipelineSettings"
@@ -616,7 +616,7 @@
       "type": "object"
     },
     "PriorityConfig": {
-      "description": "Mix of NLP and LLM scores in a link's priority (priority_pipeline.py).",
+      "description": "Mix of NLP and LLM scores in a link's priority (prioritize_stage.py).",
       "properties": {
         "nlp_bias": {
           "default": 60,
@@ -754,7 +754,7 @@
       "type": "object"
     },
     "RetryConfig": {
-      "description": "Retry policy (pipelines/retry_processor.py).",
+      "description": "Retry policy (pipelines/retry_stage.py).",
       "properties": {
         "max_request_retries": {
           "default": 3,
