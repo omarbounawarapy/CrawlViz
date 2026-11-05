@@ -38,6 +38,7 @@ dev = [
     "hypothesis>=6.170.5",
     "mypy>=2.4.0",
     "pip-audit>=2.7",
+    "import-linter>=2.0",
 ]
 
 [tool.ruff]
@@ -308,3 +309,37 @@ module = [
     "ui_bridge.ui_websocket_gateway",
 ]
 ignore_errors = true
+
+# ADR 4: backend layers import downwards only. Only the packages that exist under
+# src/crawlviz are listed; the others join the contract when they move. The graph counts
+# imports inside functions and under TYPE_CHECKING. Run with `make lint-imports`.
+[tool.importlinter]
+root_packages = [
+    "crawlviz",
+    "benchmark", "config", "core", "infrastructure", "models", "pipelines",
+    "routes", "services", "traceability", "ui_bridge",
+]
+
+[[tool.importlinter.contracts]]
+name = "Backend layers import downwards only"
+type = "layers"
+layers = [
+    "crawlviz.nlp",
+    "crawlviz.llm",
+    "crawlviz.events",
+    "crawlviz.shared",
+]
+
+[[tool.importlinter.contracts]]
+name = "Lower layers do not import the packages that have not moved yet"
+type = "forbidden"
+source_modules = [
+    "crawlviz.shared",
+    "crawlviz.events",
+    "crawlviz.llm",
+    "crawlviz.nlp",
+]
+forbidden_modules = [
+    "benchmark", "config", "core", "infrastructure", "models", "pipelines",
+    "routes", "services", "traceability", "ui_bridge",
+]
