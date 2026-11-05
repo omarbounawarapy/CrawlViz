@@ -1,7 +1,6 @@
-"""The LLM domain: the typed layer and the per-crawl call budget.
+"""The LLM domain: provider handler and translators, keys, endpoints, the typed layer, call budget.
 
-The typed layer is built beside `infrastructure/llm_handler.py` and has no
-caller yet: callers move to it one at a time, and the old handler goes last.
+The typed layer has no caller yet: callers move to it one at a time, and `LlmHandler` goes last.
 Other areas import from here only (ARCH-2).
 """
 
