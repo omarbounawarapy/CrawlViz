@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
-from events import StopCrawlEvent
+from crawlviz.events import StopCrawlEvent
 
 from .event_registry import EventRegistry
 

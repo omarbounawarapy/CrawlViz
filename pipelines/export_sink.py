@@ -6,7 +6,7 @@ import time
 from datetime import UTC, datetime
 
 from config import ITEMS_DB_PATH
-from events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
+from crawlviz.events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
 from models import Node
 from utils import BackgroundTasks
 

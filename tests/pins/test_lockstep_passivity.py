@@ -12,7 +12,7 @@ from pin_paths import REPO_ROOT
 from benchmark import FrozenGraph, run_policy, synthetic_graph
 from benchmark.llm_cache import CachedLlm
 from benchmark.runner import RunResult, run_cascade
-from events import RequestStartedEvent, StorageNodeUpdatedEvent
+from crawlviz.events import RequestStartedEvent, StorageNodeUpdatedEvent
 
 BLUEPRINT = REPO_ROOT / "templates" / "isi.json"
 ISI_GRAPH = REPO_ROOT / "benchmark" / "data" / "isi.json"

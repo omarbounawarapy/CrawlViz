@@ -1,6 +1,6 @@
 import asyncio
 
-from events import (
+from crawlviz.events import (
     ContentExtractedEvent,
     ExtractionInputSnapshotEvent,
     ExtractionStartedEvent,

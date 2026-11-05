@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import random
 
-from events import (
+from crawlviz.events import (
     EmptyScoreResultsEvent,
     HighScoreLinksEvent,
     LinksScoredEvent,

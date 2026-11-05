@@ -31,7 +31,7 @@ from config import (
     PERCENTILE_MIN_LINKS,
 )
 from core.event_broker import EventBroker
-from events import (
+from crawlviz.events import (
     EmptyScoreResultsEvent,
     HighScoreLinksEvent,
     LinksScoredEvent,

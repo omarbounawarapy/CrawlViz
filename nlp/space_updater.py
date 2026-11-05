@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Protocol
 
-from events import StopCrawlEvent
+from crawlviz.events import StopCrawlEvent
 
 from .buffer_manager import BufferManager
 from .vector_space import VectorSpace

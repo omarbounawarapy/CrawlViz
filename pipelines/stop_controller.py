@@ -2,7 +2,12 @@ import asyncio
 import time
 from dataclasses import dataclass
 
-from events import NodeAddedEvent, PageFetchedEvent, StopCrawlEvent, StorageNodeUpdatedEvent
+from crawlviz.events import (
+    NodeAddedEvent,
+    PageFetchedEvent,
+    StopCrawlEvent,
+    StorageNodeUpdatedEvent,
+)
 from utils import BackgroundTasks
 
 from .base_pipeline import BasePipeline

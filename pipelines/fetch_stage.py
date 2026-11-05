@@ -2,7 +2,7 @@ import asyncio
 import random
 
 from config import USER_AGENT
-from events import (
+from crawlviz.events import (
     NodeAddedEvent,
     PageFetchedEvent,
     RequestEnqueuedEvent,

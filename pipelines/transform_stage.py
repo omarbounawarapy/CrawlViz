@@ -2,7 +2,7 @@ import asyncio
 import logging
 import re
 
-from events import (
+from crawlviz.events import (
     ContentFilteredEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,

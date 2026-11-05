@@ -2,7 +2,7 @@ import asyncio
 import os
 from urllib.parse import unquote
 
-from events import (
+from crawlviz.events import (
     ContentFilteredEvent,
     ExportBatchCompletedEvent,
     LinksScoredEvent,

@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from events import (
+from crawlviz.events import (
     EmptyScoreResultsEvent,
     RequestFailedEvent,
     RetryOperationFailedEvent,

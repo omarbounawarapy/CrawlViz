@@ -1,7 +1,7 @@
 import asyncio
 import json
 
-from events import StopCrawlEvent
+from crawlviz.events import StopCrawlEvent
 from pipelines.crawl_log_sink import CrawlLogSink
 
 

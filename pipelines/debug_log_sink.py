@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from urllib.parse import unquote
 
-from events import (
+from crawlviz.events import (
     # Requests
     RequestStartedEvent,
     RequestResponseReceivedEvent,

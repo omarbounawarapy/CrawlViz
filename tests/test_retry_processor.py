@@ -2,7 +2,7 @@
 
 import asyncio
 
-from events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
+from crawlviz.events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
 from pipelines.retry_stage import RetryStage
 
 

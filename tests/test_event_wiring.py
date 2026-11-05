@@ -21,7 +21,7 @@ import pytest
 
 from config.paths import RuntimePaths
 from core.crawler import Crawler
-from events import (
+from crawlviz.events import (
     FilteringPipelineErrorEvent,
     HighScoreLinksEvent,
     LowScoreLinksEvent,

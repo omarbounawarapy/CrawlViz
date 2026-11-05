@@ -80,7 +80,7 @@ max-complexity = 10
 "config/blueprint_translator.py" = ["C901", "I001", "RUF100"]
 "config/runtime_config.py" = ["E501", "PLR0913", "UP037"]
 "core/crawler.py" = ["I001", "PLR0913"]
-"events/__init__.py" = ["I001", "RUF022"]
+"src/crawlviz/events/__init__.py" = ["I001", "RUF022"]
 "infrastructure/key_manager.py" = ["PLR2004"]
 "infrastructure/llm_handler.py" = ["RUF012"]
 "infrastructure/log_writer.py" = ["UP017"]
@@ -168,7 +168,6 @@ files = [
     "benchmark",
     "config",
     "core",
-    "events",
     "infrastructure",
     "models",
     "nlp",

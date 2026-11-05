@@ -109,7 +109,7 @@ class TelemetryBridge:
         after the full events package is initialised (same pattern used
         by other pipelines in the codebase).
         """
-        from events import (
+        from crawlviz.events import (
             ContentFilteredEvent,
             ExportBatchCompletedEvent,
             ExportBatchFailedEvent,

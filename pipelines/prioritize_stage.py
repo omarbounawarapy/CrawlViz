@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any
 
-from events import (
+from crawlviz.events import (
     HighScoreLinksEvent,
     LinksScoredEvent,
     PriorityCalculatedEvent,
