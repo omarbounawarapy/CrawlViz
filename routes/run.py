@@ -29,7 +29,7 @@ from config.settings_store import SettingsFileError, load_runtime_config, valida
 from config.template_names import InvalidTemplateNameError, resolve_template_path
 from core import Crawler, find_preflight_problems
 from crawlviz.contracts import SchemaVersionError, StoredFormatError
-from offline import build_offline_session, is_offline
+from crawlviz.offline import build_offline_session, is_offline
 
 logger = logging.getLogger(__name__)
 

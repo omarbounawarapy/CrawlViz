@@ -10,9 +10,9 @@ import pytest
 from config import TEMPLATES_DIR
 from config.blueprint_schema import validate_blueprint
 from config.runtime_config import default_runtime_config
-from offline import build_offline_session
-from offline.session import SITE_SCRIPTS_DIR, find_site_script
-from offline.site_script import SiteScript
+from crawlviz.offline import build_offline_session
+from crawlviz.offline.session import SITE_SCRIPTS_DIR, find_site_script
+from crawlviz.offline.site_script import SiteScript
 from pipelines.fetch_stage import is_rate_limited
 
 LONG_DEMO = "offline_demo_long.json"

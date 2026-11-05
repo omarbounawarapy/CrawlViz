@@ -10,7 +10,7 @@ import pytest
 from config.paths import RuntimePaths
 from config.runtime_config import default_runtime_config
 from core import Crawler
-from offline import OFFLINE_ENV_VAR, build_offline_session, is_offline
+from crawlviz.offline import OFFLINE_ENV_VAR, build_offline_session, is_offline
 
 EXPECTED_EMBEDDING_BACKEND = "hashing"
 CRAWL_TIMEOUT_SECONDS = 120

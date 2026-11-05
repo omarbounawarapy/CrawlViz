@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from benchmark.graph import FrozenGraph, GraphFetcher
+from config import BASE_DIR
 from config.runtime_config import RuntimeConfig
 
 from .scripted_llm import ScriptedLlm
@@ -12,7 +13,7 @@ from .site_script import RateLimitedFetcher, SiteScript
 
 OFFLINE_ENV_VAR = "CRAWLVIZ_OFFLINE"
 OFFLINE_EMBEDDING_BACKEND = "hashing"
-OFFLINE_GRAPH = Path(__file__).resolve().parent.parent / "benchmark" / "data" / "isi.json"
+OFFLINE_GRAPH = BASE_DIR / "benchmark" / "data" / "isi.json"
 SITE_SCRIPTS_DIR = Path(__file__).resolve().parent / "scripts"
 _TRUTHY = {"1", "true", "yes", "on"}
 

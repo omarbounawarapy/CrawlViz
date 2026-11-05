@@ -31,7 +31,7 @@ from pin_paths import REPO_ROOT
 from config.paths import RuntimePaths
 from config.runtime_config import default_runtime_config
 from core import Crawler
-from offline import build_offline_session
+from crawlviz.offline import build_offline_session
 
 BLUEPRINT_NAME = "offline_demo.json"
 PIN_RANDOM_SEED = 0
