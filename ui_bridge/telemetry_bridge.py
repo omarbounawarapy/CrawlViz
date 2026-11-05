@@ -511,7 +511,7 @@ class TelemetryBridge:
         ]
 
     # ==================================================================
-    # V2 handlers — extraction stage (ProcessingPipeline)
+    # V2 handlers — extraction stage (ExtractStage)
     # ==================================================================
 
     def _on_extraction_started(self, event) -> dict:

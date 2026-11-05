@@ -20,11 +20,11 @@ from pipelines import (
     CanonicalizationPipeline,
     DebuggingPipeline,
     ExportingPipeline,
+    ExtractStage,
     FetchStage,
     FilteringPipeline,
     LoggingPipeline,
     PriorityPipeline,
-    ProcessingPipeline,
     RetryStage,
     ScoringPipeline,
     StopConditions,
@@ -118,7 +118,7 @@ def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _processing(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.processing
-    return ProcessingPipeline(
+    return ExtractStage(
         inputs.broker,
         inputs.extraction,
         max_concurrency=settings.workers,

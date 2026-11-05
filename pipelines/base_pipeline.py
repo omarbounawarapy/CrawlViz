@@ -16,7 +16,7 @@ class _ShutdownSentinel:
 
     Comparable against anything and always sorts first -- this is what
     lets it be pushed safely into an `asyncio.PriorityQueue` (e.g.
-    ScoringPipeline's queue of bare Nodes, ProcessingPipeline's queue of
+    ScoringPipeline's queue of bare Nodes, ExtractStage's queue of
     (Node, content) tuples) without heapq raising when it compares this
     sentinel against a real queue item. Combined with Node.__lt__
     returning NotImplemented for non-Node operands (see models/node.py),

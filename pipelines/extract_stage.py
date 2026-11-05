@@ -16,7 +16,7 @@ from traceability.trace_context import bind_node
 from .base_pipeline import BasePipeline
 
 
-class ProcessingPipeline(BasePipeline):
+class ExtractStage(BasePipeline):
     """Extracts links and structured items from each fetched page's HTML."""
 
     def __init__(

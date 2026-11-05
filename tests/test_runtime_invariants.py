@@ -47,7 +47,7 @@ from models import Domain, Link, Node, Storage
 from pipelines import (
     FilteringPipeline,
     PriorityPipeline,
-    ProcessingPipeline,
+    ExtractStage,
     FetchStage,
     RetryStage,
     ScoringPipeline,
@@ -205,7 +205,7 @@ class Crawl:
         self.retry = RetryStage(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
         self.pipelines = [
             self.requests,
-            ProcessingPipeline(b, EXTRACTION),
+            ExtractStage(b, EXTRACTION),
             FilteringPipeline(b, s),
             TransformationPipeline(b, EXTRACTION),
             StoragePipeline(s, b),

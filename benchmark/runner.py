@@ -35,10 +35,10 @@ from events import (
 )
 from models import Domain, Node, Storage
 from pipelines import (
+    ExtractStage,
     FetchStage,
     FilteringPipeline,
     PriorityPipeline,
-    ProcessingPipeline,
     RetryStage,
     ScoringPipeline,
     StoragePipeline,
@@ -517,7 +517,7 @@ async def _run(
     retry = RetryStage(
         storage, broker, requests_pipeline=requests, retry_base_delay=retry_base_delay
     )
-    processing = ProcessingPipeline(broker, extraction)
+    processing = ExtractStage(broker, extraction)
     filtering = FilteringPipeline(broker, storage)
     transformation = TransformationPipeline(broker, extraction)
     store = StoragePipeline(storage, broker)
