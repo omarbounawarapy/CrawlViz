@@ -46,3 +46,42 @@ def test_listing_keys_creates_a_missing_keys_file_owner_only(
     assert reply.status_code == 200
     assert reply.json() == {}
     assert stat.S_IMODE(paths.keys_file.stat().st_mode) == KEYS_FILE_MODE
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{"key": FAKE_SECRET}, {"provider": 7, "key": FAKE_SECRET}, {"provider": "groq", "key": 12}],
+    ids=["missing provider", "mistyped provider", "mistyped key"],
+)
+def test_a_rejected_key_body_is_not_echoed_back(
+    client: TestClient, headers: dict[str, str], paths: RuntimePaths, body: dict[str, object]
+) -> None:
+    reply = client.post("/keys", json=body, headers=headers)
+    assert reply.status_code == 422
+    assert FAKE_SECRET not in reply.text
+    for problem in reply.json()["detail"]:
+        assert set(problem) == {"type", "loc", "msg"}
+
+
+def test_a_validation_reply_keeps_where_and_why(
+    client: TestClient, headers: dict[str, str], paths: RuntimePaths
+) -> None:
+    reply = client.post("/keys", json={"key": FAKE_SECRET}, headers=headers)
+    assert reply.json()["detail"] == [
+        {"type": "missing", "loc": ["body", "provider"], "msg": "Field required"}
+    ]
+
+
+def test_the_guards_still_run_before_validation(client: TestClient) -> None:
+    body = {"key": FAKE_SECRET}
+    token = {"Authorization": f"Bearer {get_session_token()}"}
+    assert client.post("/keys", json=body).status_code == 401
+    assert (
+        client.post("/keys", json=body, headers={**token, "Host": "evil.example"}).status_code
+        == 421
+    )
+    foreign_origin = client.post(
+        "/keys", json=body, headers={**token, "Origin": "https://evil.example"}
+    )
+    assert foreign_origin.status_code == 403
+    assert client.post("/keys", content="x", headers=token).status_code == 415
