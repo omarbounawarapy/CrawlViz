@@ -60,4 +60,18 @@ describe("BenchmarkPage", () => {
     await waitFor(() => expect(putAuditLabel).toHaveBeenCalledWith("1", 1, "1"));
     expect(screen.queryByText(/judge_label/)).toBeNull();
   });
+
+  it("answers the focused audit item from the keyboard and clears it with Backspace", async () => {
+    const { putAuditLabel } = await import("../../api/client");
+    vi.mocked(putAuditLabel).mockClear();
+    render(<BenchmarkPage />);
+    fireEvent.click(screen.getByRole("tab", { name: "Audit" }));
+    await screen.findByText("Page one");
+    const radio = screen.getByRole("radio", { name: "Label 0" });
+    radio.focus();
+    fireEvent.keyDown(radio, { key: "2" });
+    await waitFor(() => expect(putAuditLabel).toHaveBeenLastCalledWith("1", 2, "1"));
+    fireEvent.keyDown(radio, { key: "Backspace" });
+    await waitFor(() => expect(putAuditLabel).toHaveBeenLastCalledWith("1", null, "1"));
+  });
 });

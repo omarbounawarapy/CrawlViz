@@ -151,13 +151,12 @@ function Annotator({ data, annotator }) {
 
   // Single-key answers work only while focus is inside the list (WCAG 2.1.4), never in a text box.
   // Arrow keys belong to the radios (they change the answer); Tab moves between items.
-  function onKey(e) {
-    if (e.target.tagName === "INPUT" || e.ctrlKey || e.metaKey || e.altKey) return;
-    const item = data.items[cur];
+  function onKey(e, item) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (["0", "1", "2"].includes(e.key)) {
       e.preventDefault();
       answer(item.id, Number(e.key));
-      const next = Math.min(data.items.length - 1, cur + 1);
+      const next = Math.min(data.items.length - 1, data.items.indexOf(item) + 1);
       setCur(next);
       requestAnimationFrame(() => focusItem(next));
     } else if (e.key === "Backspace") {
@@ -207,12 +206,7 @@ function Annotator({ data, annotator }) {
       <p id="audit-keys" className="sr-only">
         Keys 0, 1 and 2 answer the item in focus and move to the next; Backspace clears.
       </p>
-      <ol
-        aria-label="Audit items"
-        aria-describedby="audit-keys"
-        onKeyDown={onKey}
-        style={{ listStyle: "none", margin: 0, padding: 0 }}
-      >
+      <ol aria-label="Audit items" aria-describedby="audit-keys" style={{ listStyle: "none", margin: 0, padding: 0 }}>
         {visible.map(({ it, i }) => {
           const value = answers[it.id];
           return (
@@ -220,8 +214,6 @@ function Annotator({ data, annotator }) {
               key={it.id}
               ref={(el) => (refs.current[i] = el)}
               aria-current={i === cur ? "true" : undefined}
-              onClick={() => setCur(i)}
-              onFocus={() => setCur(i)}
               style={{
                 display: "grid",
                 gridTemplateColumns: "2.5rem minmax(0, 1fr)",
@@ -241,7 +233,13 @@ function Annotator({ data, annotator }) {
                   {it.title}
                 </h3>
                 <div style={{ fontSize: 13, color: text.secondary, marginTop: 2 }}>{it.excerpt.slice(0, 420)}</div>
-                <LabelChoice id={it.id} value={value} onPick={(v) => answer(it.id, v)} />
+                <LabelChoice
+                  id={it.id}
+                  value={value}
+                  onPick={(v) => answer(it.id, v)}
+                  onFocus={() => setCur(i)}
+                  onKeyDown={(e) => onKey(e, it)}
+                />
               </div>
             </li>
           );
@@ -254,7 +252,8 @@ function Annotator({ data, annotator }) {
 }
 
 // 0, 1 or 2 as a radio group (WAI pattern): every arrow key moves the answer, Tab leaves the group.
-function LabelChoice({ id, value, onPick }) {
+// Its buttons also carry the single-key answers and the "current item" focus, so no list element needs a handler.
+function LabelChoice({ id, value, onPick, onFocus, onKeyDown }) {
   const refs = useRef([]);
   const options = [0, 1, 2];
   const anyOn = options.includes(value);
@@ -274,10 +273,13 @@ function LabelChoice({ id, value, onPick }) {
               refs.current[i] = el;
             }}
             onClick={() => onPick(v)}
+            onFocus={onFocus}
             onKeyDown={(e) => {
               const n = nextChoice(e, i, options.length);
-              if (n === null) return;
-              e.stopPropagation();
+              if (n === null) {
+                onKeyDown(e);
+                return;
+              }
               onPick(options[n]);
               refs.current[n]?.focus();
             }}
