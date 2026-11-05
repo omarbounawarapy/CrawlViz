@@ -4,8 +4,8 @@ core/crawler.py's _wire_subscriptions used to be a flat, hand-maintained list
 mapping event types to the pipelines that should receive them. That shape made
 it easy for a pipeline to be built to handle an event (its handler table maps
 it) without ever being subscribed to receive it -- which is exactly what
-happened to HighScoreLinksEvent: PriorityPipeline has always known how to
-process it, but nothing subscribed PriorityPipeline to receive it, so every
+happened to HighScoreLinksEvent: PrioritizeStage has always known how to
+process it, but nothing subscribed PrioritizeStage to receive it, so every
 link the cascade was confident enough to trust without an LLM call was
 silently dropped from the crawl instead of being fast-tracked into it. Each
 consumer now names its events in ``event_types`` and is subscribed to exactly
@@ -87,8 +87,8 @@ class TestCascadeSubscriptionGap:
 
     def test_priority_pipeline_receives_high_score_links(self, wired_crawler):
         consumers = consumers_of(wired_crawler, HighScoreLinksEvent)
-        assert "PriorityPipeline" in consumers, (
-            "PriorityPipeline is not subscribed to HighScoreLinksEvent -- "
+        assert "PrioritizeStage" in consumers, (
+            "PrioritizeStage is not subscribed to HighScoreLinksEvent -- "
             "high-confidence links will be scored, bucketed, and then "
             "silently dropped instead of fast-tracked into the frontier."
         )

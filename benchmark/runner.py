@@ -38,7 +38,7 @@ from pipelines import (
     ExtractStage,
     FetchStage,
     FilterStage,
-    PriorityPipeline,
+    PrioritizeStage,
     RetryStage,
     ScoreStage,
     StorageSink,
@@ -521,7 +521,7 @@ async def _run(
     filtering = FilterStage(broker, storage)
     transformation = TransformStage(broker, extraction)
     store = StorageSink(storage, broker)
-    priority = PriorityPipeline(storage, broker)
+    priority = PrioritizeStage(storage, broker)
     if strategy is not None:
         priority.strategy = strategy  # not registered: the registry is global
     pipelines = [requests, processing, filtering, transformation, store, scoring, priority, retry]

@@ -46,7 +46,7 @@ from events import (
 from models import Domain, Link, Node, Storage
 from pipelines import (
     FilterStage,
-    PriorityPipeline,
+    PrioritizeStage,
     ExtractStage,
     FetchStage,
     RetryStage,
@@ -210,7 +210,7 @@ class Crawl:
             TransformStage(b, EXTRACTION),
             StorageSink(s, b),
             self.scoring,
-            PriorityPipeline(s, b),
+            PrioritizeStage(s, b),
             self.retry,
         ]
         for pipeline in self.pipelines:
@@ -313,7 +313,7 @@ async def _score_one_ready_node(nlp_score: float, run_for: float):
     pipelines = [
         scoring,
         RetryStage(storage, broker),
-        PriorityPipeline(storage, broker),
+        PrioritizeStage(storage, broker),
         StorageSink(storage, broker),
     ]
     recorder = Recorder()

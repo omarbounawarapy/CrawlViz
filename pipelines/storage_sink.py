@@ -77,7 +77,7 @@ class StorageSink(BasePipeline):
         """Create and persist one child Node per prioritized link.
 
         `event.links` entries are ``{"link": Link, "score": int, "priority": float}``
-        dicts, as produced by PriorityPipeline._compute_priorities.
+        dicts, as produced by PrioritizeStage._compute_priorities.
         """
         parent = event.parent
 

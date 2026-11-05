@@ -5,7 +5,7 @@ from .export_sink import ExportSink
 from .extract_stage import ExtractStage
 from .fetch_stage import FetchStage
 from .filter_stage import FilterStage
-from .prioritize_stage import PriorityPipeline
+from .prioritize_stage import PrioritizeStage
 from .retry_stage import RetryStage
 from .score_stage import ScoreStage
 from .stop_controller import StopConditions, StopController
@@ -20,7 +20,7 @@ __all__ = [
     "ExtractStage",
     "FetchStage",
     "FilterStage",
-    "PriorityPipeline",
+    "PrioritizeStage",
     "RetryStage",
     "ScoreStage",
     "StopConditions",

@@ -15,7 +15,7 @@ from priority import StrategyFn, get_strategy
 from .base_pipeline import BasePipeline
 
 
-class PriorityPipeline(BasePipeline):
+class PrioritizeStage(BasePipeline):
     """Computes a priority float for every scored link.
 
     Architecture rules enforced here:

@@ -24,7 +24,7 @@ from pipelines import (
     ExtractStage,
     FetchStage,
     FilterStage,
-    PriorityPipeline,
+    PrioritizeStage,
     RetryStage,
     ScoreStage,
     StopConditions,
@@ -214,7 +214,7 @@ def _priority(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.priority
     priority = inputs.config.priority
     strategy = inputs.priority_strategy
-    return PriorityPipeline(
+    return PrioritizeStage(
         inputs.storage,
         inputs.broker,
         nlp_bias=priority.nlp_bias,
