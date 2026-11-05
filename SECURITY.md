@@ -48,7 +48,7 @@ lists those threats.
   `routes/templates.py`, `routes/config*.py`), crawl outputs (`ui_bridge/event_recorder.py`,
   logging and debug sinks) and the benchmark job runner (`routes/benchmark_jobs.py`).
 - **Not read:** the React UI (`crawler-ui/`), the `Makefile`, the transformation and
-  exporting pipelines, `nlp/` internals. `keys.json` and `.env` were deliberately not read.
+  exporting pipelines, `src/crawlviz/nlp/` internals. `keys.json` and `.env` were deliberately not read.
 - **Threat actors:**
   1. A web page open in the same browser as the UI. It can send simple cross-site requests
      (CSRF), it may be served from another localhost port, and it can use DNS rebinding to
