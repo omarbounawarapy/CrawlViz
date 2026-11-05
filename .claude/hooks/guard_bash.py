@@ -17,6 +17,7 @@ import os
 import re
 import shlex
 import sys
+from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -71,7 +72,7 @@ def _commit_titles(command: str) -> list[str]:
     return titles
 
 
-def _check_git(agent: str, command: str, rules: dict) -> None:
+def _check_git(agent: str, command: str, rules: dict[str, Any]) -> None:
     for pattern, reason in FORBIDDEN_GIT.items():
         if re.search(pattern, command):
             block(f"Blocked: {reason}.")

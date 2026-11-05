@@ -15,24 +15,25 @@ import sys
 import tomllib
 from functools import cache
 from pathlib import Path
+from typing import Any, NoReturn
 
 HOOK_DIR = Path(__file__).resolve().parent
 OWNERSHIP_FILE = HOOK_DIR.parent / "ownership.toml"
 BLOCK_EXIT_CODE = 2
 
 
-def read_hook_input() -> dict:
+def read_hook_input() -> dict[str, Any]:
     raw = sys.stdin.read()
     return json.loads(raw) if raw.strip() else {}
 
 
-def block(reason: str) -> None:
+def block(reason: str) -> NoReturn:
     print(reason, file=sys.stderr)
     sys.exit(BLOCK_EXIT_CODE)
 
 
 @cache
-def load_ownership() -> dict:
+def load_ownership() -> dict[str, Any]:
     with OWNERSHIP_FILE.open("rb") as handle:
         return tomllib.load(handle)
 
@@ -123,7 +124,8 @@ def can_write(agent: str, rel_path: str) -> bool:
 
 
 def owner_of(rel_path: str) -> str | None:
-    for name in load_ownership()["agents"]:
+    names: list[str] = list(load_ownership()["agents"])
+    for name in names:
         if name != "chore-runner" and can_write(name, rel_path):
             return name
     return None
