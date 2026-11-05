@@ -152,6 +152,9 @@ build-backend = "hatchling.build"
 # to package as a wheel. Declaring one package keeps `hatchling` (and
 # therefore `uv sync`) happy without trying to guess a layout.
 packages = ["config"]
+# The editable install puts the repo root and src/ on sys.path, so `crawlviz` imports
+# outside pytest too (pytest.ini sets the same two paths for the test run).
+dev-mode-dirs = [".", "src"]
 
 [tool.mypy]
 python_version = "3.12"
