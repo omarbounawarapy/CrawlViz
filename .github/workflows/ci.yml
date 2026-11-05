@@ -18,9 +18,8 @@ jobs:
           fetch-depth: 0
 
       - name: Install uv
+        # Python 3.12 comes from .python-version: this setup-uv version has no python-version input.
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          python-version: "3.12"
 
       - name: Install dependencies
         run: uv sync --locked --extra dev
