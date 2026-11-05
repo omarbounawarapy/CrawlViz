@@ -17,7 +17,7 @@ import { GraphView } from "./features/graph";
 import { PipelineMonitor } from "./features/pipeline";
 import { TimelinePage as TimelineDock } from "./features/timeline";
 import { RunPage } from "./features/run";
-import BlueprintManager from "./features/blueprints/BlueprintManager";
+import { BlueprintManager } from "./features/blueprints";
 import DataExplorer from "./features/data/DataExplorer";
 import { ConfigPage } from "./features/config";
 import BenchmarkPage from "./features/benchmark/BenchmarkPage";
