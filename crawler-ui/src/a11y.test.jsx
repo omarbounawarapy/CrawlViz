@@ -156,7 +156,7 @@ import App from "./App";
 import { Landing } from "./features/landing";
 import { SpiderLoader } from "./features/loading";
 import { GraphView } from "./features/graph";
-import NodeInspector from "./features/inspector/NodeInspector";
+import { NodeInspector } from "./features/inspector";
 import TimelineDock from "./features/timeline/TimelinePage";
 import ConfigPage from "./features/config/ConfigPage";
 import HeaderPresets from "./features/config/HeaderPresets";

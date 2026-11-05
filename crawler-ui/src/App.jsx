@@ -11,7 +11,7 @@ import { getTheme } from "./theme";
 import { pathOf } from "./utils/formatters";
 
 import Shell from "./app/Shell";
-import NodeInspector from "./features/inspector/NodeInspector";
+import { NodeInspector } from "./features/inspector";
 import OverviewPage from "./features/overview/OverviewPage";
 import { GraphView } from "./features/graph";
 import PipelineMonitor from "./features/pipeline/PipelineMonitor";
