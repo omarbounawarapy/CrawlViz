@@ -16,12 +16,13 @@ from __future__ import annotations
 
 from typing import Final
 
-from .versioning import SCHEMA_VERSION_KEY, Document, MigrationChain, unchanged
-
-
-class StoredFormatError(ValueError):
-    """A stored file has a known version but not the shape that version defines."""
-
+from .versioning import (
+    SCHEMA_VERSION_KEY,
+    Document,
+    MigrationChain,
+    StoredFormatError,
+    unchanged,
+)
 
 SETTINGS_FILE: Final = MigrationChain("settings file", current_version=1)
 SETTINGS_FILE.register(0, unchanged)

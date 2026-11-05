@@ -30,6 +30,10 @@ class SchemaVersionError(ValueError):
     """A document's version is missing a migration, malformed or newer than this build."""
 
 
+class StoredFormatError(ValueError):
+    """A stored file has a known version but not the shape that version defines."""
+
+
 class MigrationChain:
     """The ordered migrations of one format, from version 0 to ``current_version``.
 

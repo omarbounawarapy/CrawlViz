@@ -9,14 +9,18 @@ import pytest
 
 from config.blueprint_schema import validate_blueprint
 from config.settings_store import load_runtime_config, read_stored
-from crawlviz.contracts import SCHEMA_VERSION_KEY, MigrationChain, SchemaVersionError
+from crawlviz.contracts import (
+    SCHEMA_VERSION_KEY,
+    MigrationChain,
+    SchemaVersionError,
+    StoredFormatError,
+)
 from crawlviz.contracts.stored_formats import (
     BLUEPRINT_FILE,
     PRESETS_FILE,
     RUN_MANIFEST,
     SETTINGS_FILE,
     STORED_FORMATS,
-    StoredFormatError,
     dump_blueprint_document,
     dump_presets_document,
     dump_run_manifest,

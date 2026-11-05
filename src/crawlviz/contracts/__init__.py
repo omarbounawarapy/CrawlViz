@@ -2,7 +2,6 @@
 
 from .stored_formats import (
     STORED_FORMATS,
-    StoredFormatError,
     dump_blueprint_document,
     dump_presets_document,
     dump_run_manifest,
@@ -19,6 +18,7 @@ from .versioning import (
     Migration,
     MigrationChain,
     SchemaVersionError,
+    StoredFormatError,
     unchanged,
 )
 
