@@ -31,7 +31,9 @@ export function loadGlossary() {
   return pending;
 }
 
-/** The glossary as { term: definition }; {} until it has loaded. */
+const NO_GLOSSARY = {};
+
+/** The glossary as { term: definition }; one shared empty object until it has loaded. */
 export function useGlossary() {
   const glossary = useSyncExternalStore(
     (cb) => {
@@ -43,7 +45,7 @@ export function useGlossary() {
   useEffect(() => {
     if (!value) loadGlossary();
   }, []);
-  return glossary ?? {};
+  return glossary ?? NO_GLOSSARY;
 }
 
 /** Test helper: forget what was primed. */

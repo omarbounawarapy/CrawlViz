@@ -7,6 +7,7 @@
  * page, which `shared/` may not import.
  */
 export { default as ConfigPage } from "./ConfigPage";
+export { default as GlossaryScope } from "./GlossaryScope";
 export { default as SettingsEditor } from "./SettingsEditor";
 export { Explain } from "./Term";
 export { useCrawlCost } from "./crawlCost";
