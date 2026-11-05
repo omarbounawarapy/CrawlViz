@@ -25,7 +25,8 @@ import {
   Status,
   ConfirmButton,
 } from "../common";
-import { Explain, NumberField, useCrawlCost } from "../config";
+import { Explain, useCrawlCost } from "../config";
+import FormNumberField from "./FormNumberField";
 import {
   STRATEGIES,
   TRANSFORMS_WITH_CONFIG,
@@ -494,13 +495,11 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
               "Descriptions per topic",
               bpId("num-descriptions"),
               (a, bad) => (
-                <NumberField
+                <FormNumberField
                   {...a}
-                  integer
-                  min={1}
                   invalid={bad}
                   value={form.numDescriptions}
-                  onChange={(v) => set({ numDescriptions: String(v) })}
+                  onChange={(text) => set({ numDescriptions: text })}
                 />
               ),
               { hint: "How many descriptions of the topic the LLM writes; links are compared against them." },
@@ -568,26 +567,22 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
           <SectionTitle id="sec-stop">Stop conditions</SectionTitle>
           <Grid>
             {field("Max pages", bpId("max_nodes"), (a, bad) => (
-              <NumberField
+              <FormNumberField
                 {...a}
-                integer
-                min={1}
                 invalid={bad}
                 value={form.maxNodes}
-                onChange={(v) => set({ maxNodes: String(v) })}
+                onChange={(text) => set({ maxNodes: text })}
               />
             ))}
             {field(
               "Max depth",
               bpId("max_depth"),
               (a, bad) => (
-                <NumberField
+                <FormNumberField
                   {...a}
-                  integer
-                  min={1}
                   invalid={bad}
                   value={form.maxDepth}
-                  onChange={(v) => set({ maxDepth: String(v) })}
+                  onChange={(text) => set({ maxDepth: text })}
                 />
               ),
               { hint: "Links followed from a starting page." },
@@ -595,26 +590,22 @@ function BlueprintForm({ form, setForm, errorFor, step }) {
           </Grid>
           <Grid>
             {field("Max duration (ms)", bpId("max_duration"), (a, bad) => (
-              <NumberField
+              <FormNumberField
                 {...a}
-                integer
-                min={0}
                 invalid={bad}
                 value={form.maxDuration}
-                onChange={(v) => set({ maxDuration: String(v) })}
+                onChange={(text) => set({ maxDuration: text })}
               />
             ))}
             {field(
               "No-progress timeout (ms)",
               bpId("no_progress_timeout"),
               (a, bad) => (
-                <NumberField
+                <FormNumberField
                   {...a}
-                  integer
-                  min={0}
                   invalid={bad}
                   value={form.noProgressTimeout}
-                  onChange={(v) => set({ noProgressTimeout: String(v) })}
+                  onChange={(text) => set({ noProgressTimeout: text })}
                 />
               ),
               { hint: "Stops if no new page is found for this long." },
