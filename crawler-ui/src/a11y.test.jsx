@@ -160,7 +160,7 @@ import { NodeInspector } from "./features/inspector";
 import { TimelinePage as TimelineDock } from "./features/timeline";
 import ConfigPage from "./features/config/ConfigPage";
 import HeaderPresets from "./features/config/HeaderPresets";
-import RunPage from "./features/run/RunPage";
+import { RunPage } from "./features/run";
 import BlueprintManager from "./features/blueprints/BlueprintManager";
 import DataExplorer from "./features/data/DataExplorer";
 import BenchmarkPage from "./features/benchmark/BenchmarkPage";
