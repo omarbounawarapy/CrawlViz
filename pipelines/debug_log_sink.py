@@ -40,18 +40,23 @@ from crawlviz.events import (
     ExportRowFailedEvent,
     # Retry
     RetryOperationFailedEvent,
-)
-from infrastructure import LogWriter
-
-# Trace events
-from traceability.expansion_trace_events import (
+    # Expansion trace events
     EXP_CandidatePruned,
     EXP_CandidateScored,
     EXP_PromptBuilt,
     EXP_SeedsGenerated,
     EXP_SpaceBootstrapped,
     EXP_Triggered,
+    # NLP trace events
+    NLP_FeaturesExtracted,
+    NLP_InputReceived,
+    NLP_ScoreEmitted,
+    NLP_SimilarityScored,
+    NLP_VectorComposed,
 )
+from infrastructure import LogWriter
+
+# Trace events
 from traceability.llm_trace_events import (
     LLM_PromptBuilt,
     LLM_RequestDispatched,
@@ -65,13 +70,6 @@ from traceability.network_trace_events import (
     NET_RequestFailed,
     NET_ResponseReceived,
     NET_RetryAttempted,
-)
-from traceability.nlp_trace_events import (
-    NLP_FeaturesExtracted,
-    NLP_InputReceived,
-    NLP_ScoreEmitted,
-    NLP_SimilarityScored,
-    NLP_VectorComposed,
 )
 
 from crawlviz.events import BasePipeline

@@ -13,6 +13,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.spatial.distance import cosine
 
+from crawlviz.events import (
+    NLP_FeaturesExtracted,
+    NLP_InputReceived,
+    NLP_ScoreEmitted,
+    NLP_SimilarityScored,
+    NLP_VectorComposed,
+)
 from crawlviz.nlp import (
     BaseEmbeddingEngine,
     FeatureExtractor,
@@ -20,13 +27,6 @@ from crawlviz.nlp import (
     default_composite_weights,
 )
 from crawlviz.shared import Link, document_text, get_trace
-from traceability.nlp_trace_events import (
-    NLP_FeaturesExtracted,
-    NLP_InputReceived,
-    NLP_ScoreEmitted,
-    NLP_SimilarityScored,
-    NLP_VectorComposed,
-)
 
 if TYPE_CHECKING:
     from traceability.emitter import TraceEmitter

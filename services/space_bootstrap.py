@@ -13,17 +13,17 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from crawlviz.llm import LlmHandler
-from crawlviz.nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
-from crawlviz.shared import get_trace, new_trace_id
-from models import ExpansionContext
-from traceability.expansion_trace_events import (
+from crawlviz.events import (
     EXP_CandidatePruned,
     EXP_PromptBuilt,
     EXP_SeedsGenerated,
     EXP_SpaceBootstrapped,
     EXP_Triggered,
 )
+from crawlviz.llm import LlmHandler
+from crawlviz.nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
+from crawlviz.shared import get_trace, new_trace_id
+from models import ExpansionContext
 
 from .llm_contracts import Outcomes, parse_expansion_seeds
 

@@ -109,6 +109,25 @@ from .retry_events import (
 )
 
 # =========================================================
+# NLP AND EXPANSION TRACE EVENTS
+# =========================================================
+from .expansion_events import (
+    EXP_CandidatePruned,
+    EXP_CandidateScored,
+    EXP_PromptBuilt,
+    EXP_SeedsGenerated,
+    EXP_SpaceBootstrapped,
+    EXP_Triggered,
+)
+from .nlp_events import (
+    NLP_FeaturesExtracted,
+    NLP_InputReceived,
+    NLP_ScoreEmitted,
+    NLP_SimilarityScored,
+    NLP_VectorComposed,
+)
+
+# =========================================================
 # STOP EVENTS
 # =========================================================
 from .stop_crawl_event import StopCrawlEvent
@@ -195,6 +214,18 @@ __all__ = [
     # Retry
     "RetryOperationFailedEvent",
     "ScoreRescheduledEvent",
+    # NLP and expansion trace events
+    "EXP_CandidatePruned",
+    "EXP_CandidateScored",
+    "EXP_PromptBuilt",
+    "EXP_SeedsGenerated",
+    "EXP_SpaceBootstrapped",
+    "EXP_Triggered",
+    "NLP_FeaturesExtracted",
+    "NLP_InputReceived",
+    "NLP_ScoreEmitted",
+    "NLP_SimilarityScored",
+    "NLP_VectorComposed",
     # Stop
     "StopCrawlEvent",
     # Pipeline base and stage contracts
