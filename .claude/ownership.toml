@@ -83,7 +83,7 @@ write = [
 [agents.backend-engineer]
 write = [
   "src/crawlviz/**",
-  "core/**", "config/**", "events/**", "infrastructure/**", "models/**", "nlp/**",
+  "core/**", "config/**", "infrastructure/**", "models/**", "nlp/**",
   "pipelines/**", "priority/**", "routes/**", "services/**", "traceability/**",
   "ui_bridge/**", "utils/**", "tools/**", "templates/**", "main.py",
   "tests/**",
