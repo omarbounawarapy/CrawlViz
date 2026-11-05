@@ -14,6 +14,7 @@ from .llm_trace_events import (
     LLM_ResponseParsed,
     LLM_ResponseReceived,
 )
+from .logging_setup import configure_logging, log_context
 from .network_trace_events import (
     NET_RequestCreated,
     NET_RequestDispatched,
@@ -41,6 +42,9 @@ __all__ = [
     "get_trace",
     "new_trace_id",
     "set_trace",
+    # Structured JSON logging with crawl, node and trace ids
+    "configure_logging",
+    "log_context",
     # NLP pipeline trace events (chronological within scoring one link)
     "NLP_InputReceived",
     "NLP_FeaturesExtracted",
