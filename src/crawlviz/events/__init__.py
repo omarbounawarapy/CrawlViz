@@ -136,7 +136,7 @@ from .stop_crawl_event import StopCrawlEvent
 # PIPELINE BASE AND STAGE CONTRACTS
 # =========================================================
 from .base_pipeline import SHUTDOWN, BasePipeline
-from .contracts import (
+from .stage_contracts import (
     Annotator,
     CrawlStage,
     EventConsumer,

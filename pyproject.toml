@@ -235,7 +235,7 @@ module = [
     "crawlviz.nlp.vector_space",
     "crawlviz.events.base_pipeline",
     "pipelines.canonicalize_stage",
-    "crawlviz.events.contracts",
+    "crawlviz.events.stage_contracts",
     "pipelines.debug_log_sink",
     "pipelines.export_sink",
     "pipelines.filter_stage",
