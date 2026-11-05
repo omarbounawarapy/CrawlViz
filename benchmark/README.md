@@ -137,7 +137,7 @@ of every statistic and uses them only for the replay table.
 
 ## Graph files
 Page names and link targets are re-encoded on load the way the crawler
-encodes URLs (`utils.html_utils.normalize_url`), so raw non-ASCII names in a
+encodes URLs (`crawlviz.shared.html_utils.normalize_url`), so raw non-ASCII names in a
 file are fetched correctly. Labels are 0/1/2 (`label`); older files with only
 `relevant` read as 0/1. A warning lists pages that share a title (usually a
 redirect crawled twice); `FrozenGraph.merge(keep, drop)` folds one into the other.

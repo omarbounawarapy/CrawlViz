@@ -133,7 +133,7 @@ Any other value stops startup with an error that names the variable. uvicorn's o
 
 A JSON line has `ts` (UTC, ISO 8601, milliseconds), `level`, `logger` and `message`. An `exception` field holds the traceback when the record has one. `crawl_id`, `node_id` and `trace_id` are added when they are set for the code that logged and left out otherwise. `crawl_id` is bound for the whole run; `trace_id` and `node_id` are bound per node by the stages. In `text` format the ids are appended as `[crawl_id=... node_id=... trace_id=...]`.
 
-`utils/log_redaction.py` removes secrets from the message and the traceback before a line is written, in two ways:
+`src/crawlviz/shared/log_redaction.py` removes secrets from the message and the traceback before a line is written, in two ways:
 
 - Registered values: the session token at startup, and provider keys when a crawl starts or a key is added through `/keys`. Every exact occurrence becomes `[redacted]`. Values shorter than 8 characters are not registered.
 - Credential shapes: `Authorization: Bearer ...` and `key=`, `token:`, `secret=` or `password=` pairs with a value of 8 or more characters, such as a `?key=` in a provider URL, are redacted even if never registered.
@@ -175,7 +175,8 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `models/` | Domain objects: `Node`, `Link`, `Domain`, `Storage`, extractors, prompt/context builders |
 | `pipelines/` | The ~13 event-driven processing stages |
 | `src/crawlviz/nlp/` | Embedding engine, vector space, feature extraction, expansion buffering |
-| `infrastructure/` | Network client, URL guard, async file I/O |
+| `src/crawlviz/shared/` | Guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers |
+| `infrastructure/` | Async file handler and log writer |
 | `src/crawlviz/priority/` | The three named priority strategies |
 | `src/crawlviz/llm/` | LLM handler, six provider translators, key manager, endpoints, call budget, token usage, and the typed layer (`LlmClient`, request and response types, JSON output validation, prompt registry, call recorder, cost table) |
 | `src/crawlviz/contracts/` | Stored-format versions and the pipeline settings migration |
