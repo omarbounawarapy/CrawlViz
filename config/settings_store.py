@@ -14,6 +14,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from crawlviz.contracts import (
+    SchemaVersionError,
+    StoredFormatError,
+    dump_settings_document,
+    load_settings_document,
+)
 from utils import save_json
 
 from .runtime_config import RuntimeConfig, default_runtime_config
@@ -99,11 +105,17 @@ def read_stored(path: Path) -> dict:
             f"{type(data).__name__}. Fix it by hand, or reset the settings "
             "from the Config page, which replaces it with the defaults."
         )
-    return data
+    try:
+        return load_settings_document(data)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        raise SettingsFileError(
+            f"{exc} The file is {path}. To start over instead, reset the settings from "
+            "the Config page, which replaces it with the defaults."
+        ) from exc
 
 
 def _write(path: Path, data: dict) -> None:
-    save_json(path, data, sort_keys=True)
+    save_json(path, dump_settings_document(data), sort_keys=True)
 
 
 def load_runtime_config(

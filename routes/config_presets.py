@@ -11,6 +11,7 @@ from pydantic import ValidationError
 
 from config import settings_store as store
 from config.runtime_config import default_runtime_config
+from utils import save_json
 
 from .config_support import ConfigPatch, get_paths, validation_http_error
 
@@ -181,7 +182,7 @@ def save_preset(name: str, body: ConfigPatch | None = None) -> dict[str, Any]:
         raise validation_http_error(exc) from exc
     presets = _read_presets()
     presets[name] = values
-    store._write(_presets_file(), presets)
+    save_json(_presets_file(), presets, sort_keys=True)
     return {"saved": name}
 
 
@@ -190,7 +191,7 @@ def delete_preset(name: str) -> dict[str, Any]:
     presets = _read_presets()
     if presets.pop(name, None) is None:
         raise HTTPException(status_code=404, detail="Preset not found")
-    store._write(_presets_file(), presets)
+    save_json(_presets_file(), presets, sort_keys=True)
     return {"removed": name}
 
 
