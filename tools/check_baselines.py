@@ -204,7 +204,7 @@ def _git(*args: str) -> str:
 def read_renames(base_revision: str) -> dict[str, str]:
     """Old path to new path for files `git diff -M` shows renamed since the base."""
     renames = {}
-    for line in _git("diff", "-M", "--name-status", "--diff-filter=R", base_revision).splitlines():
+    for line in _git("diff", "-M40%", "--name-status", "--diff-filter=R", base_revision).splitlines():
         _status, old, new = line.split("\t")[:3]
         renames[old] = new
     return renames
