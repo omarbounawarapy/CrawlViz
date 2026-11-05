@@ -77,7 +77,7 @@ from traceability.nlp_trace_events import (
 from .base_pipeline import BasePipeline
 
 
-class DebuggingPipeline(BasePipeline):
+class DebugLogSink(BasePipeline):
     """Renders every business and trace event into a dense one-line
     ``[TAG] STATUS field=value ...`` log entry, written to a per-crawl
     debug file. This is the granular, high-volume counterpart to

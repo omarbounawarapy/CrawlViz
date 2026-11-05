@@ -113,7 +113,7 @@ class TestFailureEventsAreNoLongerSilent:
     )
     def test_failure_reaches_debug_log_and_ui(self, wired_crawler, event_type):
         consumers = consumers_of(wired_crawler, event_type)
-        assert "DebuggingPipeline" in consumers
+        assert "DebugLogSink" in consumers
         assert "TelemetryBridge" in consumers
 
 
@@ -155,7 +155,7 @@ class TestConsumersNameTheirEvents:
             "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, RequestFailedEvent) == [
-            "DebuggingPipeline",
+            "DebugLogSink",
             "RetryStage",
             "TelemetryBridge",
         ]

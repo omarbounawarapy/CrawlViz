@@ -1,6 +1,6 @@
 {"class": "CrawlLogSink", "stage": "logging"}
 {"class": "CanonicalizeStage", "stage": "canon"}
-{"class": "DebuggingPipeline", "stage": "debug"}
+{"class": "DebugLogSink", "stage": "debug"}
 {"class": "ExtractStage", "stage": "processing"}
 {"class": "FetchStage", "stage": "requests"}
 {"class": "RetryStage", "stage": "retry"}

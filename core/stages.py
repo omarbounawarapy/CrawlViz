@@ -19,7 +19,7 @@ from models import Storage
 from pipelines import (
     CanonicalizeStage,
     CrawlLogSink,
-    DebuggingPipeline,
+    DebugLogSink,
     ExportSink,
     ExtractStage,
     FetchStage,
@@ -106,7 +106,7 @@ def _canonicalization(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.debugging
-    return DebuggingPipeline(
+    return DebugLogSink(
         inputs.broker,
         inputs.crawl_id,
         enabled=inputs.config.observability.debug_enabled,
