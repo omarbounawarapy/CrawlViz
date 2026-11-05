@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -42,18 +42,52 @@ class Baselines:
 
     mypy_modules: frozenset[str]
     ruff_codes: dict[str, frozenset[str]]
+    # Other ways to loosen the checks. Each may shrink but never grow, like the lists above.
+    ruff_select: frozenset[str] = frozenset()
+    ruff_ignore: frozenset[str] = frozenset()
+    ruff_extend_per_file: dict[str, frozenset[str]] = field(default_factory=dict)
+    mypy_relaxed: frozenset[tuple[str, str]] = frozenset()  # (module, option) in overrides
+    mypy_files: frozenset[str] = frozenset()
+    mypy_exclude: frozenset[str] = frozenset()
+
+
+def _as_list(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    return [str(item) for item in value] if isinstance(value, list) else []
+
+
+def _parse_mypy_relaxed(overrides: list[dict[str, object]]) -> set[tuple[str, str]]:
+    """(module, option) for every override option except the legacy `ignore_errors = true`."""
+    relaxed: set[tuple[str, str]] = set()
+    for override in overrides:
+        for option, value in override.items():
+            if option == "module" or (option == "ignore_errors" and value is True):
+                continue
+            relaxed.update((module, option) for module in _as_list(override.get("module")))
+    return relaxed
 
 
 def parse_baselines(pyproject_text: str) -> Baselines:
     tool = tomllib.loads(pyproject_text).get("tool", {})
+    mypy = tool.get("mypy", {})
+    overrides = mypy.get("overrides", [])
     modules: set[str] = set()
-    for override in tool.get("mypy", {}).get("overrides", []):
+    for override in overrides:
         if override.get("ignore_errors") is True:
-            listed = override.get("module", [])
-            modules.update([listed] if isinstance(listed, str) else listed)
-    per_file = tool.get("ruff", {}).get("lint", {}).get("per-file-ignores", {})
+            modules.update(_as_list(override.get("module", [])))
+    lint = tool.get("ruff", {}).get("lint", {})
+    per_file = lint.get("per-file-ignores", {})
+    extend_per_file = lint.get("extend-per-file-ignores", {})
     return Baselines(
-        frozenset(modules), {path: frozenset(codes) for path, codes in per_file.items()}
+        frozenset(modules),
+        {path: frozenset(codes) for path, codes in per_file.items()},
+        ruff_select=frozenset(lint.get("select", [])),
+        ruff_ignore=frozenset(lint.get("ignore", [])),
+        ruff_extend_per_file={path: frozenset(codes) for path, codes in extend_per_file.items()},
+        mypy_relaxed=frozenset(_parse_mypy_relaxed(overrides)),
+        mypy_files=frozenset(mypy.get("files", [])),
+        mypy_exclude=frozenset(_as_list(mypy.get("exclude", []))),
     )
 
 
@@ -84,6 +118,43 @@ def find_additions(base: Baselines, current: Baselines, renames: dict[str, str])
             f"ruff baseline gained {code} for {path}"
             for code in sorted(codes - expected_ruff.get(path, frozenset()))
         )
+    problems.extend(_find_loosened_settings(base, current, module_renames, renames))
+    return problems
+
+
+def _find_loosened_settings(
+    base: Baselines,
+    current: Baselines,
+    module_renames: dict[str, str],
+    renames: dict[str, str],
+) -> list[str]:
+    """Rule sets that got weaker: fewer ruff rules, more ignores, relaxed mypy options."""
+    problems = [
+        f"ruff select lost {code}" for code in sorted(base.ruff_select - current.ruff_select)
+    ]
+    problems += [
+        f"ruff ignore gained {code}" for code in sorted(current.ruff_ignore - base.ruff_ignore)
+    ]
+    expected_extend = {renames.get(p, p): c for p, c in base.ruff_extend_per_file.items()}
+    for path, codes in sorted(current.ruff_extend_per_file.items()):
+        problems.extend(
+            f"ruff extend-per-file-ignores gained {code} for {path}"
+            for code in sorted(codes - expected_extend.get(path, frozenset()))
+        )
+    expected_relaxed = {(module_renames.get(m, m), option) for m, option in base.mypy_relaxed}
+    problems += [
+        f"mypy override relaxes {option} for {module}"
+        for module, option in sorted(current.mypy_relaxed - expected_relaxed)
+    ]
+    problems += [
+        f"mypy exclude gained {pattern}"
+        for pattern in sorted(current.mypy_exclude - base.mypy_exclude)
+    ]
+    problems += [
+        f"mypy files dropped {entry}, which still exists"
+        for entry in sorted(base.mypy_files - current.mypy_files)
+        if (ROOT / entry).exists()
+    ]
     return problems
 
 

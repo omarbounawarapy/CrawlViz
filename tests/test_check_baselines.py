@@ -396,3 +396,71 @@ class TestMain:
 
         assert self.run_main(monkeypatch) == 0
         assert "has no baselines yet" in capsys.readouterr().out
+
+
+def _loosening(base_text: str, current_text: str) -> list[str]:
+    return guard.find_additions(
+        guard.parse_baselines(base_text), guard.parse_baselines(current_text), {}
+    )
+
+
+class TestLoosenedSettings:
+    def test_dropping_a_ruff_rule_family_from_select_is_reported(self) -> None:
+        problems = _loosening(
+            '[tool.ruff.lint]\nselect = ["E", "PL"]\n', '[tool.ruff.lint]\nselect = ["E"]\n'
+        )
+
+        assert problems == ["ruff select lost PL"]
+
+    def test_adding_a_rule_to_select_is_fine(self) -> None:
+        assert (
+            _loosening(
+                '[tool.ruff.lint]\nselect = ["E"]\n', '[tool.ruff.lint]\nselect = ["E", "B"]\n'
+            )
+            == []
+        )
+
+    def test_a_new_global_ruff_ignore_is_reported(self) -> None:
+        problems = _loosening("[tool.ruff.lint]\n", '[tool.ruff.lint]\nignore = ["E501"]\n')
+
+        assert problems == ["ruff ignore gained E501"]
+
+    def test_extend_per_file_ignores_cannot_grow(self) -> None:
+        problems = _loosening(
+            "[tool.ruff.lint]\n",
+            '[tool.ruff.lint.extend-per-file-ignores]\n"main.py" = ["E501"]\n',
+        )
+
+        assert problems == ["ruff extend-per-file-ignores gained E501 for main.py"]
+
+    def test_a_new_relaxed_mypy_override_is_reported(self) -> None:
+        problems = _loosening(
+            "[tool.mypy]\n",
+            '[[tool.mypy.overrides]]\nmodule = ["core.crawler"]\ndisallow_untyped_defs = false\n',
+        )
+
+        assert problems == ["mypy override relaxes disallow_untyped_defs for core.crawler"]
+
+    def test_an_existing_relaxed_override_is_not_new(self) -> None:
+        text = '[[tool.mypy.overrides]]\nmodule = ["lxml.*"]\nignore_missing_imports = true\n'
+
+        assert _loosening(text, text) == []
+
+    def test_a_new_mypy_exclude_is_reported(self) -> None:
+        problems = _loosening("[tool.mypy]\n", '[tool.mypy]\nexclude = ["^tests/"]\n')
+
+        assert problems == ["mypy exclude gained ^tests/"]
+
+    def test_dropping_an_existing_mypy_files_entry_is_reported(self) -> None:
+        problems = _loosening(
+            '[tool.mypy]\nfiles = ["tools", "tests"]\n', '[tool.mypy]\nfiles = ["tools"]\n'
+        )
+
+        assert problems == ["mypy files dropped tests, which still exists"]
+
+    def test_dropping_a_mypy_files_entry_whose_folder_moved_is_fine(self) -> None:
+        problems = _loosening(
+            '[tool.mypy]\nfiles = ["gone_folder", "tools"]\n', '[tool.mypy]\nfiles = ["tools"]\n'
+        )
+
+        assert problems == []
