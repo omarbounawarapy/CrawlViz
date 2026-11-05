@@ -11,9 +11,9 @@ this file holds how the work is organised and done.
 | `core/` | Crawler composition root, event broker, live settings, bootstrapping |
 | `pipelines/` | Crawl stages, sinks and observers (renamed by the pipeline naming scheme, NAME-5) |
 | `traceability/`, `ui_bridge/` | Trace events, the WebSocket telemetry bridge |
-| `services/`, `models/` | Scoring, domain models and prompts |
+| `services/`, `models/` | Scoring, extractors, context builders and prompts |
 | `src/crawlviz/` | Packages that have moved: `events/` (event types), `nlp/` (embeddings, semantic space), `priority/` (ranking), `offline/` (offline doubles), `contracts/` (stored-format versions, settings migration), `llm/` (LLM handler, provider translators, keys, call budget, token usage, the typed layer) |
-| `src/crawlviz/shared/` | Shared kernel: guarded HTTP client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers. Import from `crawlviz.shared` |
+| `src/crawlviz/shared/` | Shared kernel: `Link`, `Node` and `Domain`, guarded HTTP client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers. Import from `crawlviz.shared` |
 | `infrastructure/` | Async file I/O and the log writer |
 | `config/` | `RuntimeConfig`, settings store, paths |
 | `benchmark/` | Frozen-graph benchmark, judges, audit, analysis |

@@ -172,10 +172,10 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `main.py` | FastAPI entrypoint, mounts the three router groups |
 | `routes/` | REST endpoints: templates, run control, validation, config |
 | `core/` | Crawler orchestration, event broker/registry, bootstrap |
-| `models/` | Domain objects: `Node`, `Link`, `Domain`, `Storage`, extractors, prompt/context builders |
+| `models/` | `Storage`, extractors, prompt/context builders |
 | `pipelines/` | The ~13 event-driven processing stages |
 | `src/crawlviz/nlp/` | Embedding engine, vector space, feature extraction, expansion buffering |
-| `src/crawlviz/shared/` | Guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers |
+| `src/crawlviz/shared/` | `Link`, `Node`, `Domain`, guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers |
 | `infrastructure/` | Async file handler and log writer |
 | `src/crawlviz/priority/` | The three named priority strategies |
 | `src/crawlviz/llm/` | LLM handler, six provider translators, key manager, endpoints, call budget, token usage, and the typed layer (`LlmClient`, request and response types, JSON output validation, prompt registry, call recorder, cost table) |
