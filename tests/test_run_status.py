@@ -6,7 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from infrastructure.call_budget import CallBudget
+from crawlviz.llm import CallBudget
 from routes import run as run_routes
 
 

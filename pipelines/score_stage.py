@@ -19,7 +19,7 @@ from crawlviz.events import (
     ScoringStartedEvent,
 )
 
-from infrastructure.call_budget import CallBudget
+from crawlviz.llm import CallBudget
 from traceability.trace_context import bind_node
 
 from .base_pipeline import BasePipeline

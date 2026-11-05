@@ -7,7 +7,7 @@ from config.paths import RuntimePaths
 from config.runtime_config import PipelinesConfig, RuntimeConfig, default_runtime_config
 from core.event_broker import EventBroker
 from core.stages import STAGES, StageInputs, build_stages, priority_strategy_name
-from infrastructure.call_budget import CallBudget
+from crawlviz.llm import CallBudget
 from models import Storage
 from pipelines import FilterStage, RetryStage
 from pipelines.contracts import CrawlStage

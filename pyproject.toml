@@ -214,7 +214,7 @@ module = [
     "core.event_registry",
     "core.live_settings",
     "infrastructure.anthropic_translator",
-    "infrastructure.call_budget",
+    "crawlviz.llm.call_budget",
     "infrastructure.gemini_translator",
     "infrastructure.groq_translator",
     "infrastructure.key_manager",

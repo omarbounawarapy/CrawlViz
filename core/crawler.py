@@ -20,7 +20,7 @@ from config.runtime_config import RuntimeConfig, default_runtime_config
 from config.template_names import template_stem
 from utils.html_utils import configure_url_normalization
 from infrastructure import KeyManager, LlmHandler, NetworkClient
-from infrastructure.call_budget import CallBudget
+from crawlviz.llm import CallBudget
 from models import Storage
 from crawlviz.nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender

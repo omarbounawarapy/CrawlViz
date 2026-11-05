@@ -13,8 +13,8 @@ from typing import Any
 
 from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig
+from crawlviz.llm import CallBudget
 from infrastructure import NetworkClient
-from infrastructure.call_budget import CallBudget
 from models import Storage
 from pipelines import (
     CanonicalizeStage,

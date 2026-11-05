@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from infrastructure.call_budget import CallBudget
+from crawlviz.llm import CallBudget
 from pipelines.score_stage import ScoreStage
 
 
@@ -47,7 +47,7 @@ def test_limit_grants_only_what_is_left_and_counts_the_rest():
 
 def test_warns_once_when_the_cap_is_first_reached(caplog):
     budget = CallBudget(1)
-    with caplog.at_level(logging.WARNING, logger="infrastructure.call_budget"):
+    with caplog.at_level(logging.WARNING, logger="crawlviz.llm.call_budget"):
         budget.take(1)
         budget.take(1)
         budget.take(1)

@@ -4,6 +4,7 @@ No caller uses it yet: callers move to it one at a time, and the old handler
 goes last. Other areas import from here only (ARCH-2).
 """
 
+from .call_budget import CallBudget
 from .call_recorder import LLM_CALLS_FILE_NAME, LlmCallRecorder, LlmCallTotals
 from .cost_table import CostTable, ModelPrice, load_cost_table
 from .json_output import (
@@ -32,6 +33,7 @@ from .types import (
 __all__ = [
     "LLM_CALLS_FILE_NAME",
     "LLM_CALL_RECORD_SCHEMA_VERSION",
+    "CallBudget",
     "CallOutcome",
     "ChatRole",
     "CostTable",
