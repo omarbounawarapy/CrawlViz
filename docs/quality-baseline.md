@@ -33,8 +33,8 @@ Phase F, starting from these numbers.
 so those pages have no axe violations in jsdom. A browser run on the live app is not
 done yet.
 
-jsx-a11y reports 10 open findings in 7 files. They are listed in `crawler-ui/eslint.config.js`
-and may only shrink.
+jsx-a11y reports no findings. The recommended rule set runs on every `.js`, `.jsx`, `.ts` and `.tsx`
+file through `crawler-ui/eslint.config.js`, and no finding is listed as a baseline.
 
 ## Static checks
 
