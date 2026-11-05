@@ -18,6 +18,9 @@ ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = ROOT / "crawler-ui"
 BASE_BRANCH = "main"
 PYTHON_SUFFIXES = {".py"}
+# Linters and tests run with the interpreter that runs this tool (`make` starts it with
+# `uv run`), so a worktree never falls back to the system Python through a second `uv run`.
+PYTHON_M = [sys.executable, "-m"]
 PYTEST_NO_TESTS_COLLECTED = 5
 # A change to any of these can alter the result for every Python file, so the whole
 # Python side is checked instead of only the changed files.
@@ -185,16 +188,16 @@ def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
     relative = [str(path.relative_to(ROOT)) for path in python_files if path.exists()]
     ok = True
     if relative or tooling_changed:
-        ok = run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
+        ok = run([*PYTHON_M, "ruff", "check", *([] if tooling_changed else relative)], ROOT)
     # mypy follows imports, so a change anywhere can break another module: always whole.
-    ok &= run(["uv", "run", "mypy"], ROOT)
+    ok &= run([*PYTHON_M, "mypy"], ROOT)
     tests = [] if tooling_changed else python_tests_for(python_files)
     if tests or tooling_changed:
         # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
         # Exit code 5 means every selected test was slow, which is not a failure.
         selected = [str(t.relative_to(ROOT)) for t in tests]
         ok &= run(
-            ["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
+            [*PYTHON_M, "pytest", "-q", "-m", "not slow", *selected],
             ROOT,
             accepted=(0, PYTEST_NO_TESTS_COLLECTED),
         )
@@ -236,7 +239,7 @@ def main() -> int:
     if method_changed:
         # The method guards must hold even when slow: no `not slow` filter here.
         ok &= run(
-            ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"],
+            [*PYTHON_M, "pytest", "-q", "-m", "pins or method_guard"],
             ROOT,
             accepted=(0, PYTEST_NO_TESTS_COLLECTED),
         )

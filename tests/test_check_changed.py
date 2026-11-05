@@ -27,6 +27,10 @@ GIT_IDENTITY = (
     "init.defaultBranch=main",
 )
 
+# Checks run with the interpreter that runs the tool, never a nested `uv run`: a worktree
+# without its own environment would otherwise fall back to the system Python.
+PYTHON_M = [sys.executable, "-m"]
+
 
 def git(repo: Path, *args: str) -> None:
     subprocess.run(["git", *GIT_IDENTITY, *args], cwd=repo, check=True, capture_output=True)
@@ -422,11 +426,10 @@ class TestCheckPython:
 
         assert tool.check_python([mod], tooling_changed=False)
 
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check", "pkg/mod.py"]
-        assert runs.command_for("mypy") == ["uv", "run", "mypy"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check", "pkg/mod.py"]
+        assert runs.command_for("mypy") == [*PYTHON_M, "mypy"]
         assert runs.command_for("pytest") == [
-            "uv",
-            "run",
+            *PYTHON_M,
             "pytest",
             "-q",
             "-m",
@@ -450,8 +453,8 @@ class TestCheckPython:
 
         assert tool.check_python([pyproject], tooling_changed=True)
 
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
-        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check"]
+        assert runs.command_for("pytest") == [*PYTHON_M, "pytest", "-q", "-m", "not slow"]
 
     def test_change_without_covering_tests_skips_pytest(
         self, repo: Path, runs: RecordedRuns
@@ -519,7 +522,7 @@ class TestMain:
         pytest_commands = [
             command for command, _cwd, _accepted in runs.commands if command[2] == "pytest"
         ]
-        assert ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"] in pytest_commands
+        assert [*PYTHON_M, "pytest", "-q", "-m", "pins or method_guard"] in pytest_commands
         assert all(
             "not slow" not in command
             for command in pytest_commands
@@ -533,7 +536,7 @@ class TestMain:
         write(repo, "routes/run.py")
 
         assert self.run_main(monkeypatch) == 0
-        assert ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"] not in [
+        assert [*PYTHON_M, "pytest", "-q", "-m", "pins or method_guard"] not in [
             command for command, _cwd, _accepted in runs.commands
         ]
 
@@ -571,8 +574,8 @@ class TestMain:
         write(repo, "pyproject.toml")
 
         assert self.run_main(monkeypatch) == 0
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
-        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check"]
+        assert runs.command_for("pytest") == [*PYTHON_M, "pytest", "-q", "-m", "not slow"]
 
     def test_changed_ownership_map_selects_the_whole_python_side(
         self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
@@ -581,5 +584,5 @@ class TestMain:
         write(repo, ".claude/ownership.toml")
 
         assert self.run_main(monkeypatch) == 0
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
-        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check"]
+        assert runs.command_for("pytest") == [*PYTHON_M, "pytest", "-q", "-m", "not slow"]
