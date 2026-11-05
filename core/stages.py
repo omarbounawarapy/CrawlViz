@@ -25,7 +25,7 @@ from pipelines import (
     LoggingPipeline,
     PriorityPipeline,
     ProcessingPipeline,
-    RetryProcessor,
+    RetryStage,
     ScoringPipeline,
     StopConditions,
     StoppingPipeline,
@@ -161,7 +161,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
 def _retry(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.retry
     retries = inputs.config.retries
-    return RetryProcessor(
+    return RetryStage(
         inputs.storage,
         inputs.broker,
         requests_pipeline=built["requests"],

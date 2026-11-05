@@ -39,7 +39,7 @@ from pipelines import (
     FilteringPipeline,
     PriorityPipeline,
     ProcessingPipeline,
-    RetryProcessor,
+    RetryStage,
     ScoringPipeline,
     StoragePipeline,
     TransformationPipeline,
@@ -66,7 +66,7 @@ class _NoLlm:
 
 
 # The cascade runs with the production retry processor's own backoff
-# (RetryProcessor default: 2s, doubling, 3 scoring retries). Rate limits are
+# (RetryStage default: 2s, doubling, 3 scoring retries). Rate limits are
 # absorbed upstream by PacedLlm, so a retry here means the LLM stage itself
 # failed. The idle limit only has to outlast one slow LLM call plus backoff:
 # time spent waiting on a rate limit does not count towards it (the run loop
@@ -514,7 +514,7 @@ async def _run(
         rng=random.Random(f"{seed}:scoring"),
         **scoring_kwargs,
     )
-    retry = RetryProcessor(
+    retry = RetryStage(
         storage, broker, requests_pipeline=requests, retry_base_delay=retry_base_delay
     )
     processing = ProcessingPipeline(broker, extraction)

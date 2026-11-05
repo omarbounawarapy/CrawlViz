@@ -17,7 +17,7 @@ from .http_failure import is_permanent_failure
 logger = logging.getLogger(__name__)
 
 
-class RetryProcessor(BasePipeline):
+class RetryStage(BasePipeline):
     """Reacts to soft scoring failures and page-fetch failures by
     demoting and rescheduling the affected node, rather than dropping it
     from the crawl outright.
@@ -172,7 +172,7 @@ class RetryProcessor(BasePipeline):
 
         if self.requests_pipeline is None:
             logger.warning(
-                "RequestFailedEvent for node %s but RetryProcessor has no "
+                "RequestFailedEvent for node %s but RetryStage has no "
                 "requests_pipeline wired in -- cannot retry (%s: %s)",
                 node_id,
                 event.error_type,

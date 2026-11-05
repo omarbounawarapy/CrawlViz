@@ -49,7 +49,7 @@ from pipelines import (
     PriorityPipeline,
     ProcessingPipeline,
     FetchStage,
-    RetryProcessor,
+    RetryStage,
     ScoringPipeline,
     StopConditions,
     StoppingPipeline,
@@ -202,7 +202,7 @@ class Crawl:
             rng=random.Random(f"{seed}:requests"),
         )
         self.scoring = make_scoring(b, nlp, llm, rng=random.Random(f"{seed}:scoring"))
-        self.retry = RetryProcessor(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
+        self.retry = RetryStage(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
         self.pipelines = [
             self.requests,
             ProcessingPipeline(b, EXTRACTION),
@@ -312,7 +312,7 @@ async def _score_one_ready_node(nlp_score: float, run_for: float):
     scoring = make_scoring(broker, nlp, FixedLlm())
     pipelines = [
         scoring,
-        RetryProcessor(storage, broker),
+        RetryStage(storage, broker),
         PriorityPipeline(storage, broker),
         StoragePipeline(storage, broker),
     ]

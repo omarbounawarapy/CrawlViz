@@ -53,7 +53,7 @@ SHUTDOWN = _ShutdownSentinel()
 class BasePipeline:
     """Shared queue/worker/start/stop lifecycle for event-consuming pipelines.
 
-    This exists because two pipelines (StoragePipeline, RetryProcessor)
+    This exists because two pipelines (StoragePipeline, RetryStage)
     independently hand-rolled this exact scaffolding and both silently
     got it wrong -- `put()` bypassed `self.queue` entirely, making
     `worker()`/`max_concurrency` dead code. It also exists because most

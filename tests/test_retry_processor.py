@@ -1,9 +1,9 @@
-"""RetryProcessor: scoring failures are rescheduled, and fetch retries are delayed."""
+"""RetryStage: scoring failures are rescheduled, and fetch retries are delayed."""
 
 import asyncio
 
 from events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
-from pipelines.retry_stage import RetryProcessor
+from pipelines.retry_stage import RetryStage
 
 
 class FakeNode:
@@ -32,7 +32,7 @@ class FakeRequests:
 
 def make(**kw):
     broker, reqs = FakeBroker(), FakeRequests()
-    rp = RetryProcessor(None, broker, requests_pipeline=reqs, retry_base_delay=0.01, **kw)
+    rp = RetryStage(None, broker, requests_pipeline=reqs, retry_base_delay=0.01, **kw)
     return rp, broker, reqs
 
 

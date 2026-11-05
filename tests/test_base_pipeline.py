@@ -1,6 +1,6 @@
 """Tests for pipelines/base_pipeline.py -- the shared queue/worker/
 start/stop lifecycle introduced to fix two classes of bug found in the
-engineering audit: StoragePipeline/RetryProcessor silently bypassing
+engineering audit: StoragePipeline/RetryStage silently bypassing
 their own queue (making `worker()`/`max_concurrency` dead code), and
 most other pipelines having no reliable way to stop a worker blocked on
 an empty queue once a crawl ends.

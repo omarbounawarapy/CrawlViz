@@ -156,7 +156,7 @@ class TestConsumersNameTheirEvents:
         ]
         assert consumers_of(wired_crawler, RequestFailedEvent) == [
             "DebuggingPipeline",
-            "RetryProcessor",
+            "RetryStage",
             "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, PageFetchedEvent) == [
