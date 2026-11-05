@@ -26,7 +26,8 @@ The class does three jobs that change for different reasons:
 Callers depend only on the third job's surface plus `score_links`:
 `ScoreStage` (`score_links`, `update_space`), `SpaceUpdater` (`space`, `save_space`,
 `space_size`), the benchmark runner and `tools/nlp_eval.py` (constructor, `start`,
-`score_links`), and the `RelevanceScorer` contract (`pipelines/contracts.py:12`). The behaviour
+`score_links`), and the `RelevanceScorer` contract
+(`src/crawlviz/events/contracts.py:38`). The behaviour
 pins run the real `NLPService` (`tests/pins/pin_crawl.py:4`), so any change to its numbers
 shows up there.
 
@@ -59,7 +60,7 @@ seed loop from the logic around them.
   `tools/nlp_eval.py` and the contracts at once, which is a bulk change across four areas.
   `NLPService` can still be removed later, one caller at a time.
 - **Move the code into `src/crawlviz/nlp/`.** `src/crawlviz/nlp/` must not import `services/` or the LLM handler, and
-  the bootstrap needs both (`services/llm_contracts.py`, `infrastructure`). The link features
+  the bootstrap needs both (`services/llm_contracts.py`, `crawlviz.llm`). The link features
   could live there, but they emit trace events that `src/crawlviz/nlp/` does not use today. When the
   backend moves to `src/crawlviz/<domain>/`, both helpers move with the NLP domain.
 - **Only shorten the long functions.** Leaves the module over 400 lines and keeps the
