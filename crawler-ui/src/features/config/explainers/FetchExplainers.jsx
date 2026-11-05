@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getTheme } from "../../../theme";
-import NumberField from "../NumberField";
+import { NumberField } from "../../../shared/ui";
 import PolitenessCard from "./PolitenessCard";
 import BackoffChart from "./BackoffChart";
 
@@ -31,13 +31,7 @@ export default function FetchExplainers({ cfg, workers, maxRetries, onChange }) 
         <label id="assumed-latency-label" htmlFor="assumed-latency">
           Assumed time per request (for the pictures only, not saved)
         </label>
-        <NumberField
-          id="assumed-latency"
-          value={latency}
-          unit="s"
-          width={80}
-          onChange={(v) => setLatency(v === "" || v === null ? DEFAULT_LATENCY : v)}
-        />
+        <NumberField id="assumed-latency" value={latency} unit="s" onChange={setLatency} />
       </div>
       <PolitenessCard cfg={cfg} workers={workers} maxRetries={maxRetries} latency={latency} />
       <BackoffChart cfg={cfg} latency={latency} onMinDelay={(v) => onChange?.("fetch.min_delay", v)} />

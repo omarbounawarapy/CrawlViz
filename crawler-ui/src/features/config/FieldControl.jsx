@@ -2,23 +2,25 @@ import { useRef, useState } from "react";
 import { getTheme } from "../../theme";
 import { Button, TextInput, Select, nextChoice } from "../common";
 import Stepper from "./Stepper";
-import NumberField from "./NumberField";
+import { NumberField } from "../../shared/ui";
 
 const theme = getTheme();
 const { text } = theme.colors;
 
+// An empty box reports "" for a field that must have a value, so the page's own check says
+// "Required"; the box never holds the old number back.
 function NumberInput({ field, value, onChange, id, invalid, describedBy }) {
   return (
     <NumberField
       id={id}
-      value={value}
-      onChange={onChange}
-      nullable={Boolean(field.nullable)}
+      value={value === "" || value === undefined ? null : value}
+      onChange={(next) => onChange(next === null && !field.nullable ? "" : next)}
+      nullable
       unit={field.unit}
       invalid={invalid}
-      label={field.ariaLabel}
+      aria-label={field.ariaLabel}
       integer={field.type === "integer"}
-      describedBy={describedBy}
+      aria-describedby={describedBy}
     />
   );
 }
@@ -29,7 +31,8 @@ function Slider({ field, value, onChange, id, invalid, describedBy }) {
   const max = field.maximum ?? 1;
   const fraction = min === 0 && max === 1 && !field.unit;
   if (fraction) {
-    const pct = Math.round(Number(value ?? 0) * 100);
+    const isEmpty = value === "" || value === null || value === undefined;
+    const pct = isEmpty ? 0 : Math.round(Number(value) * 100);
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 12, flexWrap: "wrap", maxWidth: "100%" }}>
         <input
@@ -46,7 +49,7 @@ function Slider({ field, value, onChange, id, invalid, describedBy }) {
         />
         <NumberInput
           field={{ ...field, type: "integer", minimum: 0, maximum: 100, unit: "%", step: 1 }}
-          value={pct}
+          value={isEmpty ? "" : pct}
           id={id}
           invalid={invalid}
           describedBy={describedBy}

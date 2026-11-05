@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { getTheme } from "../../theme";
 import { llmCost } from "./costModel";
-import NumberField from "./NumberField";
+import { NumberField } from "../../shared/ui";
 import sample from "./explainers/sampleData.json";
 
 const theme = getTheme();
@@ -52,14 +52,7 @@ export default function CostReadout({ cascade, nlp, llm, prompts, priced = false
           <label id="llm-token-price-label" htmlFor="llm-token-price">
             Price per million input tokens (for this estimate only, not saved)
           </label>
-          <NumberField
-            id="llm-token-price"
-            value={price}
-            nullable
-            width={90}
-            unit="$"
-            onChange={(v) => setPrice(v === "" ? null : v)}
-          />
+          <NumberField id="llm-token-price" value={price} nullable unit="$" onChange={setPrice} />
         </div>
       )}
     </div>
