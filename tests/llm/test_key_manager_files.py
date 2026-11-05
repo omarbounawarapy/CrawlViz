@@ -37,3 +37,29 @@ def test_a_save_that_fails_after_writing_leaves_no_temp_file(
         manager.add_key("groq", API_KEY)
     assert not temp_path_of(keys_path).exists()
     assert json.loads(keys_path.read_text(encoding="utf-8")) == {}
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
+def test_a_reader_of_a_loose_leftover_temp_file_does_not_see_keys_saved_later(
+    keys_path: Path,
+) -> None:
+    leftover = temp_path_of(keys_path)
+    leftover.write_text("{}", encoding="utf-8")
+    leftover.chmod(0o666)
+    manager = KeyManager(keys_file=keys_path)
+    with open(leftover, encoding="utf-8") as reader:
+        manager.add_key("groq", API_KEY)
+        assert API_KEY not in reader.read()
+    assert json.loads(keys_path.read_text(encoding="utf-8")) == {"groq": [API_KEY]}
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlinks need privileges on Windows")
+def test_a_save_does_not_write_through_a_symlink_left_at_the_temp_path(
+    keys_path: Path, tmp_path: Path
+) -> None:
+    elsewhere = tmp_path / "elsewhere.json"
+    elsewhere.write_text("{}", encoding="utf-8")
+    temp_path_of(keys_path).symlink_to(elsewhere)
+    KeyManager(keys_file=keys_path).add_key("groq", API_KEY)
+    assert API_KEY not in elsewhere.read_text(encoding="utf-8")
+    assert json.loads(keys_path.read_text(encoding="utf-8")) == {"groq": [API_KEY]}

@@ -12,6 +12,21 @@ logger = logging.getLogger(__name__)
 
 KEYS_FILE_MODE = 0o600
 GROUP_AND_OTHER_BITS = 0o077
+TEMP_SUFFIX = ".tmp"
+# Create a new file or fail: never open one that exists, and never follow a symlink.
+NEW_FILE_FLAGS = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+
+
+def _write_new_owner_only_file(path: Path, text: str) -> None:
+    """Create ``path`` readable by its owner only, write ``text`` and flush it to disk.
+
+    Raises ``FileExistsError`` if anything, a symlink included, is already at ``path``.
+    """
+    fd = os.open(path, NEW_FILE_FLAGS, KEYS_FILE_MODE)
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        handle.write(text)
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 class KeyManager:
@@ -151,18 +166,16 @@ class KeyManager:
         """Atomically write the registry back to ``keys_file`` (0600).
 
         The keys reach the disk in a temp file beside ``keys_file`` that then replaces it.
-        If any step fails the temp file is deleted, so no copy of the keys is left behind,
-        and ``keys_file`` keeps its old content.
+        A temp file left by an earlier run is deleted first rather than reused: another
+        user may hold it open or have put a symlink there. If any step fails the temp
+        file is deleted, so no copy of the keys is left behind, and ``keys_file`` keeps
+        its old content.
         """
         path = Path(self.keys_file)
-        tmp = path.with_suffix(path.suffix + ".tmp")
-        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, KEYS_FILE_MODE)
+        tmp = path.with_name(path.name + TEMP_SUFFIX)
         try:
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                os.chmod(tmp, KEYS_FILE_MODE)  # a leftover .tmp keeps the mode it was created with
-                json.dump(self.registry, f, indent=2)
-                f.flush()
-                os.fsync(f.fileno())
+            tmp.unlink(missing_ok=True)
+            _write_new_owner_only_file(tmp, json.dumps(self.registry, indent=2))
             os.replace(tmp, path)
         except BaseException:
             tmp.unlink(missing_ok=True)
