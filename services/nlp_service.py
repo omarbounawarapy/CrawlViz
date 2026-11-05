@@ -1,9 +1,10 @@
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from infrastructure import LlmHandler
+from models.link import Link
 from nlp import (
     BaseEmbeddingEngine,
     BufferManager,
@@ -11,6 +12,7 @@ from nlp import (
     VectorSpace,
     create_embedding_engine,
 )
+
 from .link_features import FeatureSettings, LinkFeatureScorer
 from .space_bootstrap import SpaceBootstrapper
 
@@ -18,6 +20,9 @@ if TYPE_CHECKING:
     from traceability.emitter import TraceEmitter
 
 logger = logging.getLogger(__name__)
+
+# One expansion vector bound for the space: (key, vector, metadata).
+VectorItem = tuple[str, np.ndarray, dict[str, Any]]
 
 
 class NLPService:
@@ -69,7 +74,7 @@ class NLPService:
         blueprint_id: str,
         target_topic: str,
         llm_handler: LlmHandler,
-        expansion_config: dict,
+        expansion_config: dict[str, Any],
         embedding_backend: str = "sentence_transformers",
         model_name: str = "all-MiniLM-L6-v2",
         store_base_dir: str = ".space_store",
@@ -106,7 +111,7 @@ class NLPService:
         self.target_vec: np.ndarray | None = None
         self.buffer_manager = buffer_manager
         # Local fallback buffer, only used when no buffer_manager is wired in.
-        self._buffer: list[tuple[str, np.ndarray, dict]] = []
+        self._buffer: list[VectorItem] = []
 
     # =========================================================
     # LIFECYCLE
@@ -117,17 +122,23 @@ class NLPService:
             self.load_space()
         else:
             await self.build_space()
-        self.start_version = self.space.version
+        space = self._require_space("start")
+        self.start_version = space.version
         logger.info(
             "Run starts from space v%s (%d vectors), persist_space=%s",
             self.start_version,
-            len(self.space),
+            len(space),
             self.persist_space,
         )
 
     async def build_space(self) -> None:
         """Bootstrap the space from the target topic (see SpaceBootstrapper)."""
         await self.bootstrapper.build(self.target_topic, adopt=self._adopt_space)
+
+    def _require_space(self, caller: str) -> VectorSpace:
+        if self.space is None:
+            raise RuntimeError(f"{caller}() needs a semantic space; call NLPService.start() first")
+        return self.space
 
     def _adopt_space(self, space: VectorSpace, target_vec: np.ndarray) -> None:
         self.space, self.target_vec = space, target_vec
@@ -164,7 +175,7 @@ class NLPService:
     # LINK SCORING (MAIN PIPELINE HOOK)
     # =========================================================
 
-    async def score_links(self, links: list, parent) -> list:
+    async def score_links(self, links: list[Link], parent: object) -> list[Link]:
         """Compute NLP feature vectors and a composite score for each link
         (see LinkFeatureScorer). A link that fails gets an empty vector and
         a score of 0.0, and the rest of the page is still scored.
@@ -172,11 +183,12 @@ class NLPService:
         Raises:
             RuntimeError: If called before `start()` has built or loaded a space.
         """
-        if self.space is None:
-            raise RuntimeError("NLPService.start() must be called before score_links()")
+        space = self._require_space("score_links")
+        if self.target_vec is None:
+            raise RuntimeError("score_links() needs a target vector; call NLPService.start() first")
 
         context = await self.features.parent_context(
-            parent, self.space, self.target_vec, self.target_topic
+            parent, space, self.target_vec, self.target_topic
         )
         for link in links:
             try:
@@ -192,7 +204,7 @@ class NLPService:
     # SPACE UPDATES (BATCH ONLY -- SPACE REMAINS STABLE UNTIL FLUSH)
     # =========================================================
 
-    async def update_space(self, scoring_results: list) -> None:
+    async def update_space(self, scoring_results: list[Link]) -> None:
         """Encode each scored link's LLM expansions and forward them for
         eventual inclusion in the semantic space.
 
@@ -203,7 +215,7 @@ class NLPService:
         accumulate in a local buffer that must be flushed explicitly via
         ``flush_buffer()``.
         """
-        items: list[tuple[str, np.ndarray, dict]] = []
+        items: list[VectorItem] = []
         for link in scoring_results:
             expansions = getattr(link, "expansions", []) or []
             for i, sentence in enumerate(expansions):
@@ -236,11 +248,12 @@ class NLPService:
         """
         if not self._buffer:
             return
-        self.space.add_batch(self._buffer)
+        space = self._require_space("flush_buffer")
+        space.add_batch(self._buffer)
         logger.info(
             "Flushed %d vectors to space (space size now %d)",
             len(self._buffer),
-            len(self.space),
+            len(space),
         )
         self._buffer.clear()
         self.save_space()

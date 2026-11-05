@@ -107,7 +107,7 @@ max-complexity = 10
 "routes/run.py" = ["B904", "E501", "N815", "PLW0603"]
 "routes/templates.py" = ["B904", "I001"]
 "routes/validation.py" = ["B904", "RUF001"]
-"services/nlp_service.py" = ["I001", "PLR0913"]
+"services/nlp_service.py" = ["PLR0913"]
 "services/scoring_service.py" = ["PLR0913", "PLR2004"]
 "tests/agents/test_commit_msg_check.py" = ["RUF100"]
 "tests/agents/test_guard_bash.py" = ["E501"]
@@ -260,7 +260,6 @@ module = [
     "routes.validation",
     "routes.validation_db",
     "services.llm_contracts",
-    "services.nlp_service",
     "services.results_mapper",
     "services.scoring_service",
     "tests.agents.hook_runner",
