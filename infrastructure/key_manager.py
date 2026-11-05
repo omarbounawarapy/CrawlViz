@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 from config import BASE_DIR
+from utils.log_redaction import register_provider_keys
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,9 @@ class KeyManager:
     Keys are loaded from ``keys.json`` at the repo root (see
     ``keys.example.json`` for the expected shape). That file holds
     secrets and is gitignored -- it is never committed.
+
+    Every key the store reads or is given is registered with ``utils.log_redaction``
+    before it can be used, so no log line shows it, whichever code holds the store.
     """
 
     def __init__(self, cooldown: float = 0, keys_file=None):
@@ -106,6 +110,7 @@ class KeyManager:
         if key not in keys:
             keys.append(key)
             self.timestamps[provider][key] = 0
+            register_provider_keys(self.registry)
             self.save()
         return self.fingerprint(key)
 
@@ -129,7 +134,8 @@ class KeyManager:
     def reload(self) -> None:
         """Re-read ``keys_file`` into the running registry, keeping rotation
         position and cooldown timestamps of keys that are still present, so
-        keys added or removed from the UI reach a crawl in progress."""
+        keys added or removed from the UI reach a crawl in progress. `load_keys`
+        registers the keys it reads for log redaction."""
         fresh = self.load_keys()
         for provider in list(self.registry):
             if provider not in fresh:
@@ -208,5 +214,6 @@ class KeyManager:
             if not all(isinstance(k, str) for k in keys):
                 raise ValueError(f"All keys for '{provider}' must be strings")
 
+        register_provider_keys(data)
         logger.info("Loaded API keys for providers: %s", ", ".join(sorted(data.keys())))
         return data
