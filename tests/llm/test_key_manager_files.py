@@ -1,6 +1,7 @@
 """The key store writes keys.json so no other file is ever left holding the keys."""
 
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -63,3 +64,23 @@ def test_a_save_does_not_write_through_a_symlink_left_at_the_temp_path(
     KeyManager(keys_file=keys_path).add_key("groq", API_KEY)
     assert API_KEY not in elsewhere.read_text(encoding="utf-8")
     assert json.loads(keys_path.read_text(encoding="utf-8")) == {"groq": [API_KEY]}
+
+
+def refuse_chmod(path: object, mode: int) -> None:
+    raise PermissionError("operation not permitted")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
+def test_a_loose_keys_file_that_cannot_be_restricted_logs_an_error_and_still_loads(
+    keys_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    keys_path.write_text(json.dumps({"groq": [API_KEY]}), encoding="utf-8")
+    keys_path.chmod(0o644)
+    monkeypatch.setattr(os, "chmod", refuse_chmod)
+    with caplog.at_level(logging.ERROR, logger="crawlviz.llm.key_manager"):
+        manager = KeyManager(keys_file=keys_path)
+    assert manager.registry == {"groq": [API_KEY]}
+    errors = [record for record in caplog.records if record.levelno == logging.ERROR]
+    assert len(errors) == 1
+    assert "could not be restricted" in errors[0].getMessage()
+    assert "chmod 600" in errors[0].getMessage()
