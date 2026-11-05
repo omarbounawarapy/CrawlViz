@@ -12,6 +12,9 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Landing and graph copy uses plain words.
 - The dev server reload ignores `.claude`, so agent worktrees no longer restart the API.
 - New `offline_demo_long.json` blueprint for a longer offline run with two 429 episodes and an LLM call budget (see the README).
+- Logs are JSON lines on stderr by default, with `ts`, `level`, `logger`, `message`, `exception` and the `crawl_id`, `node_id` and `trace_id` that are set. `CRAWLVIZ_LOG_FORMAT=text` gives readable lines and `CRAWLVIZ_LOG_LEVEL` sets the level.
+- Log text has registered secrets (session token, provider keys) and credential-shaped text (`Bearer` headers, `key=` and `token=` pairs) replaced with `[redacted]`.
+- `GET /health` reports that the process is up and `GET /ready` reports whether settings load and the write folders are usable, with 503 and the failed check names when not. Both need the session token.
 - Security and politeness hardening in progress, see SECURITY.md.
 
 ### Added

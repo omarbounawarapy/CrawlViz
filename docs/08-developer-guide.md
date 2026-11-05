@@ -120,6 +120,33 @@ The `pipelines.<key>` sections are `extract`, `fetch`, `score`, `storage`, `filt
 
 Settings models reject keys they do not define. The error names the path, for example `pipelines.fetchh`, so a misspelt setting is reported instead of ignored.
 
+## Logging and health checks
+
+Logs go to stderr, configured once by `traceability/logging_setup.py` when the API or a crawl starts. Two environment variables control them:
+
+| Variable | Values | Default |
+|---|---|---|
+| `CRAWLVIZ_LOG_FORMAT` | `json` (one JSON object per line) or `text` (one readable line) | `json` |
+| `CRAWLVIZ_LOG_LEVEL` | a level name such as `DEBUG`, `INFO` or `WARNING` | `INFO` |
+
+Any other value stops startup with an error that names the variable. uvicorn's own loggers use the same format.
+
+A JSON line has `ts` (UTC, ISO 8601, milliseconds), `level`, `logger` and `message`. An `exception` field holds the traceback when the record has one. `crawl_id`, `node_id` and `trace_id` are added when they are set for the code that logged and left out otherwise. `crawl_id` is bound for the whole run; `trace_id` and `node_id` are bound per node by the stages. In `text` format the ids are appended as `[crawl_id=... node_id=... trace_id=...]`.
+
+`utils/log_redaction.py` removes secrets from the message and the traceback before a line is written, in two ways:
+
+- Registered values: the session token at startup, and provider keys when a crawl starts or a key is added through `/keys`. Every exact occurrence becomes `[redacted]`. Values shorter than 8 characters are not registered.
+- Credential shapes: `Authorization: Bearer ...` and `key=`, `token:`, `secret=` or `password=` pairs with a value of 8 or more characters, such as a `?key=` in a provider URL, are redacted even if never registered.
+
+Two probe routes report on the process:
+
+| Route | Answers |
+|---|---|
+| `GET /health` | `{"status": "ok"}` whenever the process runs. It reads and writes nothing. |
+| `GET /ready` | 200 with `{"ready": true, "checks": [...]}` when the stored settings load and every folder a crawl writes to exists or can be created and is writable. Otherwise 503 with the same shape, and each failed check has `ok: false` and a `detail` saying what to fix. |
+
+The checks are named `settings`, `settings_dir`, `items_db_dir`, `export_dir`, `log_dir`, `debug_dir`, `space_store_dir` and `presets_dir`. `/ready` never creates a folder. Both routes need the session token (`Authorization: Bearer <token>`) and pass the Host and Origin checks like every other route. The behaviour is covered by `tests/test_logging_pipeline.py`, `tests/test_logging_wiring.py`, `tests/test_traceability_logging_setup.py` and `tests/test_health_routes.py`.
+
 ## Development workflow
 
 ```bash
