@@ -8,7 +8,7 @@ shared with the run. Request headers may carry credentials (``Authorization``,
 import re
 from typing import Any
 
-REDACTED = "[redacted]"
+from utils.log_redaction import REDACTED
 
 # Dotted path of the mapping whose values are all redacted, whatever the header is
 # called: a credential can sit under any name. The names stay, so the manifest still
