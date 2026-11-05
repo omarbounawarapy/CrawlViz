@@ -37,7 +37,7 @@ from models import Domain, Node, Storage
 from pipelines import (
     ExtractStage,
     FetchStage,
-    FilteringPipeline,
+    FilterStage,
     PriorityPipeline,
     RetryStage,
     ScoringPipeline,
@@ -518,7 +518,7 @@ async def _run(
         storage, broker, requests_pipeline=requests, retry_base_delay=retry_base_delay
     )
     processing = ExtractStage(broker, extraction)
-    filtering = FilteringPipeline(broker, storage)
+    filtering = FilterStage(broker, storage)
     transformation = TransformationPipeline(broker, extraction)
     store = StoragePipeline(storage, broker)
     priority = PriorityPipeline(storage, broker)

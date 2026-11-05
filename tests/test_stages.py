@@ -9,7 +9,7 @@ from core.event_broker import EventBroker
 from core.stages import STAGES, StageInputs, build_stages, priority_strategy_name
 from infrastructure.call_budget import CallBudget
 from models import Storage
-from pipelines import FilteringPipeline, RetryStage
+from pipelines import FilterStage, RetryStage
 from pipelines.contracts import CrawlStage
 
 BLUEPRINT: dict[str, Any] = {
@@ -75,7 +75,7 @@ def test_settings_reach_the_stage_they_name(tmp_path: Path) -> None:
     config.pipelines.filtering.workers = 7
     stages = build_stages(inputs(tmp_path, config))
     filtering, retry = stages["filtering"], stages["retry"]
-    assert isinstance(filtering, FilteringPipeline) and filtering.max_concurrency == 7
+    assert isinstance(filtering, FilterStage) and filtering.max_concurrency == 7
     assert isinstance(retry, RetryStage) and retry.requests_pipeline is stages["requests"]
 
 

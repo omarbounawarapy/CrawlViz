@@ -13,7 +13,7 @@ from utils import hash_item
 from .base_pipeline import BasePipeline
 
 
-class FilteringPipeline(BasePipeline):
+class FilterStage(BasePipeline):
     """Drops links and items already seen elsewhere in the crawl.
 
     Deduplication is storage-backed (Storage.link_seen / item_seen), so

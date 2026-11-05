@@ -45,7 +45,7 @@ from events import (
 )
 from models import Domain, Link, Node, Storage
 from pipelines import (
-    FilteringPipeline,
+    FilterStage,
     PriorityPipeline,
     ExtractStage,
     FetchStage,
@@ -206,7 +206,7 @@ class Crawl:
         self.pipelines = [
             self.requests,
             ExtractStage(b, EXTRACTION),
-            FilteringPipeline(b, s),
+            FilterStage(b, s),
             TransformationPipeline(b, EXTRACTION),
             StoragePipeline(s, b),
             self.scoring,

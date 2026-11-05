@@ -4,7 +4,7 @@ from .debug_log_sink import DebuggingPipeline
 from .export_sink import ExportingPipeline
 from .extract_stage import ExtractStage
 from .fetch_stage import FetchStage
-from .filter_stage import FilteringPipeline
+from .filter_stage import FilterStage
 from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryStage
 from .scoring_pipeline import ScoringPipeline
@@ -18,7 +18,7 @@ __all__ = [
     "ExportingPipeline",
     "ExtractStage",
     "FetchStage",
-    "FilteringPipeline",
+    "FilterStage",
     "LoggingPipeline",
     "PriorityPipeline",
     "RetryStage",

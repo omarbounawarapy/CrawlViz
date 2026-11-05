@@ -22,7 +22,7 @@ from pipelines import (
     ExportingPipeline,
     ExtractStage,
     FetchStage,
-    FilteringPipeline,
+    FilterStage,
     LoggingPipeline,
     PriorityPipeline,
     RetryStage,
@@ -202,7 +202,7 @@ def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _filtering(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.filtering
-    return FilteringPipeline(
+    return FilterStage(
         inputs.broker,
         inputs.storage,
         max_concurrency=settings.workers,
