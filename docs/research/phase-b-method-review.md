@@ -3,15 +3,16 @@
 Reviewer: research-scientist. Code reviewed at `0d21314` (main, 2026-10-29). The method
 files are unchanged between that commit and the tip of `phase-b-discovery`.
 
-Paths and line numbers were updated on 2026-11-05 to the tree at `afbe710`
-(`phase-d-architecture`), after the stage renames (for example `PriorityPipeline` became
+Paths and line numbers were updated on 2026-11-05 to the tree at `ab20ea0`
+(`phase-d-architecture` at `afbe710` plus a docstring fix in `benchmark/`), after the stage renames (for example `PriorityPipeline` became
 `PrioritizeStage` in `pipelines/prioritize_stage.py`) and the moves of `nlp/`, `priority/`
 and `models/link.py` into `src/crawlviz/`. The findings and verdicts are the ones made at
 `0d21314`. A finding fixed since then is kept as it was found, in the past tense, with its
 citation at `0d21314` and the commit that fixed it. Fixed since this review: the judge
 `bool` (bug 5, `cb371f5`), the node detail's LLM score of 0 (bug 3, `235a4ff`), an empty
 topic in a blueprint (bug 7, `be02dd6`) and, when asked, in the benchmark runner (bug 7,
-`83971ef`), and the missing `Crawler` pin (`2626576`).
+`83971ef`), the missing `Crawler` pin (`2626576`) and the runner's module docstring
+(`ab20ea0`).
 
 This review answers three questions for each known bug: does fixing it change the
 method (scores, ordering or prompts), does the fix change the behaviour pins, and what
@@ -154,14 +155,14 @@ The benchmark runner takes part of its settings from the config and the rest fro
 constructor defaults:
 
 - `NLPService` is built without the composite weights, `top_k` or cluster settings
-  (`benchmark/runner.py:675-685`).
-- `PrioritizeStage(storage, broker)` uses its own 60/40 defaults (`:525`).
-- `get_strategy(...)` is called without the configured weights (`:755`).
-- `ScoringService` is built without the configured prompts (`:697`).
-- The cascade constants are imported from `config` (`:18-24`, used at `:708-711` and
-  `:722-723`) instead of read from `cfg.scoring_cascade`.
+  (`benchmark/runner.py:678-688`).
+- `PrioritizeStage(storage, broker)` uses its own 60/40 defaults (`:528`).
+- `get_strategy(...)` is called without the configured weights (`:758`).
+- `ScoringService` is built without the configured prompts (`:700`).
+- The cascade constants are imported from `config` (`:21-27`, used at `:711-714` and
+  `:725-726`) instead of read from `cfg.scoring_cascade`.
 - `ExtractStage` (at `0d21314`, `ProcessingPipeline`) is built without
-  `link_context_length` (`:521`).
+  `link_context_length` (`:524`).
 
 The values are equal today only because `default_runtime_config()` returns the code defaults
 (`config/runtime_config.py:1026-1028`). If a default changes in one place, the crawler and the
@@ -283,7 +284,7 @@ should take the neutral value the code already uses for a missing input. That me
 rows of the space, with the empty-space value when none are left (`:171-172`). Separately,
 the blueprint schema and the benchmark runner should refuse an empty topic. The schema does
 since `be02dd6`. The runner does since `83971ef` when `run_cascade` is called with
-`allow_empty_topic=False` (`require_topic`, `benchmark/runner.py:395`); its default is still
+`allow_empty_topic=False` (`require_topic`, `benchmark/runner.py:398`); its default is still
 `True`.
 
 Method: yes, but only in the cases above; ordinary crawls with the real model are unchanged.
@@ -322,11 +323,13 @@ which is a method file I review. Contracts-steward adds the topic length rule to
   `event_types` with the list the commit removed: all equal as sets. `StoragePipeline` and
   `RetryProcessor` (now `StorageSink` and `RetryStage`) list them in a different order. That
   does not change delivery, because the registry keys by event type and the order of the
-  `subscribe` calls is unchanged (`benchmark/runner.py:534-539`).
-- Extra components are still subscribed from `handlers` (`:537`), not `event_types`. This is
+  `subscribe` calls is unchanged (`benchmark/runner.py:537-542`).
+- Extra components are still subscribed from `handlers` (`:540`), not `event_types`. This is
   harmless, but it is the one consumer left on the old pattern.
-- The module docstring (`:3-6`) says the LLM stage is a no-op. That is true for `run_policy`
-  only, not for `run_cascade`.
+- The module docstring (`:3-6` at `0d21314`) said the LLM stage is a no-op. That was true
+  for `run_policy` only, not for `run_cascade`. Fixed in `ab20ea0`: the docstring says which
+  of the two runs makes LLM calls, and names `core.stages.build_stages` in place of the
+  removed `Crawler._build_pipelines`.
 - See bug 4 for the settings the runner takes from defaults instead of the config.
 - A graph with no topic runs without complaint and, with hashing embeddings, gives every link
   priority 0 (bug 7). The runner should refuse it. Since `83971ef` it does when
@@ -381,7 +384,7 @@ the same arguments, so the lines after it moved.
   `services/nlp_service.py:143-145`). The space is still saved before
   `EXP_SpaceBootstrapped` is emitted. Nothing reads the space during the bootstrap: both
   callers await `start()` before any stage runs (`core/crawler.py:281`,
-  `benchmark/runner.py:686`). If the bootstrap raises, `NLPService.space` is now `None`
+  `benchmark/runner.py:689`). If the bootstrap raises, `NLPService.space` is now `None`
   instead of a half-built space, and `start()` fails in both versions. Read, not run.
 - Coverage: the pins only cover the scripted LLM answering well. `tests/test_space_bootstrap.py`
   checks that the seeds and the target are in the space and adopted before the bootstrap is

@@ -3,8 +3,8 @@
 Author: research-scientist, 2026-10-30. Code read at `0d21314` (main). Evidence is in
 `docs/research/phase-b-method-review.md`.
 
-Paths and line numbers were updated on 2026-11-05 to the tree at `afbe710`
-(`phase-d-architecture`), after the stage renames and the moves into `src/crawlviz/`. The
+Paths and line numbers were updated on 2026-11-05 to the tree at `ab20ea0`
+(`phase-d-architecture` at `afbe710` plus a docstring fix in `benchmark/`), after the stage renames and the moves into `src/crawlviz/`. The
 problems and intended changes are the ones read at `0d21314`. Where part of a fix has
 landed since, the text says which commit did it.
 
@@ -173,8 +173,8 @@ Problem. The same value lives in several places and the benchmark reads part of 
 settings from constructor defaults (review, bug 4): `target_top_k` in four places, the
 biases in `config/runtime_config.py:664-683` and `pipelines/prioritize_stage.py:32-33`,
 the composite fallback `self.settings.composite_weights or NLP_COMPOSITE_WEIGHTS`
-(`services/link_features.py:280`), and `benchmark/runner.py:521`, `:525`, `:675-685`,
-`:697`, `:708-711`, `:722-723`, `:755`.
+(`services/link_features.py:280`), and `benchmark/runner.py:524`, `:528`, `:678-688`,
+`:700`, `:711-714`, `:725-726`, `:758`.
 
 Change 1, single source (no value changes):
 
@@ -280,7 +280,7 @@ Sign-off: my review (this definition), no pin update. Refusing an empty topic is
 separately, and part of it has landed: the blueprint schema rejects a target topic with no
 word character since `be02dd6` (`_require_word_in_target_topic`,
 `config/blueprint_schema.py:241-249`), and `run_cascade` refuses one when called with
-`allow_empty_topic=False` since `83971ef` (`require_topic`, `benchmark/runner.py:395`). The
+`allow_empty_topic=False` since `83971ef` (`require_topic`, `benchmark/runner.py:398`). The
 runner's default is still `True`. The lockstep pin has passed `True` itself since `1a81f0b`,
 so the default can now become `False`; that is mine to change.
 
