@@ -5,7 +5,8 @@ import { formatDuration } from "../../utils/formatters";
 import { crawlStatusWords } from "../../state/crawlStatus";
 import { Page, SectionTitle, Row, buttonPrimary, buttonOutline } from "../common";
 import RunOverrides from "./RunOverrides";
-import { Explain, useCrawlCost } from "../config";
+import { useCrawlCost } from "../config";
+import { Explain } from "../../shared/ui";
 
 const theme = getTheme();
 
