@@ -302,17 +302,22 @@ lists those threats.
 - Test: the manifest shows `Authorization: [redacted]` (`docs/standards.md:89`).
 
 **T14. Medium: `keys.json` permissions are enforced only on files the app creates itself.**
-- Evidence:
-  - `routes/keys.py:18-23` creates the file with mode 0600.
-  - `save()` opens the temp file with 0600, but `O_CREAT` sets the mode only when the temp
-    file is new (`src/crawlviz/llm/key_manager.py`, `save()`).
-  - `load_keys()` never checks the mode (`:151-182`), and its error message tells users to
-    copy `keys.example.json`, which gives a file with umask permissions (`:163-167`).
-  - A file named `keys.json.bak-20260930-193053` sits at the repo root.
-- **Unverified:** the current modes of `keys.json` and the backup, and whether `.gitignore`
-  covers the backup. Neither file was read or checked.
-- Fix: on load, if any group or other bits are set, chmod to 0600 and log a warning. Call
-  `fchmod` after opening in `save()`. Make `.gitignore` cover `keys.json*`.
+- **Status: partly fixed** by "Keys: keys.json is restricted to its owner on load and on
+  save". Loading now checks the mode. What remains is Low and listed below.
+- Before the fix, `load_keys()` read the file without checking its mode, and the setup docs
+  gave a file with umask permissions.
+- Now: `load_keys()` calls `_restrict_permissions()` before it opens the file
+  (`src/crawlviz/llm/key_manager.py:161-181` and `:202`). If group or other bits are set it
+  changes the mode to 0600 and logs a warning; if chmod fails it logs an error saying to run
+  `chmod 600` and carries on. Windows is skipped (known limitation, no ACL check). `save()`
+  opens the temp file with 0600 and chmods it; `os.replace` keeps the mode. Tests:
+  `tests/test_key_manager_permissions.py`.
+- Still open (Low), being fixed: a failed `save()` leaves `keys.json.tmp` holding every key;
+  `save()` reuses an existing temp file; `save()` does not fsync before the rename. Git now
+  ignores `keys.json*`.
+- Fix remaining: create the temp file exclusively at 0600, fsync it, delete it on failure.
+  Test: a failing save leaves no temp file; a reader opened on a readable leftover does not
+  see later keys.
 
 **T20. Low: error text with URLs reaches logs, traces, the event log and the UI.**
 - Evidence: aiohttp error strings include the request URL. They are stored verbatim in
@@ -426,7 +431,6 @@ the pin process.
   libraries' documented behaviour; the installed versions were not checked. If FastAPI
   accepts `text/plain` JSON, every JSON-body route is also open to CSRF.
 - The host `make dev` binds to (T18), and whether the UI sends `CRAWLVIZ_API_TOKEN`.
-- The modes of `keys.json` and `keys.json.bak-*`, and their `.gitignore` coverage (T14).
 - The rate limiter race (T10) and WebSocket back-pressure (T15): worked out from the code,
   not run.
 - Whether the benchmark CLI writes to the API-supplied paths (T17).
