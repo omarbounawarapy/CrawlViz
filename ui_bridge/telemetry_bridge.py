@@ -53,6 +53,44 @@ import time
 from typing import Callable, Dict, Optional
 from urllib.parse import unquote
 
+from crawlviz.events import (
+    ContentFilteredEvent,
+    ExportBatchCompletedEvent,
+    ExportBatchFailedEvent,
+    ExportBatchStartedEvent,
+    ExportRowFailedEvent,
+    ExtractionStartedEvent,
+    FilteringEnqueuedEvent,
+    FilteringPipelineErrorEvent,
+    FilteringWorkerCycleStartedEvent,
+    HighScoreLinksEvent,
+    ItemExtractionCompletedEvent,
+    LinkExtractionCompletedEvent,
+    LinksScoredEvent,
+    LowScoreLinksEvent,
+    NodeAddedEvent,
+    PageFetchedEvent,
+    PriorityCalculatedEvent,
+    PriorityCalculationFailedEvent,
+    PriorityCalculationStartedEvent,
+    ProcessingExtractionFailedEvent,
+    RequestEnqueuedEvent,
+    RequestFailedEvent,
+    RequestResponseReceivedEvent,
+    RequestStartedEvent,
+    RetryOperationFailedEvent,
+    ScoringCompletedEvent,
+    ScoringEnqueuedEvent,
+    ScoringFailedEvent,
+    ScoringStartedEvent,
+    StopCrawlEvent,
+    StorageNodeUpdatedEvent,
+    StorageOperationFailedEvent,
+    TransformationCompletedEvent,
+    TransformationFailedEvent,
+    TransformationStartedEvent,
+)
+
 from .crawl_state_snapshot import CrawlStateSnapshot
 
 log = logging.getLogger("ui_bridge.telemetry")
@@ -105,48 +143,9 @@ class TelemetryBridge:
         """
         Bind event types to handler methods.
 
-        Separated from __init__ so imports of event dataclasses happen
-        after the full events package is initialised (same pattern used
-        by other pipelines in the codebase).
+        Builds the dispatch table. The crawler calls it once at start, before
+        it reads event_types to subscribe the bridge to the broker.
         """
-        from crawlviz.events import (
-            ContentFilteredEvent,
-            ExportBatchCompletedEvent,
-            ExportBatchFailedEvent,
-            ExportBatchStartedEvent,
-            ExportRowFailedEvent,
-            ExtractionStartedEvent,
-            FilteringEnqueuedEvent,
-            FilteringPipelineErrorEvent,
-            FilteringWorkerCycleStartedEvent,
-            HighScoreLinksEvent,
-            ItemExtractionCompletedEvent,
-            LinkExtractionCompletedEvent,
-            LinksScoredEvent,
-            LowScoreLinksEvent,
-            NodeAddedEvent,
-            PageFetchedEvent,
-            PriorityCalculatedEvent,
-            PriorityCalculationFailedEvent,
-            PriorityCalculationStartedEvent,
-            ProcessingExtractionFailedEvent,
-            RequestEnqueuedEvent,
-            RequestFailedEvent,
-            RequestResponseReceivedEvent,
-            RequestStartedEvent,
-            RetryOperationFailedEvent,
-            ScoringCompletedEvent,
-            ScoringEnqueuedEvent,
-            ScoringFailedEvent,
-            ScoringStartedEvent,
-            StopCrawlEvent,
-            StorageNodeUpdatedEvent,
-            StorageOperationFailedEvent,
-            TransformationCompletedEvent,
-            TransformationFailedEvent,
-            TransformationStartedEvent,
-        )
-
         self._dispatch = {
             # --- V1 node lifecycle (unchanged behavior)
             NodeAddedEvent: self._on_node_added,
