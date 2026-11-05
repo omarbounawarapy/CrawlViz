@@ -164,7 +164,7 @@ import { RunPage } from "./features/run";
 import { BlueprintManager } from "./features/blueprints";
 import { DataExplorer } from "./features/data";
 import { BenchmarkPage } from "./features/benchmark";
-import NotFoundPage from "./features/errors/NotFoundPage";
+import { NotFoundPage } from "./features/errors";
 import { INITIAL_STATE } from "./state/initialState";
 
 class FakeWebSocket {

@@ -21,7 +21,7 @@ import { BlueprintManager } from "./features/blueprints";
 import { DataExplorer } from "./features/data";
 import { ConfigPage } from "./features/config";
 import { BenchmarkPage } from "./features/benchmark";
-import NotFoundPage from "./features/errors/NotFoundPage";
+import { NotFoundPage } from "./features/errors";
 
 const theme = getTheme();
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";
