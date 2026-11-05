@@ -13,6 +13,7 @@ from utils.log_redaction import (
     REDACTED,
     clear_registered_secrets,
     redact_secrets,
+    register_provider_keys,
     register_secrets,
 )
 
@@ -37,7 +38,7 @@ def test_every_key_in_the_key_store_is_redacted(tmp_path: Path) -> None:
     keys_path = tmp_path / KEYS_FILE_NAME
     keys_path.write_text(json.dumps({"groq": [API_KEY, SECOND_API_KEY]}), encoding="utf-8")
     registry = KeyManager(keys_file=keys_path).registry
-    register_secrets(key for keys in registry.values() for key in keys)
+    register_provider_keys(registry)
     cleaned = redact_secrets(f"first {API_KEY} second {SECOND_API_KEY}")
     assert cleaned == f"first {REDACTED} second {REDACTED}"
 

@@ -19,6 +19,7 @@ from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from config.template_names import template_stem
 from utils.html_utils import configure_url_normalization
+from utils.log_redaction import register_provider_keys
 from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
@@ -39,6 +40,7 @@ from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 # clients that emit it -- this is what produces the granular
 # "[NLP] SCORE_EMITTED" / "[LLM] DISPATCHED" trace log lines.
 from traceability.emitter import TraceEmitter
+from traceability.logging_setup import configure_logging, log_context
 from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
@@ -101,13 +103,15 @@ class Crawler:
         self.crawl_id = f"{template_stem(template_file)}-{started_at}"
 
     async def start(self) -> None:
-        blueprint = await BootStrapper(
-            self.event_broker,
-            self.storage,
-            self.template_file,
-            templates_dir=self.paths.templates_dir,
-        ).bootstrap()
-        await self._run_session(blueprint)
+        # Every log line of the crawl, and of the stage tasks it creates, carries this id.
+        with log_context(crawl_id=self.crawl_id):
+            blueprint = await BootStrapper(
+                self.event_broker,
+                self.storage,
+                self.template_file,
+                templates_dir=self.paths.templates_dir,
+            ).bootstrap()
+            await self._run_session(blueprint)
 
     async def _run_session(self, blueprint: dict) -> None:
         """Build the stages for `blueprint` and run them until the crawl ends.
@@ -228,6 +232,7 @@ class Crawler:
                 cooldown=self.config.llm.key_cooldown_seconds,
                 keys_file=self.paths.keys_file,
             )
+        register_provider_keys(self.key_manager.registry)
         fetch = self.config.fetch
         # LLM endpoints are chosen by the operator (a local server is allowed),
         # unlike page URLs, which come from crawled pages.
@@ -373,6 +378,6 @@ class Crawler:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    configure_logging()
     crawler = Crawler("wikiMD.json")
     asyncio.run(crawler.start())

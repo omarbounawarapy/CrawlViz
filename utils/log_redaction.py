@@ -13,7 +13,7 @@ Two layers, because a secret reaches a log in two ways:
 """
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 REDACTED = "[redacted]"
 
@@ -35,6 +35,11 @@ _registered_secrets: set[str] = set()
 def register_secrets(values: Iterable[str]) -> None:
     """Replace every later occurrence of each value in log text. Short values are ignored."""
     _registered_secrets.update(value for value in values if len(value) >= MIN_SECRET_LENGTH)
+
+
+def register_provider_keys(registry: Mapping[str, Iterable[str]]) -> None:
+    """Register every key of a ``{provider: [key, ...]}`` registry (``KeyManager.registry``)."""
+    register_secrets(key for keys in registry.values() for key in keys)
 
 
 def clear_registered_secrets() -> None:
