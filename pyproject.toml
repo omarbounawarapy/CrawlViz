@@ -81,8 +81,8 @@ max-complexity = 10
 "config/runtime_config.py" = ["E501", "PLR0913", "UP037"]
 "core/crawler.py" = ["I001", "PLR0913"]
 "src/crawlviz/events/__init__.py" = ["I001", "RUF022"]
-"infrastructure/key_manager.py" = ["PLR2004"]
-"infrastructure/llm_handler.py" = ["RUF012"]
+"src/crawlviz/llm/key_manager.py" = ["PLR2004"]
+"src/crawlviz/llm/llm_handler.py" = ["RUF012"]
 "infrastructure/log_writer.py" = ["UP017"]
 "main.py" = ["I001"]
 "models/links_extractor.py" = ["SIM108"]
@@ -213,17 +213,17 @@ module = [
     "core.event_broker",
     "core.event_registry",
     "core.live_settings",
-    "infrastructure.anthropic_translator",
+    "crawlviz.llm.anthropic_translator",
     "crawlviz.llm.call_budget",
-    "infrastructure.gemini_translator",
-    "infrastructure.groq_translator",
-    "infrastructure.key_manager",
-    "infrastructure.llm_handler",
+    "crawlviz.llm.gemini_translator",
+    "crawlviz.llm.groq_translator",
+    "crawlviz.llm.key_manager",
+    "crawlviz.llm.llm_handler",
     "infrastructure.log_writer",
     "infrastructure.network_client",
-    "infrastructure.nvidia_translator",
-    "infrastructure.open_router_translator",
-    "infrastructure.openai_translator",
+    "crawlviz.llm.nvidia_translator",
+    "crawlviz.llm.open_router_translator",
+    "crawlviz.llm.openai_translator",
     "models.item_extractor",
     "models.link",
     "models.node",
