@@ -1,6 +1,10 @@
 """Versioned contracts: stored formats, wire messages and their migrations (ADR 5)."""
 
-from .pipeline_settings import PIPELINE_SETTING_RENAMES, rename_pipeline_settings
+from .pipeline_settings import (
+    PIPELINE_SETTING_RENAMES,
+    PIPELINES_SECTION,
+    rename_pipeline_settings,
+)
 from .stored_formats import (
     STORED_FORMATS,
     dump_blueprint_document,
@@ -24,6 +28,7 @@ from .versioning import (
 )
 
 __all__ = [
+    "PIPELINES_SECTION",
     "PIPELINE_SETTING_RENAMES",
     "SCHEMA_VERSION_KEY",
     "STORED_FORMATS",

@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from config.runtime_config import PipelinesConfig
-from crawlviz.contracts import StoredFormatError
+from config.runtime_config import PipelinesConfig, RuntimeConfig
+from crawlviz.contracts import PIPELINES_SECTION, StoredFormatError
 from crawlviz.contracts.pipeline_settings import (
     PIPELINE_SETTING_RENAMES,
     rename_pipeline_settings,
@@ -35,6 +35,10 @@ def test_the_renames_are_the_adr_6_keys() -> None:
         "transformation": "transform",
         "debugging": "debug_log",
     }
+
+
+def test_the_section_key_is_the_settings_field_that_holds_the_stages() -> None:
+    assert RuntimeConfig.model_fields[PIPELINES_SECTION].annotation is PipelinesConfig
 
 
 def test_every_pipelines_section_is_renamed_or_kept() -> None:
