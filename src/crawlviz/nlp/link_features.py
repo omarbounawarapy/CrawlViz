@@ -20,13 +20,12 @@ from crawlviz.events import (
     NLP_VectorComposed,
     TraceSink,
 )
-from crawlviz.nlp import (
-    BaseEmbeddingEngine,
-    FeatureExtractor,
-    VectorSpace,
-    default_composite_weights,
-)
 from crawlviz.shared import Link, document_text, get_trace
+
+from .composite_weights import default_composite_weights
+from .embedding_engine import BaseEmbeddingEngine
+from .feature_extractor import FeatureExtractor
+from .vector_space import VectorSpace
 
 # Navigation / legal page phrases; a link that embeds close to one of these is
 # almost never topical content (see FeatureExtractor.boilerplate_score).

@@ -1,4 +1,4 @@
-import services.link_features as link_features
+import crawlviz.nlp.link_features as link_features
 from crawlviz.shared import document_text
 
 PAGE = (

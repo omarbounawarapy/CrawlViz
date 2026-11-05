@@ -8,13 +8,14 @@ from crawlviz.llm import LlmHandler
 from crawlviz.nlp import (
     BaseEmbeddingEngine,
     BufferManager,
+    FeatureSettings,
+    LinkFeatureScorer,
     SpaceStore,
     VectorSpace,
     create_embedding_engine,
 )
 from crawlviz.shared import Link
 
-from .link_features import FeatureSettings, LinkFeatureScorer
 from .space_bootstrap import SpaceBootstrapper
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,7 @@ class NLPService:
     Responsibilities:
         - Own the semantic vector space: load, save, and buffered growth.
         - Score links against it (per-link work in ``LinkFeatureScorer``,
-          services/link_features.py).
+          src/crawlviz/nlp/link_features.py).
         - Build a blueprint's first space (``SpaceBootstrapper``,
           services/space_bootstrap.py).
         - Accept batch updates from the space updater (never real-time).
