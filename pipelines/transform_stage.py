@@ -3,13 +3,12 @@ import logging
 import re
 
 from crawlviz.events import (
+    BasePipeline,
     ContentFilteredEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
     TransformationStartedEvent,
 )
-
-from .base_pipeline import BasePipeline
 
 logger = logging.getLogger(__name__)
 

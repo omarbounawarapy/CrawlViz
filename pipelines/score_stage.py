@@ -22,8 +22,8 @@ from crawlviz.events import (
 from crawlviz.llm import CallBudget
 from crawlviz.shared import bind_node
 
-from .base_pipeline import BasePipeline
-from .contracts import Annotator, RelevanceScorer
+from crawlviz.events import BasePipeline
+from crawlviz.events import Annotator, RelevanceScorer
 from .frontier_queue import FrontierQueue
 
 logger = logging.getLogger(__name__)

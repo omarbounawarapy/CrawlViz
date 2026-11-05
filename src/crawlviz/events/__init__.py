@@ -114,6 +114,19 @@ from .retry_events import (
 from .stop_crawl_event import StopCrawlEvent
 
 # =========================================================
+# PIPELINE BASE AND STAGE CONTRACTS
+# =========================================================
+from .base_pipeline import SHUTDOWN, BasePipeline
+from .contracts import (
+    Annotator,
+    CrawlStage,
+    EventConsumer,
+    Fetcher,
+    LlmSender,
+    RelevanceScorer,
+)
+
+# =========================================================
 # GLOBAL EXPORT LIST (GUI / DEBUG / INTROSPECTION)
 # =========================================================
 __all__ = [
@@ -184,4 +197,13 @@ __all__ = [
     "ScoreRescheduledEvent",
     # Stop
     "StopCrawlEvent",
+    # Pipeline base and stage contracts
+    "SHUTDOWN",
+    "Annotator",
+    "BasePipeline",
+    "CrawlStage",
+    "EventConsumer",
+    "Fetcher",
+    "LlmSender",
+    "RelevanceScorer",
 ]

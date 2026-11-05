@@ -23,7 +23,7 @@ from crawlviz.llm import KeyManager, LlmHandler
 from crawlviz.llm import CallBudget
 from models import Storage
 from crawlviz.nlp import BufferManager, SpaceUpdater
-from pipelines.contracts import Fetcher, LlmSender
+from crawlviz.events import Fetcher, LlmSender
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway
@@ -328,7 +328,7 @@ class Crawler:
 
     def _wire_subscriptions(self, p: dict, space_updater: SpaceUpdater) -> None:
         """Subscribe every stage, then the space updater, to the events it
-        names in `event_types` (pipelines.contracts.EventConsumer). This
+        names in `event_types` (crawlviz.events.EventConsumer). This
         order is the order consumers receive an event in."""
         for consumer in (*p.values(), space_updater):
             self.event_broker.subscribe(consumer, consumer.event_types)

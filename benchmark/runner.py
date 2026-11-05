@@ -24,6 +24,7 @@ from config import (
 )
 from core.event_broker import EventBroker
 from crawlviz.events import (
+    SHUTDOWN,
     EmptyScoreResultsEvent,
     NodeAddedEvent,
     PriorityCalculationFailedEvent,
@@ -45,7 +46,6 @@ from pipelines import (
     StorageSink,
     TransformStage,
 )
-from pipelines.base_pipeline import SHUTDOWN
 from pipelines.frontier_queue import FrontierQueue
 
 from .graph import BASE_URL, FrozenGraph
@@ -161,7 +161,7 @@ class _ParkingScoring(ScoreStage):
                     break
                 await self._process(item, worker_id)
             except Exception:
-                logging.getLogger("pipelines.base_pipeline").exception(
+                logging.getLogger("crawlviz.events.base_pipeline").exception(
                     "scoring worker %d failed processing %s", worker_id, type(item).__name__
                 )
             finally:

@@ -7,7 +7,7 @@ from urllib.robotparser import RobotFileParser
 
 import aiohttp
 
-from .contracts import Fetcher
+from crawlviz.events import Fetcher
 
 logger = logging.getLogger(__name__)
 

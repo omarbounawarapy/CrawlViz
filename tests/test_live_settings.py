@@ -77,7 +77,7 @@ def test_patch_live_route_applies_to_running_crawler(monkeypatch):
 
 def test_resize_grows_and_shrinks_a_running_pipeline():
     import asyncio
-    from pipelines.base_pipeline import BasePipeline
+    from crawlviz.events import BasePipeline
 
     class P(BasePipeline):
         def __init__(self):

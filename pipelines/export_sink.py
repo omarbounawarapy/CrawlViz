@@ -6,10 +6,14 @@ import time
 from datetime import UTC, datetime
 
 from config import ITEMS_DB_PATH
-from crawlviz.events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
+from crawlviz.events import (
+    SHUTDOWN,
+    ExportBatchCompletedEvent,
+    StopCrawlEvent,
+    TransformationCompletedEvent,
+)
 from crawlviz.shared import BackgroundTasks, Node
 
-from .base_pipeline import SHUTDOWN
 from .export_tables import ensure_table
 
 logger = logging.getLogger(__name__)

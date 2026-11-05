@@ -3,6 +3,8 @@ import random
 
 from config import USER_AGENT
 from crawlviz.events import (
+    SHUTDOWN,
+    Fetcher,
     NodeAddedEvent,
     PageFetchedEvent,
     RequestEnqueuedEvent,
@@ -12,8 +14,6 @@ from crawlviz.events import (
 )
 from crawlviz.shared import BackgroundTasks, NetworkClient, bind_node
 
-from .base_pipeline import SHUTDOWN
-from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
 from .host_pacer import HostPacer, host_of
 from .http_failure import BACKOFF_STATUSES, retry_after_seconds, status_of

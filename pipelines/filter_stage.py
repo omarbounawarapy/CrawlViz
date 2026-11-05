@@ -1,6 +1,7 @@
 import asyncio
 
 from crawlviz.events import (
+    BasePipeline,
     ContentExtractedEvent,
     ContentFilteredEvent,
     FilteringEnqueuedEvent,
@@ -9,8 +10,6 @@ from crawlviz.events import (
     FilteringWorkerCycleStartedEvent,
 )
 from crawlviz.shared import hash_item
-
-from .base_pipeline import BasePipeline
 
 
 class FilterStage(BasePipeline):

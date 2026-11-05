@@ -1,6 +1,7 @@
 import asyncio
 
 from crawlviz.events import (
+    BasePipeline,
     NodeAddedEvent,
     NodeContentSetEvent,
     PageFetchedEvent,
@@ -14,8 +15,6 @@ from crawlviz.events import (
     TransformationCompletedEvent,
 )
 from crawlviz.shared import Node, build_url
-
-from .base_pipeline import BasePipeline
 
 
 class StorageSink(BasePipeline):

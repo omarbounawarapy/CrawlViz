@@ -13,6 +13,7 @@ from typing import Any
 
 from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig
+from crawlviz.events import Annotator, CrawlStage, Fetcher, RelevanceScorer
 from crawlviz.llm import CallBudget
 from crawlviz.shared import NetworkClient
 from models import Storage
@@ -32,7 +33,6 @@ from pipelines import (
     StorageSink,
     TransformStage,
 )
-from pipelines.contracts import Annotator, CrawlStage, Fetcher, RelevanceScorer
 
 from .event_broker import EventBroker
 

@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from crawlviz.events import (
+    BasePipeline,
     EmptyScoreResultsEvent,
     RequestFailedEvent,
     RetryOperationFailedEvent,
@@ -10,7 +11,6 @@ from crawlviz.events import (
 )
 from crawlviz.shared import REJECTION_ERROR_NAMES, BackgroundTasks
 
-from .base_pipeline import BasePipeline
 from .http_failure import is_permanent_failure
 
 logger = logging.getLogger(__name__)

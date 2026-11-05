@@ -2,6 +2,7 @@ import asyncio
 from typing import Any
 
 from crawlviz.events import (
+    BasePipeline,
     HighScoreLinksEvent,
     LinksScoredEvent,
     PriorityCalculatedEvent,
@@ -11,8 +12,6 @@ from crawlviz.events import (
 )
 from crawlviz.priority import StrategyFn, get_strategy
 from crawlviz.shared import Node
-
-from .base_pipeline import BasePipeline
 
 
 class PrioritizeStage(BasePipeline):

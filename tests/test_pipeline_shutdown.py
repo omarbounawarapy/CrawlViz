@@ -6,8 +6,7 @@ from typing import Any
 
 import pytest
 
-from pipelines import base_pipeline
-from pipelines.base_pipeline import BasePipeline
+from crawlviz.events import BasePipeline, base_pipeline
 
 SHORT_TIMEOUT_SECONDS = 0.05
 FINISH_WAIT_SECONDS = 5

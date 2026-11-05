@@ -4,10 +4,8 @@ import logging
 import os
 from datetime import datetime
 
-from crawlviz.events import PageFetchedEvent
+from crawlviz.events import BasePipeline, PageFetchedEvent
 from infrastructure.async_file_handler import AsyncFileHandler
-
-from .base_pipeline import BasePipeline
 
 logger = logging.getLogger(__name__)
 

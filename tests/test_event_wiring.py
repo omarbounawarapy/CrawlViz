@@ -22,6 +22,7 @@ import pytest
 from config.paths import RuntimePaths
 from core.crawler import Crawler
 from crawlviz.events import (
+    EventConsumer,
     FilteringPipelineErrorEvent,
     HighScoreLinksEvent,
     LowScoreLinksEvent,
@@ -31,7 +32,6 @@ from crawlviz.events import (
     StopCrawlEvent,
 )
 from crawlviz.nlp import BufferManager, SpaceUpdater
-from pipelines.contracts import EventConsumer
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge
 
 FAKE_BLUEPRINT = {

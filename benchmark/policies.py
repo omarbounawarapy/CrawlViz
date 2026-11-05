@@ -1,5 +1,5 @@
 """Link-scoring policies. Each one is a ``RelevanceScorer`` (see
-pipelines/contracts.py): it writes ``_nlp_score`` and ``nlp_vector`` on every
+src/crawlviz/events/contracts.py): it writes ``_nlp_score`` and ``nlp_vector`` on every
 link. The benchmark ranks the frontier by ``_nlp_score`` alone (strategy
 ``passthrough``), so a policy is judged on its own scores, not on the
 depth penalty and weights in priority/strategy.py.

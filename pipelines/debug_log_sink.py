@@ -74,7 +74,7 @@ from traceability.nlp_trace_events import (
     NLP_VectorComposed,
 )
 
-from .base_pipeline import BasePipeline
+from crawlviz.events import BasePipeline
 
 
 class DebugLogSink(BasePipeline):

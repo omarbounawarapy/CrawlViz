@@ -13,7 +13,7 @@ from models import ItemExtractor, LinkExtractor
 
 from crawlviz.shared import bind_node
 
-from .base_pipeline import BasePipeline
+from crawlviz.events import BasePipeline
 
 
 class ExtractStage(BasePipeline):

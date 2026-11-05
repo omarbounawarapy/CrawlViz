@@ -3,14 +3,13 @@ import time
 from dataclasses import dataclass
 
 from crawlviz.events import (
+    BasePipeline,
     NodeAddedEvent,
     PageFetchedEvent,
     StopCrawlEvent,
     StorageNodeUpdatedEvent,
 )
 from crawlviz.shared import BackgroundTasks
-
-from .base_pipeline import BasePipeline
 
 
 @dataclass(frozen=True)

@@ -3,6 +3,7 @@ import os
 from urllib.parse import unquote
 
 from crawlviz.events import (
+    BasePipeline,
     ContentFilteredEvent,
     ExportBatchCompletedEvent,
     LinksScoredEvent,
@@ -14,8 +15,6 @@ from crawlviz.events import (
     TransformationCompletedEvent,
 )
 from infrastructure import LogWriter
-
-from .base_pipeline import BasePipeline
 
 
 class CrawlLogSink(BasePipeline):
