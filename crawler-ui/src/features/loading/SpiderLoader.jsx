@@ -94,6 +94,18 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
     return () => window.removeEventListener("keydown", onKey);
   }, [onSkip]);
 
+  // A click anywhere on the overlay skips too. It is a pointer shortcut for the Skip button and
+  // Escape, which are the keyboard paths, so the overlay is not made a control; the Skip button
+  // handles its own press.
+  useEffect(() => {
+    const root = rootRef.current;
+    const onClick = (e) => {
+      if (!e.target.closest("button")) onSkip?.();
+    };
+    root?.addEventListener("click", onClick);
+    return () => root?.removeEventListener("click", onClick);
+  }, [onSkip]);
+
   useEffect(() => {
     const t = setInterval(() => setTip((n) => (n + 1) % TIPS.length), 1500);
     return () => clearInterval(t);
@@ -118,7 +130,6 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
       role="status"
       aria-live="polite"
       aria-label="Loading CrawlViz"
-      onClick={onSkip}
     >
       <svg className="sl-web" viewBox="0 0 640 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <g className="sl-rings" fill="none">
@@ -163,15 +174,7 @@ export default function SpiderLoader({ progress, done, onExit, onSkip, title = "
           <span className="sl-tip" key={tip} aria-hidden={pct < 100}>
             {pct >= 100 ? "Ready." : TIPS[tip]}
           </span>
-          <button
-            ref={skipRef}
-            type="button"
-            className="sl-skip"
-            onClick={(e) => {
-              e.stopPropagation();
-              onSkip?.();
-            }}
-          >
+          <button ref={skipRef} type="button" className="sl-skip" onClick={() => onSkip?.()}>
             Skip
           </button>
         </div>

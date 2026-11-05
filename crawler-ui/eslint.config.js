@@ -48,7 +48,6 @@ export default defineConfig([
     // list only shrinks. Fix the element, then delete its entry here.
     files: [
       "src/features/graph/GraphView.jsx",
-      "src/features/loading/SpiderLoader.jsx",
     ],
     rules: {
       "jsx-a11y/click-events-have-key-events": "off",
