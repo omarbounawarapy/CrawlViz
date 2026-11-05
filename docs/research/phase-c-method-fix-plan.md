@@ -273,7 +273,7 @@ Problem. The system prompt is the first block of the user message
 (`models/prompts.py:180-181`, `services/scoring_service.py:89-91`); the `ScoringContext`
 carries one prompt string, so no provider receives a system role. Page data (URL, anchor,
 context) goes into the prompt as JSON with no delimiter and no cap on the anchor
-(`models/link.py:41-42`). Expansions from the LLM are taken in any number and length
+(`src/crawlviz/shared/link.py:41`). Expansions from the LLM are taken in any number and length
 (`services/llm_contracts.py:36-41`) and every one is embedded into the space
 (`services/nlp_service.py:207-217`), so one page can steer the space.
 

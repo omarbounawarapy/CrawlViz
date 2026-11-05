@@ -185,9 +185,9 @@ lists those threats.
 **T5. High: SSRF. The crawler follows any link to any host, and follows redirects without checking them.**
 - Evidence:
   - Child nodes inherit the seed's domain whatever host their link points to
-    (`models/node.py:64-73`).
-  - `get_full_url` is `urljoin(base, link.url)`, which keeps absolute foreign URLs
-    (`models/node.py:181-182`).
+    (`src/crawlviz/shared/node.py:58-67`).
+  - `get_full_url` joins the domain base URL and `link.url`, which keeps absolute foreign URLs
+    (`src/crawlviz/shared/node.py:145-146`).
   - Filtering only removes duplicates (`pipelines/filter_stage.py:108-122`).
   - The fetch uses the default aiohttp redirect handling (`src/crawlviz/shared/network_client.py`, before the guarded redirects).
   - There is no `ipaddress`, `is_private` or hostname check anywhere in the backend.
