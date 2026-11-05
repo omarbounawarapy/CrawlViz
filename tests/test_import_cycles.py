@@ -96,3 +96,8 @@ def test_a_moved_domain_is_part_of_the_graph() -> None:
     assert f"{SRC_PACKAGE}.offline" in _package_folders()
     tree = ast.parse("from crawlviz.offline.session import x\nimport crawlviz.contracts.y")
     assert _imported_packages(tree) == {"crawlviz.offline", "crawlviz.contracts"}
+
+
+def test_shared_imports_no_other_backend_package() -> None:
+    """The shared kernel is the bottom layer: every other area may import it, it imports none."""
+    assert _package_graph()[f"{SRC_PACKAGE}.shared"] == set()
