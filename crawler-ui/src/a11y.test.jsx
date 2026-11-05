@@ -154,7 +154,7 @@ vi.mock("./api/client", () => {
 
 import App from "./App";
 import Landing from "./features/landing/Landing";
-import SpiderLoader from "./features/loading/SpiderLoader";
+import { SpiderLoader } from "./features/loading";
 import GraphView from "./features/graph/GraphView";
 import NodeInspector from "./features/inspector/NodeInspector";
 import TimelineDock from "./features/timeline/TimelinePage";

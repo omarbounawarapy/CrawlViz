@@ -1,5 +1,7 @@
 // Drawn spider, top view, ink on paper. Eight two-segment legs that step in
 // alternating pairs (CSS, see loading.css). Sized by the parent via `size`.
+import "./loading.css";
+
 const LEGS = [
   // [baseX, baseY, kneeX, kneeY, footX, footY]
   [-4, -9, -17, -24, -30, -20],

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import App from "./App.jsx";
 import Landing from "./features/landing/Landing.jsx";
-import SpiderLoader from "./features/loading/SpiderLoader.jsx";
+import { SpiderLoader } from "./features/loading";
 import { useRoute } from "./hooks/useRoute";
 
 const BOOT_MS = 1200; // long enough for the spider to land and the ring to close

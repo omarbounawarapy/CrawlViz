@@ -1,4 +1,4 @@
-import Spider from "../features/loading/Spider";
+import { Spider } from "../features/loading";
 import { useState } from "react";
 import { getTheme } from "../theme";
 import { Hint } from "../features/common/Hint";

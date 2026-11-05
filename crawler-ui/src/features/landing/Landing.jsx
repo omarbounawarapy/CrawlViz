@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { buildPlate } from "./plate";
-import Spider from "../loading/Spider";
+import { Spider } from "../loading";
 import useFocusableWhenScrolling from "../common/useFocusableWhenScrolling";
-import "../loading/loading.css";
 import "./landing.css";
 
 const REPO = "https://github.com/omarbounawarapy/crawlviz";
