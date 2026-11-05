@@ -3,7 +3,7 @@
 import numpy as np
 
 from nlp.feature_extractor import FeatureExtractor
-from pipelines.scoring_pipeline import ScoringPipeline
+from pipelines.score_stage import ScoringPipeline
 
 
 class L:

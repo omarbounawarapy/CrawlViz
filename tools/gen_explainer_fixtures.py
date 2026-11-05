@@ -26,7 +26,7 @@ import pipelines.fetch_stage as rp
 from models.links_extractor import LinkExtractor
 from pipelines import host_pacer
 from pipelines.fetch_stage import FetchStage
-from pipelines.scoring_pipeline import ScoringPipeline
+from pipelines.score_stage import ScoringPipeline
 from priority import strategy as strat
 
 ROOT = Path(__file__).resolve().parent.parent

@@ -5,7 +5,7 @@ import logging
 import pytest
 
 from infrastructure.call_budget import CallBudget
-from pipelines.scoring_pipeline import ScoringPipeline
+from pipelines.score_stage import ScoringPipeline
 
 
 class L:

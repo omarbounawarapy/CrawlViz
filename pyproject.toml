@@ -99,7 +99,7 @@ max-complexity = 10
 "pipelines/extract_stage.py" = ["I001"]
 "pipelines/fetch_stage.py" = ["I001", "PLR0913"]
 "pipelines/retry_stage.py" = ["PLR0913"]
-"pipelines/scoring_pipeline.py" = ["I001", "PLR0913"]
+"pipelines/score_stage.py" = ["I001", "PLR0913"]
 "priority/__init__.py" = ["RUF022"]
 "priority/strategy.py" = ["PLR0913"]
 "routes/benchmark.py" = ["E501", "PLR2004"]
@@ -245,7 +245,7 @@ module = [
     "pipelines.fetch_stage",
     "pipelines.retry_stage",
     "pipelines.robots",
-    "pipelines.scoring_pipeline",
+    "pipelines.score_stage",
     "pipelines.stop_controller",
     "pipelines.storage_sink",
     "pipelines.transform_stage",

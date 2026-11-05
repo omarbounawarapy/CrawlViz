@@ -7,7 +7,7 @@ from .fetch_stage import FetchStage
 from .filter_stage import FilterStage
 from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryStage
-from .scoring_pipeline import ScoringPipeline
+from .score_stage import ScoringPipeline
 from .stop_controller import StopConditions, StopController
 from .storage_sink import StorageSink
 from .transform_stage import TransformStage
