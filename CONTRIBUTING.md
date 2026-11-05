@@ -46,7 +46,7 @@ Do not run `make format` on files you did not change. The repo is not formatted 
 
 - Backend: Python 3.12, type-hinted, checked by `ruff` and `mypy --strict` (`[tool.ruff]` and `[tool.mypy]` in `pyproject.toml`). Modules on the mypy legacy list and files in the ruff per-file baseline may only get cleaner: remove an entry when its file is clean, never add one.
 - Frontend: plain JS (no TypeScript), see `crawler-ui/README.md` for the folder layout and the `src/theme/` design-token system new UI code should build on.
-- New backend pipelines follow the `BasePipeline` pattern (`pipelines/base_pipeline.py`) and communicate only through the `EventBroker`. Read [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md) before adding a pipeline or event type.
+- New backend pipelines follow the `BasePipeline` pattern (`src/crawlviz/events/base_pipeline.py`, imported with `from crawlviz.events import BasePipeline`) and communicate only through the `EventBroker`. Read [`docs/03-deep-dive-event-pipeline.md`](docs/03-deep-dive-event-pipeline.md) before adding a pipeline or event type.
 
 ## Pull requests
 
