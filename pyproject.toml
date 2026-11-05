@@ -86,7 +86,6 @@ max-complexity = 10
 "infrastructure/log_writer.py" = ["UP017"]
 "main.py" = ["I001"]
 "models/links_extractor.py" = ["SIM108"]
-"models/node.py" = ["PLR0913"]
 "models/prompts.py" = ["RUF001"]
 "models/storage.py" = ["I001"]
 "src/crawlviz/nlp/embedding_engine.py" = ["PLC0415"]
@@ -103,6 +102,7 @@ max-complexity = 10
 "src/crawlviz/priority/__init__.py" = ["RUF022"]
 "src/crawlviz/priority/strategy.py" = ["PLR0913"]
 "src/crawlviz/shared/html_utils.py" = ["PLW0603"]
+"src/crawlviz/shared/node.py" = ["PLR0913"]
 "routes/benchmark.py" = ["E501", "PLR2004"]
 "routes/config.py" = ["B904", "E501"]
 "routes/run.py" = ["B904", "E501", "N815", "PLW0603"]
@@ -223,10 +223,10 @@ module = [
     "crawlviz.llm.open_router_translator",
     "crawlviz.llm.openai_translator",
     "crawlviz.shared.html_utils",
+    "crawlviz.shared.link",
     "crawlviz.shared.network_client",
+    "crawlviz.shared.node",
     "models.item_extractor",
-    "models.link",
-    "models.node",
     "crawlviz.nlp.buffer_manager",
     "crawlviz.nlp.embedding_engine",
     "crawlviz.nlp.expansion_prompt_builder",
