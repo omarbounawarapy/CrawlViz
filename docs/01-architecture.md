@@ -22,7 +22,7 @@ flowchart TB
         Broker["EventBroker<br/>in-process pub/sub bus"]
         Boot --> Broker
 
-        subgraph Pipelines["~13 BasePipeline subclasses, each its own asyncio queue + worker pool"]
+        subgraph Pipelines["13 stage and sink classes (11 subclass BasePipeline), each with its own queue and workers"]
             Req["FetchStage<br/>HTTP fetch"]
             Proc["ExtractStage<br/>link + item extraction"]
             Filt["FilterStage<br/>dedup"]
