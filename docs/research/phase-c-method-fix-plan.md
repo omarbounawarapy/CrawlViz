@@ -1,8 +1,12 @@
 # Method fixes held for sign-off: the intended changes
 
 Author: research-scientist, 2026-10-30. Code read at `0d21314` (main). Evidence is in
-`docs/research/phase-b-method-review.md` (branch `phase-b-discovery`); line numbers below
-were re-read at `0d21314`.
+`docs/research/phase-b-method-review.md`.
+
+Paths and line numbers were updated on 2026-11-05 to the tree at `afbe710`
+(`phase-d-architecture`), after the stage renames and the moves into `src/crawlviz/`. The
+problems and intended changes are the ones read at `0d21314`. Where part of a fix has
+landed since, the text says which commit did it.
 
 This plan says, for each held method fix, what the code should do, where, what it does to
 the behaviour pins, and what Omar approves before `uv run pytest -m pins --update-pins` is
@@ -19,10 +23,13 @@ method.
   `--update-pins` in a separate commit, I review the golden diff against the expectation
   written here, and Omar approves with the sign-off line given for that fix.
 - One fix per pin update, in the order at the end, so each golden diff shows one cause.
-- Owners: `priority/`, `pipelines/`, `services/`, `nlp/`, `ui_bridge/` are backend-engineer
-  (method files, my review); `models/prompts.py`, `services/llm_contracts.py`,
-  `services/scoring_service.py`, the provider translators and `offline/scripted_llm.py` are
-  llm-engineer; goldens are test-engineer; `benchmark/runner.py` is mine.
+- Owners, as `.claude/ownership.toml` has them on 2026-11-05: `src/crawlviz/priority/`,
+  `pipelines/`, `services/` (with `services/scoring_service.py`), `src/crawlviz/nlp/`,
+  `src/crawlviz/offline/` (with `scripted_llm.py`) and `ui_bridge/` are backend-engineer
+  (method files, my review); `models/prompts.py`, `services/llm_contracts.py` and the
+  provider translators (`src/crawlviz/llm/`) are llm-engineer; goldens are test-engineer;
+  `benchmark/runner.py` is mine. At `0d21314` this plan gave `services/scoring_service.py`
+  and `offline/scripted_llm.py` to llm-engineer.
 
 Sign-off line Omar gives, filled in per fix:
 
@@ -33,18 +40,18 @@ Reviewed by research-scientist at <commit>. Omar, <date>.
 
 ## (a) One 0-1 priority scale
 
-Problem. `priority/strategy.py:99-103` sums raw feature weights that total 0.70
-(aggressive, `:66-72`), 0.75 (balanced, `:73-80`) and 0.90 (exploration, `:81-88`). A
-trusted link (NLP only, ranked with `(1, 0)`, `pipelines/priority_pipeline.py:155`) tops
-out at the strategy's weight sum, while an LLM-scored link tops out at
-`0.6 x sum + 0.4`. The depth penalty is inside the mix, so it is scaled by 0.6 for an
-LLM-scored link and by 1.0 for a trusted one.
+Problem. `_score` (`src/crawlviz/priority/strategy.py:99-103`) sums raw feature weights
+that total 0.70 (aggressive, `:66-72`), 0.75 (balanced, `:73-80`) and 0.90 (exploration,
+`:81-88`). A trusted link (NLP only, ranked with `(1, 0)`,
+`pipelines/prioritize_stage.py:154`) tops out at the strategy's weight sum, while an
+LLM-scored link tops out at `0.6 x sum + 0.4`. The depth penalty is inside the mix, so it
+is scaled by 0.6 for an LLM-scored link and by 1.0 for a trusted one.
 
 Intended scale. Before the depth penalty, every priority is in [0, 1]. A trusted link with
 normalised NLP evidence `x` and an LLM-scored link with the same `x` and an LLM score of
 `100 x` get the same priority. Two links at the same depth pay the same penalty.
 
-Change, `priority/strategy.py:99-103`:
+Change, `src/crawlviz/priority/strategy.py:99-103`:
 
 ```python
 def _score(strategy, node, link, nlp_bias, llm_bias, weights) -> float:
@@ -61,7 +68,7 @@ def _score(strategy, node, link, nlp_bias, llm_bias, weights) -> float:
   feature-weight sum of 0, with a message that names the strategy.
 - `balanced` (`:118`) and `exploration` (`:129`) lose their default biases (0.5/0.5 and
   0.85/0.15). They are never used at run time: the pipeline always passes its normalised
-  split (`pipelines/priority_pipeline.py:153`). The docstring claim at `:125` ("LLM score is
+  split (`pipelines/prioritize_stage.py:152`). The docstring claim at `:125` ("LLM score is
   a weak signal") goes. If Omar wants exploration to trust the LLM less, that becomes a
   per-strategy config value, decided as a method question, not restored silently.
 - The composite NLP score (`_nlp_score`) keeps its one job, bucketing. Priority stays on
@@ -83,24 +90,27 @@ Sign-off: method change. Reason line: "priorities of trusted and LLM-scored link
 Problem. A link the LLM did not answer for gets `link.score = link.score or 0` and
 `relevance_type = "irrelevant"` (`services/results_mapper.py:45-46`); a malformed entry gets
 0 and `"ambiguous"` (`:77-78`). Since a score of 0 is a verdict
-(`pipelines/priority_pipeline.py:152`), a skipped link is ranked as judged worthless.
+(`pipelines/prioritize_stage.py:151`), a skipped link is ranked as judged worthless.
 
 Change.
 
 1. `services/results_mapper.py:45` and `:77`: delete the score assignment, so a link never
    answered keeps `score = None`. `:46` stops writing `"irrelevant"`; the link keeps its
    default relevance type. The outcome counters (`:44`, `:76`) stay; they are the record.
-   `priority_pipeline.py:152-155` then ranks the link on NLP alone, which is the existing
+   `prioritize_stage.py:151-154` then ranks the link on NLP alone, which is the existing
    rule for a link with no verdict.
-2. Separate commit: `pipelines/priority_pipeline.py:160` records `getattr(link, "score",
-   None)` instead of `... or 0`, and `ui_bridge/telemetry_bridge.py:348` passes the score
-   through instead of `or None`, so a real verdict of 0 shows as 0 and no verdict as null.
-   If `docs/crawl_messages.ts` does not allow null there, contracts-steward changes it first.
+2. Separate commit: `pipelines/prioritize_stage.py:159` records `getattr(link, "score",
+   None)` instead of `... or 0`, so a real verdict of 0 shows as 0 and no verdict as null
+   in the `PriorityCalculatedEvent` records and the `NODE_EXPANDED` children
+   (`ui_bridge/telemetry_bridge.py:371`). If `docs/crawl_messages.ts` does not allow null
+   there, contracts-steward changes it first. The node-detail half is done: at `0d21314`
+   the bridge wrote `entry.get("score") or None`, and since `235a4ff` it takes the link's
+   own score (`ui_bridge/telemetry_bridge.py:358`).
 
 Pins: step 1 moves goldens only if `ScriptedLlm` omits or malforms an entry; not checked.
-Step 2 moves `wire_messages` wherever the scripted LLM answers 0 (shown as 0 instead of
-null) and `link_scores` records for trusted links (null instead of 0). Expected, and the
-review checks that nothing else moves.
+Step 2 moves `link_scores` records and the `NODE_EXPANDED` children in `wire_messages` for
+trusted links (null instead of 0). Expected, and the review checks that nothing else moves.
+`235a4ff`, the node-detail half, changed no golden file.
 
 Sign-off: method change for step 1 if goldens move; step 2 is a record-format change.
 Reason lines: "a link the LLM did not score is ranked on NLP alone, not as a 0 verdict";
@@ -108,12 +118,12 @@ Reason lines: "a link the LLM did not score is ranked on NLP alone, not as a 0 v
 
 ## (c) No links lost when an LLM call raises; exploration budget rounding
 
-Problem 1. All LLM batches of a page run in one `try` (`pipelines/scoring_pipeline.py:
-220-225`). If one raises, control jumps to `:257-266`, `ScoringFailedEvent` is sent and
+Problem 1. All LLM batches of a page run in one `try` (`pipelines/score_stage.py:220-225`).
+If one raises, control jumps to `:257-266`, `ScoringFailedEvent` is sent and
 `LinksScoredEvent` never is. The high-confidence links already went out (`:195-203`), so
 the page's LLM-bound links are lost, including batches that had already succeeded.
-`RetryProcessor` reacts to `ScoringFailedEvent` with a node-level retry
-(`pipelines/retry_processor.py:66`, `:91`), which can send the high-confidence links twice
+`RetryStage` reacts to `ScoringFailedEvent` with a node-level retry
+(`pipelines/retry_stage.py:68`, `:93`), which can send the high-confidence links twice
 (not checked).
 
 Change 1, the floor: no LLM-bound link is ever lost; at worst it is ranked on NLP alone.
@@ -144,10 +154,10 @@ def _rounded_budget(count: int, fraction: float, rng: random.Random) -> int:
     return min(count, whole + (1 if rng.random() < exact - whole else 0))
 ```
 
-The draws use their own stream, `StageInputs.rng("scoring_budget")` (`core/stages.py:75-78`),
-passed in beside the existing `rng`, so the existing sample stream (`:322`) is not shifted
-and the pin diff shows only the rounding. The same for `high_budget` and
-`high_random_budget`.
+The draws use their own stream, `StageInputs.rng("scoring_budget")`
+(`core/stages.py:75-78`), passed in beside the existing `rng`, so the existing sample
+stream (`pipelines/score_stage.py:322`) is not shifted and the pin diff shows only the
+rounding. The same for `high_budget` and `high_random_budget`.
 
 Pins: change 1 leaves goldens unchanged if `ScriptedLlm` never raises (expected; the fix
 must show it). Change 2 moves goldens: more low links are sampled on small pages, so
@@ -161,18 +171,18 @@ pages sample at the configured rate".
 
 Problem. The same value lives in several places and the benchmark reads part of its
 settings from constructor defaults (review, bug 4): `target_top_k` in four places, the
-biases in `config/runtime_config.py:608-624` and `pipelines/priority_pipeline.py:33-34`,
+biases in `config/runtime_config.py:664-683` and `pipelines/prioritize_stage.py:32-33`,
 the composite fallback `self.settings.composite_weights or NLP_COMPOSITE_WEIGHTS`
-(`services/link_features.py:282`), and `benchmark/runner.py:500`, `:504`, `:647-657`,
-`:669`, `:690-695`, `:727`.
+(`services/link_features.py:280`), and `benchmark/runner.py:521`, `:525`, `:675-685`,
+`:697`, `:708-711`, `:722-723`, `:755`.
 
 Change 1, single source (no value changes):
 
 - `RuntimeConfig` is the only source of every method value. Constructors that hold method
-  values (`PriorityPipeline`, `NLPService`, `LinkFeatures` settings, `FeatureExtractor`,
-  `ScoringService`, `ProcessingPipeline`) take them without defaults; the module constants
-  in `config/config.py` feed `RuntimeConfig` only.
-- `services/link_features.py:282` uses `self.settings.composite_weights` with no `or`;
+  values (`PrioritizeStage`, `NLPService`, `FeatureSettings` in `services/link_features.py`,
+  `FeatureExtractor`, `ScoringService`, `ExtractStage`) take them without defaults; the
+  module constants in `config/config.py` feed `RuntimeConfig` only.
+- `services/link_features.py:280` uses `self.settings.composite_weights` with no `or`;
   `config/runtime_config.py` rejects an empty `composite_weights` with a message.
 - `benchmark/runner.py` (mine) builds every stage from `cfg`, including `strategy_weights`,
   the composite weights, `target_top_k`, cluster settings, prompts, cascade values and
@@ -180,8 +190,8 @@ Change 1, single source (no value changes):
 
 Change 2, normalised features. Strategy weights assume features on [0, 1]; two are not.
 `semantic_delta` and `distance_to_nearest_cluster` are cosine distances in [0, 2]
-(`nlp/feature_extractor.py:91`, `:119-120`), and `target_similarity` is a mean cosine
-similarity in [-1, 1] (`:137`). Clip, do not rescale: distances to `min(1.0, d)`
+(`src/crawlviz/nlp/feature_extractor.py:91`, `:119-120`), and `target_similarity` is a mean
+cosine similarity in [-1, 1] (`:137`). Clip, do not rescale: distances to `min(1.0, d)`
 (opposite and orthogonal both mean unrelated) and similarities to `max(0.0, s)`, as
 `contextual_consistency` already does (`:106`). Clipping changes only values outside
 [0, 1], so a weight fitted on today's features keeps its meaning.
@@ -189,8 +199,8 @@ similarity in [-1, 1] (`:137`). Clip, do not rescale: distances to `min(1.0, d)`
 Pins: change 1 leaves them unchanged (the values are equal today because
 `default_runtime_config()` returns the code defaults). Change 2 leaves them unchanged on the
 hashing path: `HashingEmbeddingEngine` counts tokens into non-negative vectors
-(`nlp/embedding_engine.py:95-99`), so cosine similarity is in [0, 1] and distance in [0, 1].
-It does change real crawls where a similarity is negative.
+(`src/crawlviz/nlp/embedding_engine.py:95-99`), so cosine similarity is in [0, 1] and
+distance in [0, 1]. It does change real crawls where a similarity is negative.
 
 Sign-off: change 1 is a refactor, my review, pins unchanged. Change 2 is a method change for
 real crawls with no pin update; Omar approves the clipping rule (no `--update-pins`). Any
@@ -200,14 +210,15 @@ data kept apart from the evaluation graph and its judge.
 ## (e) The embedding dimension comes from the model
 
 Problem. `SentenceTransformerEngine.dim` returns `self._dim`, which is the literal 384
-(`nlp/embedding_engine.py:52`) until `encode` has loaded the model (`:54-63`). The space is
-created from `engine.dim` before anything is encoded (`services/space_bootstrap.py:96`,
-`services/nlp_service.py:138`), so any model that is not 384-d gets a 384-d space.
+(`src/crawlviz/nlp/embedding_engine.py:52`) until `encode` has loaded the model
+(`:54-63`). The space is created from `engine.dim` before anything is encoded
+(`services/space_bootstrap.py:96`, `services/nlp_service.py:149`), so any model that is
+not 384-d gets a 384-d space.
 
 Change. `dim` (`:73-75`) calls `self._load()` and returns the model's
 `get_sentence_embedding_dimension()`. `self._dim` starts as `None`; the 384 literal and the
-docstring's "384d" go. `VectorSpace.__init__` (`nlp/vector_space.py:36`) loses its `dim=384`
-default so no caller can get a space of the wrong size silently.
+docstring's "384d" go. `VectorSpace.__init__` (`src/crawlviz/nlp/vector_space.py:35`)
+loses its `dim=384` default so no caller can get a space of the wrong size silently.
 
 Pins: unchanged (they use `HashingEmbeddingEngine`, which sets its own dimension). Real
 crawls with the default 384-d model are unchanged.
@@ -217,9 +228,9 @@ multilingual embedder (review, bug 6), which stays held for Phase G.
 
 ## (f) Seed keys are stable across processes
 
-Problem. `services/space_bootstrap.py:149` builds the key with `hash(description)`, which
-Python salts per process, so a saved space differs between identical runs and cannot be
-checksummed (REPRO-1).
+Problem. `SpaceBootstrapper._encode_seeds` (`services/space_bootstrap.py:152`) builds the
+key with `hash(description)`, which Python salts per process, so a saved space differs
+between identical runs and cannot be checksummed (REPRO-1).
 
 Change.
 
@@ -233,15 +244,16 @@ No scoring code reads the keys. Identical descriptions still share a key, as bef
 Pins: unchanged. No golden can hold today's keys, because they change with every process.
 
 Sign-off: my review, no pin update. Spaces saved before the change still load, because
-spaces are found by blueprint and model (`nlp/space_store.py:29-33`), not by seed key.
+spaces are found by blueprint and model (`src/crawlviz/nlp/space_store.py:30-34`), not by
+seed key.
 
 ## (g) A zero vector gives the neutral value, not NaN
 
 Problem. Cosine against an all-zero vector is NaN. `semantic_delta` has no guard
-(`nlp/feature_extractor.py:91`); `contextual_consistency` gives 0 only by the argument order
-of `max(0.0, sim)` (`:106`); `novelty_injection_score` is NaN when the space holds a zero
-row (`:175-178`); `region_density` (`:156`) and `distance_to_nearest_cluster` (`:119`) share
-the risk. `max(0.0, nan)` then gives priority 0 to every affected link.
+(`src/crawlviz/nlp/feature_extractor.py:91`); `contextual_consistency` gives 0 only by the
+argument order of `max(0.0, sim)` (`:106`); `novelty_injection_score` is NaN when the space
+holds a zero row (`:175-178`); `region_density` (`:156`) and `distance_to_nearest_cluster`
+(`:119`) share the risk. `max(0.0, nan)` then gives priority 0 to every affected link.
 
 The value. A zero vector carries no information, so a feature compared against one takes
 the value the code already uses for a missing input.
@@ -260,22 +272,28 @@ Change.
   space with a zero row.
 
 Pins: goldens expected unchanged; the review's probe found NaN only in
-`tests/pins/test_lockstep_passivity.py:69`, which compares visit lists between runs, not
+`test_extra_components_hear_the_run_they_are_given_to`
+(`tests/pins/test_lockstep_passivity.py:71`), which compares visit lists between runs, not
 goldens. The fix must confirm it by running the pins.
 
-Sign-off: my review (this definition), no pin update. Refusing an empty topic in the
-benchmark runner is done separately (benchmark area); the blueprint schema rule is a
-contracts-steward change.
+Sign-off: my review (this definition), no pin update. Refusing an empty topic is done
+separately, and part of it has landed: the blueprint schema rejects a target topic with no
+word character since `be02dd6` (`_require_word_in_target_topic`,
+`config/blueprint_schema.py:241-249`), and `run_cascade` refuses one when called with
+`allow_empty_topic=False` since `83971ef` (`require_topic`, `benchmark/runner.py:395`). The
+runner's default is still `True`. The lockstep pin has passed `True` itself since `1a81f0b`,
+so the default can now become `False`; that is mine to change.
 
 ## (h) Prompt hardening
 
 Problem. The system prompt is the first block of the user message
-(`models/prompts.py:180-181`, `services/scoring_service.py:89-91`); the `ScoringContext`
+(`models/prompts.py:180-181`, `services/scoring_service.py:90-92`); the `ScoringContext`
 carries one prompt string, so no provider receives a system role. Page data (URL, anchor,
 context) goes into the prompt as JSON with no delimiter and no cap on the anchor
-(`src/crawlviz/shared/link.py:41`). Expansions from the LLM are taken in any number and length
-(`services/llm_contracts.py:36-41`) and every one is embedded into the space
-(`services/nlp_service.py:207-217`), so one page can steer the space.
+(`Link.to_dict`, `src/crawlviz/shared/link.py:41`). Expansions from the LLM are taken in
+any number and length (`services/llm_contracts.py:36-41`) and every one is embedded into
+the space (`NLPService.update_space`, `services/nlp_service.py:219-229`), so one page can
+steer the space.
 
 Change, each its own commit:
 
@@ -301,11 +319,12 @@ Change, each its own commit:
 The numbers 200, 4, 300 and 20 are proposals; Omar confirms them, and Phase G records them.
 
 Pins: goldens move. The rendered prompts change, so any golden that holds prompt text or a
-prompt hash moves, and `ScriptedLlm` must be updated to read the delimited block (llm-engineer,
-before the pin update). Caps 4 to 5 move goldens only if the scripted answers exceed them.
-The golden replay (LLM-2) runs for steps 1 to 3. Every `CachedLlm` entry is keyed on the
-prompt (`benchmark/llm_cache.py:71`), so all cached benchmark answers miss afterwards. That
-is acceptable now, because no experiment is running; after Phase G starts it would not be.
+prompt hash moves, and `ScriptedLlm` must be updated to read the delimited block
+(backend-engineer, before the pin update). Caps 4 to 5 move goldens only if the scripted
+answers exceed them. The golden replay (LLM-2) runs for steps 1 to 3. Every `CachedLlm`
+entry is keyed on the prompt (`benchmark/llm_cache.py:86`), so all cached benchmark answers
+miss afterwards. That is acceptable now, because no experiment is running; after Phase G
+starts it would not be.
 
 Sign-off: method change (prompt edits). Reason line: "untrusted page data delimited and
 capped, system role sent as a system message, expansions capped per link and per page".
