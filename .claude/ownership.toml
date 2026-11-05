@@ -18,8 +18,7 @@ method_files = [
   "core/stages.py",
   "pipelines/score_stage.py",
   "pipelines/prioritize_stage.py",
-  "priority/**",
-  "nlp/**",
+  "src/crawlviz/priority/**",
   "services/nlp_service.py",
   "services/link_features.py",
   "services/space_bootstrap.py",
@@ -73,7 +72,7 @@ write = [
   "models/prompts.py",
   "models/llm_context.py",
   "models/scoring_context.py",
-  "nlp/expansion_prompt_builder.py",
+  "src/crawlviz/nlp/expansion_prompt_builder.py",
   "traceability/traced_llm_handler.py",
   "tests/llm/**",
   "tests/test_llm_providers.py",
@@ -83,8 +82,8 @@ write = [
 [agents.backend-engineer]
 write = [
   "src/crawlviz/**",
-  "core/**", "config/**", "infrastructure/**", "models/**", "nlp/**",
-  "pipelines/**", "priority/**", "routes/**", "services/**", "traceability/**",
+  "core/**", "config/**", "infrastructure/**", "models/**",
+  "pipelines/**", "routes/**", "services/**", "traceability/**",
   "ui_bridge/**", "utils/**", "tools/**", "templates/**", "main.py",
   "tests/**",
 ]
@@ -102,7 +101,7 @@ exclude = [
   "infrastructure/*_translator.py", "infrastructure/llm_handler.py",
   "infrastructure/key_manager.py", "infrastructure/call_budget.py",
   "infrastructure/token_usage.py", "services/llm_contracts.py", "models/prompts.py",
-  "models/llm_context.py", "models/scoring_context.py", "nlp/expansion_prompt_builder.py",
+  "models/llm_context.py", "models/scoring_context.py", "src/crawlviz/nlp/expansion_prompt_builder.py",
   "traceability/traced_llm_handler.py",
 ]
 
