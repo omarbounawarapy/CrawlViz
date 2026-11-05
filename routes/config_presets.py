@@ -217,6 +217,32 @@ def _preset_values(name: str) -> dict[str, Any]:
     return values
 
 
+def _preset_http_error(name: str, exc: ValidationError) -> HTTPException:
+    """The 422 for a preset that cannot be applied, with every problem naming the preset.
+
+    A saved preset can hold a setting a later CrawlViz removed. The person did not type it
+    into this request, so the bare path list would not say where it comes from. A built-in
+    preset is code and never fails this way, so it keeps the plain report."""
+    if name in BUILTIN_PRESETS:
+        return validation_http_error(exc)
+    errors = [
+        {
+            "path": problem["path"],
+            "message": (
+                f"The saved preset '{name}' cannot be used: "
+                + (
+                    "it has a setting that does not exist in this version of CrawlViz."
+                    if problem["message"] == store.EXTRA_KEY_MESSAGE
+                    else problem["message"]
+                )
+                + " Delete the preset and save it again from your current settings."
+            ),
+        }
+        for problem in store.validation_errors(exc)
+    ]
+    return HTTPException(status_code=422, detail={"errors": errors})
+
+
 @router.post("/config/presets/{name}/preview")
 def preview_preset(name: str) -> dict[str, Any]:
     """What applying the preset would change, without saving anything."""
@@ -225,7 +251,7 @@ def preview_preset(name: str) -> dict[str, Any]:
         current = store.load_runtime_config(get_paths().settings_file)
         after = store.load_runtime_config(get_paths().settings_file, values)
     except ValidationError as exc:
-        raise validation_http_error(exc) from exc
+        raise _preset_http_error(name, exc) from exc
     return {"changes": store.changed_fields(current.model_dump(), after.model_dump())}
 
 
@@ -237,7 +263,7 @@ def apply_preset(name: str) -> dict[str, Any]:
         current = store.load_runtime_config(get_paths().settings_file)
         after = store.save_settings(get_paths().settings_file, values)
     except ValidationError as exc:
-        raise validation_http_error(exc) from exc
+        raise _preset_http_error(name, exc) from exc
     return {
         **after.model_dump(),
         "changes": store.changed_fields(current.model_dump(), after.model_dump()),

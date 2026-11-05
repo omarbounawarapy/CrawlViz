@@ -1,5 +1,6 @@
 """Applying a preset merges it over the current settings and says what it changed."""
 
+import json
 from pathlib import Path
 
 import pytest
@@ -70,6 +71,27 @@ def test_preview_returns_the_changes_and_saves_nothing(
 def test_preview_of_a_missing_preset_is_404(client: tuple[TestClient, RuntimePaths]) -> None:
     c, _ = client
     assert c.post("/config/presets/nope/preview").status_code == 404
+
+
+@pytest.mark.parametrize("action", ["preview", "apply"])
+def test_a_saved_preset_with_a_removed_setting_names_the_preset(
+    client: tuple[TestClient, RuntimePaths], action: str
+) -> None:
+    c, paths = client
+    presets = {"schema_version": 2, "presets": {"old": {"fetch": {"retired_option": 1}}}}
+    presets_file = paths.settings_file.with_name("presets.json")
+    presets_file.parent.mkdir(parents=True, exist_ok=True)
+    presets_file.write_text(json.dumps(presets), encoding="utf-8")
+
+    response = c.post(f"/config/presets/old/{action}")
+
+    assert response.status_code == 422
+    (problem,) = response.json()["detail"]["errors"]
+    assert problem["path"] == "fetch.retired_option"
+    assert "saved preset 'old'" in problem["message"]
+    assert "does not exist" in problem["message"]
+    assert "save it again" in problem["message"]
+    assert not paths.settings_file.exists()
 
 
 def test_changed_fields_lists_only_differences_by_dotted_path() -> None:
