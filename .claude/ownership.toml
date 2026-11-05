@@ -61,7 +61,7 @@ write = [
 
 [agents.llm-engineer]
 write = [
-  "src/crawlviz/score/llm/**",
+  "src/crawlviz/score/llm/**", "src/crawlviz/llm/**",
   "prompts/**",
   "infrastructure/*_translator.py",
   "infrastructure/llm_handler.py",
@@ -88,7 +88,7 @@ write = [
   "tests/**",
 ]
 exclude = [
-  "src/crawlviz/score/llm/**", "src/crawlviz/contracts/**", "src/crawlviz/api/schemas/**",
+  "src/crawlviz/score/llm/**", "src/crawlviz/llm/**", "src/crawlviz/contracts/**", "src/crawlviz/api/schemas/**",
   "tools/gen_*", "tools/nlp_eval.py",
   "tests/pins/**", "tests/load/**", "tests/conftest.py", "tests/contracts/**",
   "tests/llm/**", "tests/agents/**",
