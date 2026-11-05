@@ -64,8 +64,10 @@ check: lint typecheck check-baselines test hook-test
 	cd crawler-ui && npm run build
 
 # Lint and tests for the files this branch changed (see tools/check_changed.py).
+# BASE is the branch to compare with: `make check-changed BASE=phase-d-architecture`.
+BASE ?= main
 check-changed:
-	uv run python tools/check_changed.py
+	uv run python tools/check_changed.py --base $(BASE)
 
 # The agent guard hooks (.claude/hooks) block what AGENTS.md says they block.
 hook-test:
