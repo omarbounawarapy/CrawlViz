@@ -9,7 +9,7 @@ See docs/adr/0003-nlp-service-split.md.
 import logging
 import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 
@@ -19,6 +19,7 @@ from crawlviz.events import (
     EXP_SeedsGenerated,
     EXP_SpaceBootstrapped,
     EXP_Triggered,
+    TraceSink,
 )
 from crawlviz.llm import LlmHandler
 from crawlviz.nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
@@ -26,9 +27,6 @@ from crawlviz.shared import get_trace, new_trace_id
 from models import ExpansionContext
 
 from .llm_contracts import Outcomes, parse_expansion_seeds
-
-if TYPE_CHECKING:
-    from traceability.emitter import TraceEmitter
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +46,7 @@ class SpaceBootstrapper:
         llm_handler: Answers the expansion prompt.
         expansion_config: The blueprint's ``expansion`` section (llm_type,
             llm_model, style, num_descriptions, ...).
-        tracer: Optional TraceEmitter; when None, tracing is a no-op.
+        tracer: Optional TraceSink; when None, tracing is a no-op.
     """
 
     def __init__(
@@ -58,7 +56,7 @@ class SpaceBootstrapper:
         llm_handler: LlmHandler,
         # The blueprint's JSON section, as loaded.
         expansion_config: dict[str, Any],
-        tracer: "TraceEmitter | None" = None,
+        tracer: TraceSink | None = None,
     ) -> None:
         self.blueprint_id = blueprint_id
         self.engine = engine

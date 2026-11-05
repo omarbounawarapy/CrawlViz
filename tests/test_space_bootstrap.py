@@ -40,7 +40,7 @@ def test_seeds_and_target_reach_the_space_before_bootstrap_is_reported() -> None
         HashingEmbeddingEngine(),
         SeedLlm(),  # type: ignore[arg-type]
         EXPANSION,
-        tracer=RecordingTracer(log),  # type: ignore[arg-type]
+        tracer=RecordingTracer(log),
     )
     asyncio.run(bootstrapper.build(TOPIC, adopt))
 

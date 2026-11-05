@@ -8,7 +8,6 @@ See docs/adr/0003-nlp-service-split.md.
 
 import re
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.spatial.distance import cosine
@@ -19,6 +18,7 @@ from crawlviz.events import (
     NLP_ScoreEmitted,
     NLP_SimilarityScored,
     NLP_VectorComposed,
+    TraceSink,
 )
 from crawlviz.nlp import (
     BaseEmbeddingEngine,
@@ -27,10 +27,6 @@ from crawlviz.nlp import (
     default_composite_weights,
 )
 from crawlviz.shared import Link, document_text, get_trace
-
-if TYPE_CHECKING:
-    from traceability.emitter import TraceEmitter
-
 
 # Navigation / legal page phrases; a link that embeds close to one of these is
 # almost never topical content (see FeatureExtractor.boilerplate_score).
@@ -110,7 +106,7 @@ class LinkFeatureScorer:
         self,
         engine: BaseEmbeddingEngine,
         settings: FeatureSettings,
-        tracer: "TraceEmitter | None" = None,
+        tracer: TraceSink | None = None,
     ) -> None:
         self.engine = engine
         self.settings = settings

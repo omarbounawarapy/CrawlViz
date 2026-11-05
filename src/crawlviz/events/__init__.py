@@ -143,6 +143,7 @@ from .contracts import (
     Fetcher,
     LlmSender,
     RelevanceScorer,
+    TraceSink,
 )
 
 # =========================================================
@@ -237,4 +238,5 @@ __all__ = [
     "Fetcher",
     "LlmSender",
     "RelevanceScorer",
+    "TraceSink",
 ]

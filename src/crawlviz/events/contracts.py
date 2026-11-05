@@ -80,3 +80,13 @@ class LlmSender(Protocol):
     """
 
     async def send(self, context: Any) -> dict: ...
+
+
+@runtime_checkable
+class TraceSink(Protocol):
+    """Anything that takes trace events from a stage (``TraceEmitter``, test doubles).
+
+    The NLP services hold one optionally, so the domain does not import the tracing package.
+    """
+
+    async def emit(self, event: Any) -> None: ...

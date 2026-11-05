@@ -1,8 +1,9 @@
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 
+from crawlviz.events import TraceSink
 from crawlviz.llm import LlmHandler
 from crawlviz.nlp import (
     BaseEmbeddingEngine,
@@ -15,9 +16,6 @@ from crawlviz.shared import Link
 
 from .link_features import FeatureSettings, LinkFeatureScorer
 from .space_bootstrap import SpaceBootstrapper
-
-if TYPE_CHECKING:
-    from traceability.emitter import TraceEmitter
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +61,7 @@ class NLPService:
         persist_space: When False (default) the stored space is read-only after
             its first bootstrap, so every run starts from the same state. When
             True, the run writes its growth back.
-        tracer: Optional TraceEmitter; when None, tracing is a no-op.
+        tracer: Optional TraceSink; when None, tracing is a no-op.
         buffer_manager: The live crawl's BufferManager (drained by
             SpaceUpdater). When provided, ``update_space()`` forwards
             encoded expansions there instead of buffering locally.
@@ -79,7 +77,7 @@ class NLPService:
         model_name: str = "all-MiniLM-L6-v2",
         store_base_dir: str = ".space_store",
         persist_space: bool = False,
-        tracer: "TraceEmitter | None" = None,
+        tracer: TraceSink | None = None,
         buffer_manager: "BufferManager | None" = None,
         engine: BaseEmbeddingEngine | None = None,
         composite_weights: dict[str, float] | None = None,
