@@ -51,7 +51,6 @@ from .config_support import (
     ConfigPatch,
     get_paths,
     report_settings_file_errors,
-    validation_errors,
     validation_http_error,
 )
 from .keys import get_key_manager
@@ -106,7 +105,7 @@ def validate_config(body: ConfigPatch) -> dict:
     try:
         store.load_runtime_config(get_paths().settings_file, body.values)
     except ValidationError as exc:
-        return {"valid": False, "errors": validation_errors(exc)}
+        return {"valid": False, "errors": store.validation_errors(exc)}
     return {"valid": True, "errors": []}
 
 

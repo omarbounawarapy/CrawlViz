@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import RuntimePaths, default_runtime_paths
-from config.settings_store import SettingsFileError
+from config.settings_store import SettingsFileError, validation_errors
 
 
 def report_settings_file_errors() -> Iterator[None]:
@@ -20,10 +20,6 @@ def report_settings_file_errors() -> Iterator[None]:
 
 def get_paths() -> RuntimePaths:
     return default_runtime_paths()
-
-
-def validation_errors(exc: ValidationError) -> list[dict[str, Any]]:
-    return [{"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]} for e in exc.errors()]
 
 
 def validation_http_error(exc: ValidationError) -> HTTPException:

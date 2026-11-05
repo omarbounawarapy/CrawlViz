@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from pydantic import ValidationError
+
 from crawlviz.contracts import (
     SchemaVersionError,
     StoredFormatError,
@@ -75,6 +77,23 @@ class SettingsFileError(Exception):
     """The stored settings file exists but cannot be read as a settings object."""
 
 
+EXTRA_KEY_MESSAGE = "This setting does not exist. Check its spelling, or remove it."
+
+
+def validation_errors(exc: ValidationError) -> list[dict[str, Any]]:
+    """The problems of a failed config validation as ``{"path", "message"}``, where the
+    path is the dotted key (``pipelines.fetchh``)."""
+    return [
+        {
+            "path": ".".join(str(part) for part in problem["loc"]),
+            "message": EXTRA_KEY_MESSAGE
+            if problem["type"] == "extra_forbidden"
+            else problem["msg"],
+        }
+        for problem in exc.errors()
+    ]
+
+
 def read_stored(path: Path) -> dict:
     """The raw stored overrides: ``{}`` when no file exists yet.
 
@@ -118,27 +137,57 @@ def _write(path: Path, data: dict) -> None:
     save_json(path, dump_settings_document(data), sort_keys=True)
 
 
+def _validate(merged: dict, settings_file: Path | None, stored: dict) -> RuntimeConfig:
+    """``merged`` as a ``RuntimeConfig``.
+
+    A failure caused by the stored settings alone is a ``SettingsFileError`` that names
+    the file and the entries, because the person cannot fix it from the request that
+    hit it; a failure from the new values stays a ``ValidationError``."""
+    try:
+        return RuntimeConfig.model_validate(merged)
+    except ValidationError:
+        if settings_file is not None and stored:
+            _raise_if_stored_settings_invalid(settings_file, stored)
+        raise
+
+
+def _raise_if_stored_settings_invalid(settings_file: Path, stored: dict) -> None:
+    try:
+        RuntimeConfig.model_validate(deep_merge(default_runtime_config().model_dump(), stored))
+    except ValidationError as stored_error:
+        problems = "; ".join(
+            f"{found['path']}: {found['message']}" for found in validation_errors(stored_error)
+        )
+        raise SettingsFileError(
+            f"The settings file {settings_file} holds settings that are not valid ({problems}). "
+            "Fix or remove those entries by hand, or reset the settings from the Config page, "
+            "which replaces the file with the defaults."
+        ) from stored_error
+
+
 def load_runtime_config(
     settings_file: Path | None = None, overrides: dict | None = None
 ) -> RuntimeConfig:
     """Defaults + stored settings + `overrides`, validated.
 
-    Raises ``pydantic.ValidationError`` when the merge is invalid."""
+    Raises ``SettingsFileError`` when the stored settings are not valid and
+    ``pydantic.ValidationError`` when the `overrides` are."""
     merged = default_runtime_config().model_dump()
-    if settings_file is not None:
-        merged = deep_merge(merged, read_stored(settings_file))
+    stored = read_stored(settings_file) if settings_file is not None else {}
+    merged = deep_merge(merged, stored)
     if overrides:
         merged = deep_merge(merged, overrides)
-    return RuntimeConfig.model_validate(merged)
+    return _validate(merged, settings_file, stored)
 
 
 def save_settings(settings_file: Path, patch: dict) -> RuntimeConfig:
     """Merge `patch` into the stored settings and persist the difference
     from the defaults. Returns the new effective config; raises
-    ``ValidationError`` (and writes nothing) when it is invalid."""
+    ``ValidationError`` (and writes nothing) when the patch is invalid and
+    ``SettingsFileError`` when the stored settings already were."""
     defaults = default_runtime_config().model_dump()
-    merged = deep_merge(deep_merge(defaults, read_stored(settings_file)), patch)
-    cfg = RuntimeConfig.model_validate(merged)
+    stored = read_stored(settings_file)
+    cfg = _validate(deep_merge(deep_merge(defaults, stored), patch), settings_file, stored)
     _write(settings_file, diff(defaults, cfg.model_dump()))
     return cfg
 

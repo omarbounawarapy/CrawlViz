@@ -25,13 +25,11 @@ from pydantic import BaseModel, ValidationError
 from config import TEMPLATES_DIR, default_runtime_paths
 from config.blueprint_file import load_blueprint_file
 from config.blueprint_schema import Blueprint, BlueprintSchemaError, validate_blueprint
-from config.settings_store import SettingsFileError, load_runtime_config
+from config.settings_store import SettingsFileError, load_runtime_config, validation_errors
 from config.template_names import InvalidTemplateNameError, resolve_template_path
 from core import Crawler, find_preflight_problems
 from crawlviz.contracts import SchemaVersionError, StoredFormatError
 from offline import build_offline_session, is_offline
-
-from .config_support import validation_errors
 
 logger = logging.getLogger(__name__)
 
