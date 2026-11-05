@@ -1,6 +1,7 @@
 {
   "$defs": {
     "EmbeddingConfig": {
+      "additionalProperties": false,
       "description": "Semantic-space embedding backend (nlp/vector_space.py, nlp/space_updater.py).",
       "properties": {
         "backend": {
@@ -71,6 +72,7 @@
       "type": "object"
     },
     "ExportConfig": {
+      "additionalProperties": false,
       "description": "Item export / persistence batching (pipelines/export_sink.py).",
       "properties": {
         "batch_size": {
@@ -91,6 +93,7 @@
       "type": "object"
     },
     "FetchConfig": {
+      "additionalProperties": false,
       "description": "Page fetching: politeness, backoff, timeouts and request headers\n(pipelines/fetch_stage.py, infrastructure/network_client.py).",
       "properties": {
         "min_delay": {
@@ -329,6 +332,7 @@
       "type": "object"
     },
     "LlmConfig": {
+      "additionalProperties": false,
       "description": "Request parameters shared by every LLM provider call.",
       "properties": {
         "max_calls_per_crawl": {
@@ -411,6 +415,7 @@
       "type": "object"
     },
     "NlpConfig": {
+      "additionalProperties": false,
       "description": "NLP composite score (services/nlp_service.py).",
       "properties": {
         "composite_weights": {
@@ -485,6 +490,7 @@
       "type": "object"
     },
     "ObservabilityConfig": {
+      "additionalProperties": false,
       "properties": {
         "debug_enabled": {
           "default": true,
@@ -540,6 +546,7 @@
       "type": "object"
     },
     "PipelineSettings": {
+      "additionalProperties": false,
       "description": "Worker count and queue bound of one pipeline.",
       "properties": {
         "workers": {
@@ -582,6 +589,7 @@
       "type": "object"
     },
     "PipelinesConfig": {
+      "additionalProperties": false,
       "description": "Per-pipeline parallelism (core/stages.py:build_stages). Logging\nand canonicalization stay single-worker so output order is preserved.",
       "properties": {
         "processing": {
@@ -616,6 +624,7 @@
       "type": "object"
     },
     "PriorityConfig": {
+      "additionalProperties": false,
       "description": "Mix of NLP and LLM scores in a link's priority (prioritize_stage.py).",
       "properties": {
         "nlp_bias": {
@@ -690,6 +699,7 @@
       "type": "object"
     },
     "PromptsConfig": {
+      "additionalProperties": false,
       "description": "Wording of the scoring prompt (models/prompts.py). The output format\nand JSON constraints are fixed because the response parser depends on\nthem.",
       "properties": {
         "scoring_system": {
@@ -734,6 +744,7 @@
       "type": "object"
     },
     "ProvidersConfig": {
+      "additionalProperties": false,
       "description": "Request URL per LLM provider (config/config.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
       "properties": {
         "endpoints": {
@@ -754,6 +765,7 @@
       "type": "object"
     },
     "RetryConfig": {
+      "additionalProperties": false,
       "description": "Retry policy (pipelines/retry_stage.py).",
       "properties": {
         "max_request_retries": {
@@ -840,6 +852,7 @@
       "type": "object"
     },
     "RunConfig": {
+      "additionalProperties": false,
       "properties": {
         "seed": {
           "anyOf": [
@@ -893,6 +906,7 @@
       "type": "object"
     },
     "ScoringCascadeConfig": {
+      "additionalProperties": false,
       "description": "The two-stage NLP -> LLM relevance cascade's tunable thresholds and\nsampling fractions (report section 0.13, \"Evaluation multi-etapes\").",
       "properties": {
         "percentile_bucketing": {
@@ -1101,6 +1115,7 @@
       "type": "object"
     },
     "UrlConfig": {
+      "additionalProperties": false,
       "description": "Node identity rules (utils/html_utils.py:normalize_url). Changing them\nchanges which links count as the same page.",
       "properties": {
         "strip_fragment": {
@@ -1130,6 +1145,7 @@
       "type": "object"
     }
   },
+  "additionalProperties": false,
   "description": "Top-level runtime configuration: everything a researcher would want\nto see before trusting a crawl's results, beyond the per-run blueprint\n(target topic, seeds, extraction schema) already covered by\nconfig/blueprint_schema.py.",
   "properties": {
     "scoring_cascade": {

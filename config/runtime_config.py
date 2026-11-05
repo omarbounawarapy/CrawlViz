@@ -103,7 +103,14 @@ def _f(
     return Field(default=default, description=description, json_schema_extra=extra, **constraints)
 
 
-class ScoringCascadeConfig(BaseModel):
+class ConfigSection(BaseModel):
+    """Base of every settings model: a key the model does not have is an error, not a
+    silent drop, so a misspelt or unmigrated stored key is reported with its path."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ScoringCascadeConfig(ConfigSection):
     """The two-stage NLP -> LLM relevance cascade's tunable thresholds and
     sampling fractions (report section 0.13, "Evaluation multi-etapes")."""
 
@@ -255,7 +262,7 @@ class ScoringCascadeConfig(BaseModel):
         return self
 
 
-class EmbeddingConfig(BaseModel):
+class EmbeddingConfig(ConfigSection):
     """Semantic-space embedding backend (nlp/vector_space.py, nlp/space_updater.py)."""
 
     backend: str = _f(
@@ -299,7 +306,7 @@ class EmbeddingConfig(BaseModel):
     )
 
 
-class ExportConfig(BaseModel):
+class ExportConfig(ConfigSection):
     """Item export / persistence batching (pipelines/export_sink.py)."""
 
     batch_size: int = _f(
@@ -312,7 +319,7 @@ class ExportConfig(BaseModel):
     )
 
 
-class FetchConfig(BaseModel):
+class FetchConfig(ConfigSection):
     """Page fetching: politeness, backoff, timeouts and request headers
     (pipelines/fetch_stage.py, infrastructure/network_client.py)."""
 
@@ -496,7 +503,7 @@ class FetchConfig(BaseModel):
         return self
 
 
-class PipelineSettings(BaseModel):
+class PipelineSettings(ConfigSection):
     """Worker count and queue bound of one pipeline."""
 
     workers: int = _f(
@@ -532,7 +539,7 @@ def _pl(workers: int) -> Any:
     return Field(default_factory=lambda: PipelineSettings(workers=workers))
 
 
-class PipelinesConfig(BaseModel):
+class PipelinesConfig(ConfigSection):
     """Per-pipeline parallelism (core/stages.py:build_stages). Logging
     and canonicalization stay single-worker so output order is preserved."""
 
@@ -547,7 +554,7 @@ class PipelinesConfig(BaseModel):
     retry: PipelineSettings = _pl(1)
 
 
-class RetryConfig(BaseModel):
+class RetryConfig(ConfigSection):
     """Retry policy (pipelines/retry_stage.py)."""
 
     max_request_retries: int = _f(
@@ -602,7 +609,7 @@ class RetryConfig(BaseModel):
     )
 
 
-class UrlConfig(BaseModel):
+class UrlConfig(ConfigSection):
     """Node identity rules (utils/html_utils.py:normalize_url). Changing them
     changes which links count as the same page."""
 
@@ -636,7 +643,7 @@ def _weights(name: str) -> Any:
     )
 
 
-class PriorityConfig(BaseModel):
+class PriorityConfig(ConfigSection):
     """Mix of NLP and LLM scores in a link's priority (prioritize_stage.py)."""
 
     nlp_bias: float = _f(
@@ -682,7 +689,7 @@ class PriorityConfig(BaseModel):
         return self
 
 
-class NlpConfig(BaseModel):
+class NlpConfig(ConfigSection):
     """NLP composite score (services/nlp_service.py)."""
 
     composite_weights: dict[str, float] = _f(
@@ -732,7 +739,7 @@ class NlpConfig(BaseModel):
     )
 
 
-class LlmConfig(BaseModel):
+class LlmConfig(ConfigSection):
     """Request parameters shared by every LLM provider call."""
 
     max_calls_per_crawl: int | None = _f(
@@ -770,7 +777,7 @@ class LlmConfig(BaseModel):
     )
 
 
-class ObservabilityConfig(BaseModel):
+class ObservabilityConfig(ConfigSection):
     debug_enabled: bool = _f(
         _config.DEBUG,
         "Write the per-crawl debug trace file.",
@@ -805,7 +812,7 @@ class ObservabilityConfig(BaseModel):
     )
 
 
-class PromptsConfig(BaseModel):
+class PromptsConfig(ConfigSection):
     """Wording of the scoring prompt (models/prompts.py). The output format
     and JSON constraints are fixed because the response parser depends on
     them."""
@@ -842,7 +849,7 @@ class PromptsConfig(BaseModel):
         return self
 
 
-class ProvidersConfig(BaseModel):
+class ProvidersConfig(ConfigSection):
     """Request URL per LLM provider (config/config.py). Point a
     provider at any compatible server; Gemini takes a base URL."""
 
@@ -864,7 +871,7 @@ class ProvidersConfig(BaseModel):
         return self
 
 
-class RunConfig(BaseModel):
+class RunConfig(ConfigSection):
     seed: int | None = _f(
         None,
         "Seed for every random stream; empty is unseeded.",
@@ -972,7 +979,7 @@ GLOSSARY = {
 }
 
 
-class RuntimeConfig(BaseModel):
+class RuntimeConfig(ConfigSection):
     """Top-level runtime configuration: everything a researcher would want
     to see before trusting a crawl's results, beyond the per-run blueprint
     (target topic, seeds, extraction schema) already covered by
