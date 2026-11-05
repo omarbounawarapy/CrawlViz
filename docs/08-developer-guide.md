@@ -173,7 +173,7 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `routes/` | REST endpoints: templates, run control, validation, config |
 | `core/` | Crawler orchestration, event broker/registry, bootstrap |
 | `models/` | `Storage`, extractors, prompt/context builders |
-| `pipelines/` | The ~13 event-driven processing stages |
+| `pipelines/` | The ~13 event-driven stages and sinks (they subclass `BasePipeline` from `crawlviz.events`) |
 | `src/crawlviz/nlp/` | Embedding engine, vector space, feature extraction, expansion buffering |
 | `src/crawlviz/shared/` | `Link`, `Node`, `Domain`, guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers |
 | `infrastructure/` | Async file handler and log writer |
@@ -185,7 +185,7 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `config/` | Tuning constants, runtime config schema, persisted settings |
 | `services/` | `NLPService`, `ScoringService`, `ResultMapper`, the stable interfaces pipelines call into |
 | `templates/` | JSON blueprint examples (`wikiMD.json`, `isi.json`) |
-| `src/crawlviz/events/` | Event types, one module per stage |
+| `src/crawlviz/events/` | Event types, one module per stage, plus `BasePipeline` and the stage contracts (`base_pipeline.py`, `contracts.py`) |
 | `src/crawlviz/offline/` | Offline doubles: scripted LLM, demo session, site script |
 | `tests/` | pytest suite |
 | `docs/` | These guides and `crawl_messages.ts` (WS wire protocol) |

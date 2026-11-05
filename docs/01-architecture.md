@@ -73,7 +73,7 @@ flowchart TB
 |---|---|---|
 | `EventBroker` (`core/event_broker.py`) | Routing typed events to subscribed pipelines | Any domain logic. It doesn't know what a `NodeAddedEvent` *means*. |
 | `EventRegistry` (`core/event_registry.py`) | The subscription table (event type → list of handlers) | Dispatch. That's the broker's job. |
-| `BasePipeline` (`pipelines/base_pipeline.py`) | Generic worker-pool-over-a-queue lifecycle every pipeline inherits | Business logic. Subclasses override `_process()`. |
+| `BasePipeline` (`src/crawlviz/events/base_pipeline.py`) | Generic worker-pool-over-a-queue lifecycle every pipeline inherits | Business logic. Subclasses override `_process()`. |
 | `Storage` (`models/storage.py`) | The single in-memory source of truth for nodes, links, domains, and extracted items during a crawl | Persistence. It's gone when the process exits. |
 | `ExportSink` | The *only* writer to `items.db` | Anything about the live crawl graph. Export is a one-way, append-only sink. |
 | `NLPService` (`services/nlp_service.py`) | A stable interface (`score_links`, `update_space`) over the embedding engine and vector space; link features live in `services/link_features.py` and the first space is built by `services/space_bootstrap.py` | Vector-space mutation. That's `SpaceUpdater`'s job, invoked only through `NLPService`. |

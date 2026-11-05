@@ -14,7 +14,7 @@ A web crawler is dominated by I/O wait: network round-trips for fetching, and fo
 
 ## The pipeline abstraction
 
-Every pipeline (`ScoreStage`, `FilterStage`, `StorageSink`, and eight others) subclasses `BasePipeline` (`pipelines/base_pipeline.py`), which provides:
+Every pipeline (`ScoreStage`, `FilterStage`, `StorageSink`, and eight others) subclasses `BasePipeline` (`src/crawlviz/events/base_pipeline.py`), which provides:
 
 - An `asyncio.Queue` (or `PriorityQueue`, depending on the pipeline, see below) that events land in via `put()`.
 - A configurable pool of `max_concurrency` worker coroutines, each running `while True: item = await queue.get(); await self._process(item, worker_id)`.
