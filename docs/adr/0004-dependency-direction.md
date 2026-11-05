@@ -52,7 +52,7 @@ a lower layer, never one in its own layer unless listed, and never one above.
    functions and under `TYPE_CHECKING`, so neither hides a violation. Once it runs,
    `tests/test_import_cycles.py` is deleted, because two checks of one rule drift (CODE-1).
 4. **No exceptions without an ADR.** A violation is fixed by moving code to the right layer,
-   or by injecting a protocol defined in the lower layer (as `SpaceOwner` in `nlp/space_updater.py:13`
+   or by injecting a protocol defined in the lower layer (as `SpaceOwner` in `src/crawlviz/nlp/space_updater.py:13`
    already does for the NLP service), never by a lazy import or an `ignore_imports` entry.
 
 The UI follows the same rule (ARCH-5): `app` imports `features`, features import `shared` and

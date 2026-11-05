@@ -17,7 +17,7 @@ keys are renamed; registry keys, wire `stage` values and event names are not yet
 - Event names follow no pattern: `PageFetchedEvent` and `RequestFailedEvent` come from one
   stage; `ProcessingExtractionFailedEvent`, `FilteringPipelineErrorEvent` and
   `RetryOperationFailedEvent` are three shapes for one kind of event; `NodeAddedEvent` and
-  `StorageNodeAddedEvent` both exist (`events/storage_events.py:25`, `:73`).
+  `StorageNodeAddedEvent` both exist (`src/crawlviz/events/storage_events.py:25`, `:73`).
 - Since ADR 2, each stage is one `STAGES` entry, so a key rename is a one-line registry change
   plus its config, wire and UI copies.
 - One pin golden stores class names: `tests/pins/golden/crawler/composition.jsonl` holds

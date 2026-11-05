@@ -21,7 +21,7 @@ The class does three jobs that change for different reasons:
    into the composite NLP score. This is the scoring hot path the research method depends on.
 3. **Space ownership.** Start, load, save, buffered growth (`update_space`, `flush_buffer`)
    and the accessors `SpaceUpdater` uses through the `SpaceOwner` protocol
-   (`nlp/space_updater.py:13`).
+   (`src/crawlviz/nlp/space_updater.py:13`).
 
 Callers depend only on the third job's surface plus `score_links`:
 `ScoreStage` (`score_links`, `update_space`), `SpaceUpdater` (`space`, `save_space`,
@@ -58,9 +58,9 @@ seed loop from the logic around them.
   Cleaner on paper, but it changes `ScoringPipeline`, `SpaceUpdater`, the benchmark runner,
   `tools/nlp_eval.py` and the contracts at once, which is a bulk change across four areas.
   `NLPService` can still be removed later, one caller at a time.
-- **Move the code into `nlp/`.** `nlp/` must not import `services/` or the LLM handler, and
+- **Move the code into `src/crawlviz/nlp/`.** `src/crawlviz/nlp/` must not import `services/` or the LLM handler, and
   the bootstrap needs both (`services/llm_contracts.py`, `infrastructure`). The link features
-  could live there, but they emit trace events that `nlp/` does not use today. When the
+  could live there, but they emit trace events that `src/crawlviz/nlp/` does not use today. When the
   backend moves to `src/crawlviz/<domain>/`, both helpers move with the NLP domain.
 - **Only shorten the long functions.** Leaves the module over 400 lines and keeps the
   bootstrap and the hot path in one file, where the LLM layer work would touch method code.
@@ -79,7 +79,7 @@ seed loop from the logic around them.
 
 ## Standards affected
 
-ARCH-3, ARCH-5 (`nlp/` still does not import `services/`), PY-1, TEST-2, LLM-1 (the bootstrap
+ARCH-3, ARCH-5 (`src/crawlviz/nlp/` still does not import `services/`), PY-1, TEST-2, LLM-1 (the bootstrap
 is now one module to move onto `LlmClient`).
 
 ## Migration and commit plan

@@ -13,7 +13,7 @@ Status: proposed, 2026-10-30
   (`VITE_API_BASE_URL`, `VITE_WS_URL`, `VITE_API_TOKEN`, `crawler-ui/src/api/client.js:1`, `:26`),
   so one build cannot serve a backend on another port or in Docker.
 - Nothing tells the UI the run mode. Offline mode is an environment variable read inside the run
-  route (`offline/session.py:12-18`, `routes/run.py:42-52`), the manifest records the model but
+  route (`src/crawlviz/offline/session.py:12-18`, `routes/run.py:42-52`), the manifest records the model but
   not the mode (`core/crawler.py:310-321`), and the Run page shows provider fields that offline
   mode ignores (R-MODE; H-14, H-24).
 - The UI also has a synthetic demo (`crawler-ui/src/hooks/useDemoMode.js`) that never calls the

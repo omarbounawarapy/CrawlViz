@@ -11,7 +11,7 @@ Status: proposed, 2026-10-29
   `core/crawler.py` and `services/nlp_service.py` were split by ADRs 2 and 3.
 - One value, several definitions (method review, bug 4): `target_top_k` in four places
   (`config/runtime_config.py:662`, `services/nlp_service.py:81`, `services/link_features.py:79`,
-  `nlp/feature_extractor.py:16`); `nlp_bias` and `llm_bias` in three; the embedding model name
+  `src/crawlviz/nlp/feature_extractor.py:16`); `nlp_bias` and `llm_bias` in three; the embedding model name
   in five (bug 6); composite weights fall back to defaults through `or`
   (`services/link_features.py:282`).
 - The benchmark runner builds its stages by hand and leaves values to constructor defaults:
