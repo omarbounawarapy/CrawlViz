@@ -328,6 +328,28 @@ class TestChangedFiles:
 
         assert names(repo, tool.changed_files("main")) == ["new/crawler.py", "old/crawler.py"]
 
+    def test_a_deleted_tooling_file_is_reported(self, repo: Path) -> None:
+        write(repo, "uv.lock")
+        self.commit_all(repo, "Base")
+        git(repo, "checkout", "-b", "feature")
+        git(repo, "rm", "uv.lock")
+        self.commit_all(repo, "Delete lock file")
+
+        assert names(repo, tool.changed_files("main")) == ["uv.lock"]
+
+    def test_a_path_with_spaces_and_a_newline_stays_one_path(self, repo: Path) -> None:
+        write(repo, "kept.py")
+        self.commit_all(repo, "Base")
+        git(repo, "checkout", "-b", "feature")
+        write(repo, "odd dir/line\nbreak.py")
+        git(repo, "add", "-A")
+        write(repo, "untracked é.py")
+
+        assert names(repo, tool.changed_files("main")) == [
+            "odd dir/line\nbreak.py",
+            "untracked é.py",
+        ]
+
     def test_unknown_base_stops_instead_of_skipping_committed_changes(self, repo: Path) -> None:
         write(repo, "base.py")
         self.commit_all(repo, "Base")
@@ -557,6 +579,19 @@ class TestMain:
         assert [command[1] for command, _cwd in ui_runs] == ["eslint", "vitest"]
         assert all("src/App.tsx" in command for command, _cwd in ui_runs)
         assert all(not any("node_modules" in part for part in command) for command, _cwd in ui_runs)
+
+    def test_a_deleted_ui_file_lints_the_whole_ui_source_folder(
+        self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        write(repo, "crawler-ui/src/Gone.tsx")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-m", "Base")
+        git(repo, "rm", "crawler-ui/src/Gone.tsx")
+
+        assert self.run_main(monkeypatch) == 0
+
+        eslint = next(command for command, _cwd, _ in runs.commands if command[1] == "eslint")
+        assert eslint[2:] == ["src"]
 
     def test_exit_code_is_one_when_any_check_fails(
         self, repo: Path, monkeypatch: pytest.MonkeyPatch

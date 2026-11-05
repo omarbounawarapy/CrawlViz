@@ -16,12 +16,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = ROOT / "crawler-ui"
+UI_SOURCE_DIR = "src"
 BASE_BRANCH = "main"
 PYTHON_SUFFIXES = {".py"}
 # Linters and tests run with the interpreter that runs this tool (`make` starts it with
 # `uv run`), so a worktree never falls back to the system Python through a second `uv run`.
 PYTHON_M = [sys.executable, "-m"]
 PYTEST_NO_TESTS_COLLECTED = 5
+RENAME_OR_COPY_STATUSES = "RC"
 # A change to any of these can alter the result for every Python file, so the whole
 # Python side is checked instead of only the changed files.
 PYTHON_TOOLING_FILES = {
@@ -38,23 +40,30 @@ HOOKS_COMMON = ROOT / ".claude" / "hooks" / "_common.py"
 UI_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
 
-def _git(*args: str) -> list[str]:
+def _git(*args: str) -> str:
     result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=False)
-    return [line for line in result.stdout.splitlines() if line.strip()]
+    return result.stdout
+
+
+def _git_paths(*args: str) -> list[str]:
+    """NUL-separated output of a command run with `-z`, so odd file names stay whole."""
+    return [entry for entry in _git(*args).split("\0") if entry]
 
 
 def _changed_names(*diff_args: str) -> set[str]:
     """Paths in a diff, including deleted files and the old side of renames."""
+    tokens = iter(_git_paths("diff", "-M", "-z", "--name-status", *diff_args))
     names: set[str] = set()
-    for line in _git("diff", "-M", "--name-status", *diff_args):
-        _status, *paths = line.split("\t")
-        names.update(paths)
+    for status in tokens:
+        paths_in_entry = 2 if status[0] in RENAME_OR_COPY_STATUSES else 1
+        names.update(next(tokens) for _ in range(paths_in_entry))
     return names
 
 
 def changed_files(base: str) -> list[Path]:
-    """Changed paths. Deleted and renamed-away Python files stay in, so their importers run."""
-    merge_base = _git("merge-base", "HEAD", base)
+    """Changed paths. Deleted and renamed-away files stay in, so their importers and
+    the checks for tooling and UI files still run."""
+    merge_base = _git("merge-base", "HEAD", base).split()
     if not merge_base:
         raise SystemExit(
             f"check-changed: no merge base between HEAD and '{base}'; "
@@ -63,18 +72,14 @@ def changed_files(base: str) -> list[Path]:
     names = _changed_names(merge_base[0])
     names.update(_changed_names())
     names.update(_changed_names("--cached"))
-    names.update(_git("ls-files", "--others", "--exclude-standard"))
-    kept = {
-        name
-        for name in names
-        if (ROOT / name).is_file() or (name.endswith(".py") and not (ROOT / name).exists())
-    }
+    names.update(_git_paths("ls-files", "-z", "--others", "--exclude-standard"))
+    kept = {name for name in names if (ROOT / name).is_file() or not (ROOT / name).exists()}
     return sorted(ROOT / name for name in kept)
 
 
 def python_modules() -> dict[str, Path]:
     """Dotted module name to file for every tracked or new Python file, packages by `__init__`."""
-    names = _git("ls-files", "--cached", "--others", "--exclude-standard", "*.py")
+    names = _git_paths("ls-files", "-z", "--cached", "--others", "--exclude-standard", "*.py")
     modules: dict[str, Path] = {}
     for name in names:
         if (ROOT / name).is_file():
@@ -205,9 +210,11 @@ def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
 
 
 def check_ui(ui_files: list[Path]) -> bool:
-    relative = [str(path.relative_to(UI_DIR)) for path in ui_files]
+    existing = [str(path.relative_to(UI_DIR)) for path in ui_files if path.exists()]
+    # A deleted file cannot be linted, but its importers can break: lint the whole source tree.
+    relative = existing if len(existing) == len(ui_files) else [UI_SOURCE_DIR]
     ok = run(["npx", "eslint", *relative], UI_DIR)
-    ok &= run(["npx", "vitest", "related", "--run", "--passWithNoTests", *relative], UI_DIR)
+    ok &= run(["npx", "vitest", "related", "--run", "--passWithNoTests", *existing], UI_DIR)
     return ok
 
 
