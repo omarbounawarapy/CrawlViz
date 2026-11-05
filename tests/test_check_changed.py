@@ -385,8 +385,8 @@ class TestTouchesMethod:
     @pytest.mark.parametrize(
         "relative",
         [
-            "priority/queue_strategy.py",
-            "nlp/embedding_engine.py",
+            "src/crawlviz/priority/queue_strategy.py",
+            "src/crawlviz/nlp/embedding_engine.py",
             "models/prompts.py",
             "core/crawler.py",
             "core/event_broker.py",
@@ -411,7 +411,9 @@ class TestTouchesMethod:
         assert not tool.touches_method(self.paths(repo, relative))
 
     def test_one_method_file_among_others_is_enough(self, repo: Path) -> None:
-        assert tool.touches_method(self.paths(repo, "routes/run.py", "priority/queue.py"))
+        assert tool.touches_method(
+            self.paths(repo, "routes/run.py", "src/crawlviz/priority/queue.py")
+        )
 
     def test_no_files_do_not_touch_the_method(self, repo: Path) -> None:
         assert not tool.touches_method([])
@@ -556,7 +558,7 @@ class TestMain:
         self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         git(repo, "commit", "--allow-empty", "-m", "Base")
-        write(repo, "priority/queue.py")
+        write(repo, "src/crawlviz/priority/queue.py")
 
         assert self.run_main(monkeypatch) == 0
 
