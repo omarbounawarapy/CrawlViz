@@ -78,7 +78,7 @@ class TestParseBaselines:
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 # Folders with Python that mypy does not check yet; the list may only shrink.
-UNCHECKED_PYTHON_FOLDERS = {".claude"}
+UNCHECKED_PYTHON_FOLDERS: set[str] = set()
 
 
 def test_mypy_files_cover_every_tracked_python_folder() -> None:

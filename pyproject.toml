@@ -163,6 +163,7 @@ explicit_package_bases = true
 # tests/pins is also on sys.path under pytest (no __init__.py), so its modules import each other by bare name.
 mypy_path = [".", "src", "tests/pins"]
 files = [
+    ".claude/hooks",
     "main.py",
     "benchmark",
     "config",
@@ -264,7 +265,6 @@ module = [
     "services.results_mapper",
     "services.scoring_service",
     "tests.agents.hook_runner",
-    "tests.agents.test_commit_msg_check",
     "tests.test_base_pipeline",
     "tests.test_benchmark",
     "tests.test_benchmark_routes",
