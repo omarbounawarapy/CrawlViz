@@ -31,7 +31,7 @@ At $`t=0`$, the basis $`\mathcal{B}`$ contains only seed-page embeddings and the
 
 The system mitigates this cold-start problem by having the LLM generate $`k`$ conceptual expansions of the topic before crawling begins. In the reference run, $`k=50`$. Each expansion is embedded and added to the basis. This mirrors the report's framing of cold-start as an "embedding bootstrapping" strategy ([§2.1.3: Multi-Facet Representation of the Topic](../report/rapport-english.pdf#page=11)).
 
-The basis can then continue to grow during the crawl as the LLM produces further expansions while scoring links via `nlp/space_updater.py`. This implements an **online basis-enrichment** mechanism rather than relying on a fixed target representation.
+The basis can then continue to grow during the crawl as the LLM produces further expansions while scoring links via `src/crawlviz/nlp/space_updater.py`. This implements an **online basis-enrichment** mechanism rather than relying on a fixed target representation.
 
 ---
 
@@ -122,7 +122,7 @@ The frontier priority is a **separate computation** from the composite NLP score
 
 Rather than consuming the single bucketing scalar $`\mathrm{nlp\_score}(c)`$, the priority calculation operates on the raw NLP feature vector and, when available, the LLM score.
 
-`priority/strategy.py` defines three named strategies.
+`src/crawlviz/priority/strategy.py` defines three named strategies.
 
 ### Aggressive
 
