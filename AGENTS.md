@@ -12,8 +12,8 @@ this file holds how the work is organised and done.
 | `pipelines/` | Crawl stages, sinks and observers (renamed by the pipeline naming scheme, NAME-5) |
 | `traceability/`, `ui_bridge/` | Trace events, the WebSocket telemetry bridge |
 | `services/`, `models/` | Scoring, domain models and prompts |
-| `src/crawlviz/` | Packages that have moved: `events/` (event types), `nlp/` (embeddings, semantic space), `priority/` (ranking), `offline/` (offline doubles) |
-| `infrastructure/` | HTTP client, LLM handler and provider translators, keys, call budget |
+| `src/crawlviz/` | Packages that have moved: `events/` (event types), `nlp/` (embeddings, semantic space), `priority/` (ranking), `offline/` (offline doubles), `contracts/` (stored-format versions, settings migration), `llm/` (LLM handler, provider translators, keys, call budget, token usage, the typed layer) |
+| `infrastructure/` | HTTP client, URL guard, async file I/O |
 | `config/` | `RuntimeConfig`, settings store, paths |
 | `benchmark/` | Frozen-graph benchmark, judges, audit, analysis |
 | `crawler-ui/` | React app (Vite, d3, vitest) |
