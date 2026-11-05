@@ -1,6 +1,8 @@
 """Files the app rewrites are replaced whole or not at all."""
 
 import json
+import os
+import stat
 from pathlib import Path
 
 import pytest
@@ -57,3 +59,41 @@ def test_manifest_is_written_whole(tmp_path: Path) -> None:
     recorder.close()
     assert json.loads((tmp_path / "run" / "manifest.json").read_text()) == {"seed": 7}
     assert not list((tmp_path / "run").glob("*.tmp"))
+
+
+def temp_path_of(target: Path) -> Path:
+    return target.with_name(target.name + ".tmp")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="symlinks need privileges on Windows")
+def test_a_symlink_left_at_the_temp_path_is_not_written_through(tmp_path: Path) -> None:
+    target = tmp_path / "file.json"
+    elsewhere = tmp_path / "elsewhere.txt"
+    elsewhere.write_text("untouched")
+    temp_path_of(target).symlink_to(elsewhere)
+    write_text_atomic(target, "new content")
+    assert elsewhere.read_text() == "untouched"
+    assert target.read_text() == "new content"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file semantics")
+def test_a_reader_holding_a_leftover_temp_file_does_not_see_new_content(tmp_path: Path) -> None:
+    target = tmp_path / "file.json"
+    leftover = temp_path_of(target)
+    leftover.write_text("old")
+    with open(leftover, encoding="utf-8") as reader:
+        write_text_atomic(target, "new secret")
+        assert "new secret" not in reader.read()
+    assert target.read_text() == "new secret"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
+def test_file_mode_sets_the_permissions_whatever_the_umask(tmp_path: Path) -> None:
+    target = tmp_path / "file.json"
+    old_umask = os.umask(0)
+    try:
+        with atomic_open(target, file_mode=0o600) as handle:
+            handle.write("{}")
+    finally:
+        os.umask(old_umask)
+    assert stat.S_IMODE(target.stat().st_mode) == 0o600
