@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ## [Unreleased]
 
 ### Recent changes
+- `BasePipeline` and the stage contracts moved from `pipelines/base_pipeline.py` and `pipelines/contracts.py` to `src/crawlviz/events/`. Import them with `from crawlviz.events import BasePipeline`. The old `pipelines/` paths are gone.
 - The `llm` package lives under `src/crawlviz/llm/`: `LlmHandler`, the six provider translators, `KeyManager`, token usage, endpoints, the call budget and the typed layer. Import them with `from crawlviz.llm import ...`. The old `infrastructure/` paths are gone.
 - `Link`, `Node` and `Domain` moved from `models/` to `src/crawlviz/shared/`. Import them with `from crawlviz.shared import Link, Node, Domain`. The old `models/` paths are gone.
 - The shared kernel lives under `src/crawlviz/shared/`: the guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers. Import them with `from crawlviz.shared import ...`. The `utils/` folder is gone, and `infrastructure/` keeps only the async file handler and the log writer.
