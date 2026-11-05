@@ -48,7 +48,6 @@ export default defineConfig([
     // list only shrinks. Fix the element, then delete its entry here.
     files: [
       "src/features/benchmark/RunsTab.jsx",
-      "src/features/common/Form.jsx",
       "src/features/common/ScrollRegion.jsx",
       "src/features/graph/GraphView.jsx",
       "src/features/landing/Landing.jsx",

@@ -153,21 +153,8 @@ export function ConfirmButton({ label, confirmLabel, onConfirm, ...rest }) {
 /** Underline tabs: one idiom for view switches (Form / JSON, Profile / Manual). */
 export function Tabs({ id, label, value, options, onChange }) {
   return (
-    <div
-      role="tablist"
-      aria-label={label}
-      style={{ display: "flex", flexWrap: "wrap", gap: 4 }}
-      onKeyDown={(e) => {
-        const i = options.findIndex(([optId]) => optId === value);
-        const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-        if (!step) return;
-        e.preventDefault();
-        const next = options[(i + step + options.length) % options.length][0];
-        onChange(next);
-        document.getElementById(`${id}-tab-${next}`)?.focus();
-      }}
-    >
-      {options.map(([optId, name]) => (
+    <div role="tablist" aria-label={label} style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+      {options.map(([optId, name], index) => (
         <button
           key={optId}
           type="button"
@@ -177,6 +164,14 @@ export function Tabs({ id, label, value, options, onChange }) {
           id={`${id}-tab-${optId}`}
           aria-controls={value === optId ? `${id}-panel-${optId}` : undefined}
           onClick={() => onChange(optId)}
+          onKeyDown={(e) => {
+            const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
+            if (!step) return;
+            e.preventDefault();
+            const next = options[(index + step + options.length) % options.length][0];
+            onChange(next);
+            document.getElementById(`${id}-tab-${next}`)?.focus();
+          }}
           style={{
             minHeight: 34,
             padding: "0 10px",
