@@ -18,6 +18,8 @@ from pydantic import ValidationError
 from pydantic_core import PydanticCustomError
 
 from crawlviz.contracts import (
+    PIPELINES_SECTION,
+    SCHEMA_VERSION_KEY,
     SchemaVersionError,
     StoredFormatError,
     dump_settings_document,
@@ -40,6 +42,22 @@ def deep_merge(base: dict, over: dict) -> dict:
     return out
 
 
+def _refused_document(
+    exc: Exception, location: tuple[str, ...], given: object, error_type: str
+) -> ValidationError:
+    """``exc`` as the ``ValidationError`` the routes already report, at ``location``."""
+    return ValidationError.from_exception_data(
+        RuntimeConfig.__name__,
+        [
+            {
+                "type": PydanticCustomError(error_type, str(exc)),
+                "loc": location,
+                "input": given,
+            }
+        ],
+    )
+
+
 def with_current_names(patch: dict) -> dict:
     """``patch`` with its ``pipelines`` sections under the ADR 6 keys.
 
@@ -49,15 +67,27 @@ def with_current_names(patch: dict) -> dict:
     try:
         return rename_pipeline_settings(patch)
     except StoredFormatError as exc:
-        raise ValidationError.from_exception_data(
-            RuntimeConfig.__name__,
-            [
-                {
-                    "type": PydanticCustomError("setting_given_twice", str(exc)),
-                    "loc": ("pipelines",),
-                    "input": patch["pipelines"],
-                }
-            ],
+        raise _refused_document(
+            exc, (PIPELINES_SECTION,), patch[PIPELINES_SECTION], "setting_given_twice"
+        ) from exc
+
+
+def load_uploaded_settings(uploaded: dict) -> dict:
+    """The settings patch in an uploaded ``settings.json`` copy, at the current version.
+
+    An upload goes through the same loader as the stored file, so a file with
+    ``schema_version`` or the old pipeline section names is read, not refused as unknown
+    keys. Raises ``ValidationError`` (so the routes report it like the other problems) for
+    a version this build cannot read or a section given under both names."""
+    try:
+        return load_settings_document(uploaded)
+    except SchemaVersionError as exc:
+        raise _refused_document(
+            exc, (SCHEMA_VERSION_KEY,), uploaded.get(SCHEMA_VERSION_KEY), "unreadable_version"
+        ) from exc
+    except StoredFormatError as exc:
+        raise _refused_document(
+            exc, (PIPELINES_SECTION,), uploaded.get(PIPELINES_SECTION), "setting_given_twice"
         ) from exc
 
 

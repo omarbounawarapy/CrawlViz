@@ -11,6 +11,8 @@ GET  /config/stored     only the values that differ from the defaults
 PUT  /config            merge a partial config, validate, persist
 PUT  /config/replace    replace the stored settings with a full config
 POST /config/validate   validate a partial config without saving
+                        (/config/replace too: an uploaded settings.json copy may carry
+                        schema_version and the old pipeline section names)
 POST /config/effective  saved settings with per-run overrides applied
 GET  /config/export     the stored settings, for download
 GET  /config/presets    built-in and saved presets
@@ -94,7 +96,8 @@ def put_config(body: ConfigPatch) -> dict:
 @router.put("/config/replace")
 def replace_config(body: ConfigPatch) -> dict:
     try:
-        return store.replace_settings(get_paths().settings_file, body.values).model_dump()
+        uploaded = store.load_uploaded_settings(body.values)
+        return store.replace_settings(get_paths().settings_file, uploaded).model_dump()
     except ValidationError as exc:
         raise validation_http_error(exc)
 
@@ -102,7 +105,8 @@ def replace_config(body: ConfigPatch) -> dict:
 @router.post("/config/validate")
 def validate_config(body: ConfigPatch) -> dict:
     try:
-        store.load_runtime_config(get_paths().settings_file, body.values)
+        uploaded = store.load_uploaded_settings(body.values)
+        store.load_runtime_config(get_paths().settings_file, uploaded)
     except ValidationError as exc:
         return {"valid": False, "errors": store.validation_errors(exc)}
     return {"valid": True, "errors": []}
