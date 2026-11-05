@@ -34,7 +34,11 @@ This is maintained by one person outside of full-time work, so there's no formal
 This section covers SEC-1, SEC-2, SEC-3 and ETH-1 for CrawlViz as it stands on `main` at
 commit `0d21314`. It sets the order of the Phase C security and politeness fixes.
 
-Each threat names its evidence as `file:line`. A threat marked **Unverified** was worked out
+Each threat names its evidence as `file:line`. Paths and line numbers describe commit
+`0d21314`, before the fixes and the package moves. Modules have since been renamed or moved
+(`pipelines/requests_pipeline.py` is now `pipelines/fetch_stage.py`; the LLM, NLP and shared
+code is under `src/crawlviz/`), so open a citation at that commit to read it. Where a
+finding is marked fixed, its evidence is historical. A threat marked **Unverified** was worked out
 from the code but not shown by a test or a run. The section "What this model did not verify"
 lists those threats.
 
@@ -338,7 +342,7 @@ lists those threats.
 
 **T10. High: the rate limit is global rather than per host, and workers can race past it.**
 - Evidence: each worker computes its delay from `last_request_time` before it sleeps, and
-  only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228`, now `pipelines/fetch_stage.py`, which paces per host). Workers
+  only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228` at `0d21314`; `pipelines/fetch_stage.py` now paces per host). Workers
   that start together compute the same delay and send together. There is no per-host state.
 - **Status: fixed** by "Fetch: rate limit holds across workers, per host".
 - **Unverified before the fix:** worked out from the code. No test or run showed it.
@@ -358,7 +362,7 @@ lists those threats.
 - Fix: per-host delay = max(`min_delay`, Crawl-delay), with a capped maximum.
 
 **T11. Medium: Retry-After is ignored, and 503 does not trigger backoff.**
-- Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` (now `pipelines/fetch_stage.py`, which also handles 503 and Retry-After) looked only at status 429,
+- Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` at `0d21314` (`pipelines/fetch_stage.py` now also handles 503 and Retry-After) looked only at status 429,
   and the shared backoff ignores the header.
 - **Status: fixed** by "Retry: Retry-After and 503 are honoured, other 4xx are not retried" and
   "Fetch: a Retry-After answer holds the whole host off, and 503 backs the crawler off".
