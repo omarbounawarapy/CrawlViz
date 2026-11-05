@@ -79,7 +79,7 @@ write = [
   "src/crawlviz/**",
   "core/**", "config/**", "infrastructure/**", "models/**",
   "pipelines/**", "routes/**", "services/**", "traceability/**",
-  "ui_bridge/**", "utils/**", "tools/**", "templates/**", "main.py",
+  "ui_bridge/**", "tools/**", "templates/**", "main.py",
   "tests/**",
 ]
 exclude = [
