@@ -47,7 +47,6 @@ export default defineConfig([
     // Baseline from when jsx-a11y was added (2026-10-29): these ten findings are open and the
     // list only shrinks. Fix the element, then delete its entry here.
     files: [
-      "src/features/benchmark/RunsTab.jsx",
       "src/features/graph/GraphView.jsx",
       "src/features/landing/Landing.jsx",
       "src/features/loading/SpiderLoader.jsx",

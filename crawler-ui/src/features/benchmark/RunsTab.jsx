@@ -14,6 +14,7 @@ import Loading from "./Loading";
 import { LABEL, useLoad, num } from "./shared";
 import NumberField from "../config/NumberField";
 import ScrollRegion from "../common/ScrollRegion";
+import useFocusableWhenScrolling from "../common/useFocusableWhenScrolling";
 
 const { text, background } = getTheme().colors;
 
@@ -190,28 +191,36 @@ function JobPanel() {
             {job.expected_results ? ` of ${job.expected_results}` : ""} result files written · {job.rate_limit_mentions}{" "}
             rate-limit lines
           </p>
-          <pre
-            role="log"
-            aria-label="Job output"
-            tabIndex={0}
-            className="focus-box"
-            style={{
-              fontFamily: getTheme().typography.fontData,
-              fontSize: 12,
-              maxHeight: 220,
-              overflow: "auto",
-              background: background.panel,
-              border: `1px solid ${background.border}`,
-              padding: 10,
-              margin: 0,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {job.log.join("\n")}
-          </pre>
+          <JobLog lines={job.log} />
         </>
       )}
     </>
+  );
+}
+
+// The job output scrolls past a fixed height; it takes keyboard focus once it does, so arrow keys scroll it.
+function JobLog({ lines }) {
+  const ref = useFocusableWhenScrolling();
+  return (
+    <pre
+      ref={ref}
+      role="log"
+      aria-label="Job output"
+      className="focus-box"
+      style={{
+        fontFamily: getTheme().typography.fontData,
+        fontSize: 12,
+        maxHeight: 220,
+        overflow: "auto",
+        background: background.panel,
+        border: `1px solid ${background.border}`,
+        padding: 10,
+        margin: 0,
+        whiteSpace: "pre-wrap",
+      }}
+    >
+      {lines.join("\n")}
+    </pre>
   );
 }
 
