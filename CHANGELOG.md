@@ -6,6 +6,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ### Recent changes
 - The `llm` package lives under `src/crawlviz/llm/`: `LlmHandler`, the six provider translators, `KeyManager`, token usage, endpoints, the call budget and the typed layer. Import them with `from crawlviz.llm import ...`. The old `infrastructure/` paths are gone.
+- The shared kernel lives under `src/crawlviz/shared/`: the guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers. Import them with `from crawlviz.shared import ...`. The `utils/` folder is gone, and `infrastructure/` keeps only the async file handler and the log writer.
 - The `events`, `nlp`, `priority` and `offline` packages live under `src/crawlviz/`. Imports use `from crawlviz.nlp import ...` and the same form for the other three.
 - `settings.json`, `presets.json`, saved blueprints and run `manifest.json` carry `schema_version`. Files without it still load, a file with a newer version is refused with an "Update CrawlViz" message, and a settings reset replaces a refused settings file. `presets.json` nests the presets under a `presets` key.
 - The `pipelines.<key>` settings sections are `extract`, `fetch`, `score`, `storage`, `filter`, `prioritize`, `transform`, `debug_log` and `retry`. The old names are still read in files, presets, REST patches and live patches; a patch with both names for one section is refused. The `queues` object of `GET /status` uses the new keys.

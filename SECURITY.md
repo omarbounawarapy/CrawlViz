@@ -16,7 +16,7 @@ Include:
 - The FastAPI control API (`routes/`), including the read-only SQL layer in `routes/validation_db.py`.
 - Handling of LLM provider API keys (`src/crawlviz/llm/key_manager.py`, `keys.json`).
 - The WebSocket data plane (`ui_bridge/ui_websocket_gateway.py`).
-- Page fetching and robots.txt handling (`pipelines/fetch_stage.py`, `pipelines/robots.py`, `infrastructure/network_client.py`).
+- Page fetching and robots.txt handling (`pipelines/fetch_stage.py`, `pipelines/robots.py`, `src/crawlviz/shared/network_client.py`).
 - Blueprints, settings and presets written through the API (`routes/templates.py`, `routes/config*.py`).
 
 ## What's out of scope
@@ -42,7 +42,7 @@ lists those threats.
 
 - **In scope:** the FastAPI control API (`main.py`, `routes/`), the crawl WebSocket
   (`ui_bridge/`), page fetching and robots handling (`pipelines/fetch_stage.py`,
-  `pipelines/robots.py`, `infrastructure/network_client.py`), the LLM path
+  `pipelines/robots.py`, `src/crawlviz/shared/network_client.py`), the LLM path
   (`src/crawlviz/llm/llm_handler.py`, the translators beside it, `models/prompts.py`), keys
   (`src/crawlviz/llm/key_manager.py`, `routes/keys.py`), settings and blueprints (`config/`,
   `routes/templates.py`, `routes/config*.py`), crawl outputs (`ui_bridge/event_recorder.py`,
@@ -189,7 +189,7 @@ lists those threats.
   - `get_full_url` is `urljoin(base, link.url)`, which keeps absolute foreign URLs
     (`models/node.py:181-182`).
   - Filtering only removes duplicates (`pipelines/filter_stage.py:108-122`).
-  - The fetch uses the default aiohttp redirect handling (`infrastructure/network_client.py:17-22`).
+  - The fetch uses the default aiohttp redirect handling (`src/crawlviz/shared/network_client.py`, before the guarded redirects).
   - There is no `ipaddress`, `is_private` or hostname check anywhere in the backend.
 - Exploit path: a crawled page links to `http://127.0.0.1:8000/config/export`, to
   `http://169.254.169.254/...` (cloud metadata), or to a LAN device. Or a seed redirects
@@ -205,7 +205,7 @@ lists those threats.
 
 **T6. High: no limit on response size, content type or decompression.**
 - Evidence: `await response.text()` and `await response.json()` read whole bodies
-  (`infrastructure/network_client.py:21-22`, `:32-33`). `Accept-Encoding: gzip, deflate`
+  (`src/crawlviz/shared/network_client.py`, before the response cap). `Accept-Encoding: gzip, deflate`
   is the default and aiohttp decompresses it transparently (`config/runtime_config.py:426-433`).
   The crawler runs inside the API process (`routes/run.py:90`).
 - Exploit path: a hostile page sends a multi-gigabyte body, or a small gzip that expands to
