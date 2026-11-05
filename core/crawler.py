@@ -19,7 +19,6 @@ from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from config.template_names import template_stem
 from utils.html_utils import configure_url_normalization
-from utils.log_redaction import register_provider_keys
 from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
@@ -232,7 +231,6 @@ class Crawler:
                 cooldown=self.config.llm.key_cooldown_seconds,
                 keys_file=self.paths.keys_file,
             )
-        register_provider_keys(self.key_manager.registry)
         fetch = self.config.fetch
         # LLM endpoints are chosen by the operator (a local server is allowed),
         # unlike page URLs, which come from crawled pages.

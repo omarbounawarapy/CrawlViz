@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from infrastructure.key_manager import KeyManager
 from infrastructure.llm_handler import LlmHandler
-from utils.log_redaction import register_provider_keys, register_secrets
 
 from . import run as run_routes
 from .config_support import get_paths
@@ -22,7 +21,6 @@ def get_key_manager() -> KeyManager:
         path.write_text("{}", encoding="utf-8")
         os.chmod(path, 0o600)
     manager = KeyManager(keys_file=path)
-    register_provider_keys(manager.registry)
     return manager
 
 
@@ -52,7 +50,6 @@ def add_key(body: KeyBody) -> dict[str, Any]:
         key_id = get_key_manager().add_key(body.provider, body.key)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    register_secrets([body.key])
     _reload_running_keys()
     return {"id": key_id}
 
