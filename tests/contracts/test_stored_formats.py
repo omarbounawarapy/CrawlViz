@@ -86,27 +86,40 @@ def test_a_file_from_a_newer_crawlviz_is_refused_in_plain_words(
         read({SCHEMA_VERSION_KEY: newer})
 
 
-@pytest.mark.parametrize("version", [0, 1])
+@pytest.mark.parametrize("version", [0, 1, 2])
 def test_each_settings_version_loads_as_the_same_valid_patch(version: int) -> None:
     patch = load_settings_document(_fixture("settings", version))
     assert SCHEMA_VERSION_KEY not in patch
-    assert patch == SETTINGS_FILE.strip(_fixture("settings", 1))
+    assert patch == SETTINGS_FILE.strip(_fixture("settings", 2))
     # The loaded patch is what RuntimeConfig accepts today, every value taking effect.
-    _assert_applied(rename_pipeline_settings(patch), load_runtime_config(None, patch).model_dump())
+    _assert_applied(patch, load_runtime_config(None, patch).model_dump())
+
+
+def test_a_version_one_settings_file_gets_the_pipeline_section_names() -> None:
+    old = _fixture("settings", 1)
+    assert old["pipelines"] == {"requests": {"workers": 2}}
+    assert load_settings_document(old)["pipelines"] == {"fetch": {"workers": 2}}
+    assert load_settings_document(old) == SETTINGS_FILE.strip(rename_pipeline_settings(old))
+
+
+def test_a_version_one_settings_file_with_a_section_under_both_names_is_refused() -> None:
+    both = {SCHEMA_VERSION_KEY: 1, "pipelines": {"requests": {}, "fetch": {}}}
+    with pytest.raises(StoredFormatError, match=r"Keep only pipelines\.fetch\."):
+        load_settings_document(both)
 
 
 def test_an_unversioned_settings_file_on_disk_still_loads(tmp_path: Path) -> None:
     settings_file = tmp_path / "settings.json"
     settings_file.write_text((FIXTURES / "settings" / "v0.json").read_text(encoding="utf-8"))
-    patch = load_settings_document(read_stored(settings_file))
-    # `read_stored` already renames the pipeline sections to their current names.
-    assert patch == rename_pipeline_settings(SETTINGS_FILE.strip(_fixture("settings", 1)))
+    patch = read_stored(settings_file)
+    assert patch == SETTINGS_FILE.strip(_fixture("settings", 2))
     _assert_applied(patch, load_runtime_config(None, patch).model_dump())
 
 
 def test_settings_are_written_at_the_current_version() -> None:
     patch = load_settings_document(_fixture("settings", 0))
-    assert dump_settings_document(patch) == _fixture("settings", 1)
+    assert dump_settings_document(patch) == _fixture("settings", 2)
+    assert SETTINGS_FILE.current_version == 2
 
 
 def test_settings_survive_a_write_and_read_unchanged() -> None:

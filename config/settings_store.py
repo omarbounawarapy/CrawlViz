@@ -148,7 +148,7 @@ def read_stored(path: Path) -> dict:
             "from the Config page, which replaces it with the defaults."
         )
     try:
-        return rename_pipeline_settings(load_settings_document(data))
+        return load_settings_document(data)
     except (SchemaVersionError, StoredFormatError) as exc:
         raise SettingsFileError(
             f"{exc} The file is {path}. To start over instead, reset the settings from "

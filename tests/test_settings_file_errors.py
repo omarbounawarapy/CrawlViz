@@ -77,7 +77,7 @@ def test_saved_settings_carry_the_schema_version(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
     store.save_settings(path, {"fetch": {"min_delay": 3.0}})
     stored = json.loads(path.read_text(encoding="utf-8"))
-    assert stored["schema_version"] == 1
+    assert stored["schema_version"] == 2
     assert stored["fetch"] == {"min_delay": 3.0}
 
 

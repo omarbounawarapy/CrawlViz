@@ -3,6 +3,8 @@
 Each format reads with ``load_*`` (any older version is migrated, a newer one refused) and
 writes with ``dump_*`` (the current version is stamped). Version 0 is the unversioned
 format written before ADR 5; version 1 is the same content with ``schema_version`` added.
+Version 2 of a format that holds settings names the ``pipelines`` sections by the ADR 6
+stage keys (``fetch`` where version 1 had ``requests``).
 
 | Format | File | Version key kept after loading |
 |---|---|---|
@@ -16,6 +18,7 @@ from __future__ import annotations
 
 from typing import Final
 
+from .pipeline_settings import rename_pipeline_settings
 from .versioning import (
     SCHEMA_VERSION_KEY,
     Document,
@@ -24,8 +27,9 @@ from .versioning import (
     unchanged,
 )
 
-SETTINGS_FILE: Final = MigrationChain("settings file", current_version=1)
+SETTINGS_FILE: Final = MigrationChain("settings file", current_version=2)
 SETTINGS_FILE.register(0, unchanged)
+SETTINGS_FILE.register(1, rename_pipeline_settings)
 
 PRESETS_FILE: Final = MigrationChain("presets file", current_version=1)
 

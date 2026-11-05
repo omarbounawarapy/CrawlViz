@@ -7,8 +7,7 @@ step that moves a settings patch from the old names to the new ones. It is one s
 every format that holds a settings patch: the settings file, each saved preset and the
 ``runtime_config`` of a run manifest.
 
-No chain registers it yet. ``PipelinesConfig`` still reads the old keys, so the version bump
-of those formats lands in the commit that renames the model's fields.
+The settings file registers it as its step from version 1 to 2.
 """
 
 from __future__ import annotations

@@ -169,7 +169,7 @@ def test_invalid_settings_are_rejected(bad):
 def test_store_persists_only_the_difference(tmp_path):
     f = tmp_path / "settings.json"
     store.save_settings(f, {"fetch": {"min_delay": 3.0}})
-    assert json.loads(f.read_text()) == {"schema_version": 1, "fetch": {"min_delay": 3.0}}
+    assert json.loads(f.read_text()) == {"schema_version": 2, "fetch": {"min_delay": 3.0}}
     store.save_settings(f, {"pipelines": {"filter": {"workers": 4}}})
     cfg = store.load_runtime_config(f, {"fetch": {"min_delay": 0.0}})
     assert cfg.fetch.min_delay == 0.0  # override beats stored
@@ -178,7 +178,7 @@ def test_store_persists_only_the_difference(tmp_path):
     store.reset_settings(f, "fetch")
     assert "fetch" not in json.loads(f.read_text())
     store.reset_settings(f)
-    assert json.loads(f.read_text()) == {"schema_version": 1}
+    assert json.loads(f.read_text()) == {"schema_version": 2}
 
 
 def test_invalid_save_writes_nothing(tmp_path):
