@@ -69,7 +69,7 @@ class TelemetryBridge:
     """
     Thin, stateless-except-for-the-shared-snapshot translation layer.
 
-    Wired into EventBroker exactly like LoggingPipeline / DebuggingPipeline
+    Wired into EventBroker exactly like CrawlLogSink / DebuggingPipeline
     — one subscribe() call per event type, one put() method. No queue sits
     between the broker and this class.
     """

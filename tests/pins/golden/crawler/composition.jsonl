@@ -1,4 +1,4 @@
-{"class": "LoggingPipeline", "stage": "logging"}
+{"class": "CrawlLogSink", "stage": "logging"}
 {"class": "CanonicalizeStage", "stage": "canon"}
 {"class": "DebuggingPipeline", "stage": "debug"}
 {"class": "ExtractStage", "stage": "processing"}

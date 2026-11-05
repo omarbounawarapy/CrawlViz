@@ -2,11 +2,11 @@ import asyncio
 import json
 
 from events import StopCrawlEvent
-from pipelines.crawl_log_sink import LoggingPipeline
+from pipelines.crawl_log_sink import CrawlLogSink
 
 
 def test_lines_are_json_in_event_order(tmp_path):
-    lp = LoggingPipeline(None, "t-2026", log_root=str(tmp_path))
+    lp = CrawlLogSink(None, "t-2026", log_root=str(tmp_path))
     assert lp.max_concurrency == 1
 
     async def go():

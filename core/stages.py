@@ -18,12 +18,12 @@ from infrastructure.call_budget import CallBudget
 from models import Storage
 from pipelines import (
     CanonicalizeStage,
+    CrawlLogSink,
     DebuggingPipeline,
     ExportSink,
     ExtractStage,
     FetchStage,
     FilterStage,
-    LoggingPipeline,
     PriorityPipeline,
     RetryStage,
     ScoringPipeline,
@@ -95,7 +95,7 @@ Built = Mapping[str, CrawlStage]
 
 
 def _logging(inputs: StageInputs, built: Built) -> CrawlStage:
-    return LoggingPipeline(inputs.broker, inputs.crawl_id, log_root=inputs.paths.log_dir)
+    return CrawlLogSink(inputs.broker, inputs.crawl_id, log_root=inputs.paths.log_dir)
 
 
 def _canonicalization(inputs: StageInputs, built: Built) -> CrawlStage:

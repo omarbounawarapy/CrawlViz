@@ -18,7 +18,7 @@ from infrastructure import LogWriter
 from .base_pipeline import BasePipeline
 
 
-class LoggingPipeline(BasePipeline):
+class CrawlLogSink(BasePipeline):
     """Renders each node-lifecycle event into one human-readable line,
     written to both the console and a per-crawl log file (see
     infrastructure.LogWriter). This is the crawl's narrative log --
