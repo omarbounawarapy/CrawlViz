@@ -55,3 +55,8 @@ benchmark/data/exp_runs.json
 .claude/briefs/
 .claude/agent-memory/
 .mypy_cache/
+.env
+.env.*
+*.swp
+.*.sw?
+#*#
