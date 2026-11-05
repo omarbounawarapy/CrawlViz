@@ -6,6 +6,13 @@ engine. Agents, CI and the demo UI use it to run full crawls. Nothing here is
 used when the variable is unset.
 """
 
+from .scripted_llm import ScriptedLlm
 from .session import OFFLINE_ENV_VAR, OfflineSession, build_offline_session, is_offline
 
-__all__ = ["OFFLINE_ENV_VAR", "OfflineSession", "build_offline_session", "is_offline"]
+__all__ = [
+    "OFFLINE_ENV_VAR",
+    "OfflineSession",
+    "ScriptedLlm",
+    "build_offline_session",
+    "is_offline",
+]

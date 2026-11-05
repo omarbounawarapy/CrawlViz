@@ -1,6 +1,6 @@
 """A site script: the data that turns the frozen-site double into a long demo site.
 
-A script is a JSON file in ``offline/scripts/`` named after the blueprint it serves
+A script is a JSON file in the package folder ``scripts/`` named after the blueprint it serves
 (``offline_demo_long.json`` serves the blueprint ``offline_demo_long.json``). It holds:
 
 * ``site``: the size of a synthetic site (``benchmark.graph.synthetic_graph``);

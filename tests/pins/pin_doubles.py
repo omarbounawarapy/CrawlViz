@@ -7,7 +7,7 @@ doubles are written for the pins.
 
 from typing import Any, Protocol
 
-from crawlviz.offline.scripted_llm import ScriptedLlm
+from crawlviz.offline import ScriptedLlm
 from models import LlmContext
 
 __all__ = ["LlmSender", "RecordingGateway", "RecordingLlm", "ScriptedLlm"]

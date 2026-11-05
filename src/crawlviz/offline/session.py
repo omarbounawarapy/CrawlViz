@@ -44,8 +44,9 @@ def build_offline_session(
 ) -> OfflineSession:
     """Pair ``config`` (switched to hashing embeddings) with a scripted LLM and a frozen site.
 
-    A blueprint with a site script (``offline/scripts/<blueprint>.json``) gets the scripted
-    synthetic site and the script's settings; any other blueprint gets the frozen ISI graph.
+    A blueprint with a site script (``scripts/<blueprint>.json`` beside this module) gets
+    the scripted synthetic site and the script's settings; any other blueprint gets the
+    frozen ISI graph.
     """
     script = find_site_script(template_name)
     if script is None:
