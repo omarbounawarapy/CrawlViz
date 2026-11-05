@@ -153,7 +153,7 @@ vi.mock("./api/client", () => {
 });
 
 import App from "./App";
-import Landing from "./features/landing/Landing";
+import { Landing } from "./features/landing";
 import { SpiderLoader } from "./features/loading";
 import GraphView from "./features/graph/GraphView";
 import NodeInspector from "./features/inspector/NodeInspector";

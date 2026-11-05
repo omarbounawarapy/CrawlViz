@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import App from "./App.jsx";
-import Landing from "./features/landing/Landing.jsx";
+import { Landing } from "./features/landing";
 import { SpiderLoader } from "./features/loading";
 import { useRoute } from "./hooks/useRoute";
 
