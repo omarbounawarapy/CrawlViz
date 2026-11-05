@@ -19,7 +19,7 @@ class _ShutdownSentinel:
     ScoreStage's queue of bare Nodes, ExtractStage's queue of
     (Node, content) tuples) without heapq raising when it compares this
     sentinel against a real queue item. Combined with Node.__lt__
-    returning NotImplemented for non-Node operands (see models/node.py),
+    returning NotImplemented for non-Node operands (see src/crawlviz/shared/node.py),
     both comparison directions resolve safely.
     """
 
