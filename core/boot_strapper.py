@@ -9,12 +9,12 @@ Node per seed URL, and emits the NodeAddedEvent that starts the crawl.
 import logging
 
 from config import TEMPLATES_DIR
+from config.blueprint_file import load_blueprint_file
 from config.blueprint_schema import validate_blueprint
 from config.extraction_profiles import resolve_extraction_profile
 from config.template_names import resolve_template_path
 from events import NodeAddedEvent
 from models import Domain, Node
-from utils import load_json
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class BootStrapper:
         if not self.template_file.exists():
             raise FileNotFoundError(f"Blueprint template not found: {self.template_file}")
 
-        self.template = load_json(self.template_file)
+        self.template = load_blueprint_file(self.template_file)
 
         validated = validate_blueprint(self.template)
         # The crawl reads the raw dict, so a limit the blueprint left out is filled in

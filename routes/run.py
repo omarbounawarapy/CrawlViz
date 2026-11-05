@@ -23,12 +23,13 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import TEMPLATES_DIR, default_runtime_paths
+from config.blueprint_file import load_blueprint_file
 from config.blueprint_schema import Blueprint, BlueprintSchemaError, validate_blueprint
 from config.settings_store import SettingsFileError, load_runtime_config
 from config.template_names import InvalidTemplateNameError, resolve_template_path
 from core import Crawler, find_preflight_problems
+from crawlviz.contracts import SchemaVersionError, StoredFormatError
 from offline import build_offline_session, is_offline
-from utils import load_json
 
 from .config_support import validation_errors
 
@@ -95,13 +96,15 @@ def _refuse_if_running() -> None:
 def _read_blueprint(template_path: Path, template_name: str) -> Blueprint:
     """The validated blueprint, or a 422 that names the file and what to fix."""
     try:
-        return validate_blueprint(load_json(template_path))
+        return validate_blueprint(load_blueprint_file(template_path))
     except json.JSONDecodeError as exc:
         reason = f"it is not valid JSON ({exc})"
     except OSError as exc:
         reason = f"it could not be read ({exc.strerror or exc})"
     except BlueprintSchemaError as exc:
         reason = str(exc)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        reason = str(exc).rstrip(".")
     raise HTTPException(
         status_code=422,
         detail=f"The blueprint {template_name} cannot be used: {reason}. "

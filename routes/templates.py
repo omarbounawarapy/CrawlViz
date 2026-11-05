@@ -3,9 +3,10 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Any
 from config import TEMPLATES_DIR
+from config.blueprint_file import load_blueprint_file, read_blueprint_document, save_blueprint_file
 from config.blueprint_schema import BlueprintSchemaError, validate_blueprint
 from config.template_names import TEMPLATE_SUFFIX, InvalidTemplateNameError, resolve_template_path
-from utils import load_json, save_json
+from crawlviz.contracts import SchemaVersionError, StoredFormatError
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -28,15 +29,16 @@ class TemplateBody(BaseModel):
 
 def _validated(content: Any) -> Any:
     try:
-        validate_blueprint(content)
-    except BlueprintSchemaError as exc:
+        blueprint = read_blueprint_document(content)
+        validate_blueprint(blueprint)
+    except (BlueprintSchemaError, SchemaVersionError, StoredFormatError) as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return content
+    return blueprint
 
 
 def _write_template(path: str, content: Any) -> None:
     """Save a blueprint so a failed write never replaces the stored one."""
-    save_json(path, content)
+    save_blueprint_file(path, content)
 
 
 @router.get("")
@@ -50,7 +52,10 @@ def get_template(name: str):
     path = _path(name)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Template not found")
-    return load_json(path)
+    try:
+        return load_blueprint_file(path)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        raise HTTPException(status_code=422, detail=f"The template {name} cannot be opened: {exc}")
 
 
 @router.post("")
