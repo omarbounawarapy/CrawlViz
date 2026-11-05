@@ -3,7 +3,7 @@ import { getTheme } from "../../theme";
 import { SectionTitle, Button, Hint, EmptyState, ScrollRegion } from "../common";
 import FieldControl from "./FieldControl";
 import RangeSlider from "./RangeSlider";
-import { Explain } from "./Term";
+import { Explain } from "../../shared/ui";
 import { badgeStyle, slug } from "./settingsStyle";
 import { stageName } from "./pipelineNames";
 import { getIn, groupBySection, isActive, matches, rangeOf, sameValue, validateField } from "./configModel";

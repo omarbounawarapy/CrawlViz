@@ -3,7 +3,7 @@ import { getTheme } from "../../theme";
 import { Button, SectionTitle } from "../common";
 import { fetchPresets } from "../../api/client";
 import { presetChanges } from "./presetModel";
-import { Explain } from "./Term";
+import { Explain } from "../../shared/ui";
 
 const theme = getTheme();
 const { text, background } = theme.colors;
