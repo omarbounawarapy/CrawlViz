@@ -148,14 +148,26 @@ class KeyManager:
             self.indexes[provider] = self.indexes.get(provider, 0) % len(keys) if keys else 0
 
     def save(self) -> None:
-        """Atomically write the registry back to ``keys_file`` (0600)."""
+        """Atomically write the registry back to ``keys_file`` (0600).
+
+        The keys reach the disk in a temp file beside ``keys_file`` that then replaces it.
+        If any step fails the temp file is deleted, so no copy of the keys is left behind,
+        and ``keys_file`` keeps its old content.
+        """
         path = Path(self.keys_file)
         tmp = path.with_suffix(path.suffix + ".tmp")
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, KEYS_FILE_MODE)
-        os.chmod(tmp, KEYS_FILE_MODE)  # a leftover .tmp keeps the mode it was created with
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(self.registry, f, indent=2)
-        os.replace(tmp, path)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                os.chmod(tmp, KEYS_FILE_MODE)  # a leftover .tmp keeps the mode it was created with
+                json.dump(self.registry, f, indent=2)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, path)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            logger.exception("Could not save API keys to %s; the file is unchanged", path)
+            raise
 
     @staticmethod
     def _restrict_permissions(file_path: Path) -> None:
