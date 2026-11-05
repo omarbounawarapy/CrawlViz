@@ -16,7 +16,7 @@ Include:
 - The FastAPI control API (`routes/`), including the read-only SQL layer in `routes/validation_db.py`.
 - Handling of LLM provider API keys (`infrastructure/key_manager.py`, `keys.json`).
 - The WebSocket data plane (`ui_bridge/ui_websocket_gateway.py`).
-- Page fetching and robots.txt handling (`pipelines/requests_pipeline.py`, `pipelines/robots.py`, `infrastructure/network_client.py`).
+- Page fetching and robots.txt handling (`pipelines/fetch_stage.py`, `pipelines/robots.py`, `infrastructure/network_client.py`).
 - Blueprints, settings and presets written through the API (`routes/templates.py`, `routes/config*.py`).
 
 ## What's out of scope
@@ -41,7 +41,7 @@ lists those threats.
 ### Scope and method
 
 - **In scope:** the FastAPI control API (`main.py`, `routes/`), the crawl WebSocket
-  (`ui_bridge/`), page fetching and robots handling (`pipelines/requests_pipeline.py`,
+  (`ui_bridge/`), page fetching and robots handling (`pipelines/fetch_stage.py`,
   `pipelines/robots.py`, `infrastructure/network_client.py`), the LLM path
   (`infrastructure/llm_handler.py`, translators, `models/prompts.py`), keys
   (`infrastructure/key_manager.py`, `routes/keys.py`), settings and blueprints (`config/`,
@@ -188,7 +188,7 @@ lists those threats.
     (`models/node.py:64-73`).
   - `get_full_url` is `urljoin(base, link.url)`, which keeps absolute foreign URLs
     (`models/node.py:181-182`).
-  - Filtering only removes duplicates (`pipelines/filtering_pipeline.py:108-122`).
+  - Filtering only removes duplicates (`pipelines/filter_stage.py:108-122`).
   - The fetch uses the default aiohttp redirect handling (`infrastructure/network_client.py:17-22`).
   - There is no `ipaddress`, `is_private` or hostname check anywhere in the backend.
 - Exploit path: a crawled page links to `http://127.0.0.1:8000/config/export`, to
@@ -247,7 +247,7 @@ lists those threats.
     (`routes/run.py:75-83`).
   - The crawl id comes from that name (`core/crawler.py:92-96`).
   - That id builds the export, log and debug paths (`core/crawler.py:331`,
-    `pipelines/logging_pipeline.py:42-45`, `pipelines/debugging_pipeline.py:105-108`).
+    `pipelines/crawl_log_sink.py:42-45`, `pipelines/debug_log_sink.py:105-108`).
 - Exploit path: `templateName="../x.json"` or an absolute path answers 404 or 422, which tells
   the caller whether any file exists on disk. A valid blueprint anywhere on disk can be run,
   and its crawl id then writes export, log and debug files outside the repo. The template
@@ -333,7 +333,7 @@ lists those threats.
 
 **T10. High: the rate limit is global rather than per host, and workers can race past it.**
 - Evidence: each worker computes its delay from `last_request_time` before it sleeps, and
-  only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228`). Workers
+  only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228`, now `pipelines/fetch_stage.py`, which paces per host). Workers
   that start together compute the same delay and send together. There is no per-host state.
 - **Unverified:** worked out from the code. No test or run showed it.
 - Fix: a per-host limiter that books the next slot under a lock before sleeping.
@@ -352,7 +352,7 @@ lists those threats.
 - Fix: per-host delay = max(`min_delay`, Crawl-delay), with a capped maximum.
 
 **T11. Medium: Retry-After is ignored, and 503 does not trigger backoff.**
-- Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` look only at status 429,
+- Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` (now `pipelines/fetch_stage.py`, which also handles 503 and Retry-After) looked only at status 429,
   and the shared backoff ignores the header.
 - Fix: honour Retry-After in both its forms (seconds or an HTTP date), per host and with a
   cap. Treat 503 like 429.
@@ -360,10 +360,10 @@ lists those threats.
 **T12. Medium: politeness can be turned off with no floor and no record.**
 - Evidence:
   - `user_agent` is free text with no minimum (`config/runtime_config.py:411-417`), and
-    `extra_headers` can replace it (`pipelines/requests_pipeline.py:84`).
+    `extra_headers` can replace it (`pipelines/fetch_stage.py:87`).
   - The robots toggle (`config/runtime_config.py:395-401`), `min_delay >= 0` (`:318-326`)
     and up to 64 workers (`:468-477`).
-  - The constructor default is `respect_robots=False` (`pipelines/requests_pipeline.py:54`);
+  - The constructor default is `respect_robots=False` (`pipelines/fetch_stage.py:57`);
     the config default is True (`config/config.py:60`).
   - The default User-Agent is honest and carries a contact (`config/config.py:57-59`).
   - With T4, a third party can apply the `fast` preset.
