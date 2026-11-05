@@ -24,7 +24,7 @@ The class does three jobs that change for different reasons:
    (`nlp/space_updater.py:13`).
 
 Callers depend only on the third job's surface plus `score_links`:
-`ScoringPipeline` (`score_links`, `update_space`), `SpaceUpdater` (`space`, `save_space`,
+`ScoreStage` (`score_links`, `update_space`), `SpaceUpdater` (`space`, `save_space`,
 `space_size`), the benchmark runner and `tools/nlp_eval.py` (constructor, `start`,
 `score_links`), and the `RelevanceScorer` contract (`pipelines/contracts.py:12`). The behaviour
 pins run the real `NLPService` (`tests/pins/pin_crawl.py:4`), so any change to its numbers

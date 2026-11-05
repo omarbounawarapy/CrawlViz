@@ -34,10 +34,10 @@ the NLP subsystem. Those parts are short and read well; they are not the problem
 
 1. **Every event consumer says which events it receives**, through a read-only
    `event_types` tuple. Where a consumer has a handler table, `event_types` is derived from it,
-   so the two can no longer disagree. `BasePipeline`, `RequestsPipeline` and
-   `ExportingPipeline` derive it from `handlers`; consumers that
-   dispatch differently (`LoggingPipeline`, `StoppingPipeline`, `FilteringPipeline`,
-   `TransformationPipeline`) state it; `SpaceUpdater` derives it from its `handlers` and
+   so the two can no longer disagree. `BasePipeline`, `FetchStage` and
+   `ExportSink` derive it from `handlers`; consumers that
+   dispatch differently (`CrawlLogSink`, `StopController`, `FilterStage`,
+   `TransformStage`) state it; `SpaceUpdater` derives it from its `handlers` and
    `TelemetryBridge` from `_dispatch`. The structural type is `EventConsumer` in
    `pipelines/contracts.py`.
 2. **The composition root subscribes each consumer to its own `event_types`.** It keeps only
