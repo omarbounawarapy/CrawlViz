@@ -14,6 +14,7 @@ on load.
 from __future__ import annotations
 
 import copy
+import reprlib
 from collections.abc import Callable
 from typing import Any, Final
 
@@ -24,6 +25,27 @@ UNVERSIONED: Final = 0
 # Any: stored documents are JSON objects of any shape until the format's model validates them.
 Document = dict[str, Any]
 Migration = Callable[[Document], Document]
+
+# The longest echo of a document's version value in an error message. The value comes from
+# an uploaded file or request body, so it can be any size; the message is sent back in a reply.
+VERSION_ECHO_MAX_CHARS: Final = 60
+_ECHO_ITEMS: Final = 4
+
+_version_echo = reprlib.Repr()
+_version_echo.maxlevel = 1
+_version_echo.maxstring = VERSION_ECHO_MAX_CHARS
+_version_echo.maxlong = VERSION_ECHO_MAX_CHARS
+_version_echo.maxother = VERSION_ECHO_MAX_CHARS
+_version_echo.maxlist = _version_echo.maxtuple = _ECHO_ITEMS
+_version_echo.maxdict = _version_echo.maxset = _ECHO_ITEMS
+
+
+def _echo_version(value: object) -> str:
+    """``repr(value)`` cut to at most ``VERSION_ECHO_MAX_CHARS``, for an error message."""
+    text = _version_echo.repr(value)
+    if len(text) <= VERSION_ECHO_MAX_CHARS:
+        return text
+    return text[: VERSION_ECHO_MAX_CHARS - len("...")] + "..."
 
 
 class SchemaVersionError(ValueError):
@@ -76,9 +98,9 @@ class MigrationChain:
         # bool is an int subclass; `true` is not a version.
         if isinstance(version, bool) or not isinstance(version, int) or version < UNVERSIONED:
             raise SchemaVersionError(
-                f"The {self.format_name} has {self.version_key} {version!r}, which is not a "
-                f"version number. Set it to a whole number from {UNVERSIONED} to "
-                f"{self.current_version}, or remove it if the file predates versions."
+                f"The {self.format_name} has {self.version_key} {_echo_version(version)}, "
+                f"which is not a version number. Set it to a whole number from {UNVERSIONED} "
+                f"to {self.current_version}, or remove it if the file predates versions."
             )
         return version
 
@@ -90,8 +112,9 @@ class MigrationChain:
         version = self.version_of(document)
         if version > self.current_version:
             raise SchemaVersionError(
-                f"The {self.format_name} is version {version}, but this CrawlViz reads "
-                f"version {self.current_version} at most. Update CrawlViz to open it."
+                f"The {self.format_name} is version {_echo_version(version)}, but this "
+                f"CrawlViz reads version {self.current_version} at most. Update CrawlViz to "
+                "open it."
             )
         migrated = copy.deepcopy(document)
         while version < self.current_version:
