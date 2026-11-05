@@ -82,7 +82,12 @@ class TestPathHelpers:
             ("core/crawler.py", "core.crawler"),
             ("core/__init__.py", "core"),
             ("main.py", "main"),
-            ("src/crawlviz/fetch/__init__.py", "src.crawlviz.fetch"),
+            ("src/crawlviz/fetch/__init__.py", "crawlviz.fetch"),
+            ("src/crawlviz/score/llm/types.py", "crawlviz.score.llm.types"),
+            ("src/crawlviz/score/llm/__init__.py", "crawlviz.score.llm"),
+            ("tests/test_robots.py", "tests.test_robots"),
+            ("tests/pins/pin_crawl.py", "pin_crawl"),
+            ("tools/check_baselines.py", "tools.check_baselines"),
         ],
     )
     def test_path_to_module(self, path: str, module: str) -> None:
@@ -98,6 +103,22 @@ class TestPathHelpers:
 
 
 class TestFindAdditions:
+    def test_moving_a_legacy_module_into_src_is_not_growth(self) -> None:
+        base = baselines({"core.crawler"})
+        current = baselines({"crawlviz.crawl.crawler"})
+        renames = {"core/crawler.py": "src/crawlviz/crawl/crawler.py"}
+
+        assert guard.find_additions(base, current, renames) == []
+
+    def test_moving_a_legacy_module_but_keeping_its_old_name_is_growth(self) -> None:
+        base = baselines({"core.crawler"})
+        current = baselines({"core.crawler", "crawlviz.crawl.crawler"})
+        renames = {"core/crawler.py": "src/crawlviz/crawl/crawler.py"}
+
+        assert guard.find_additions(base, current, renames) == [
+            "mypy legacy list gained core.crawler"
+        ]
+
     def test_identical_baselines_have_no_additions(self) -> None:
         both = baselines({"core.crawler"}, {"main.py": {"I001"}})
 
@@ -147,14 +168,14 @@ class TestFindAdditions:
 
     def test_renamed_mypy_module_is_not_growth(self) -> None:
         base = baselines({"core.crawler"})
-        current = baselines({"src.crawlviz.crawl.crawler"})
+        current = baselines({"crawlviz.crawl.crawler"})
         renames = {"core/crawler.py": "src/crawlviz/crawl/crawler.py"}
 
         assert guard.find_additions(base, current, renames) == []
 
     def test_renamed_package_init_maps_to_the_package_module(self) -> None:
         base = baselines({"events"})
-        current = baselines({"src.crawlviz.events"})
+        current = baselines({"crawlviz.events"})
         renames = {"events/__init__.py": "src/crawlviz/events/__init__.py"}
 
         assert guard.find_additions(base, current, renames) == []

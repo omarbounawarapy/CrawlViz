@@ -29,6 +29,10 @@ BASE_BRANCH = "main"
 PYPROJECT = "pyproject.toml"
 GLOB_CHARACTERS = "*?["
 MYPY_ERROR_LINE = re.compile(r"^(?P<path>[^\s:]+\.py)(?::\d+)*: error")
+# Directories on `mypy_path` in pyproject.toml whose files are named without the prefix:
+# src/crawlviz/x.py is `crawlviz.x`, and tests/pins has no __init__.py so its files import
+# each other by bare name.
+MODULE_ROOTS = ("src/", "tests/pins/")
 SUCCESS_OR_FINDINGS = (0, 1)
 
 
@@ -54,6 +58,11 @@ def parse_baselines(pyproject_text: str) -> Baselines:
 
 
 def path_to_module(path: str) -> str:
+    """The module name mypy gives a file: relative to the nearest `mypy_path` root."""
+    for root in MODULE_ROOTS:
+        if path.startswith(root):
+            path = path.removeprefix(root)
+            break
     return path.removesuffix(".py").replace("/", ".").removesuffix(".__init__")
 
 
