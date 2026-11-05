@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import aiohttp
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from yarl import URL
 
 from benchmark.graph import GENERIC_TERMS, TOPIC_TERMS, FrozenGraph, GraphFetcher, synthetic_graph
@@ -56,8 +56,15 @@ class SiteScript(BaseModel):
     schema_version: Literal[1]
     site: SiteSpec
     rate_limit_episodes: list[RateLimitEpisode]
-    # Any: a partial RuntimeConfig, so the keys are the config's own; validated when applied.
+    # Any: a partial RuntimeConfig, so the keys are the config's own; checked on load.
     config: dict[str, Any]
+
+    @field_validator("config")
+    @classmethod
+    def _config_is_a_partial_runtime_config(cls, config: dict[str, Any]) -> dict[str, Any]:
+        """Refuse a stray or mistyped setting when the script loads, not mid-crawl."""
+        RuntimeConfig.model_validate(deep_merge(default_runtime_config().model_dump(), config))
+        return config
 
     @classmethod
     def load(cls, path: Path) -> "SiteScript":

@@ -6,6 +6,7 @@ from typing import Any
 
 import aiohttp
 import pytest
+from pydantic import ValidationError
 
 from config import TEMPLATES_DIR
 from config.blueprint_schema import validate_blueprint
@@ -135,5 +136,17 @@ def test_a_script_with_an_unknown_key_is_refused() -> None:
                 "rate_limit_episodes": [],
                 "config": {},
                 "episodes": [],
+            }
+        )
+
+
+def test_a_setting_the_config_does_not_have_is_refused_when_the_script_loads() -> None:
+    with pytest.raises(ValidationError, match="min_delay_typo"):
+        SiteScript.model_validate(
+            {
+                "schema_version": 1,
+                "site": {"n_pages": 20, "out_degree": 3, "relevant_fraction": 0.3, "seed": 1},
+                "rate_limit_episodes": [],
+                "config": {"fetch": {"min_delay_typo": 1.0}},
             }
         )
