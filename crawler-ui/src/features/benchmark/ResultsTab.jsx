@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchBenchmarkCurves } from "../../api/client";
 import { getTheme } from "../../theme";
 import { SectionTitle, Tabs, TabPanel, ScrollRegion } from "../common";
-import { Explain } from "../config";
+import { Explain } from "../../shared/ui";
 import Loading from "./Loading";
 import { useLoad, POLICY_ORDER, num } from "./shared";
 
