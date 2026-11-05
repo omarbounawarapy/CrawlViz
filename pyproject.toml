@@ -171,6 +171,7 @@ files = [
     "infrastructure",
     "models",
     "nlp",
+    "offline",
     "pipelines",
     "priority",
     "routes",

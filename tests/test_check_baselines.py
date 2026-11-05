@@ -1,6 +1,7 @@
 """Rules of the shrink-only baseline guard (tools/check_baselines.py)."""
 
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -73,6 +74,22 @@ class TestParseBaselines:
         parsed = guard.parse_baselines('[project]\nname = "demo"\n')
 
         assert parsed == baselines()
+
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+# Folders with Python that mypy does not check yet; the list may only shrink.
+UNCHECKED_PYTHON_FOLDERS = {".claude"}
+
+
+def test_mypy_files_cover_every_tracked_python_folder() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "*.py"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+    ).stdout.split()
+    top_level = {name.split("/")[0] for name in tracked}
+    config = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    covered = {entry.split("/")[0] for entry in config["tool"]["mypy"]["files"]}
+
+    assert top_level - covered - UNCHECKED_PYTHON_FOLDERS - {"main.py"} == set()
 
 
 class TestPathHelpers:
