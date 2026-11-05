@@ -218,6 +218,25 @@ class TestPythonTestsFor:
 
         assert selected_tests(repo, "utils/foo.py") == ["tests/test_foo.py"]
 
+    def test_each_python_file_is_parsed_once_even_when_a_module_was_deleted(
+        self, repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        write(repo, "utils/__init__.py")
+        write(repo, "tests/test_foo.py", "from utils.foo import thing\n")
+        write(repo, "tests/test_bar.py", "import utils\n")
+        parsed: list[Path] = []
+        original = tool.import_names_of
+
+        def counting(path: Path) -> set[str]:
+            parsed.append(path)
+            return original(path)
+
+        monkeypatch.setattr(tool, "import_names_of", counting)
+
+        tool.python_tests_for([repo / "utils" / "foo.py"])
+
+        assert sorted(parsed) == sorted(set(parsed))
+
     def test_a_deleted_package_init_selects_tests_that_import_the_package(self, repo: Path) -> None:
         write(repo, "pkg/__init__.py")
         write(repo, "tests/test_pkg.py", "import pkg.sub\n")

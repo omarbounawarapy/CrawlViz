@@ -121,11 +121,16 @@ def import_names_of(path: Path) -> set[str]:
     return names
 
 
-def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
-    """Repo files that `path` imports."""
-    found = {modules[name] for name in import_names_of(path) if name in modules}
+def repo_files_named(path: Path, names: set[str], modules: dict[str, Path]) -> set[Path]:
+    """Repo files among `names`, the dotted names `path` may import (never `path` itself)."""
+    found = {modules[name] for name in names if name in modules}
     found.discard(path)
     return found
+
+
+def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
+    """Repo files that `path` imports."""
+    return repo_files_named(path, import_names_of(path), modules)
 
 
 def dotted_name(path: Path) -> str:
@@ -145,9 +150,10 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
     A changed conftest.py selects every test beneath its directory.
     """
     modules = python_modules()
+    names_by_path = {path: import_names_of(path) for path in modules.values()}  # parsed once
     importers: dict[Path, set[Path]] = {}
-    for path in modules.values():
-        for imported in imports_of(path, modules):
+    for path, names in names_by_path.items():
+        for imported in repo_files_named(path, names, modules):
             importers.setdefault(imported, set()).add(path)
     reached: set[Path] = set()
     pending = list(sources)
@@ -156,7 +162,7 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
         dotted_name(source) for source in sources if source.suffix == ".py" and not source.exists()
     }
     if removed:
-        pending.extend(path for path in modules.values() if removed & import_names_of(path))
+        pending.extend(path for path, names in names_by_path.items() if removed & names)
     while pending:
         current = pending.pop()
         if current not in reached:
