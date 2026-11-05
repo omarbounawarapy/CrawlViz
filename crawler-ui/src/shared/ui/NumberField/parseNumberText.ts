@@ -7,9 +7,6 @@ const NUMBER_PATTERN = /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i;
  * Reads typed number text whatever the keyboard's locale. A dot or a comma can be the
  * decimal separator ("0,3" and "0.3" are both 0.3); when both appear, the comma separates
  * thousands ("1,000.5"). Spaces around the text are ignored; an empty box is `null`.
- *
- * The config feature has the same reader in `features/config/numberParse.js`; it moves to
- * this one when its settings move to the shared NumberField.
  */
 export function parseNumberText(text: string): ParsedNumber {
   const trimmed = text.trim();
