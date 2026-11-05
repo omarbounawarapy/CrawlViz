@@ -99,6 +99,27 @@ cd crawler-ui && npm test
 
 Scoring thresholds (`LOW`/`HIGH` bucket cutoffs), the embedding model name, and export batching are the defaults in `config/config.py`; the Config page overrides them without editing the file.
 
+### Stored files and their versions
+
+Every file CrawlViz writes carries an integer `schema_version`, currently 1 for all of them (`src/crawlviz/contracts/stored_formats.py`).
+
+| File | Shape |
+|---|---|
+| `settings.json` | the settings patch, plus `schema_version` |
+| `presets.json` | `{"schema_version": 1, "presets": {"<name>": <settings patch>}}` |
+| saved blueprints in `templates/` | the blueprint, plus `schema_version` |
+| `manifest.json` of a run | the manifest, plus `schema_version` |
+
+- A file without `schema_version` is version 0. It loads and is migrated in memory; nothing is written back until the file is saved again. An old `presets.json`, which was `{"<name>": <patch>}`, is read as the `presets` object.
+- A file with a newer version than the running build is refused. The message names both versions and says to update CrawlViz.
+- A refused or damaged `settings.json` stops the settings from loading. A full settings reset from the Config page replaces it without reading it.
+
+### Settings sections and unknown keys
+
+The `pipelines.<key>` sections are `extract`, `fetch`, `score`, `storage`, `filter`, `prioritize`, `transform`, `debug_log` and `retry`. The older names `processing`, `requests`, `scoring`, `filtering`, `priority`, `transformation` and `debugging` are still read in `settings.json`, in presets, in REST patches and in live patches, and are stored under the new names. A patch that holds one section under both its old and new name is refused, and the message names both keys. The `queues` object of `GET /status` uses the new keys.
+
+Settings models reject keys they do not define. The error names the path, for example `pipelines.fetchh`, so a misspelt setting is reported instead of ignored.
+
 ## Development workflow
 
 ```bash
