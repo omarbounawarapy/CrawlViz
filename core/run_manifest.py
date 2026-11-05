@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from config.runtime_config import RuntimeConfig
+from crawlviz.contracts import dump_run_manifest
 from ui_bridge.event_recorder import EventRecorder, git_sha
 
 from .manifest_redaction import redact_manifest
@@ -36,4 +37,4 @@ class RunManifestWriter:
         }
 
     def write(self, recorder: EventRecorder) -> None:
-        recorder.write_manifest(redact_manifest(self.build()))
+        recorder.write_manifest(dump_run_manifest(redact_manifest(self.build())))
