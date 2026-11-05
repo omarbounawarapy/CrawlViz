@@ -104,7 +104,7 @@ The **Data** tab then shows what the crawler actually stored for each page: its 
 git clone https://github.com/omarbounawarapy/CrawlViz.git
 cd CrawlViz
 make install                      # uv sync --extra dev (adds mypy, pytest-timeout, hypothesis) + npm install
-cp keys.example.json keys.json    # add a key for the LLM provider you use
+install -m 600 keys.example.json keys.json    # add a key for the LLM provider you use
 make dev                          # API on :8000, UI on :5173
 ```
 

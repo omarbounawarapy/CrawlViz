@@ -12,7 +12,7 @@ See [`docs/08-developer-guide.md`](docs/08-developer-guide.md) for the full inst
 
 ```bash
 make install
-cp keys.example.json keys.json   # fill in real keys for whichever LLM provider(s) you use
+install -m 600 keys.example.json keys.json   # fill in real keys for whichever LLM provider(s) you use
 make dev                         # backend on :8000, frontend on :5173
 ```
 

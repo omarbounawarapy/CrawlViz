@@ -21,7 +21,7 @@ make install
 Link relevance scoring and topic expansion call an LLM. Six providers are supported through the same `LlmHandler` abstraction: OpenRouter, OpenAI, Anthropic, Google Gemini, NVIDIA (NIM), and Groq. Pick one per blueprint with `scoring.params.scoring_type` and `expansion.llm_type`. Copy the example key file and fill in real keys for whichever provider(s) you plan to use. `keys.json` is gitignored:
 
 ```bash
-cp keys.example.json keys.json
+install -m 600 keys.example.json keys.json
 ```
 
 `src/crawlviz/llm/key_manager.py` supports multiple keys in this file and rotates between them with a cooldown policy. Listing more than one key gives the manager a small pool to draw from under load.
