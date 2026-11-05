@@ -1,5 +1,5 @@
-// Counts for the cascade funnel. Mirrors ScoringPipeline.bucket_links
-// (pipelines/scoring_pipeline.py); tested against fixtures the Python code wrote.
+// Counts for the cascade funnel. Mirrors ScoreStage.bucket_links
+// (pipelines/score_stage.py); tested against fixtures the Python code wrote.
 
 /** numpy.percentile with linear interpolation; `p` in 0-100. */
 export function percentile(values, p) {
