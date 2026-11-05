@@ -664,8 +664,8 @@ async def run_cascade(
     """
     require_topic(graph.topic, allow_empty=allow_empty_topic)
     from config.runtime_config import default_runtime_config
+    from crawlviz.priority.strategy import get_strategy
     from nlp import BufferManager, SpaceUpdater
-    from priority.strategy import get_strategy
     from services import NLPService, ScoringService
 
     cfg = default_runtime_config()

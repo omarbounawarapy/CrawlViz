@@ -44,8 +44,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 import config as _config
 from config.user_agent import require_contact
 from crawlviz.contracts import StoredFormatError, rename_pipeline_settings
+from crawlviz.priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
-from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
 
 def _f(

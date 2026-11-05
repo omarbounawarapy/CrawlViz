@@ -100,8 +100,8 @@ max-complexity = 10
 "pipelines/fetch_stage.py" = ["I001", "PLR0913"]
 "pipelines/retry_stage.py" = ["PLR0913"]
 "pipelines/score_stage.py" = ["I001", "PLR0913"]
-"priority/__init__.py" = ["RUF022"]
-"priority/strategy.py" = ["PLR0913"]
+"src/crawlviz/priority/__init__.py" = ["RUF022"]
+"src/crawlviz/priority/strategy.py" = ["PLR0913"]
 "routes/benchmark.py" = ["E501", "PLR2004"]
 "routes/config.py" = ["B904", "E501"]
 "routes/run.py" = ["B904", "E501", "N815", "PLW0603"]
@@ -172,7 +172,6 @@ files = [
     "models",
     "nlp",
     "pipelines",
-    "priority",
     "routes",
     "services",
     "src/crawlviz",
@@ -252,7 +251,7 @@ module = [
     "pipelines.stop_controller",
     "pipelines.storage_sink",
     "pipelines.transform_stage",
-    "priority.strategy",
+    "crawlviz.priority.strategy",
     "routes.benchmark",
     "routes.config",
     "routes.run",

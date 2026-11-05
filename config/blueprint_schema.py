@@ -46,7 +46,7 @@ from .config import (
     DEFAULT_PRIORITY_STRATEGY,
 )
 from .extraction_profiles import ProfileError, resolve_profile_fields
-from priority.strategy import STRATEGY_REGISTRY
+from crawlviz.priority.strategy import STRATEGY_REGISTRY
 
 # =========================================================
 # STRICT ENUMERATIONS -- single source of truth

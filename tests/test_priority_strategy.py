@@ -10,7 +10,7 @@ just that it runs).
 
 import pytest
 
-from priority.strategy import (
+from crawlviz.priority.strategy import (
     STRATEGY_REGISTRY,
     aggressive,
     balanced,

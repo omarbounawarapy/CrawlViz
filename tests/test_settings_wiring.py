@@ -15,7 +15,7 @@ from routes.session_token import get_session_token
 import routes.run as run_routes
 from config import settings_store as store
 from config.paths import RuntimePaths
-from priority.strategy import DEFAULT_WEIGHTS
+from crawlviz.priority.strategy import DEFAULT_WEIGHTS
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core.crawler import Crawler
 from infrastructure.key_manager import KeyManager
