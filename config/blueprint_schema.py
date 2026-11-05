@@ -18,7 +18,7 @@ drifted out of sync three separate times in this codebase's history:
        authored through the UI silently fell back to "balanced" no
        matter what was selected.
     3. The LLM *scoring* strategy (models/prompts.py) and the frontier
-       *priority* strategy (priority/strategy.py) share enough surface
+       *priority* strategy (src/crawlviz/priority/strategy.py) share enough surface
        area (both called "strategy" informally, one name "exploration"
        used by both with different meanings) to be conflated in code
        and documentation.
@@ -54,7 +54,7 @@ from crawlviz.priority.strategy import STRATEGY_REGISTRY
 
 # LLM scoring strategy (blueprint key: scoring.strategy) -- biases the
 # wording of the prompt sent to the scoring LLM. NOT the same as
-# priority_strategy below; see models/prompts.py and priority/strategy.py.
+# priority_strategy below; see models/prompts.py and src/crawlviz/priority/strategy.py.
 ALLOWED_STRATEGIES: frozenset[str] = frozenset(
     {
         "TOPICAL",
