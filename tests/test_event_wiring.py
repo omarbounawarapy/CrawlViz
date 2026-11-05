@@ -163,7 +163,7 @@ class TestConsumersNameTheirEvents:
             "LoggingPipeline",
             "CanonicalizeStage",
             "ExtractStage",
-            "StoragePipeline",
+            "StorageSink",
             "StoppingPipeline",
             "TelemetryBridge",
         ]

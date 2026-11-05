@@ -53,7 +53,7 @@ from pipelines import (
     ScoringPipeline,
     StopConditions,
     StoppingPipeline,
-    StoragePipeline,
+    StorageSink,
     TransformStage,
 )
 
@@ -208,7 +208,7 @@ class Crawl:
             ExtractStage(b, EXTRACTION),
             FilterStage(b, s),
             TransformStage(b, EXTRACTION),
-            StoragePipeline(s, b),
+            StorageSink(s, b),
             self.scoring,
             PriorityPipeline(s, b),
             self.retry,
@@ -314,7 +314,7 @@ async def _score_one_ready_node(nlp_score: float, run_for: float):
         scoring,
         RetryStage(storage, broker),
         PriorityPipeline(storage, broker),
-        StoragePipeline(storage, broker),
+        StorageSink(storage, broker),
     ]
     recorder = Recorder()
     broker.subscribe(scoring, [NodeAddedEvent, ScoreRescheduledEvent])
@@ -435,7 +435,7 @@ async def test_link_back_to_the_seed_creates_no_child():
     storage = Storage()
     domain = Domain("synthetic", BASE_URL, ".//a")
     seed = seed_node(storage, domain, "page")
-    pipeline = StoragePipeline(storage, _Broker())
+    pipeline = StorageSink(storage, _Broker())
 
     await pipeline._on_priority_calculated(
         types.SimpleNamespace(

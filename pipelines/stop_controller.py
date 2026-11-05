@@ -24,7 +24,7 @@ class StoppingPipeline(BasePipeline):
     from the blueprint.
 
     ``max_nodes`` counts successfully fetched pages. ``max_depth`` is not a
-    stop condition: StoragePipeline refuses to admit nodes deeper than it,
+    stop condition: StorageSink refuses to admit nodes deeper than it,
     and the crawl ends naturally once the frontier drains.
     """
 

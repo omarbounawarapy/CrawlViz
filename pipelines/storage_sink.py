@@ -19,7 +19,7 @@ from utils import build_url
 from .base_pipeline import BasePipeline
 
 
-class StoragePipeline(BasePipeline):
+class StorageSink(BasePipeline):
     """Persists the crawl graph: creates child nodes from calculated
     priorities, and writes transformed items/links/content back onto
     their node once each stage completes.

@@ -29,7 +29,7 @@ from pipelines import (
     ScoringPipeline,
     StopConditions,
     StoppingPipeline,
-    StoragePipeline,
+    StorageSink,
     TransformStage,
 )
 from pipelines.contracts import Annotator, CrawlStage, Fetcher, RelevanceScorer
@@ -238,7 +238,7 @@ def _transformation(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _storage(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.storage
-    return StoragePipeline(
+    return StorageSink(
         inputs.storage,
         inputs.broker,
         max_queue_size=_queue_size(settings.max_queue_size),

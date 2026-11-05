@@ -344,7 +344,7 @@ class TelemetryBridge:
         # URL so _on_node_added can attach it once the node itself exists.
         # This is the only point in the pipeline where a Link object still
         # carries both its NLP vector *and* its LLM score (if any) together
-        # -- one hop later, StoragePipeline mints a fresh Node and the Link
+        # -- one hop later, StorageSink mints a fresh Node and the Link
         # is no longer directly reachable from any subsequent event.
         for entry in event.links:
             link = entry["link"]

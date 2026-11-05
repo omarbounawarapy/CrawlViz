@@ -8,7 +8,7 @@
 {"class": "FilterStage", "stage": "filtering"}
 {"class": "PriorityPipeline", "stage": "priority"}
 {"class": "TransformStage", "stage": "transformation"}
-{"class": "StoragePipeline", "stage": "storage"}
+{"class": "StorageSink", "stage": "storage"}
 {"class": "ExportingPipeline", "stage": "exporting"}
 {"class": "StoppingPipeline", "stage": "stopping"}
 {"consumers": ["logging", "requests", "scoring", "stopping", "TelemetryBridge"], "event": "NodeAddedEvent"}

@@ -9,7 +9,7 @@ from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryStage
 from .scoring_pipeline import ScoringPipeline
 from .stop_controller import StopConditions, StoppingPipeline
-from .storage_sink import StoragePipeline
+from .storage_sink import StorageSink
 from .transform_stage import TransformStage
 
 __all__ = [
@@ -25,6 +25,6 @@ __all__ = [
     "ScoringPipeline",
     "StopConditions",
     "StoppingPipeline",
-    "StoragePipeline",
+    "StorageSink",
     "TransformStage",
 ]
