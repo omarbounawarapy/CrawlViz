@@ -61,13 +61,8 @@ write = [
 
 [agents.llm-engineer]
 write = [
-  "src/crawlviz/score/llm/**", "src/crawlviz/llm/**",
+  "src/crawlviz/llm/**",
   "prompts/**",
-  "infrastructure/*_translator.py",
-  "infrastructure/llm_handler.py",
-  "infrastructure/key_manager.py",
-  "infrastructure/call_budget.py",
-  "infrastructure/token_usage.py",
   "services/llm_contracts.py",
   "models/prompts.py",
   "models/llm_context.py",
@@ -88,7 +83,7 @@ write = [
   "tests/**",
 ]
 exclude = [
-  "src/crawlviz/score/llm/**", "src/crawlviz/llm/**", "src/crawlviz/contracts/**", "src/crawlviz/api/schemas/**",
+  "src/crawlviz/llm/**", "src/crawlviz/contracts/**", "src/crawlviz/api/schemas/**",
   "tools/gen_*", "tools/nlp_eval.py",
   "tests/pins/**", "tests/load/**", "tests/conftest.py", "tests/contracts/**",
   "tests/llm/**", "tests/agents/**",
@@ -97,10 +92,8 @@ exclude = [
   # The check tools and their tests belong to platform-engineer.
   "tools/check_changed.py", "tools/check_baselines.py",
   "tests/test_check_changed.py", "tests/test_check_baselines.py",
-  # Owned by llm-engineer until the package move puts them under src/crawlviz/score/llm/.
-  "infrastructure/*_translator.py", "infrastructure/llm_handler.py",
-  "infrastructure/key_manager.py", "infrastructure/call_budget.py",
-  "infrastructure/token_usage.py", "services/llm_contracts.py", "models/prompts.py",
+  # Method files that still sit outside src/crawlviz/llm/.
+  "src/crawlviz/llm/**", "services/llm_contracts.py", "models/prompts.py",
   "models/llm_context.py", "models/scoring_context.py", "src/crawlviz/nlp/expansion_prompt_builder.py",
   "traceability/traced_llm_handler.py",
 ]
