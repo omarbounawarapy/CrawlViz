@@ -14,7 +14,7 @@ Include:
 ## What's in scope
 
 - The FastAPI control API (`routes/`), including the read-only SQL layer in `routes/validation_db.py`.
-- Handling of LLM provider API keys (`infrastructure/key_manager.py`, `keys.json`).
+- Handling of LLM provider API keys (`src/crawlviz/llm/key_manager.py`, `keys.json`).
 - The WebSocket data plane (`ui_bridge/ui_websocket_gateway.py`).
 - Page fetching and robots.txt handling (`pipelines/fetch_stage.py`, `pipelines/robots.py`, `infrastructure/network_client.py`).
 - Blueprints, settings and presets written through the API (`routes/templates.py`, `routes/config*.py`).
@@ -43,8 +43,8 @@ lists those threats.
 - **In scope:** the FastAPI control API (`main.py`, `routes/`), the crawl WebSocket
   (`ui_bridge/`), page fetching and robots handling (`pipelines/fetch_stage.py`,
   `pipelines/robots.py`, `infrastructure/network_client.py`), the LLM path
-  (`infrastructure/llm_handler.py`, translators, `models/prompts.py`), keys
-  (`infrastructure/key_manager.py`, `routes/keys.py`), settings and blueprints (`config/`,
+  (`src/crawlviz/llm/llm_handler.py`, the translators beside it, `models/prompts.py`), keys
+  (`src/crawlviz/llm/key_manager.py`, `routes/keys.py`), settings and blueprints (`config/`,
   `routes/templates.py`, `routes/config*.py`), crawl outputs (`ui_bridge/event_recorder.py`,
   logging and debug sinks) and the benchmark job runner (`routes/benchmark_jobs.py`).
 - **Not read:** the React UI (`crawler-ui/`), the `Makefile`, the transformation and
@@ -87,9 +87,9 @@ lists those threats.
 |---|---|---|---|
 | B1 | Browser to the control API on :8000 | The UI on :5173 (trusted). Any other page in the browser (untrusted). | CORS only (`main.py:23-29`). The token is optional and covers only the config router (`routes/config.py:60`, `routes/config_support.py:13-19`). No Host or Origin check. |
 | B2 | Browser to the crawl WebSocket on :8765 | The UI; any other page in the browser | None: no Origin check, no token (`ui_bridge/ui_websocket_gateway.py:67-73`) |
-| B3 | Local users and processes to the API ports and the repo files | Anyone with a shell on the machine | `keys.json` is mode 0600 only when the app writes it (`infrastructure/key_manager.py:142-149`, `routes/keys.py:18-23`). Every other file uses the umask. |
+| B3 | Local users and processes to the API ports and the repo files | Anyone with a shell on the machine | `keys.json` is mode 0600 only when the app writes it (`src/crawlviz/llm/key_manager.py`, `save()`, `routes/keys.py:18-23`). Every other file uses the umask. |
 | B4 | Crawler to fetched pages and their hosts | Untrusted HTML, redirects, robots.txt | robots.txt is honoured by default (`config/config.py:60`). No host, size or redirect checks. |
-| B5 | Crawler to LLM providers | API keys and prompts go out; JSON comes back | Keys are sent in headers, never in URLs (`infrastructure/gemini_translator.py:21-26`). LLM output is mapped only onto known links (`services/results_mapper.py:39-50`). The endpoint can be any URL (`config/runtime_config.py:815-830`). |
+| B5 | Crawler to LLM providers | API keys and prompts go out; JSON comes back | Keys are sent in headers, never in URLs (`src/crawlviz/llm/gemini_translator.py:22-43`). LLM output is mapped only onto known links (`services/results_mapper.py:39-50`). The endpoint can be any URL (`config/runtime_config.py:815-830`). |
 | B6 | Process to `keys.json` | A secret at rest | Atomic 0600 write. The mode is not checked on load. |
 | B7 | Process to `settings.json`, `presets.json` and `templates/` | Config at rest, written by unauthenticated API calls | Pydantic validation. No integrity check, no size caps. |
 | B8 | API to the benchmark subprocess | Whitelisted CLI flags | Flag whitelist, `exec` with no shell (`routes/benchmark_jobs.py:79-103`, `:203-208`). Path flags are limited only to "somewhere inside the repo". |
@@ -106,7 +106,7 @@ lists those threats.
   - `providers.endpoints` accepts any `http://` or `https://` URL
     (`config/runtime_config.py:815-830`).
   - `LlmHandler` sends the request, key header included, to that URL
-    (`infrastructure/llm_handler.py:56-58`, `:78-84`, `:100-107`).
+    (`src/crawlviz/llm/llm_handler.py`, `_apply_endpoint`, `:211-217`).
   - `PUT /config` does the same persistently, and is open when `CRAWLVIZ_API_TOKEN` is unset,
     which is the default (`routes/config_support.py:14-16`, `routes/config.py:88-93`).
 - Exploit path: a caller that can send a JSON body sets
@@ -305,7 +305,7 @@ lists those threats.
 - Evidence:
   - `routes/keys.py:18-23` creates the file with mode 0600.
   - `save()` opens the temp file with 0600, but `O_CREAT` sets the mode only when the temp
-    file is new (`infrastructure/key_manager.py:142-149`).
+    file is new (`src/crawlviz/llm/key_manager.py`, `save()`).
   - `load_keys()` never checks the mode (`:151-182`), and its error message tells users to
     copy `keys.example.json`, which gives a file with umask permissions (`:163-167`).
   - A file named `keys.json.bak-20260930-193053` sits at the repo root.
@@ -384,8 +384,8 @@ lists those threats.
 - Benchmark jobs: flag whitelist and `exec` with no shell; arguments cannot start with `-`
   (`routes/benchmark_jobs.py:28`, `:79-103`, `:203-208`).
 - Keys: masked snapshot, atomic 0600 save, constant-time token compare, key in a header and
-  not the URL (`infrastructure/key_manager.py:79-92`, `:142-149`;
-  `routes/config_support.py:18`; `infrastructure/gemini_translator.py:21-26`).
+  not the URL (`src/crawlviz/llm/key_manager.py`, `snapshot()` and `save()`;
+  `routes/config_support.py:18`; `src/crawlviz/llm/gemini_translator.py:22-43`).
 - LLM output can only score links from the batch (`services/results_mapper.py:39-50`).
 - Traces record whether an auth header was present, never its value
   (`traceability/network_trace_events.py:16`).
