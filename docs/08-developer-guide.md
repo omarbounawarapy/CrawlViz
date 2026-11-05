@@ -174,14 +174,18 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `core/` | Crawler orchestration, event broker/registry, bootstrap |
 | `models/` | Domain objects: `Node`, `Link`, `Domain`, `Storage`, extractors, prompt/context builders |
 | `pipelines/` | The ~13 event-driven processing stages |
-| `nlp/` | Embedding engine, vector space, feature extraction, expansion buffering |
+| `src/crawlviz/nlp/` | Embedding engine, vector space, feature extraction, expansion buffering |
 | `infrastructure/` | Network client, LLM handler, key manager, provider translators, async file I/O |
-| `priority/` | The three named priority strategies |
+| `src/crawlviz/priority/` | The three named priority strategies |
 | `ui_bridge/` | WebSocket gateway, telemetry bridge, server-side state snapshot |
 | `traceability/` | Correlation-ID-based causal tracing, two-tier logging |
 | `config/` | Tuning constants, runtime config schema, persisted settings |
 | `services/` | `NLPService`, `ScoringService`, `ResultMapper`, the stable interfaces pipelines call into |
 | `templates/` | JSON blueprint examples (`wikiMD.json`, `isi.json`) |
+| `src/crawlviz/events/` | Event types, one module per stage |
+| `src/crawlviz/offline/` | Offline doubles: scripted LLM, demo session, site script |
 | `tests/` | pytest suite |
 | `docs/` | These guides and `crawl_messages.ts` (WS wire protocol) |
 | `crawler-ui/` | React/Vite frontend |
+
+**Where things moved.** The backend is moving into `src/crawlviz/` one package at a time. `events`, `nlp`, `priority` and `offline` are there now, so import them as `from crawlviz.events import ...`, `from crawlviz.nlp import ...`, `from crawlviz.priority import ...` and `from crawlviz.offline import ...`. The other packages in the table still sit at the repository root and import as before.
