@@ -10,7 +10,7 @@
 {"class": "TransformStage", "stage": "transformation"}
 {"class": "StorageSink", "stage": "storage"}
 {"class": "ExportSink", "stage": "exporting"}
-{"class": "StoppingPipeline", "stage": "stopping"}
+{"class": "StopController", "stage": "stopping"}
 {"consumers": ["logging", "requests", "scoring", "stopping", "TelemetryBridge"], "event": "NodeAddedEvent"}
 {"consumers": ["logging", "canon", "processing", "storage", "stopping", "TelemetryBridge"], "event": "PageFetchedEvent"}
 {"consumers": ["logging", "transformation", "TelemetryBridge"], "event": "ContentFilteredEvent"}

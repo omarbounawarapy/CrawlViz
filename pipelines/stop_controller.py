@@ -16,7 +16,7 @@ class StopConditions:
     target_url: str = ""
 
 
-class StoppingPipeline(BasePipeline):
+class StopController(BasePipeline):
     """Watches crawl progress against the blueprint's stop conditions and
     emits StopCrawlEvent the moment any one of them is met.
 

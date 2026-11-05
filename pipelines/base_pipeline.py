@@ -69,7 +69,7 @@ class BasePipeline:
     pipeline sitting on an empty queue blocks forever -- which is
     exactly why `Crawler.start()`'s `asyncio.gather(*tasks)` wasn't
     reliably completing even after a crawl had genuinely finished (see
-    `StoppingPipeline`, ironically, for a pipeline that could hang
+    `StopController`, ironically, for a pipeline that could hang
     itself this way, and `nlp/space_updater.py`'s docstring for the
     same class of bug outside the pipeline system entirely).
 

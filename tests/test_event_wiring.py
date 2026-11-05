@@ -150,7 +150,7 @@ class TestConsumersNameTheirEvents:
         assert consumers_of(wired_crawler, StopCrawlEvent) == [
             "CrawlLogSink",
             "ExportSink",
-            "StoppingPipeline",
+            "StopController",
             "SpaceUpdater",
             "TelemetryBridge",
         ]
@@ -164,7 +164,7 @@ class TestConsumersNameTheirEvents:
             "CanonicalizeStage",
             "ExtractStage",
             "StorageSink",
-            "StoppingPipeline",
+            "StopController",
             "TelemetryBridge",
         ]
 

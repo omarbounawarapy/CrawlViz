@@ -135,7 +135,7 @@ class RetryStage(BasePipeline):
 
         Requeues directly onto FetchStage's own queue (bypassing the
         broker) rather than re-emitting NodeAddedEvent, since NodeAddedEvent
-        also fans out to ScoringPipeline/StoppingPipeline/etc., which would
+        also fans out to ScoringPipeline/StopController/etc., which would
         incorrectly treat a network retry as a brand-new node.
         """
         node = event.node

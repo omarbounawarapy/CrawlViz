@@ -52,7 +52,7 @@ from pipelines import (
     RetryStage,
     ScoringPipeline,
     StopConditions,
-    StoppingPipeline,
+    StopController,
     StorageSink,
     TransformStage,
 )
@@ -413,7 +413,7 @@ async def test_gateway_stops_when_the_crawl_stops():
 
 async def test_time_limit_fires_without_further_events():
     broker = EventBroker()
-    stopping = StoppingPipeline(
+    stopping = StopController(
         broker, StopConditions(max_nodes=100, max_duration=0.2, no_progress_timeout=60)
     )
     task = asyncio.create_task(stopping.start())
@@ -458,7 +458,7 @@ async def _run_stopping_crawl(max_nodes: int, max_depth: int):
     crawl = Crawl(SyntheticSite(CHAIN), FixedRelevance(0.5), FixedLlm())
     storage_pipeline = crawl.pipelines[4]
     storage_pipeline.max_depth = max_depth
-    stopping = StoppingPipeline(
+    stopping = StopController(
         crawl.broker,
         StopConditions(max_nodes=max_nodes, max_duration=60, no_progress_timeout=60),
     )

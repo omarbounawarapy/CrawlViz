@@ -28,7 +28,7 @@ from pipelines import (
     RetryStage,
     ScoringPipeline,
     StopConditions,
-    StoppingPipeline,
+    StopController,
     StorageSink,
     TransformStage,
 )
@@ -260,7 +260,7 @@ def _exporting(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _stopping(inputs: StageInputs, built: Built) -> CrawlStage:
     conditions = inputs.stop_conditions
-    return StoppingPipeline(
+    return StopController(
         inputs.broker,
         StopConditions(
             max_nodes=conditions["max_nodes"],
