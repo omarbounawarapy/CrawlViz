@@ -98,16 +98,7 @@ class SpaceBootstrapper:
 
         expansions = await self.create_expansions(target_topic, self.expansion_config)
         seeds: list[str] = expansions.get("descriptions", [])
-        await self._emit(
-            EXP_SeedsGenerated(
-                trace_id=trace_id,
-                node_id=node_id,
-                blueprint_id=self.blueprint_id,
-                seed_count=len(seeds),
-                seed_previews=[s[:SEED_PREVIEW_CHARS] for s in seeds],
-                source="llm_expansion",
-            )
-        )
+        await self._emit_seeds_generated(seeds, trace_id, node_id)
 
         seed_vectors = await self._encode_seeds(seeds, trace_id, node_id)
         space.add_batch(seed_vectors)
@@ -126,6 +117,18 @@ class SpaceBootstrapper:
                 vectors_added=len(seed_vectors) + 1,
                 space_version=space.version,
                 duration_ms=(time.monotonic() - started) * 1000,
+            )
+        )
+
+    async def _emit_seeds_generated(self, seeds: list[str], trace_id: str, node_id: str) -> None:
+        await self._emit(
+            EXP_SeedsGenerated(
+                trace_id=trace_id,
+                node_id=node_id,
+                blueprint_id=self.blueprint_id,
+                seed_count=len(seeds),
+                seed_previews=[s[:SEED_PREVIEW_CHARS] for s in seeds],
+                source="llm_expansion",
             )
         )
 
