@@ -71,8 +71,29 @@ PRESETS_FILE.register(PRESETS_NESTED_VERSION, _presets_rename_pipeline_settings)
 BLUEPRINT_FILE: Final = MigrationChain("blueprint", current_version=1)
 BLUEPRINT_FILE.register(0, unchanged)
 
-RUN_MANIFEST: Final = MigrationChain("run manifest", current_version=1)
+RUN_MANIFEST: Final = MigrationChain("run manifest", current_version=2)
+
+# The full `RuntimeConfig` a run was started with.
+MANIFEST_RUNTIME_CONFIG_KEY: Final = "runtime_config"
+
+
+def _manifest_rename_pipeline_settings(document: Document) -> Document:
+    """Version 2 renames the ``pipelines`` sections of the recorded ``runtime_config``."""
+    runtime_config = document.get(MANIFEST_RUNTIME_CONFIG_KEY)
+    if not isinstance(runtime_config, dict):
+        # A record is kept as written; there are no settings in it to rename.
+        return document
+    try:
+        document[MANIFEST_RUNTIME_CONFIG_KEY] = rename_pipeline_settings(runtime_config)
+    except StoredFormatError as exc:
+        raise StoredFormatError(
+            f"In the run manifest's {MANIFEST_RUNTIME_CONFIG_KEY}: {exc}"
+        ) from exc
+    return document
+
+
 RUN_MANIFEST.register(0, unchanged)
+RUN_MANIFEST.register(1, _manifest_rename_pipeline_settings)
 
 STORED_FORMATS: Final[tuple[MigrationChain, ...]] = (
     SETTINGS_FILE,

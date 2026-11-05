@@ -26,7 +26,7 @@ def _write_manifest(run_dir: Path) -> dict:
 
 
 def test_the_manifest_carries_the_schema_version(tmp_path: Path) -> None:
-    assert _write_manifest(tmp_path / "run")["schema_version"] == 1
+    assert _write_manifest(tmp_path / "run")["schema_version"] == 2
 
 
 def test_the_manifest_keeps_every_field_it_had(tmp_path: Path) -> None:

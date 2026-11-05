@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 from config.blueprint_schema import validate_blueprint
+from config.runtime_config import default_runtime_config
 from config.settings_store import load_runtime_config, read_stored
 from crawlviz.contracts import (
     SCHEMA_VERSION_KEY,
@@ -187,8 +188,48 @@ def test_every_shipped_blueprint_loads_unchanged_and_still_validates(path: Path)
     assert load_blueprint_document(dump_blueprint_document(blueprint)) == blueprint
 
 
-def test_an_unversioned_run_manifest_loads_with_every_field_kept() -> None:
-    stored = _fixture("run_manifest", 0)
+@pytest.mark.parametrize("version", [0, 1, 2])
+def test_each_run_manifest_version_loads_with_every_field_kept(version: int) -> None:
+    stored = _fixture("run_manifest", version)
     manifest = load_run_manifest(stored)
-    assert manifest == {**stored, SCHEMA_VERSION_KEY: RUN_MANIFEST.current_version}
-    assert load_run_manifest(dump_run_manifest(stored)) == manifest
+    assert manifest == _fixture("run_manifest", 2)
+    assert load_run_manifest(dump_run_manifest(manifest)) == manifest
+
+
+def test_a_version_one_run_manifest_gets_the_pipeline_section_names() -> None:
+    stored = _fixture("run_manifest", 1)
+    manifest = load_run_manifest(stored)
+    assert manifest["runtime_config"]["pipelines"] == {
+        "fetch": {"workers": 4},
+        "debug_log": {"workers": 2},
+        "retry": {"workers": 1},
+    }
+    # The rest of the record is kept as it was written.
+    kept = {k: v for k, v in stored.items() if k not in (SCHEMA_VERSION_KEY, "runtime_config")}
+    assert {k: manifest[k] for k in kept} == kept
+    assert manifest["runtime_config"]["fetch"] == stored["runtime_config"]["fetch"]
+
+
+def test_a_version_one_run_manifest_already_on_the_stage_keys_is_unchanged() -> None:
+    # Builds between the settings rename and this version wrote the new keys at version 1.
+    runtime_config = default_runtime_config().model_dump(mode="json")
+    manifest = load_run_manifest({SCHEMA_VERSION_KEY: 1, "runtime_config": runtime_config})
+    assert manifest == {SCHEMA_VERSION_KEY: 2, "runtime_config": runtime_config}
+
+
+@pytest.mark.parametrize("runtime_config", [None, "fetch", ["pipelines"]])
+def test_a_run_manifest_without_a_settings_object_loads_as_written(runtime_config: Any) -> None:
+    stored = {SCHEMA_VERSION_KEY: 1, "crawl_id": "c", "runtime_config": runtime_config}
+    assert load_run_manifest(stored) == {**stored, SCHEMA_VERSION_KEY: 2}
+    assert load_run_manifest({SCHEMA_VERSION_KEY: 1}) == {SCHEMA_VERSION_KEY: 2}
+
+
+def test_a_run_manifest_with_a_section_under_both_names_is_refused() -> None:
+    both: dict[str, Any] = {"pipelines": {"transformation": {}, "transform": {}}}
+    expected = (
+        r"In the run manifest's runtime_config: pipelines\.transformation and "
+        r"pipelines\.transform are the same setting under its old and new name\. "
+        r"Keep only pipelines\.transform\."
+    )
+    with pytest.raises(StoredFormatError, match=expected):
+        load_run_manifest({SCHEMA_VERSION_KEY: 1, "runtime_config": both})
