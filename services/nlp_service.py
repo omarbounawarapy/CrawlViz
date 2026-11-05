@@ -33,7 +33,7 @@ class NLPService:
 
     The space is stable during a crawl session: link scoring only *reads*
     it. Growth happens out of band, via ``update_space()`` (called once
-    per scored node from ``ScoringPipeline``) encoding each link's LLM
+    per scored node from ``ScoreStage``) encoding each link's LLM
     expansions and forwarding them to the shared ``BufferManager``.
     ``SpaceUpdater`` (see ``nlp/space_updater.py``) periodically drains
     that buffer and commits the vectors into ``self.space``, so the space
@@ -196,7 +196,7 @@ class NLPService:
         """Encode each scored link's LLM expansions and forward them for
         eventual inclusion in the semantic space.
 
-        Called once per scored node from ``ScoringPipeline`` right after
+        Called once per scored node from ``ScoreStage`` right after
         the LLM scoring call returns. When a ``buffer_manager`` was wired
         in at construction (the live crawl path), vectors go there and
         ``SpaceUpdater`` commits them on its own schedule. Otherwise they

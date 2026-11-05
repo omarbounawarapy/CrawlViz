@@ -1,9 +1,9 @@
-"""FeatureExtractor signals and ScoringPipeline bucketing (pure logic, no models)."""
+"""FeatureExtractor signals and ScoreStage bucketing (pure logic, no models)."""
 
 import numpy as np
 
 from nlp.feature_extractor import FeatureExtractor
-from pipelines.score_stage import ScoringPipeline
+from pipelines.score_stage import ScoreStage
 
 
 class L:
@@ -12,7 +12,7 @@ class L:
 
 
 def pipeline(**kw):
-    return ScoringPipeline(
+    return ScoreStage(
         None,
         None,
         None,

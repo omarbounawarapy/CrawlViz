@@ -40,7 +40,7 @@ from pipelines import (
     FilterStage,
     PriorityPipeline,
     RetryStage,
-    ScoringPipeline,
+    ScoreStage,
     StorageSink,
     TransformStage,
 )
@@ -104,7 +104,7 @@ class _BudgetGate:
 class _CountedFlush:
     """NLPService stand-in that commits semantic-space growth by count, not time.
 
-    The space only changes inside ``update_space``, which ScoringPipeline
+    The space only changes inside ``update_space``, which ScoreStage
     awaits before it moves to the next node, so the growth lands at the same
     point in the scoring sequence on every execution.
     """
@@ -123,8 +123,8 @@ class _CountedFlush:
             await self._updater.force_flush()
 
 
-class _ParkingScoring(ScoringPipeline):
-    """ScoringPipeline that says when its worker is only waiting for a page.
+class _ParkingScoring(ScoreStage):
+    """ScoreStage that says when its worker is only waiting for a page.
 
     The worker takes the best node off its queue and waits for that page to
     be fetched. Waiting for a fetch is not work in progress, so the lockstep

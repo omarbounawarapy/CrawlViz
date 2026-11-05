@@ -41,7 +41,7 @@ def link_records(links) -> list[dict]:
     ]
 
 
-class ScoringPipeline(BasePipeline):
+class ScoreStage(BasePipeline):
     """Runs the two-stage NLP -> LLM relevance cascade for a node's links.
 
     Every link gets a cheap NLP similarity score first (report section

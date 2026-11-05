@@ -7,7 +7,7 @@ from .fetch_stage import FetchStage
 from .filter_stage import FilterStage
 from .prioritize_stage import PriorityPipeline
 from .retry_stage import RetryStage
-from .score_stage import ScoringPipeline
+from .score_stage import ScoreStage
 from .stop_controller import StopConditions, StopController
 from .storage_sink import StorageSink
 from .transform_stage import TransformStage
@@ -22,7 +22,7 @@ __all__ = [
     "FilterStage",
     "PriorityPipeline",
     "RetryStage",
-    "ScoringPipeline",
+    "ScoreStage",
     "StopConditions",
     "StopController",
     "StorageSink",

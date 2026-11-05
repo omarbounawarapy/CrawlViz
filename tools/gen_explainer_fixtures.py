@@ -1,7 +1,7 @@
 """Fixtures that pin the Config page explainers to the Python implementation.
 
 Writes crawler-ui/src/features/config/explainers/fixtures/python_cases.json
-from the real ScoringPipeline.bucket_links, priority strategies, the
+from the real ScoreStage.bucket_links, priority strategies, the
 FetchStage backoff loop, DBSCAN and the link context extractor. The
 JS calculators are tested against that file; tests/test_explainer_fixtures.py
 fails when the committed file no longer matches what this script produces.
@@ -26,7 +26,7 @@ import pipelines.fetch_stage as rp
 from models.links_extractor import LinkExtractor
 from pipelines import host_pacer
 from pipelines.fetch_stage import FetchStage
-from pipelines.score_stage import ScoringPipeline
+from pipelines.score_stage import ScoreStage
 from priority import strategy as strat
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -76,7 +76,7 @@ def cascade_cases() -> list[dict]:
     cases = []
     for extra in variants:
         cfg = {**CASCADE_BASE, **extra}
-        p = ScoringPipeline(None, None, None, rng=random.Random(0), **cfg)
+        p = ScoreStage(None, None, None, rng=random.Random(0), **cfg)
         links = [_L(s) for s in scores]
         sampled, skipped, dropped = p.bucket_links(links)
         cases.append(

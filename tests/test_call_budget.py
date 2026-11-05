@@ -5,7 +5,7 @@ import logging
 import pytest
 
 from infrastructure.call_budget import CallBudget
-from pipelines.score_stage import ScoringPipeline
+from pipelines.score_stage import ScoreStage
 
 
 class L:
@@ -15,7 +15,7 @@ class L:
 
 
 def pipeline(budget, batch=None):
-    return ScoringPipeline(
+    return ScoreStage(
         None,
         None,
         None,

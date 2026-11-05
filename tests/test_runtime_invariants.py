@@ -50,7 +50,7 @@ from pipelines import (
     ExtractStage,
     FetchStage,
     RetryStage,
-    ScoringPipeline,
+    ScoreStage,
     StopConditions,
     StopController,
     StorageSink,
@@ -134,9 +134,9 @@ class Recorder:
 # =========================================================
 
 
-def make_scoring(broker, nlp, llm, rng=None) -> ScoringPipeline:
-    """ScoringPipeline built with the same arguments core.Crawler passes."""
-    return ScoringPipeline(
+def make_scoring(broker, nlp, llm, rng=None) -> ScoreStage:
+    """ScoreStage built with the same arguments core.Crawler passes."""
+    return ScoreStage(
         llm,
         nlp,
         broker,

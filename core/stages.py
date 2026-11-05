@@ -26,7 +26,7 @@ from pipelines import (
     FilterStage,
     PriorityPipeline,
     RetryStage,
-    ScoringPipeline,
+    ScoreStage,
     StopConditions,
     StopController,
     StorageSink,
@@ -178,7 +178,7 @@ def _retry(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
     cascade = inputs.config.scoring_cascade
-    return ScoringPipeline(
+    return ScoreStage(
         inputs.scoring_service,
         inputs.nlp_service,
         inputs.broker,
