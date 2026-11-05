@@ -10,8 +10,9 @@ this file holds how the work is organised and done.
 | `main.py`, `routes/` | FastAPI app and routers (run, templates, config, benchmark, validation) |
 | `core/` | Crawler composition root, event broker, live settings, bootstrapping |
 | `pipelines/` | Crawl stages, sinks and observers (renamed by the pipeline naming scheme, NAME-5) |
-| `events/`, `traceability/`, `ui_bridge/` | Event types, trace events, the WebSocket telemetry bridge |
-| `services/`, `nlp/`, `priority/`, `models/` | Scoring, embeddings and the semantic space, ranking, domain models and prompts |
+| `traceability/`, `ui_bridge/` | Trace events, the WebSocket telemetry bridge |
+| `services/`, `models/` | Scoring, domain models and prompts |
+| `src/crawlviz/` | Packages that have moved: `events/` (event types), `nlp/` (embeddings, semantic space), `priority/` (ranking), `offline/` (offline doubles) |
 | `infrastructure/` | HTTP client, LLM handler and provider translators, keys, call budget |
 | `config/` | `RuntimeConfig`, settings store, paths |
 | `benchmark/` | Frozen-graph benchmark, judges, audit, analysis |
@@ -250,8 +251,8 @@ the shared empty state`.
 - **Single-worker sinks.** The crawl log and document archive sinks run with one worker,
   because they write one file in order.
 - **Offline doubles.** These exist for tests and agents, so no keys or network are needed:
-  - `HashingEmbeddingEngine` (`nlp/embedding_engine.py`)
-  - `ScriptedLlm` (`offline/scripted_llm.py`), used by `CRAWLVIZ_OFFLINE=1` and the pins
+  - `HashingEmbeddingEngine` (`src/crawlviz/nlp/embedding_engine.py`)
+  - `ScriptedLlm` (`src/crawlviz/offline/scripted_llm.py`), used by `CRAWLVIZ_OFFLINE=1` and the pins
   - `FixedLlm` (`tests/test_runtime_invariants.py`)
   - `CachedLlm` (`benchmark/llm_cache.py`)
   - `FrozenGraph` (`benchmark/graph.py`)
