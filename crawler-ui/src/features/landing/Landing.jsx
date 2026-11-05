@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { buildPlate } from "./plate";
 import Spider from "../loading/Spider";
+import useFocusableWhenScrolling from "../common/useFocusableWhenScrolling";
 import "../loading/loading.css";
 import "./landing.css";
 
@@ -162,6 +163,16 @@ function Plate({ seed, branches, compact = false, selective = true }) {
         </g>
       )}
     </svg>
+  );
+}
+
+// A code block that scrolls sideways on a narrow screen takes keyboard focus only while it does.
+function CodeExcerpt({ label, children }) {
+  const ref = useFocusableWhenScrolling();
+  return (
+    <pre ref={ref} className="lp-code" role="region" aria-label={label}>
+      <code>{children}</code>
+    </pre>
   );
 }
 
@@ -367,14 +378,12 @@ export default function Landing({ onEnter, instant = false }) {
               you.
             </p>
           </div>
-          <pre className="lp-code" tabIndex={0} role="region" aria-label="Excerpt of templates/wikiMD.json">
-            <code>{`{
+          <CodeExcerpt label="Excerpt of templates/wikiMD.json">{`{
   "target_topic": "Type 2 Diabetes",
   "seeds": [{ "url": "https://www.wikimd.org/wiki/Diabetes" }],
   "scoring": { "strategy": "TOPICAL" },
   "extraction": { "mode": "document" }
-}`}</code>
-          </pre>
+}`}</CodeExcerpt>
           <p className="lp-small">
             Excerpt of <code>templates/wikiMD.json</code>.
           </p>
