@@ -12,7 +12,7 @@ from .base_pipeline import BasePipeline
 logger = logging.getLogger(__name__)
 
 
-class CanonicalizationPipeline(BasePipeline):
+class CanonicalizeStage(BasePipeline):
     """Writes every fetched page's raw content to a session-scoped
     documents.jsonl file, independent of the extraction/transform/export
     path -- a durable, schema-agnostic record of everything the crawler

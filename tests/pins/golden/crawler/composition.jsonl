@@ -1,5 +1,5 @@
 {"class": "LoggingPipeline", "stage": "logging"}
-{"class": "CanonicalizationPipeline", "stage": "canon"}
+{"class": "CanonicalizeStage", "stage": "canon"}
 {"class": "DebuggingPipeline", "stage": "debug"}
 {"class": "ExtractStage", "stage": "processing"}
 {"class": "FetchStage", "stage": "requests"}

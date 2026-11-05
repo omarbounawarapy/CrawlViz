@@ -17,7 +17,7 @@ from infrastructure import NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
 from pipelines import (
-    CanonicalizationPipeline,
+    CanonicalizeStage,
     DebuggingPipeline,
     ExportingPipeline,
     ExtractStage,
@@ -99,7 +99,7 @@ def _logging(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _canonicalization(inputs: StageInputs, built: Built) -> CrawlStage:
-    return CanonicalizationPipeline(
+    return CanonicalizeStage(
         inputs.crawl_id, inputs.broker, export_path=inputs.paths.export_dir
     )
 

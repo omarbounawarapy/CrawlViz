@@ -161,7 +161,7 @@ class TestConsumersNameTheirEvents:
         ]
         assert consumers_of(wired_crawler, PageFetchedEvent) == [
             "LoggingPipeline",
-            "CanonicalizationPipeline",
+            "CanonicalizeStage",
             "ExtractStage",
             "StoragePipeline",
             "StoppingPipeline",
