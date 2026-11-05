@@ -1,8 +1,8 @@
 # Python
 __pycache__/
 *.pyc
-keys.json
-keys.json.bak-*
+keys.json*
+!keys.example.json
 *.db
 
 # Node
