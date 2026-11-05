@@ -16,7 +16,7 @@ from .export_tables import ensure_table
 logger = logging.getLogger(__name__)
 
 
-class ExportingPipeline:
+class ExportSink:
     """Writes transformed items to SQLite, one table per (domain, blueprint).
 
     Rows are idempotent within a crawl: INSERT OR REPLACE keyed on

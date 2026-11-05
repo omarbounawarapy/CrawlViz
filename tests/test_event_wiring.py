@@ -149,7 +149,7 @@ class TestConsumersNameTheirEvents:
         # The stage registry order, then the space updater, then the UI bridge.
         assert consumers_of(wired_crawler, StopCrawlEvent) == [
             "LoggingPipeline",
-            "ExportingPipeline",
+            "ExportSink",
             "StoppingPipeline",
             "SpaceUpdater",
             "TelemetryBridge",

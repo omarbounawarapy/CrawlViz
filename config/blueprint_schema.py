@@ -2,7 +2,7 @@
 blueprint_schema.py
 --------------------
 Pydantic schema for the *assembled* blueprint dict -- the shape every
-consumer (core.Crawler, pipelines.export_sink.ExportingPipeline,
+consumer (core.Crawler, pipelines.export_sink.ExportSink,
 models.item_extractor.ItemExtractor, nlp.SpaceUpdater's caller, ...)
 actually reads.
 
@@ -10,7 +10,7 @@ This exists because the informal shape agreement between
 BlueprintTranslator (the producer) and its consumers has silently
 drifted out of sync three separate times in this codebase's history:
 
-    1. ExportingPipeline read `field_spec["store"]["type"]`, a key that
+    1. ExportSink read `field_spec["store"]["type"]`, a key that
        never existed anywhere -- the translator only ever produced a
        flat `export_type`. Every field silently exported as TEXT.
     2. `stop_conditions.priority_strategy` was read by core.Crawler but
@@ -104,9 +104,9 @@ class BlueprintSchemaError(ValueError):
 # FIELD-LEVEL SHAPE
 # =========================================================
 # This is the exact shape models.item_extractor.FieldExtractor and
-# pipelines.export_sink.ExportingPipeline both read -- issue #1
+# pipelines.export_sink.ExportSink both read -- issue #1
 # above was this shape drifting between the translator and
-# ExportingPipeline specifically.
+# ExportSink specifically.
 
 
 class TransformStep(BaseModel):

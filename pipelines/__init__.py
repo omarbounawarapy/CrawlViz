@@ -1,7 +1,7 @@
 from .canonicalize_stage import CanonicalizeStage
 from .crawl_log_sink import LoggingPipeline
 from .debug_log_sink import DebuggingPipeline
-from .export_sink import ExportingPipeline
+from .export_sink import ExportSink
 from .extract_stage import ExtractStage
 from .fetch_stage import FetchStage
 from .filter_stage import FilterStage
@@ -15,7 +15,7 @@ from .transform_stage import TransformStage
 __all__ = [
     "CanonicalizeStage",
     "DebuggingPipeline",
-    "ExportingPipeline",
+    "ExportSink",
     "ExtractStage",
     "FetchStage",
     "FilterStage",

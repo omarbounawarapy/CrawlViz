@@ -10,7 +10,7 @@ import pytest
 
 from core.event_broker import EventBroker
 from nlp import SpaceStore, VectorSpace
-from pipelines.export_sink import ExportingPipeline
+from pipelines.export_sink import ExportSink
 from services.nlp_service import NLPService
 
 
@@ -72,7 +72,7 @@ def _export(db, crawl_id, title):
 
 async def _aexport(db, crawl_id, title):
     bp = {"extraction": {"fields": {"title": {"export_type": "text"}}}}
-    pipe = ExportingPipeline(crawl_id, "bp", bp, EventBroker(), db_path=db)
+    pipe = ExportSink(crawl_id, "bp", bp, EventBroker(), db_path=db)
     pipe._init_db()
     node = types.SimpleNamespace(get_full_url=lambda: "https://example.com/a")
     pipe._ensure_table("t", bp["extraction"])
@@ -109,7 +109,7 @@ def test_cancelled_exporter_flushes_its_buffer(tmp_path):
     bp = {"extraction": {"fields": {"title": {"export_type": "text"}}}}
 
     async def run():
-        pipe = ExportingPipeline("c1", "bp", bp, EventBroker(), db_path=db, batch_size=50)
+        pipe = ExportSink("c1", "bp", bp, EventBroker(), db_path=db, batch_size=50)
         pipe._init_db()
         node = types.SimpleNamespace(get_full_url=lambda: "https://example.com/a")
         pipe._ensure_table("t", bp["extraction"])

@@ -19,7 +19,7 @@ from models import Storage
 from pipelines import (
     CanonicalizeStage,
     DebuggingPipeline,
-    ExportingPipeline,
+    ExportSink,
     ExtractStage,
     FetchStage,
     FilterStage,
@@ -248,7 +248,7 @@ def _storage(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _exporting(inputs: StageInputs, built: Built) -> CrawlStage:
-    return ExportingPipeline(
+    return ExportSink(
         inputs.crawl_id,
         inputs.blueprint.get("blueprint_id"),
         inputs.blueprint,
