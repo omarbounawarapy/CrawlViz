@@ -13,7 +13,7 @@ import { pathOf } from "./utils/formatters";
 import Shell from "./app/Shell";
 import NodeInspector from "./features/inspector/NodeInspector";
 import OverviewPage from "./features/overview/OverviewPage";
-import GraphView from "./features/graph/GraphView";
+import { GraphView } from "./features/graph";
 import PipelineMonitor from "./features/pipeline/PipelineMonitor";
 import TimelineDock from "./features/timeline/TimelinePage";
 import RunPage from "./features/run/RunPage";
