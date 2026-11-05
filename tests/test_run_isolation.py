@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from core.event_broker import EventBroker
-from nlp import SpaceStore, VectorSpace
+from crawlviz.nlp import SpaceStore, VectorSpace
 from pipelines.export_sink import ExportSink
 from services.nlp_service import NLPService
 

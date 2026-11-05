@@ -5,8 +5,8 @@ from typing import Any
 
 import numpy as np
 
-from nlp import VectorSpace
-from nlp.embedding_engine import HashingEmbeddingEngine
+from crawlviz.nlp import VectorSpace
+from crawlviz.nlp.embedding_engine import HashingEmbeddingEngine
 from services.space_bootstrap import SpaceBootstrapper
 
 TOPIC = "insulin resistance and type 2 diabetes"

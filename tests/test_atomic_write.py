@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from nlp import SpaceStore
+from crawlviz.nlp import SpaceStore
 from ui_bridge.event_recorder import EventRecorder
 from utils import atomic_open, write_text_atomic
 

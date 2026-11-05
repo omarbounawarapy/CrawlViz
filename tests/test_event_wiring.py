@@ -30,7 +30,7 @@ from crawlviz.events import (
     RequestFailedEvent,
     StopCrawlEvent,
 )
-from nlp import BufferManager, SpaceUpdater
+from crawlviz.nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import EventConsumer
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge
 

@@ -89,10 +89,10 @@ max-complexity = 10
 "models/node.py" = ["PLR0913"]
 "models/prompts.py" = ["RUF001"]
 "models/storage.py" = ["I001"]
-"nlp/embedding_engine.py" = ["PLC0415"]
-"nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
-"nlp/space_updater.py" = ["SIM105", "UP041"]
-"nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
+"src/crawlviz/nlp/embedding_engine.py" = ["PLC0415"]
+"src/crawlviz/nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
+"src/crawlviz/nlp/space_updater.py" = ["SIM105", "UP041"]
+"src/crawlviz/nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
 "pipelines/debug_log_sink.py" = ["I001", "PLR0913", "RUF010"]
 "pipelines/export_sink.py" = ["PLR0911", "PLR0913", "PLW2901", "SIM105"]
 "pipelines/prioritize_stage.py" = ["PLR0913"]
@@ -170,7 +170,6 @@ files = [
     "core",
     "infrastructure",
     "models",
-    "nlp",
     "pipelines",
     "routes",
     "services",
@@ -228,12 +227,12 @@ module = [
     "models.item_extractor",
     "models.link",
     "models.node",
-    "nlp.buffer_manager",
-    "nlp.embedding_engine",
-    "nlp.expansion_prompt_builder",
-    "nlp.space_store",
-    "nlp.space_updater",
-    "nlp.vector_space",
+    "crawlviz.nlp.buffer_manager",
+    "crawlviz.nlp.embedding_engine",
+    "crawlviz.nlp.expansion_prompt_builder",
+    "crawlviz.nlp.space_store",
+    "crawlviz.nlp.space_updater",
+    "crawlviz.nlp.vector_space",
     "pipelines.base_pipeline",
     "pipelines.canonicalize_stage",
     "pipelines.contracts",

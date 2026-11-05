@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from nlp import VectorSpace
-from nlp.embedding_engine import HashingEmbeddingEngine
+from crawlviz.nlp import VectorSpace
+from crawlviz.nlp.embedding_engine import HashingEmbeddingEngine
 from services.link_features import FeatureSettings, LinkFeatureScorer
 
 TOPIC = "insulin resistance and diabetes"

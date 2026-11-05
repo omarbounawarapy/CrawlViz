@@ -14,8 +14,8 @@ import numpy as np
 from scipy.spatial.distance import cosine
 
 from config import NLP_COMPOSITE_WEIGHTS
+from crawlviz.nlp import BaseEmbeddingEngine, FeatureExtractor, VectorSpace
 from models.link import Link
-from nlp import BaseEmbeddingEngine, FeatureExtractor, VectorSpace
 from traceability.nlp_trace_events import (
     NLP_FeaturesExtracted,
     NLP_InputReceived,

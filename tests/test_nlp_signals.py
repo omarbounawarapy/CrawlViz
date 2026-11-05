@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from nlp.feature_extractor import FeatureExtractor
+from crawlviz.nlp.feature_extractor import FeatureExtractor
 from pipelines.score_stage import ScoreStage
 
 

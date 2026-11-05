@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from config.paths import RuntimePaths
 from config.runtime_config import default_runtime_config
 from core.crawler import Crawler
-from nlp import BufferManager, SpaceUpdater
+from crawlviz.nlp import BufferManager, SpaceUpdater
 from routes import run as run_routes
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
 from ui_bridge import CrawlStateSnapshot, UIWebSocketGateway

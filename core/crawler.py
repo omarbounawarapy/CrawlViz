@@ -22,7 +22,7 @@ from utils.html_utils import configure_url_normalization
 from infrastructure import KeyManager, LlmHandler, NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
-from nlp import BufferManager, SpaceUpdater
+from crawlviz.nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway

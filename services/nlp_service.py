@@ -3,15 +3,15 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from infrastructure import LlmHandler
-from models.link import Link
-from nlp import (
+from crawlviz.nlp import (
     BaseEmbeddingEngine,
     BufferManager,
     SpaceStore,
     VectorSpace,
     create_embedding_engine,
 )
+from infrastructure import LlmHandler
+from models.link import Link
 
 from .link_features import FeatureSettings, LinkFeatureScorer
 from .space_bootstrap import SpaceBootstrapper
