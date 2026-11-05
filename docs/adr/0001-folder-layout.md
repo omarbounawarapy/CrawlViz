@@ -2,14 +2,32 @@
 
 Status: proposed, 2026-10-29
 
+## Status of moves
+
+- Moved to `src/crawlviz/`: `offline`, `events`, `shared`, and `contracts` (the versioned
+  formats of ADR 5, which the table below predates).
+- Moved, with files still outside: `nlp` (`services/nlp_service.py`,
+  `services/link_features.py`, `services/space_bootstrap.py`), `llm`
+  (`traceability/traced_llm_handler.py`) and `priority` (`pipelines/prioritize_stage.py`,
+  `pipelines/frontier_queue.py`).
+- Not moved: `app`, `api`, `crawl`, `config`, `telemetry`, `runs`, `fetch`, `extract`,
+  `scoring`, `storage`, and `benchmark` (last by plan).
+- The table's last column says where each domain's code is today.
+
+`src/crawlviz/events/contracts.py` holds the stage protocols (`EventConsumer`, `CrawlStage`,
+`RelevanceScorer`, `Annotator`, `Fetcher`, `LlmSender`), and its name reads like the
+unrelated `crawlviz.contracts` package. Recommended: rename it `events/stage_contracts.py`,
+still re-exported from `crawlviz.events`. No code change now.
+
 ## Context
 
-- The backend is 16 top-level packages at the repository root, grouped by technical type:
-  `pipelines/`, `events/`, `services/`, `infrastructure/`, `models/`, `utils/`. They import
-  only because uvicorn runs from the root (`main.py:5-8`). One feature is spread over many of
-  them. Scoring lives in `pipelines/scoring_pipeline.py`, `services/scoring_service.py`,
+- When this ADR was written, the backend was 16 top-level packages at the repository root,
+  grouped by technical type: `pipelines/`, `events/`, `services/`, `infrastructure/`,
+  `models/`, `utils/`. They imported only because uvicorn ran from the root
+  (`main.py:5-8`). One feature was spread over many of them. Scoring lived in
+  `pipelines/scoring_pipeline.py`, `services/scoring_service.py`,
   `services/llm_contracts.py`, `services/results_mapper.py`, `events/scoring_events.py`,
-  `models/scoring_context.py` and `models/prompts.py`. Fetching lives in
+  `models/scoring_context.py` and `models/prompts.py`. Fetching lived in
   `pipelines/requests_pipeline.py`, `pipelines/robots.py`, `pipelines/retry_processor.py`,
   `infrastructure/network_client.py` and `events/requests_events.py`.
 - Code and runtime data share the root: `items.db`, `logs/`, `debug/`, `export/`, `report/`.
@@ -24,30 +42,25 @@ Status: proposed, 2026-10-29
 domain's `__init__.py` is its public API (`__all__`); other domains import only from it
 (ARCH-2). Dependency direction between them is ADR 4.
 
-| Package | Holds | From today |
+| Package | Holds | Code today |
 |---|---|---|
 | `app` | entry points: `create_app()`, the console script, later the CLI | `main.py` |
 | `api` | HTTP routers and their request and response models (ADR 12) | `routes/` |
 | `crawl` | composition root, stage registry, event broker, live settings, bootstrap, `CrawlController` | `core/`, crawl state in `routes/run.py` |
 | `config` | `RuntimeConfig` aggregate, settings store, blueprint schema and translator, paths | `config/` |
-| `telemetry` | telemetry observer, WebSocket gateway, crawl snapshot, subsystem status (ADR 8), crawl and debug logs | `ui_bridge/`, logging and debugging pipelines |
-| `runs` | run recorder, manifest, run store and export (R-RUNS, R-EXPORT) | `ui_bridge/event_recorder.py` |
-| `fetch` | fetch and retry stages, robots, politeness | requests and retry pipelines, `pipelines/robots.py` |
-| `extract` | link and item extraction, canonicalisation, filtering, transformation | processing, canonicalization, filtering, transformation pipelines; extractors in `models/` |
-| `scoring` | scoring stage and service, results mapping, LLM output models, cascade | `pipelines/scoring_pipeline.py`, `services/` scoring files |
-| `priority` | priority stage, strategies, frontier queue | `priority/`, `pipelines/priority_pipeline.py`, `pipelines/frontier_queue.py` |
-| `storage` | storage and export sinks, item store | storage and exporting pipelines, `models/storage.py` |
-| `nlp` | embeddings, vector space, features, space store, updater and bootstrap, NLP service | `nlp/`, `services/nlp_service.py`, `services/link_features.py`, `services/space_bootstrap.py` |
-| `llm` | `LlmClient`, provider adapters, keys, call budget, token usage, prompts (LLM-1, LLM-2) | `infrastructure/` LLM files, `traceability/traced_llm_handler.py` |
-| `events` | event types (the contract between stages), consumer protocol, `BasePipeline` | `events/`, `pipelines/base_pipeline.py`, `pipelines/contracts.py` |
-| `shared` | `Link`, `Node`, `Domain`, utilities, HTTP client, trace context | `models/` kernel types, `utils/`, `infrastructure/network_client.py`, `traceability/` core |
+| `telemetry` | telemetry observer, WebSocket gateway, crawl snapshot, subsystem status (ADR 8), crawl and debug logs | `ui_bridge/`, `pipelines/crawl_log_sink.py`, `pipelines/debug_log_sink.py` |
+| `runs` | run recorder, manifest, run store and export (R-RUNS, R-EXPORT) | `ui_bridge/event_recorder.py`, `core/run_manifest.py` |
+| `fetch` | fetch and retry stages, robots, politeness | `pipelines/`: `fetch_stage.py`, `retry_stage.py`, `robots.py`, `host_pacer.py` |
+| `extract` | link and item extraction, canonicalisation, filtering, transformation | `pipelines/`: `extract_stage.py`, `canonicalize_stage.py`, `filter_stage.py`, `transform_stage.py`; extractors in `models/` |
+| `scoring` | scoring stage and service, results mapping, LLM output models, cascade | `pipelines/score_stage.py`, `services/` scoring files |
+| `priority` | priority stage, strategies, frontier queue | `src/crawlviz/priority/`; outside: `pipelines/prioritize_stage.py`, `pipelines/frontier_queue.py` |
+| `storage` | storage and export sinks, item store | `pipelines/`: `storage_sink.py`, `export_sink.py`, `export_tables.py`; `models/storage.py` |
+| `nlp` | embeddings, vector space, features, space store, updater and bootstrap, NLP service | `src/crawlviz/nlp/`; outside: `services/nlp_service.py`, `services/link_features.py`, `services/space_bootstrap.py` |
+| `llm` | `LlmClient`, provider adapters, keys, call budget, token usage, prompts (LLM-1, LLM-2) | `src/crawlviz/llm/`; outside: `traceability/traced_llm_handler.py` |
+| `events` | event types (the contract between stages), consumer protocol, `BasePipeline` | `src/crawlviz/events/`, with `base_pipeline.py` and `contracts.py` |
+| `shared` | `Link`, `Node`, `Domain`, utilities, HTTP client, trace context | `src/crawlviz/shared/`: `link.py`, `node.py`, `domain.py`, `network_client.py`, `url_guard.py`, `fetch_errors.py`, `trace_context.py`, the former `utils/` helpers |
 | `benchmark` | frozen-graph benchmark, judges, audit, analysis | `benchmark/` |
-| `offline` | offline doubles and session | `offline/` |
-
-**Status.** The `events`, `nlp`, `priority` and `offline` domains have moved: their packages are now
-`src/crawlviz/events/`, `src/crawlviz/nlp/`, `src/crawlviz/priority/` and `src/crawlviz/offline/`.
-The paths in the table's last column are where the files were when this ADR was written; the
-files that were outside those folders (for example `pipelines/base_pipeline.py`) have not moved yet.
+| `offline` | offline doubles and session | `src/crawlviz/offline/` |
 
 - Event types stay in one `events` package, one module per stage, and do not move into the
   stage domains. Stages form a loop (fetch, extract, score, prioritise, fetch), so a stage
