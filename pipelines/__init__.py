@@ -3,7 +3,7 @@ from .crawl_log_sink import LoggingPipeline
 from .debug_log_sink import DebuggingPipeline
 from .export_sink import ExportingPipeline
 from .extract_stage import ProcessingPipeline
-from .fetch_stage import RequestsPipeline
+from .fetch_stage import FetchStage
 from .filter_stage import FilteringPipeline
 from .priority_pipeline import PriorityPipeline
 from .retry_stage import RetryProcessor
@@ -16,11 +16,11 @@ __all__ = [
     "CanonicalizationPipeline",
     "DebuggingPipeline",
     "ExportingPipeline",
+    "FetchStage",
     "FilteringPipeline",
     "LoggingPipeline",
     "PriorityPipeline",
     "ProcessingPipeline",
-    "RequestsPipeline",
     "RetryProcessor",
     "ScoringPipeline",
     "StopConditions",

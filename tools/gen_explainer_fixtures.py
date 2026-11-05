@@ -2,7 +2,7 @@
 
 Writes crawler-ui/src/features/config/explainers/fixtures/python_cases.json
 from the real ScoringPipeline.bucket_links, priority strategies, the
-RequestsPipeline backoff loop, DBSCAN and the link context extractor. The
+FetchStage backoff loop, DBSCAN and the link context extractor. The
 JS calculators are tested against that file; tests/test_explainer_fixtures.py
 fails when the committed file no longer matches what this script produces.
 
@@ -25,7 +25,7 @@ from yarl import URL
 import pipelines.fetch_stage as rp
 from models.links_extractor import LinkExtractor
 from pipelines import host_pacer
-from pipelines.fetch_stage import RequestsPipeline
+from pipelines.fetch_stage import FetchStage
 from pipelines.scoring_pipeline import ScoringPipeline
 from priority import strategy as strat
 
@@ -164,7 +164,7 @@ async def _backoff_run(cfg: dict, outcomes: list[str]) -> list[float]:
     rp.asyncio.sleep = fake_sleep
     host_pacer.time = SimpleNamespace(monotonic=lambda: clock.now)
     try:
-        pipe = RequestsPipeline(
+        pipe = FetchStage(
             _Broker(),
             max_concurrency=1,
             fetcher=_Scripted(outcomes, log),

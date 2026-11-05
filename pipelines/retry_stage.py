@@ -25,7 +25,7 @@ class RetryProcessor(BasePipeline):
     Args:
         storage: Shared crawl Storage.
         event_broker: The crawl's EventBroker.
-        requests_pipeline: The live RequestsPipeline instance. Required for
+        requests_pipeline: The live FetchStage instance. Required for
             RequestFailedEvent handling to actually retry -- without it,
             failures are logged but the node is not requeued.
         max_request_retries: How many times a single node may be requeued
@@ -133,7 +133,7 @@ class RetryProcessor(BasePipeline):
     async def _on_request_failed(self, event: RequestFailedEvent) -> None:
         """Requeue a node whose page fetch failed, up to `max_request_retries`.
 
-        Requeues directly onto RequestsPipeline's own queue (bypassing the
+        Requeues directly onto FetchStage's own queue (bypassing the
         broker) rather than re-emitting NodeAddedEvent, since NodeAddedEvent
         also fans out to ScoringPipeline/StoppingPipeline/etc., which would
         incorrectly treat a network retry as a brand-new node.

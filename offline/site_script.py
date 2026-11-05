@@ -125,7 +125,7 @@ class RateLimitedFetcher:
 
 
 def _too_many_requests(url: str) -> aiohttp.ClientResponseError:
-    """The error ``RequestsPipeline`` recognises as a rate limit (``is_rate_limited``)."""
+    """The error ``FetchStage`` recognises as a rate limit (``is_rate_limited``)."""
     address = URL(url)
     request_info = aiohttp.RequestInfo(address, "GET", {}, address)  # type: ignore[arg-type]
     return aiohttp.ClientResponseError(

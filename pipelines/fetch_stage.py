@@ -32,7 +32,7 @@ def is_rate_limited(error: Exception) -> bool:
     return status_of(error) in BACKOFF_STATUSES
 
 
-class RequestsPipeline:
+class FetchStage:
     """Fetches page content for every node, one HTTP request at a time
     per worker, with per-host rate limiting and 429/503 backoff shared across
     all workers.

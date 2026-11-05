@@ -20,11 +20,11 @@ from pipelines import (
     CanonicalizationPipeline,
     DebuggingPipeline,
     ExportingPipeline,
+    FetchStage,
     FilteringPipeline,
     LoggingPipeline,
     PriorityPipeline,
     ProcessingPipeline,
-    RequestsPipeline,
     RetryProcessor,
     ScoringPipeline,
     StopConditions,
@@ -129,7 +129,7 @@ def _processing(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
     fetch = inputs.config.fetch
-    return RequestsPipeline(
+    return FetchStage(
         inputs.broker,
         max_concurrency=inputs.fetch_concurrency,
         max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),

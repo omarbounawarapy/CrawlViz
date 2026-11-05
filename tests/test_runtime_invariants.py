@@ -48,7 +48,7 @@ from pipelines import (
     FilteringPipeline,
     PriorityPipeline,
     ProcessingPipeline,
-    RequestsPipeline,
+    FetchStage,
     RetryProcessor,
     ScoringPipeline,
     StopConditions,
@@ -194,7 +194,7 @@ class Crawl:
         self.recorder = Recorder()
 
         b, s = self.broker, self.storage
-        self.requests = RequestsPipeline(
+        self.requests = FetchStage(
             b,
             max_concurrency=1,
             fetcher=site,
@@ -254,7 +254,7 @@ class Crawl:
 
 async def test_higher_priority_node_is_fetched_first():
     site = SyntheticSite({})
-    requests = RequestsPipeline(EventBroker(), max_concurrency=1, fetcher=site, min_delay=0)
+    requests = FetchStage(EventBroker(), max_concurrency=1, fetcher=site, min_delay=0)
     domain = Domain("synthetic", BASE_URL, ".//a")
 
     for node_id, (page, priority) in enumerate([("mid", 20.0), ("best", 40.0), ("worst", 0.5)]):

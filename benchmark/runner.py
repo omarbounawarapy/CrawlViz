@@ -35,10 +35,10 @@ from events import (
 )
 from models import Domain, Node, Storage
 from pipelines import (
+    FetchStage,
     FilteringPipeline,
     PriorityPipeline,
     ProcessingPipeline,
-    RequestsPipeline,
     RetryProcessor,
     ScoringPipeline,
     StoragePipeline,
@@ -496,7 +496,7 @@ async def _run(
     storage.add_domain(domain)
 
     gated = _Lockstep(fetcher, lambda: False, budget) if lockstep else fetcher
-    requests = RequestsPipeline(
+    requests = FetchStage(
         broker,
         max_concurrency=1,
         fetcher=gated,
