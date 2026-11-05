@@ -5,6 +5,7 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ## [Unreleased]
 
 ### Recent changes
+- The `events`, `nlp`, `priority` and `offline` packages live under `src/crawlviz/`. Imports use `from crawlviz.nlp import ...` and the same form for the other three.
 - `settings.json`, `presets.json`, saved blueprints and run `manifest.json` carry `schema_version`. Files without it still load, a file with a newer version is refused with an "Update CrawlViz" message, and a settings reset replaces a refused settings file. `presets.json` nests the presets under a `presets` key.
 - The `pipelines.<key>` settings sections are `extract`, `fetch`, `score`, `storage`, `filter`, `prioritize`, `transform`, `debug_log` and `retry`. The old names are still read in files, presets, REST patches and live patches; a patch with both names for one section is refused. The `queues` object of `GET /status` uses the new keys.
 - Unknown settings keys are refused with a message that names the key path.
