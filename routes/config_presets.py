@@ -11,6 +11,12 @@ from pydantic import ValidationError
 
 from config import settings_store as store
 from config.runtime_config import default_runtime_config
+from crawlviz.contracts import (
+    SchemaVersionError,
+    StoredFormatError,
+    dump_presets_document,
+    load_presets_document,
+)
 from utils import save_json
 
 from .config_support import ConfigPatch, get_paths, validation_http_error
@@ -145,7 +151,7 @@ def _presets_file() -> Path:
     return get_paths().settings_file.with_name("presets.json")
 
 
-def _read_presets() -> dict[str, Any]:
+def _read_presets() -> dict[str, dict[str, Any]]:
     try:
         data = json.loads(_presets_file().read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -153,7 +159,16 @@ def _read_presets() -> dict[str, Any]:
     except (OSError, ValueError):
         logger.warning("could not read the saved presets from %s", _presets_file(), exc_info=True)
         return {}
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        logger.warning("the saved presets file %s is not a JSON object", _presets_file())
+        return {}
+    try:
+        return load_presets_document(data)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        # Listing nothing here would let the next save overwrite a file this build cannot read.
+        raise HTTPException(
+            status_code=500, detail=f"{exc} The saved presets file is {_presets_file()}."
+        ) from exc
 
 
 def _check_preset_name(name: str) -> None:
@@ -182,7 +197,7 @@ def save_preset(name: str, body: ConfigPatch | None = None) -> dict[str, Any]:
         raise validation_http_error(exc) from exc
     presets = _read_presets()
     presets[name] = values
-    save_json(_presets_file(), presets, sort_keys=True)
+    save_json(_presets_file(), dump_presets_document(presets), sort_keys=True)
     return {"saved": name}
 
 
@@ -191,7 +206,7 @@ def delete_preset(name: str) -> dict[str, Any]:
     presets = _read_presets()
     if presets.pop(name, None) is None:
         raise HTTPException(status_code=404, detail="Preset not found")
-    save_json(_presets_file(), presets, sort_keys=True)
+    save_json(_presets_file(), dump_presets_document(presets), sort_keys=True)
     return {"removed": name}
 
 
