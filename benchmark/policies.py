@@ -2,7 +2,7 @@
 src/crawlviz/events/contracts.py): it writes ``_nlp_score`` and ``nlp_vector`` on every
 link. The benchmark ranks the frontier by ``_nlp_score`` alone (strategy
 ``passthrough``), so a policy is judged on its own scores, not on the
-depth penalty and weights in priority/strategy.py.
+depth penalty and weights in src/crawlviz/priority/strategy.py.
 
 Equal scores keep first-in-first-out order, so a constant score is BFS.
 """

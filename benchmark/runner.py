@@ -1,9 +1,12 @@
-"""Runs one policy on one frozen graph through the real pipelines.
+"""Runs one policy, or the cascade, on one frozen graph through the real stages.
 
-Wired like core.Crawler._build_pipelines at concurrency 1 (so the visit order
-is deterministic for a seed), minus the LLM, embeddings, exporter, loggers
-and UI. The scoring pipeline's LLM stage is a no-op, so every link is
-ranked by the policy's own score.
+Wired like the crawler's stage registry (core.stages.build_stages) at
+concurrency 1, so the visit order is deterministic for a seed. Only the stages
+a visit order needs are built: fetch, extract, filter, transform, storage,
+score, prioritize and retry. In ``run_policy`` the score stage's LLM call is a
+no-op and there are no embeddings, so every link is ranked by the policy's own
+score. ``run_cascade`` runs the embeddings, the topic expansion and the LLM
+scoring as a crawl would.
 """
 
 import asyncio
@@ -66,7 +69,7 @@ class _NoLlm:
         return links
 
 
-# The cascade runs with the production retry processor's own backoff
+# The cascade runs with the production retry stage's own backoff
 # (RetryStage default: 2s, doubling, 3 scoring retries). Rate limits are
 # absorbed upstream by PacedLlm, so a retry here means the LLM stage itself
 # failed. The idle limit only has to outlast one slow LLM call plus backoff:
