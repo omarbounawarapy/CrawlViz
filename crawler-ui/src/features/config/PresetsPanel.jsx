@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, ConfirmButton, Field, TextInput } from "../common/Form";
-import { SectionTitle } from "../common/Page";
+import { Button, ConfirmButton, Field, TextInput, SectionTitle } from "../common";
 import {
   applyPreset,
   deletePreset,

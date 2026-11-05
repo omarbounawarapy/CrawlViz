@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useGlossary } from "./glossary";
-import { Hint } from "../common/Hint";
+import { Hint } from "../common";
 
 /** A glossary word: explained when the glossary has it, plain text otherwise. */
 export function Term({ term, children }) {

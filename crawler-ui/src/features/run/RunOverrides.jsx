@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, Chip, Select, TextInput } from "../common/Form";
+import { Button, Chip, Select, TextInput } from "../common";
 import { fetchConfig, fetchConfigDefaults, fetchConfigSchema } from "../../api/client";
 import {
   SettingsEditor,

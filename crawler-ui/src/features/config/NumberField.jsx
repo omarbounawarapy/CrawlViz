@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { getTheme } from "../../theme";
-import { TextInput } from "../common/Form";
+import { TextInput } from "../common";
 import { parseNumberText, formatNumber } from "./numberParse";
 
 const theme = getTheme();

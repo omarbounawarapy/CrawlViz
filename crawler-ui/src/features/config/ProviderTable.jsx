@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
 import { fetchProviders } from "../../api/client";
-import ScrollRegion from "../common/ScrollRegion";
+import { ScrollRegion } from "../common";
 
 const theme = getTheme();
 const { text, background } = theme.colors;

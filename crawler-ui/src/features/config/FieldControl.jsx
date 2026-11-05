@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, TextInput, Select } from "../common/Form";
+import { Button, TextInput, Select, nextChoice } from "../common";
 import Stepper from "./Stepper";
 import NumberField from "./NumberField";
-import { nextChoice } from "../common/choiceKeys";
 
 const theme = getTheme();
 const { text } = theme.colors;

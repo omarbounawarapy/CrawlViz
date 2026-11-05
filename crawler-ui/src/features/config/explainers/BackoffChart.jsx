@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { getTheme } from "../../../theme";
 import ExplainerFrame from "./ExplainerFrame";
 import { scenario, summary, timeline } from "./backoffModel";
-import { Chip } from "../../common/Form";
+import { Chip } from "../../common";
 
 const theme = getTheme();
 const { text } = theme.colors;

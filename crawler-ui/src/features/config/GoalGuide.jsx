@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button } from "../common/Form";
-import { SectionTitle } from "../common/Page";
+import { Button, SectionTitle } from "../common";
 import { fetchPresets } from "../../api/client";
 import { presetChanges } from "./presetModel";
 import { Explain } from "./Term";

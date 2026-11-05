@@ -1,7 +1,7 @@
 import { Spider } from "../features/loading";
 import { useState } from "react";
 import { getTheme } from "../theme";
-import { Hint } from "../features/common/Hint";
+import { Hint } from "../features/common";
 import { crawlStatusWords } from "../state/crawlStatus";
 
 const theme = getTheme();

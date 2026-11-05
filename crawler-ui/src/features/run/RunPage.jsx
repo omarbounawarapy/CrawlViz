@@ -3,8 +3,7 @@ import { fetchTemplates, fetchTemplate, runCrawl, stopCrawl, crawlStatus } from 
 import { getTheme } from "../../theme";
 import { formatDuration } from "../../utils/formatters";
 import { crawlStatusWords } from "../../state/crawlStatus";
-import { Page, SectionTitle, Row } from "../common/Page";
-import { buttonPrimary, buttonOutline } from "../common/buttons";
+import { Page, SectionTitle, Row, buttonPrimary, buttonOutline } from "../common";
 import RunOverrides from "./RunOverrides";
 import { Explain, useCrawlCost } from "../config";
 

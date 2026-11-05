@@ -9,8 +9,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchTemplates, fetchTemplate, createTemplate, updateTemplate, deleteTemplate } from "../../api/client";
 import { getTheme } from "../../theme";
-import { Page, SectionTitle, Row } from "../common/Page";
 import {
+  Page,
+  SectionTitle,
+  Row,
   Field,
   TextInput,
   Select,
@@ -22,7 +24,7 @@ import {
   Group,
   Status,
   ConfirmButton,
-} from "../common/Form";
+} from "../common";
 import { Explain, NumberField, useCrawlCost } from "../config";
 import {
   STRATEGIES,

@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button } from "../common/Form";
+import { Button, nextChoice } from "../common";
 import { previewPrompt } from "../../api/client";
 import { STRATEGY_HELP, estimateTokens, lineDiff } from "./promptModel";
-import { nextChoice } from "../common/choiceKeys";
 
 const theme = getTheme();
 const { text, background, accent } = theme.colors;

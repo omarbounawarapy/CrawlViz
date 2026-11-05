@@ -10,8 +10,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { fetchValidationTables, fetchValidationCrawls, fetchValidationSample, isAbortError } from "../../api/client";
 import { getTheme } from "../../theme";
 import { hasScore } from "../../utils/formatters";
-import { Page } from "../common/Page";
-import { Field, Select, Button } from "../common/Form";
+import { Page, Field, Select, Button } from "../common";
 
 const theme = getTheme();
 const { text, background, accent, relevance } = theme.colors;

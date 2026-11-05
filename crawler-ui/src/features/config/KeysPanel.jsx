@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, ConfirmButton, Field, Select, TextInput } from "../common/Form";
-import { SectionTitle } from "../common/Page";
+import { Button, ConfirmButton, Field, Select, TextInput, SectionTitle } from "../common";
 import { addKey, fetchKeys, fetchProviders, removeKey } from "../../api/client";
 
 const theme = getTheme();

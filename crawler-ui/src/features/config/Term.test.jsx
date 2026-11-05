@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { Explain } from "./Term";
-import { Hint } from "../common/Hint";
+import { Hint } from "../common";
 import { primeGlossary, resetGlossaryForTests } from "./glossary";
 
 const GLOSSARY = {

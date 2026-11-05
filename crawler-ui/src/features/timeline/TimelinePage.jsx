@@ -4,7 +4,7 @@ import { formatTs, eventSummary } from "../../utils/formatters";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
 import Scrubber from "./Scrubber";
-import EmptyState from "../common/EmptyState";
+import { EmptyState } from "../common";
 
 const theme = getTheme();
 const styles = createComponentStyles(theme);

@@ -8,13 +8,21 @@ import {
   stopBenchmarkJob,
 } from "../../api/client";
 import { getTheme } from "../../theme";
-import { SectionTitle } from "../common/Page";
-import { Button, Chip, Field, Grid, Select, Status, TextInput } from "../common/Form";
+import {
+  SectionTitle,
+  Button,
+  Chip,
+  Field,
+  Grid,
+  Select,
+  Status,
+  TextInput,
+  ScrollRegion,
+  useFocusableWhenScrolling,
+} from "../common";
 import Loading from "./Loading";
 import { LABEL, useLoad, num } from "./shared";
 import { NumberField } from "../config";
-import ScrollRegion from "../common/ScrollRegion";
-import useFocusableWhenScrolling from "../common/useFocusableWhenScrolling";
 
 const { text, background } = getTheme().colors;
 

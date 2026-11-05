@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
-import { Page } from "../common/Page";
-import { Button, Chip, ConfirmButton, TextInput } from "../common/Form";
+import { Page, Button, Chip, ConfirmButton, TextInput } from "../common";
 import {
   fetchConfigSchema,
   fetchConfig,

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
-import EmptyState from "../common/EmptyState";
+import { EmptyState } from "../common";
 import { PIPELINE_STAGES, PIPELINE_STAGE_LABELS } from "../../state/nodeStates";
 import { formatDuration } from "../../utils/formatters";
 

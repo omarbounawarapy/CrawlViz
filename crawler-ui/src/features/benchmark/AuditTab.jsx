@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchAudit, putAuditLabel, fetchAuditScore } from "../../api/client";
 import { getTheme } from "../../theme";
-import { SectionTitle } from "../common/Page";
-import { Button, Chip, Tabs, TabPanel, Status } from "../common/Form";
-import { nextChoice } from "../common/choiceKeys";
+import { SectionTitle, Button, Chip, Tabs, TabPanel, Status, nextChoice } from "../common";
 import Loading from "./Loading";
 import { useLoad, num } from "./shared";
 
