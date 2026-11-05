@@ -14,7 +14,7 @@ import Shell from "./app/Shell";
 import { NodeInspector } from "./features/inspector";
 import { OverviewPage } from "./features/overview";
 import { GraphView } from "./features/graph";
-import PipelineMonitor from "./features/pipeline/PipelineMonitor";
+import { PipelineMonitor } from "./features/pipeline";
 import TimelineDock from "./features/timeline/TimelinePage";
 import RunPage from "./features/run/RunPage";
 import BlueprintManager from "./features/blueprints/BlueprintManager";
