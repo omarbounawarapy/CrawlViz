@@ -5,7 +5,7 @@ from .export_sink import ExportSink
 from .extract_stage import ExtractStage
 from .fetch_stage import FetchStage
 from .filter_stage import FilterStage
-from .priority_pipeline import PriorityPipeline
+from .prioritize_stage import PriorityPipeline
 from .retry_stage import RetryStage
 from .score_stage import ScoringPipeline
 from .stop_controller import StopConditions, StopController

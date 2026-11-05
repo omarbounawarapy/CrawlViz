@@ -95,7 +95,7 @@ max-complexity = 10
 "nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
 "pipelines/debug_log_sink.py" = ["I001", "PLR0913", "RUF010"]
 "pipelines/export_sink.py" = ["PLR0911", "PLR0913", "PLW2901", "SIM105"]
-"pipelines/priority_pipeline.py" = ["PLR0913"]
+"pipelines/prioritize_stage.py" = ["PLR0913"]
 "pipelines/extract_stage.py" = ["I001"]
 "pipelines/fetch_stage.py" = ["I001", "PLR0913"]
 "pipelines/retry_stage.py" = ["PLR0913"]
@@ -240,7 +240,7 @@ module = [
     "pipelines.filter_stage",
     "pipelines.frontier_queue",
     "pipelines.crawl_log_sink",
-    "pipelines.priority_pipeline",
+    "pipelines.prioritize_stage",
     "pipelines.extract_stage",
     "pipelines.fetch_stage",
     "pipelines.retry_stage",
