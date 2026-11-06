@@ -20,7 +20,6 @@ method_files = [
   "pipelines/prioritize_stage.py",
   "src/crawlviz/priority/**",
   "services/nlp_service.py",
-  "services/link_features.py",
   "services/space_bootstrap.py",
   "services/scoring_service.py",
   "services/results_mapper.py",
