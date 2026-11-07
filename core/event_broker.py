@@ -98,9 +98,9 @@ class EventBroker:
         # ones individually subscribed to StopCrawlEvent for their own
         # cleanup logic. Before this, a pipeline sitting on an empty
         # queue when the crawl ended had no guaranteed way to notice and
-        # exit its worker loop -- which meant Crawler.start()'s
-        # asyncio.gather(*tasks) could hang indefinitely even after the
-        # crawl had genuinely finished.
+        # exit its worker loop, so its start() never returned and
+        # Crawler._run_until_stopped had to wait out the shutdown grace
+        # before it could cancel the stage.
         for consumer in self.registry.all_consumers():
             stop = getattr(consumer, "stop", None)
             if stop is None:
