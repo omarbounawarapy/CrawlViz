@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from config.runtime_config import RuntimeConfig, default_runtime_config
+from crawlviz.telemetry import StatusBoard
 from routes import run as run_routes
 
 
@@ -78,3 +79,24 @@ async def test_crawl_ended_by_a_stop_request_is_reported_as_stopped(
     await _run()
 
     assert _status()["last_outcome"] == "stopped"
+
+
+async def test_the_crawl_id_and_final_board_are_kept_after_the_crawl_ends(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _ReportingCrawler(_Crawler):
+        def __init__(self, template_name: str, **kwargs: Any) -> None:
+            super().__init__(template_name, **kwargs)
+            self.crawl_id = "wikiMD-20261107"
+            self.status_board = StatusBoard()
+
+        async def start(self) -> None:
+            self.status_board.report("fetch", "waiting", "backing_off")
+
+    monkeypatch.setattr(run_routes, "Crawler", _ReportingCrawler)
+
+    await _run()
+
+    status = _status()
+    assert status["crawl_id"] == "wikiMD-20261107"
+    assert status["board"]["subsystems"]["fetch"]["reason"] == "backing_off"
