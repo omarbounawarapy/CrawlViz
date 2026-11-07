@@ -8,6 +8,7 @@ import pytest
 
 from crawlviz.llm import (
     LLM_CALLS_FILE_NAME,
+    CallBudget,
     CallOutcome,
     CostTable,
     LlmCallRecord,
@@ -79,6 +80,19 @@ async def test_totals_count_calls_by_outcome() -> None:
     assert sum(outcomes.values()) == 4
     assert set(outcomes) == set(CallOutcome)
     assert json.loads(recorder.totals.model_dump_json())["outcomes"]["timeout"] == 1
+
+
+async def test_the_budget_is_charged_for_calls_that_reached_the_provider() -> None:
+    budget = CallBudget(None, max_tokens=2_000_000)
+    recorder = LlmCallRecorder(None, cost_table=TABLE, budget=budget)
+    await recorder.record(make_record(cache_hit=True, attempts=0))
+    assert (budget.tokens_used, budget.cost_usd) == (0, 0.0)
+    await recorder.record(make_record())
+    assert budget.tokens_used == 1_500_000
+    assert budget.cost_usd == pytest.approx(3.0)
+    await recorder.record(make_record(model="unpriced-model"))
+    assert budget.cost_usd == pytest.approx(3.0)
+    assert budget.exhausted
 
 
 async def test_cost_is_unknown_until_a_priced_call_is_recorded() -> None:

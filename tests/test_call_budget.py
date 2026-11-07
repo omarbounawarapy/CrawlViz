@@ -60,6 +60,36 @@ def test_snapshot_reports_the_numbers():
     assert budget.snapshot() == {"limit": 2, "used": 2, "refused": 1, "exhausted": True}
 
 
+def test_a_token_cap_refuses_calls_once_charged_tokens_reach_it(caplog):
+    budget = CallBudget(None, max_tokens=100)
+    assert budget.take(2) == 2
+    budget.charge(60, 30, None)
+    assert not budget.exhausted
+    budget.charge(10, 0, None)
+    with caplog.at_level(logging.WARNING, logger="crawlviz.llm.call_budget"):
+        assert budget.take(3) == 0
+    assert (budget.tokens_used, budget.used, budget.refused) == (100, 2, 3)
+    assert budget.exhausted
+    assert "token budget of 100 reached" in caplog.text
+
+
+def test_a_cost_cap_counts_only_priced_calls(caplog):
+    budget = CallBudget(10, max_cost_usd=0.5)
+    budget.charge(1000, 1000, None)
+    assert budget.take(1) == 1
+    budget.charge(10, 10, 0.5)
+    with caplog.at_level(logging.WARNING, logger="crawlviz.llm.call_budget"):
+        assert budget.take(1) == 0
+    assert "estimated cost budget of 0.5 USD reached" in caplog.text
+    assert budget.snapshot() == {"limit": 10, "used": 1, "refused": 1, "exhausted": True}
+
+
+@pytest.mark.parametrize("caps", [{"limit": -1}, {"max_tokens": -1}, {"max_cost_usd": -0.1}])
+def test_a_negative_cap_is_refused(caps):
+    with pytest.raises(ValueError, match="must not be negative"):
+        CallBudget(caps.pop("limit", None), **caps)
+
+
 def test_no_budget_leaves_the_bucketing_untouched():
     p = pipeline(None)
     sampled, skip = [L(0.9, "a"), L(0.5, "b")], [L(0.95, "c")]

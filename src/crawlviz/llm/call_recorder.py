@@ -11,6 +11,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .call_budget import CallBudget
 from .cost_table import CostTable
 from .types import FAILED_OUTCOMES, CallOutcome, LlmCallRecord, TokenUsage
 
@@ -58,6 +59,8 @@ class LlmCallRecorder:
         cost_table: Prices for the estimate; None leaves every cost unknown.
         budget_calls: The crawl's call cap, for `remaining_calls`.
         store_text: Keep the rendered prompt and raw reply in the file.
+        budget: Charged the tokens and estimated cost of each call that reached
+            the provider, so its token and cost caps hold; None charges nothing.
     """
 
     def __init__(
@@ -67,8 +70,10 @@ class LlmCallRecorder:
         cost_table: CostTable | None = None,
         budget_calls: int | None = None,
         store_text: bool = False,
+        budget: CallBudget | None = None,
     ) -> None:
         self.path = path
+        self.budget = budget
         self.cost_table = CostTable() if cost_table is None else cost_table
         self.store_text = store_text
         self._totals = LlmCallTotals(budget_calls=budget_calls, remaining_calls=budget_calls)
@@ -96,6 +101,8 @@ class LlmCallRecorder:
         """
         priced = self.price(record)
         self._totals = _add(self._totals, priced)
+        if self.budget is not None and not priced.cache_hit:
+            self.budget.charge(priced.input_tokens, priced.output_tokens, priced.cost_usd)
         if self.path is not None:
             stored = priced if self.store_text else _without_text(priced)
             await self._append(self.path, stored.model_dump_json() + "\n")
