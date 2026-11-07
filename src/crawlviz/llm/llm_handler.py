@@ -21,13 +21,11 @@ from .key_manager import KeyManager
 from .nvidia_translator import NvidiaTranslator
 from .open_router_translator import OpenRouterTranslator
 from .openai_translator import OpenAITranslator
+from .provider_statuses import REJECTED_KEY_STATUSES, SERVER_ERROR_STATUSES, TOO_MANY_REQUESTS
 from .types import LlmTimeoutError
 
 logger = logging.getLogger(__name__)
 
-TOO_MANY_REQUESTS = 429
-SERVER_ERROR_STATUSES = range(500, 600)
-REJECTED_KEY_STATUSES = (401, 403)
 # Longest wait for one HTTP attempt; reasoning models can take tens of seconds.
 DEFAULT_TIMEOUT_SECONDS = 60.0
 MILLISECONDS_PER_SECOND = 1000
