@@ -30,13 +30,13 @@ requested (what follows races with the stop). See `golden_files.py` and
 pin runs `Crawler.start()` itself, so `core/crawler.py` and `core/stages.py` are covered.
 It crawls the `offline_demo.json` blueprint with a budget of 5 pages, one fetch worker
 and one scoring worker, on the doubles of `CRAWLVIZ_OFFLINE=1` (`build_offline_session`).
-`Crawler` has no lockstep, so the stop event races the next fetch and a run may fetch one
-page more than the budget. The pin records only what that race cannot change
+`Crawler` has no lockstep, but `FetchStage` holds the page budget, so a run fetches exactly
+5 pages. The pin records only what the interleaving of the stages cannot change
 (`pin_crawler.py`):
 
 - `composition.jsonl`: the stages in start order, then each event type with its consumers in
   dispatch order.
-- `fetch_order.jsonl`: the first 5 pages fetched.
+- `fetch_order.jsonl`: the 5 pages fetched.
 - `llm_requests.jsonl`: the first 2 prompts (the expansion and the first scoring call).
 
 It takes about 7 seconds. It has no `link_scores` or `wire_messages` golden: their length

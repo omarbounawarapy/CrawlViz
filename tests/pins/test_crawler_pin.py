@@ -16,7 +16,7 @@ async def test_crawler_matches_its_golden_files(
 ) -> None:
     run = await run_pin_crawler(PAGE_BUDGET, tmp_path)
 
-    assert run.fetched_total >= PAGE_BUDGET
+    assert run.fetched_total == PAGE_BUDGET
     assert run.llm_calls_total >= LLM_PROMPTS_PINNED
     golden(PIN, "composition", run.composition)
     golden(PIN, "fetch_order", run.fetch_order)
