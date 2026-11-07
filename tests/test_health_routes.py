@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 
 import main
 from config.paths import RuntimePaths
-from routes import config_support
+from crawlviz.api import schemas
+from routes import config_support, health
 from routes.session_token import get_session_token
 
 SKIP_WHEN_ROOT = pytest.mark.skipif(
@@ -104,3 +105,9 @@ def test_a_folder_that_cannot_be_written_is_named(
     failed = [check for check in reply.json()["checks"] if not check["ok"]]
     assert [check["name"] for check in failed] == ["export_dir"]
     assert str(paths.export_dir) in failed[0]["detail"]
+
+
+def test_the_replies_come_from_the_api_schemas_not_a_copy() -> None:
+    declared = {route.path: route.response_model for route in health.router.routes}  # type: ignore[attr-defined]
+
+    assert declared == {"/health": schemas.HealthReply, "/ready": schemas.ReadyReply}

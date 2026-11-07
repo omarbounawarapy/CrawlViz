@@ -14,36 +14,21 @@ route; there is no reason to leave them open (docs/adr/0008-subsystem-status.md)
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
 
 from fastapi import APIRouter, Response
-from pydantic import BaseModel
 
 from config import RuntimePaths
 from config.settings_store import SettingsFileError, load_runtime_config
+from crawlviz.api.schemas import HealthReply, ReadinessCheck, ReadyReply
 
 from .config_support import get_paths
+
+# The reply models are listed because callers read them from here as well as from the schemas.
+__all__ = ["HealthReply", "ReadinessCheck", "ReadyReply", "router"]
 
 STATUS_SERVICE_UNAVAILABLE = 503
 
 router = APIRouter(tags=["health"])
-
-
-class HealthReply(BaseModel):
-    status: Literal["ok"]
-
-
-class ReadinessCheck(BaseModel):
-    """One thing `GET /ready` verified. `detail` says what to fix when `ok` is false."""
-
-    name: str
-    ok: bool
-    detail: str | None = None
-
-
-class ReadyReply(BaseModel):
-    ready: bool
-    checks: list[ReadinessCheck]
 
 
 # The directories a crawl or a settings change writes to, by the name `GET /ready` reports.
