@@ -15,7 +15,7 @@
 {"consumers": ["logging", "canon", "processing", "storage", "stopping", "TelemetryBridge"], "event": "PageFetchedEvent"}
 {"consumers": ["logging", "transformation", "TelemetryBridge"], "event": "ContentFilteredEvent"}
 {"consumers": ["logging", "debug", "storage", "exporting", "TelemetryBridge"], "event": "TransformationCompletedEvent"}
-{"consumers": ["logging", "exporting", "stopping", "SpaceUpdater", "TelemetryBridge"], "event": "StopCrawlEvent"}
+{"consumers": ["logging", "requests", "exporting", "stopping", "SpaceUpdater", "TelemetryBridge"], "event": "StopCrawlEvent"}
 {"consumers": ["logging", "priority", "TelemetryBridge"], "event": "LinksScoredEvent"}
 {"consumers": ["logging", "debug", "storage", "TelemetryBridge"], "event": "PriorityCalculatedEvent"}
 {"consumers": ["logging", "TelemetryBridge"], "event": "ExportBatchCompletedEvent"}

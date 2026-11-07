@@ -10,7 +10,7 @@ from crawlviz.shared import Domain, Node
 from models import Storage
 from pipelines import RetryStage
 from pipelines.fetch_stage import FetchStage
-from tests.synthetic_crawl import CrawlOptions, build_synthetic_crawl
+from tests.synthetic_crawl import FETCH_WORKERS, CrawlOptions, build_synthetic_crawl
 
 CRAWL_TIMEOUT_SECONDS = 60.0
 BOUNDED_CRAWL_TIMEOUT_SECONDS = 30.0
@@ -151,3 +151,29 @@ async def test_a_cancelled_fetch_gives_its_page_back() -> None:
 
     assert not stage.budget_spent
     assert stage.pages_unclaimed == 1
+
+
+STOP_AFTER_SECONDS = 1.0
+LONG_BUDGET = 3000
+# One fetch in flight per worker may finish after the stop, and a few more already claimed.
+MOST_FETCHES_AFTER_A_STOP = 3 * FETCH_WORKERS
+
+
+async def test_a_bounded_fetch_queue_stops_fetching_when_the_crawl_is_stopped(
+    tmp_path: Path,
+) -> None:
+    """The fetch stage heard of the stop only at shutdown, behind dispatch tasks blocked on its
+    full queue, and kept fetching meanwhile (135 requests after a stop; 8 with no bound)."""
+    options = CrawlOptions(
+        fetch_queue_size=BOUNDED_FETCH_QUEUE, shutdown_grace_seconds=CRAWL_TIMEOUT_SECONDS
+    )
+    crawl = build_synthetic_crawl(tmp_path, LONG_BUDGET, options)
+    run = asyncio.create_task(crawl.crawler.start())
+    await asyncio.sleep(STOP_AFTER_SECONDS)
+    fetched_at_stop = crawl.fetched_pages
+
+    assert await crawl.crawler.request_stop()
+    await asyncio.wait_for(run, BOUNDED_CRAWL_TIMEOUT_SECONDS)
+
+    assert crawl.watcher.stop_reason == "MANUAL_STOP"
+    assert crawl.fetched_pages - fetched_at_stop <= MOST_FETCHES_AFTER_A_STOP

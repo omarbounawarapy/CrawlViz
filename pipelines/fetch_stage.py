@@ -11,6 +11,7 @@ from crawlviz.events import (
     RequestFailedEvent,
     RequestResponseReceivedEvent,
     RequestStartedEvent,
+    StopCrawlEvent,
 )
 from crawlviz.shared import BackgroundTasks, NetworkClient, bind_node
 
@@ -92,6 +93,7 @@ class FetchStage:
 
         self.handlers = {
             NodeAddedEvent: self._on_node_added,
+            StopCrawlEvent: self._on_stop,
         }
 
         # Pages the crawl may still fetch, counting those being fetched now; None is no limit.
@@ -100,6 +102,7 @@ class FetchStage:
         # once (an in-memory site) fetches ahead of that stop, so the budget is held here.
         self._pages_unclaimed = page_budget
         self._pages_in_flight = 0
+        self._pool_closed = False  # set by the stop event, and by stop()
         self._nodes_in_process = 0
         self._page_settled = asyncio.Condition()
 
@@ -117,7 +120,6 @@ class FetchStage:
     # START
     # =========================================================
     async def start(self) -> None:
-        self._pool_closed = False
         self._pool_next_id = 0
         self.workers = []
         self._background = BackgroundTasks()
@@ -180,14 +182,21 @@ class FetchStage:
     # =========================================================
     # ENTRY POINT
     # =========================================================
-    async def put(self, event: NodeAddedEvent) -> None:
+    async def put(self, event: NodeAddedEvent | StopCrawlEvent) -> None:
         await self.handlers[type(event)](event)
 
     # =========================================================
     # HANDLER (INGESTION VISIBILITY)
     # =========================================================
+    async def _on_stop(self, event: StopCrawlEvent) -> None:
+        """The crawl is over, whatever the reason: workers stop fetching and drain the queue,
+        so handlers blocked on a full queue are freed. ``stop()`` still ends the workers."""
+        self._pool_closed = True
+        async with self._page_settled:
+            self._page_settled.notify_all()
+
     async def _on_node_added(self, event: NodeAddedEvent) -> None:
-        if self.budget_spent:
+        if self._pool_closed or self.budget_spent:
             # Nothing more will be fetched. Queueing the node could block this handler on a
             # full queue that no worker reads from, and the broker waits for its handlers
             # before it stops the stage.
