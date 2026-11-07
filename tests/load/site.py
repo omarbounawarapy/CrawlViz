@@ -25,7 +25,7 @@ LOAD_BLUEPRINT = "load_site.json"
 SITE_SEED = 7
 OUT_DEGREE = 12
 # The site has this many times the page budget (see ``LoadOptions.site_headroom``).
-SITE_HEADROOM = 1.5
+SITE_HEADROOM = 3.0
 RELEVANT_FRACTION = 0.15
 
 # Limits a load run must not hit before its page budget: a depth no random graph of this
