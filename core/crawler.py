@@ -12,6 +12,7 @@ outside (the manual STOP endpoint in ``routes.run``).
 
 import asyncio
 import logging
+from collections.abc import Awaitable
 from contextlib import AsyncExitStack
 from datetime import datetime
 
@@ -137,8 +138,11 @@ class Crawler:
             ui_gateway = self._build_ui_layer(pipelines)
             cleanup.push_async_callback(ui_gateway.stop)
 
-            tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
-            await self._run_until_stopped(tasks, grace=self.config.run.shutdown_grace)
+            await self._run_until_stopped(
+                [self.event_broker.start(), ui_gateway.start()],
+                self._collect_stage_tasks(pipelines, space_updater),
+                grace=self.config.run.shutdown_grace,
+            )
 
     async def request_stop(self) -> bool:
         """Ask a running crawl to stop the way a stop condition does, so every
@@ -167,29 +171,53 @@ class Crawler:
         self.config = applier.apply(self.config, patch)
         return self.config
 
-    async def _run_until_stopped(self, tasks: list, grace: float = 5.0) -> None:
-        """Run every task; once the first one finishes (the broker, on
-        StopCrawlEvent) give the rest `grace` seconds, then cancel any
-        straggler so one hung task cannot keep the crawl "running".
-        A task that raises propagates after the others are cancelled."""
-        running = [asyncio.ensure_future(t) for t in tasks]
+    async def _run_until_stopped(
+        self,
+        closers: list[Awaitable[None]],
+        stages: list[Awaitable[None]],
+        grace: float = 5.0,
+    ) -> None:
+        """Run the closers and the stages. The crawl ends when a closer does (the event
+        broker, on StopCrawlEvent, and the UI gateway, which the telemetry bridge stops on
+        the same event). The stages then get `grace` seconds before any straggler is
+        cancelled, so one hung task cannot keep the crawl "running".
+
+        A stage that returns early, such as a sink that is switched off, does not end the
+        crawl. A task that raises ends it at once: the others are cancelled and the error
+        propagates."""
+        closing = [asyncio.ensure_future(closer) for closer in closers]
+        running = [*closing, *(asyncio.ensure_future(stage) for stage in stages)]
         try:
-            done, pending = await asyncio.wait(running, return_when=asyncio.FIRST_COMPLETED)
-            if pending and not any(d.exception() for d in done if not d.cancelled()):
-                done2, pending = await asyncio.wait(pending, timeout=grace)
-                done |= done2
-            for t in pending:
-                t.cancel()
-            await asyncio.gather(*pending, return_exceptions=True)
-            for d in done:
-                if not d.cancelled() and d.exception():
-                    raise d.exception()
+            if await self._wait_for_end(closing, running):
+                others = [task for task in running if not task.done()]
+                if others:
+                    await asyncio.wait(others, timeout=grace)
+            for task in running:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*running, return_exceptions=True)
+            for task in running:
+                error = None if task.cancelled() else task.exception()
+                if error is not None:
+                    raise error
         finally:
             # Await the cancelled tasks: their own `finally` blocks (the export
             # flush, closing the log files) only run once they get the cancel.
-            for t in running:
-                t.cancel()
+            for task in running:
+                task.cancel()
             await asyncio.gather(*running, return_exceptions=True)
+
+    @staticmethod
+    async def _wait_for_end(closing: list[asyncio.Future], running: list[asyncio.Future]) -> bool:
+        """Wait until a closer has finished (True) or any task has raised (False)."""
+        pending = set(running)
+        while pending:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            if any(not task.cancelled() and task.exception() for task in done):
+                return False
+            if any(task in closing for task in done):
+                return True
+        return True
 
     # =========================================================
     # COMPOSITION STEPS
@@ -364,12 +392,8 @@ class Crawler:
         # Stopping this one closes the event log as well as the server.
         return recording_gateway
 
-    def _collect_tasks(
-        self, p: dict, space_updater: SpaceUpdater, ui_gateway: RecordingGateway
-    ) -> list:
+    def _collect_stage_tasks(self, p: dict, space_updater: SpaceUpdater) -> list[Awaitable[None]]:
         return [
-            self.event_broker.start(),
             *(stage.start() for stage in p.values()),
-            ui_gateway.start(),
             space_updater.start(),
         ]
