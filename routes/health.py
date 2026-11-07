@@ -23,9 +23,6 @@ from crawlviz.api.schemas import HealthReply, ReadinessCheck, ReadyReply
 
 from .config_support import get_paths
 
-# The reply models are listed because callers read them from here as well as from the schemas.
-__all__ = ["HealthReply", "ReadinessCheck", "ReadyReply", "router"]
-
 STATUS_SERVICE_UNAVAILABLE = 503
 
 router = APIRouter(tags=["health"])
