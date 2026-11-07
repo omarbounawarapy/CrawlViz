@@ -64,6 +64,7 @@ class FetchStage:
         accept: str = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
         accept_encoding: str = "gzip, deflate",
         accept_language: str = "",
+        page_budget: int | None = None,
     ):
         self.event_broker = event_broker
         self.rng = rng if rng is not None else random.Random()
@@ -92,6 +93,13 @@ class FetchStage:
         self.handlers = {
             NodeAddedEvent: self._on_node_added,
         }
+
+        # Pages the crawl may still fetch, counting those being fetched now; None is no limit.
+        # The stop controller ends the crawl on the page that reaches max_nodes, but it hears
+        # of that page only after the events queued ahead of it. A fetcher that answers at
+        # once (an in-memory site) fetches ahead of that stop, so the budget is held here.
+        self._pages_unclaimed = page_budget
+        self._page_released = asyncio.Condition()
 
         self.min_delay = min_delay  # minimum seconds between requests to one host
         self.pacer = HostPacer()
@@ -158,6 +166,8 @@ class FetchStage:
         needs the same guarantee).
         """
         self._pool_closed = True
+        async with self._page_released:
+            self._page_released.notify_all()
         for _ in range(self.max_concurrency):
             await self.queue.put(SHUTDOWN)
 
@@ -185,6 +195,28 @@ class FetchStage:
 
         await self.queue.put(event.node)
 
+    async def _claim_page(self) -> bool:
+        """Take one page of the budget before fetching it, waiting while the budget is
+        all in use. False when the crawl is stopping, so the node is not fetched."""
+        async with self._page_released:
+            await self._page_released.wait_for(self._can_claim_page)
+            if self._pool_closed:
+                return False
+            if self._pages_unclaimed is not None:
+                self._pages_unclaimed -= 1
+            return True
+
+    def _can_claim_page(self) -> bool:
+        unclaimed = self._pages_unclaimed
+        return self._pool_closed or unclaimed is None or unclaimed > 0
+
+    async def _release_page(self) -> None:
+        """Give back the page of a fetch that did not produce a page."""
+        async with self._page_released:
+            if self._pages_unclaimed is not None:
+                self._pages_unclaimed += 1
+            self._page_released.notify()
+
     async def _wait_for_slot(self, url: str) -> None:
         """Rate limit, per host: the slot is claimed before sleeping, so
         concurrent workers queue behind each other instead of all seeing the
@@ -206,11 +238,15 @@ class FetchStage:
     async def worker(self, worker_id: int) -> None:
         while True:
             node = await self.queue.get()
+            holds_page = False
 
             try:
                 if node is SHUTDOWN:
                     break
                 bind_node(str(node.get_id()))
+                holds_page = await self._claim_page()
+                if not holds_page:
+                    continue
 
                 await self.event_broker.emit(
                     RequestStartedEvent(
@@ -264,6 +300,7 @@ class FetchStage:
                         url=node.link.url if node.link else None,
                     )
                 )
+                holds_page = False  # the page is fetched, so it stays counted
 
             except Exception as e:
                 error_str = str(e) or type(e).__name__
@@ -295,4 +332,6 @@ class FetchStage:
                 )
 
             finally:
+                if holds_page:
+                    await self._release_page()
                 self.queue.task_done()

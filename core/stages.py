@@ -155,6 +155,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         accept=fetch.accept,
         accept_encoding=fetch.accept_encoding,
         accept_language=fetch.accept_language,
+        page_budget=inputs.stop_conditions["max_nodes"],
     )
 
 
