@@ -408,6 +408,26 @@ class TestTokenUsage:
             {"usageMetadata": {"promptTokenCount": 9, "candidatesTokenCount": 4}}
         ) == (9, 4)
 
+    def test_gemini_thinking_tokens_count_as_output(self):
+        # Thinking models report their hidden reasoning apart from the answer;
+        # both are generated and billed as output.
+        usage = {"promptTokenCount": 9, "candidatesTokenCount": 4, "thoughtsTokenCount": 120}
+        assert GeminiTranslator.translate_usage({"usageMetadata": usage}) == (9, 124)
+
+    def test_anthropic_cached_prompt_tokens_count_as_input(self):
+        usage = {
+            "input_tokens": 7,
+            "cache_creation_input_tokens": 100,
+            "cache_read_input_tokens": 50,
+            "output_tokens": 3,
+        }
+        assert AnthropicTranslator.translate_usage({"usage": usage}) == (157, 3)
+
+    def test_counts_that_are_not_whole_non_negative_numbers_are_ignored(self):
+        usage = {"prompt_tokens": True, "completion_tokens": -5}
+        assert OpenAITranslator.translate_usage({"usage": usage}) == (0, 0)
+        assert GeminiTranslator.translate_usage({"usageMetadata": "n/a"}) == (0, 0)
+
     def test_a_response_without_usage_counts_as_zero(self):
         assert GroqTranslator.translate_usage({"choices": []}) == (0, 0)
         assert AnthropicTranslator.translate_usage("not a dict") == (0, 0)
