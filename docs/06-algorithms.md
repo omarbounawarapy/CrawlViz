@@ -366,8 +366,23 @@ The ratio between these quantities illustrates why evaluating every discovered l
 The cascade limits LLM evaluation through thresholding, selective sampling, top-$`K`$ confirmation, and `trusted_no_llm` bypasses. Consequently, LLM cost is intended to remain approximately proportional to the number of nodes actually explored rather than to the number of links discovered.
 ## 7. Budget and Depth Semantics
 
-- **`max_nodes`** counts **successfully fetched pages**, not admitted nodes. `StopController` increments on `PageFetchedEvent` and emits `StopCrawlEvent("MAX_NODES_REACHED")` when the count reaches `max_nodes`. A run therefore fetches exactly `max_nodes` pages with one request worker; with more workers, up to `max_concurrency - 1` requests already in flight may still complete. Failed fetches do not count.
-- **`max_depth`** is an **admission limit**, not a stop condition. Seeds are depth 0; `StorageSink` does not create nodes deeper than `max_depth`. The crawl ends naturally when the frontier drains (or on another stop condition). `MAX_DEPTH_REACHED` is no longer emitted.
+- **`max_nodes`** is a hard cap on fetched pages, and `FetchStage` holds it (`pipelines/fetch_stage.py`). A worker claims one page of the budget before it sends a request and gives the page back if the fetch fails or `robots.txt` refuses the URL. A run stopped by `MAX_NODES_REACHED` therefore fetches exactly `max_nodes` pages, whatever the worker count. Failed requests do not count against the cap, so the number of requests sent can be higher than `max_nodes`. `StopController` counts `PageFetchedEvent` and emits `StopCrawlEvent("MAX_NODES_REACHED")` when the count reaches `max_nodes`. Once the budget is spent, `FetchStage` drops any node that still arrives, without a request.
+- **`max_depth`** is an **admission limit**, not a stop condition. Seeds are depth 0; `StorageSink` does not create nodes deeper than `max_depth`. When the frontier drains, the crawl stops with the reason `FRONTIER_EXHAUSTED`. `MAX_DEPTH_REACHED` is no longer emitted.
+
+Every `StopCrawlEvent` carries one of these reasons, all raised in `pipelines/stop_controller.py`:
+
+| Reason | Raised when |
+|---|---|
+| `MAX_NODES_REACHED` | The fetched-page count reaches `max_nodes`. |
+| `TIME_LIMIT_REACHED` | The crawl has run for `max_duration` seconds. |
+| `NO_PROGRESS` | No node was added or updated and no page was fetched for `no_progress_timeout` seconds. |
+| `TARGET_REACHED` | A node's URL contains the blueprint's `stop_url`. |
+| `FRONTIER_EXHAUSTED` | Nothing is left to do: the event bus is empty and no stage that feeds the frontier has queued or in-process work, on 3 checks in a row (`IDLE_CONFIRMATION_CHECKS`). |
+| `MANUAL_STOP` | The user sent `POST /stop`. |
+
+The checks for time, no progress and `FRONTIER_EXHAUSTED` run every `run.stop_check_interval` seconds (default 0.1). The log and export sinks are not asked about pending work, because they only record the crawl and cannot add pages. A crawl whose frontier drains stops on this reason within a fraction of a second, instead of waiting for `NO_PROGRESS`.
+
+The crawl ends when the event broker or the UI gateway ends, and both end on the stop event (`Crawler._run_until_stopped`). A stage whose `start()` returns early, such as the debug log sink with debug off, does not end it. After the stop, `FetchStage` drops the nodes it has not fetched, so a bounded fetch queue (`pipelines.fetch.max_queue_size`) does not keep fetching.
 
 ## 8. Run Isolation
 

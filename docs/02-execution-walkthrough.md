@@ -102,7 +102,7 @@ This is where the frontier actually grows: each scored link becomes a brand-new 
 
 ## 5. Stopping
 
-`StopController` subscribes to the node-count and depth signals it needs and evaluates the blueprint's stop conditions (`max_nodes`, `max_depth`, `max_time`) after relevant events. When one is met, it emits `StopCrawlEvent`, which every pipeline treats as a drain-and-halt signal: `ExportSink` flushes its buffer, `FetchStage` stops pulling new fetches, and `TelemetryBridge` stops the WebSocket gateway when it sees the stop event.
+`StopController` subscribes to the node-count and depth signals it needs and evaluates the blueprint's stop conditions (`max_nodes`, `max_duration`, `no_progress_timeout`, `stop_url`) and also stops the crawl with `FRONTIER_EXHAUSTED` when nothing is left to fetch. The reasons are listed in [`06-algorithms.md`](06-algorithms.md#7-budget-and-depth-semantics). When one is met, it emits `StopCrawlEvent`, which every pipeline treats as a drain-and-halt signal: `ExportSink` flushes its buffer, `FetchStage` stops pulling new fetches, and `TelemetryBridge` stops the WebSocket gateway when it sees the stop event.
 
 ## 6. What the browser sees, the whole time
 
