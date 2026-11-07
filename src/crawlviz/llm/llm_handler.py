@@ -1,10 +1,12 @@
 import asyncio
 import logging
 import math
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from typing import Any, Protocol
 
 import aiohttp
 from aiohttp import hdrs
@@ -19,12 +21,16 @@ from .key_manager import KeyManager
 from .nvidia_translator import NvidiaTranslator
 from .open_router_translator import OpenRouterTranslator
 from .openai_translator import OpenAITranslator
+from .types import LlmTimeoutError
 
 logger = logging.getLogger(__name__)
 
 TOO_MANY_REQUESTS = 429
 SERVER_ERROR_STATUSES = range(500, 600)
 REJECTED_KEY_STATUSES = (401, 403)
+# Longest wait for one HTTP attempt; reasoning models can take tens of seconds.
+DEFAULT_TIMEOUT_SECONDS = 60.0
+MILLISECONDS_PER_SECOND = 1000
 
 
 @dataclass(frozen=True)
@@ -86,6 +92,12 @@ def _seconds_until(http_date: str, now: datetime) -> float | None:
     if when.tzinfo is None:  # "-0000" zone: RFC 5322 says the time is UTC
         when = when.replace(tzinfo=UTC)
     return max(0.0, (when - now).total_seconds())
+
+
+class RequestSender(Protocol):
+    """Sends one HTTP request described by a translator's params dict."""
+
+    async def emit_request(self, params: dict[str, Any]) -> Any: ...  # Any: provider JSON
 
 
 def is_transient(status: int) -> bool:
@@ -151,14 +163,17 @@ class LlmHandler:
 
     Args:
         key_manager: Supplies a rotating API key for the request's provider.
-        client: Network client used to actually send the request. Defaults
-            to a plain NetworkClient.
+        client: Sends the HTTP request. Defaults to a plain NetworkClient.
 
     Attributes:
         retry_policy: How 429 and 5xx answers are retried. Set it on an
             instance to change it, e.g. ``RetryPolicy(max_retries=0)`` for a
             caller that runs its own retries. Each retry asks the KeyManager
             for a key again, so it moves to the next key when there are several.
+        timeout_seconds: Longest wait for one HTTP attempt, a positive number.
+            Set it on an instance to change it. An attempt that gets no answer
+            in time ends the call with `LlmTimeoutError` and is not retried;
+            the client's own timeout still applies when it is shorter.
     """
 
     retry_policy: RetryPolicy = RetryPolicy()
@@ -175,12 +190,13 @@ class LlmHandler:
     def __init__(
         self,
         key_manager: KeyManager,
-        client: NetworkClient | None = None,
+        client: RequestSender | None = None,
         max_tokens: int | None = None,
         temperature: float | None = None,
         endpoints: dict[str, str] | None = None,
     ):
-        self.client = client or NetworkClient()
+        self.client: RequestSender = client or NetworkClient()
+        self.timeout_seconds = DEFAULT_TIMEOUT_SECONDS
         self.key_manager = key_manager
         # Optional request parameters; None leaves the provider's default.
         self.max_tokens = max_tokens
@@ -189,6 +205,16 @@ class LlmHandler:
         self.endpoints = {
             p: u for p, u in (endpoints or {}).items() if u and u != default_llm_endpoints().get(p)
         }
+
+    @property
+    def timeout_seconds(self) -> float:
+        return self._timeout_seconds
+
+    @timeout_seconds.setter
+    def timeout_seconds(self, seconds: float) -> None:
+        if not 0 < seconds < math.inf:
+            raise ValueError(f"timeout_seconds must be a positive number, not {seconds}")
+        self._timeout_seconds = seconds
 
     def _apply_options(self, llm_type: str, params: dict) -> None:
         """Set the configured max_tokens/temperature in the provider's own
@@ -223,6 +249,9 @@ class LlmHandler:
             ValueError: If `context`'s scoring type has no registered translator.
             aiohttp.ClientResponseError: If the provider still refuses after the
                 key drops and the retries `retry_policy` allows.
+            LlmTimeoutError: If an attempt got no answer within `timeout_seconds`
+                or the client's own timeout. A timeout is not retried: the
+                worker has already waited the whole timeout once.
         """
         llm_type = context.get_scoring_type()
 
@@ -232,23 +261,29 @@ class LlmHandler:
                 f"Unknown scoring type: {llm_type!r}. Registered: {list(self.translators.keys())}"
             )
 
-        retries = 0
+        call = f"{llm_type}/{context.get_model_information()}"
+        started = time.monotonic()
+        attempts = retries = 0
         while True:
             key = await self.key_manager.next_key(llm_type)
             context.set_key(key)
             params = translator_cls.translate_request(context)
             self._apply_endpoint(llm_type, params, context)
             self._apply_options(llm_type, params)
+            attempts += 1
             try:
-                response = await self.client.emit_request(params)
+                response = await self._dispatch(params, call)
                 break
+            except TimeoutError as e:
+                latency_ms = (time.monotonic() - started) * MILLISECONDS_PER_SECOND
+                logger.warning("%s; the call is given up at attempt %d", e, attempts)
+                raise LlmTimeoutError(str(e), attempts=attempts, latency_ms=latency_ms) from e
             except aiohttp.ClientResponseError as e:
                 # A rejected key (401/403) will never start working: drop it
                 # from rotation and retry with the next one, if any is left.
                 is_rejected_key = e.status in REJECTED_KEY_STATUSES
                 if is_rejected_key and await self.key_manager.mark_invalid(llm_type, key):
                     continue
-                call = f"{llm_type}/{context.get_model_information()}"
                 delay = retry_delay(self.retry_policy, e, retries, call)
                 if delay is None:
                     raise
@@ -258,3 +293,22 @@ class LlmHandler:
         if usage is not None and hasattr(context, "set_usage"):
             context.set_usage(*usage(response))
         return translator_cls.translate_response(response)
+
+    async def _dispatch(self, params: dict, call: str) -> object:
+        """One HTTP attempt, abandoned after `timeout_seconds`.
+
+        Raises:
+            TimeoutError: If no answer came in time. The message names the
+                provider and model (`call`) and which timeout fired, never the
+                key or URL, so it is safe to log and record.
+        """
+        deadline = asyncio.timeout(self.timeout_seconds)
+        try:
+            async with deadline:
+                return await self.client.emit_request(params)
+        except TimeoutError as e:
+            if deadline.expired():
+                reason = f"gave no answer within {self.timeout_seconds:g} s"
+            else:  # the network client's own, shorter timeout
+                reason = "timed out in the network client"
+            raise TimeoutError(f"LLM {call} {reason}") from e
