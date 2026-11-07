@@ -20,8 +20,8 @@ async def test_a_small_site_is_crawled_to_its_page_budget(tmp_path: Path) -> Non
     measurement = await run_load_crawl(SMALL_SITE_PAGES, tmp_path, CRAWL_TIMEOUT_SECONDS)
 
     assert measurement.stop_reason == REACHED_PAGE_BUDGET
-    assert measurement.fetched_pages >= SMALL_SITE_PAGES
-    assert measurement.event_counts["PageFetchedEvent"] >= SMALL_SITE_PAGES
+    assert measurement.fetched_pages == SMALL_SITE_PAGES
+    assert measurement.event_counts["PageFetchedEvent"] == SMALL_SITE_PAGES
     assert measurement.pages_per_second > 0
     assert measurement.loop_lag_samples > 0
 

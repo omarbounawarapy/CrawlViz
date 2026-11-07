@@ -56,9 +56,9 @@ def test_a_200_page_smoke_crawl_is_within_budget(tmp_path: Path) -> None:
     report = _run_harness("smoke", SMOKE_PAGES, tmp_path / "smoke.json")
 
     measurement = report["measurement"]
-    assert measurement["fetched_pages"] >= SMOKE_PAGES
+    assert measurement["fetched_pages"] == SMOKE_PAGES
     assert measurement["stop_reason"] == "MAX_NODES_REACHED"
-    assert measurement["event_counts"]["PageFetchedEvent"] >= SMOKE_PAGES
+    assert measurement["event_counts"]["PageFetchedEvent"] == SMOKE_PAGES
 
 
 @pytest.mark.slow
