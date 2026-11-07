@@ -79,6 +79,28 @@ Tests write only under pytest's `tmp_path`. A `Crawler` can be constructed witho
 
 `test_event_wiring.py` is worth reading even if you're not modifying this codebase. It is a regression suite that encodes earlier defects (e.g. `TestCascadeSubscriptionGap`, which asserts that `PrioritizeStage` receives `HighScoreLinksEvent`). `test_runtime_invariants.py` covers the runtime guarantees fixed during the stabilization phase; see [`10-stabilization.md`](10-stabilization.md).
 
+**Load harness.** `tests/load/` runs a real `Crawler` on a synthetic site and measures it. Only the outside world is replaced, as in offline mode: the site is a `SiteScript` served without a network, the LLM is `ScriptedLlm` and the embeddings are hashed. Every stage, queue and the event broker are the production ones. One run records:
+
+- pages fetched, wall time and pages per second;
+- peak resident memory of the process (`getrusage`);
+- event-loop lag (p50, p99 and max in milliseconds), taken from a task that wakes every 10 ms and records how late it was;
+- the stop reason, and how many events of each type were emitted.
+
+Run one crawl and judge it against the limits in `tests/load/budget.json`:
+
+```bash
+uv run python -m tests.load.run --pages 200 --run smoke --report smoke.json > /dev/null
+```
+
+`--run` names an entry of `budget.json` (`smoke` or `full`). The report is a JSON file, so the crawler's debug trace on standard output can be discarded. The exit status is 0 within budget, 1 when a limit is broken (each one is printed on standard error) and 2 when the crawl timed out or ended before its page budget. Each run is a process of its own, because peak memory is a per-process maximum.
+
+Two tests in `tests/load/test_load_runs.py` use the harness:
+
+- The 200-page smoke run is part of the normal `uv run pytest`. The crawl takes about two seconds and the test about six on a warm machine; the first run after an install can take about a minute.
+- The 50,000-page run takes hours, so it is skipped unless `CRAWLVIZ_LOAD_FULL=1` is set. It is marked `slow`, so `make check-changed` skips it too.
+
+The `smoke` limits are about five times a measured 200-page run. The `full` limits (7200 s, 5 pages per second, 8192 MB, loop lag p99 1000 ms and max 10000 ms) are generous placeholders that have not been calibrated against a measured 50,000-page run. A pass on the full run means only that it stayed inside them.
+
 **Frontend:** `crawler-ui/` has `vitest` and `@testing-library/react` configured, with tests present for the reducer (`state/reducer.test.js`) and the app shell (`App.test.jsx`):
 
 ```bash
