@@ -35,6 +35,7 @@ from .types import (
     LlmMessage,
     LlmRequest,
     LlmResponse,
+    LlmTimeoutError,
     TokenUsage,
     render_messages,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "LlmOutputError",
     "LlmRequest",
     "LlmResponse",
+    "LlmTimeoutError",
     "ModelPrice",
     "NvidiaTranslator",
     "OpenAITranslator",

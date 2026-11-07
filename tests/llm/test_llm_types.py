@@ -14,6 +14,7 @@ from crawlviz.llm import (
     LlmMessage,
     LlmRequest,
     LlmResponse,
+    LlmTimeoutError,
     TokenUsage,
     render_messages,
 )
@@ -89,6 +90,15 @@ def test_record_from_error_keeps_the_outcome_and_message() -> None:
     assert record.attempts == 4
     assert record.error == "ollama/llama3.1:8b answered HTTP 503"
     assert record.raw_reply is None
+
+
+def test_a_timeout_is_a_typed_call_error_and_a_timeout_error() -> None:
+    error = LlmTimeoutError("ollama/llama3.1:8b gave no answer", attempts=1, latency_ms=60_000.0)
+    assert isinstance(error, LlmCallError) and isinstance(error, TimeoutError)
+    assert str(error) == "ollama/llama3.1:8b gave no answer"
+    record = LlmCallRecord.from_error(make_request(), error, started_at=STARTED)
+    assert record.outcome is CallOutcome.TIMEOUT
+    assert (record.attempts, record.latency_ms) == (1, 60_000.0)
 
 
 def test_record_round_trips_through_json() -> None:

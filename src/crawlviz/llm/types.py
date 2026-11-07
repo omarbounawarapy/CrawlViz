@@ -29,8 +29,21 @@ class CallOutcome(StrEnum):
     REPAIRED = "repaired"  # the first reply failed validation, the repair answer passed
     INVALID_OUTPUT = "invalid_output"  # the reply never passed validation
     HTTP_ERROR = "http_error"  # the provider answered with an error status
-    NETWORK_ERROR = "network_error"  # no answer: refused, reset or timed out
+    NETWORK_ERROR = "network_error"  # no answer: the connection was refused or reset
+    TIMEOUT = "timeout"  # no answer within the request timeout
     BAD_RESPONSE = "bad_response"  # an answer that is not a chat completion
+
+
+# Outcomes of a call that ended without a valid answer.
+FAILED_OUTCOMES: Final = frozenset(
+    {
+        CallOutcome.INVALID_OUTPUT,
+        CallOutcome.HTTP_ERROR,
+        CallOutcome.NETWORK_ERROR,
+        CallOutcome.TIMEOUT,
+        CallOutcome.BAD_RESPONSE,
+    }
+)
 
 
 class _Frozen(BaseModel):
@@ -120,6 +133,18 @@ class LlmCallError(Exception):
         self.attempts = attempts
         self.latency_ms = latency_ms
         self.status = status
+
+
+class LlmTimeoutError(LlmCallError, TimeoutError):
+    """A call given up because no answer came within the request timeout.
+
+    It is also a `TimeoutError`, so code that already catches that keeps working.
+    """
+
+    def __init__(self, message: str, *, attempts: int, latency_ms: float) -> None:
+        super().__init__(
+            message, outcome=CallOutcome.TIMEOUT, attempts=attempts, latency_ms=latency_ms
+        )
 
 
 class LlmClient(Protocol):

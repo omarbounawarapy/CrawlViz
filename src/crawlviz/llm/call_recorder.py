@@ -12,19 +12,11 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from .cost_table import CostTable
-from .types import CallOutcome, LlmCallRecord, TokenUsage
+from .types import FAILED_OUTCOMES, CallOutcome, LlmCallRecord, TokenUsage
 
 logger = logging.getLogger(__name__)
 
 LLM_CALLS_FILE_NAME = "llm_calls.jsonl"
-_FAILED_OUTCOMES = frozenset(
-    {
-        CallOutcome.INVALID_OUTPUT,
-        CallOutcome.HTTP_ERROR,
-        CallOutcome.NETWORK_ERROR,
-        CallOutcome.BAD_RESPONSE,
-    }
-)
 
 
 class LlmCallTotals(BaseModel):
@@ -128,7 +120,7 @@ def _add(totals: LlmCallTotals, record: LlmCallRecord) -> LlmCallTotals:
         update={
             "calls": calls,
             "cache_hits": totals.cache_hits + int(record.cache_hit),
-            "failed_calls": totals.failed_calls + int(record.outcome in _FAILED_OUTCOMES),
+            "failed_calls": totals.failed_calls + int(record.outcome in FAILED_OUTCOMES),
             "repaired_calls": totals.repaired_calls + int(record.outcome is CallOutcome.REPAIRED),
             "input_tokens": totals.input_tokens + spent * record.input_tokens,
             "output_tokens": totals.output_tokens + spent * record.output_tokens,

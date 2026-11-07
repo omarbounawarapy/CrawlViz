@@ -58,6 +58,15 @@ async def test_totals_count_calls_tokens_cost_and_budget() -> None:
     assert (totals.budget_calls, totals.remaining_calls) == (3, 0)
 
 
+@pytest.mark.parametrize(
+    "outcome", ["invalid_output", "http_error", "network_error", "timeout", "bad_response"]
+)
+async def test_a_call_without_a_valid_answer_counts_as_failed(outcome: str) -> None:
+    recorder = LlmCallRecorder(None)
+    await recorder.record(make_record(outcome=outcome))
+    assert recorder.totals.failed_calls == 1
+
+
 async def test_cost_is_unknown_until_a_priced_call_is_recorded() -> None:
     recorder = LlmCallRecorder(None)
     priced = await recorder.record(make_record())
