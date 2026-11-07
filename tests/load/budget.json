@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "to be calibrated: placeholder limits, generous on purpose, not yet set from a measured 50k run",
+  "runs": {
+    "smoke": {
+      "max_wall_seconds": 120,
+      "min_pages_per_second": 1,
+      "max_peak_rss_mb": 2048,
+      "max_loop_lag_p99_ms": 1000,
+      "max_loop_lag_max_ms": 5000
+    },
+    "full": {
+      "max_wall_seconds": 7200,
+      "min_pages_per_second": 5,
+      "max_peak_rss_mb": 8192,
+      "max_loop_lag_p99_ms": 1000,
+      "max_loop_lag_max_ms": 10000
+    }
+  }
+}
