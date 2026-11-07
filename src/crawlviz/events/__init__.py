@@ -145,6 +145,7 @@ from .stage_contracts import (
     RelevanceScorer,
     TraceSink,
 )
+from .status_reporter import NullStatusReporter, StatusReporter
 
 # =========================================================
 # GLOBAL EXPORT LIST (GUI / DEBUG / INTROSPECTION)
@@ -237,6 +238,8 @@ __all__ = [
     "EventConsumer",
     "Fetcher",
     "LlmSender",
+    "NullStatusReporter",
     "RelevanceScorer",
+    "StatusReporter",
     "TraceSink",
 ]
