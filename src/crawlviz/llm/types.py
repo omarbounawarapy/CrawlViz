@@ -72,6 +72,8 @@ class LlmRequest(_Frozen):
         prompt_id: Id of the `prompts/<id>.md` file the messages were rendered from.
         prompt_hash: sha256 of the rendered messages (see `prompt_registry`).
         temperature: None leaves the provider's default.
+        reasoning_effort: How hard a reasoning model thinks ("low", "high", ...);
+            None leaves the provider's default.
         max_tokens: None leaves the provider's default.
         json_output: Ask for a JSON object where the provider supports it.
         crawl_id, node_id, trace_id: Log and record context (OBS-1).
@@ -83,6 +85,7 @@ class LlmRequest(_Frozen):
     prompt_id: str | None = None
     prompt_hash: str | None = None
     temperature: float | None = Field(default=None, ge=0)
+    reasoning_effort: str | None = Field(default=None, min_length=1)
     max_tokens: int | None = Field(default=None, gt=0)
     json_output: bool = False
     crawl_id: str | None = None
@@ -167,6 +170,7 @@ class LlmCallRecord(_Frozen):
     prompt_id: str | None = None
     prompt_hash: str | None = None
     temperature: float | None = None
+    reasoning_effort: str | None = None
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
     cost_usd: float | None = Field(default=None, ge=0)
@@ -237,6 +241,7 @@ def _request_fields(request: LlmRequest) -> dict[str, object]:
         "prompt_id": request.prompt_id,
         "prompt_hash": request.prompt_hash,
         "temperature": request.temperature,
+        "reasoning_effort": request.reasoning_effort,
         "crawl_id": request.crawl_id,
         "node_id": request.node_id,
         "trace_id": request.trace_id,

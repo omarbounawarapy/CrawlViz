@@ -77,6 +77,23 @@ def test_record_from_response_carries_every_figure() -> None:
     assert record.rendered_prompt == "[system]\nScore links.\n\n[user]\npage text"
 
 
+def test_both_records_carry_the_sampling_settings_sent() -> None:
+    request = make_request(temperature=0.7, reasoning_effort="low")
+    response = LlmResponse(text="{}", model="m", attempts=1, latency_ms=1.0)
+    error = LlmCallError("failed", outcome=CallOutcome.HTTP_ERROR, attempts=1, latency_ms=1.0)
+    for record in (
+        LlmCallRecord.from_response(request, response, started_at=STARTED),
+        LlmCallRecord.from_error(request, error, started_at=STARTED),
+    ):
+        assert (record.temperature, record.reasoning_effort) == (0.7, "low")
+
+
+def test_an_unset_reasoning_effort_is_recorded_as_the_provider_default() -> None:
+    assert make_request().reasoning_effort is None
+    with pytest.raises(ValidationError):
+        make_request(reasoning_effort="")
+
+
 def test_record_from_error_keeps_the_outcome_and_message() -> None:
     error = LlmCallError(
         "ollama/llama3.1:8b answered HTTP 503",
