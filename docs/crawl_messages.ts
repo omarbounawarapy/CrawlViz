@@ -230,6 +230,140 @@ export interface NodeErrorMsg {
 }
 
 
+// ─── Subsystem status (ADR 8) ─────────────────────────────────────────────────
+//
+// Source of truth: src/crawlviz/contracts/subsystem_status.py and
+// status_messages.py. tests/test_wire_protocol.py fails when these
+// declarations and the pydantic models disagree.
+//
+// Reasons are codes, never sentences: the UI catalog turns them into words.
+// "waiting" and "failed" always carry a reason; retry_at is set only while
+// "waiting". Times are unix seconds.
+
+export type SubsystemName = "embedder" | "space" | "llm" | "fetch" | "robots" | "export";
+
+export type SubsystemState = "off" | "starting" | "ready" | "waiting" | "failed";
+
+export type CrawlState =
+  | "idle"
+  | "starting"
+  | "running"
+  | "stopping"
+  | "stopped"
+  | "finished"
+  | "failed";
+
+export interface EmbedderFacts {
+  model:      string | null;
+  device:     string | null;
+  dimensions: number | null;
+}
+
+export interface SpaceFacts {
+  vectors:           number | null;
+  loaded_from_store: boolean | null;
+}
+
+/** Counter names match the LLM call totals; budget_calls is null when uncapped. */
+export interface LlmFacts {
+  provider:           string | null;
+  model:              string | null;
+  calls:              number;
+  budget_calls:       number | null;
+  calls_refused:      number;
+  cache_hits:         number;
+  failed_calls:       number;
+  input_tokens:       number;
+  output_tokens:      number;
+  estimated_cost_usd: number | null;
+  in_flight:          number;
+  outcomes:           Record<string, number>;   // keyed by call outcome code
+}
+
+export interface FetchFacts {
+  in_flight:         number;
+  pages_fetched:     number;
+  hosts_backing_off: number;
+  retries_pending:   number;
+}
+
+export interface RobotsFacts {
+  hosts_checked: number;
+  hosts_blocked: number;
+  crawl_delay_s: number | null;
+}
+
+export interface ExportFacts {
+  rows_written: number;
+  rows_failed:  number;
+}
+
+export interface SubsystemEntryBase {
+  state:    SubsystemState;
+  since:    number;
+  retry_at: number | null;
+}
+
+export interface EmbedderStatus extends SubsystemEntryBase {
+  subsystem: "embedder";
+  reason:    "loading_model" | "model_missing" | "load_failed" | null;
+  facts:     EmbedderFacts;
+}
+
+export interface SpaceStatus extends SubsystemEntryBase {
+  subsystem: "space";
+  reason:    "waiting_for_embedder" | "loading_saved" | "building" | "build_failed" | null;
+  facts:     SpaceFacts;
+}
+
+export interface LlmStatus extends SubsystemEntryBase {
+  subsystem: "llm";
+  reason:    "keys_missing" | "rate_limited" | "budget_exhausted" | "provider_error" | null;
+  facts:     LlmFacts;
+}
+
+export interface FetchStatus extends SubsystemEntryBase {
+  subsystem: "fetch";
+  reason:    "rate_limited" | "backing_off" | "network_errors" | null;
+  facts:     FetchFacts;
+}
+
+export interface RobotsStatus extends SubsystemEntryBase {
+  subsystem: "robots";
+  reason:    "loading_rules" | "rules_unavailable" | null;
+  facts:     RobotsFacts;
+}
+
+export interface ExportStatus extends SubsystemEntryBase {
+  subsystem: "export";
+  reason:    "write_failed" | null;
+  facts:     ExportFacts;
+}
+
+export type SubsystemStatus =
+  | EmbedderStatus
+  | SpaceStatus
+  | LlmStatus
+  | FetchStatus
+  | RobotsStatus
+  | ExportStatus;
+
+/** Every subsystem's entry, in SubsystemName order. */
+export interface StatusBoardSnapshot {
+  subsystems: Record<SubsystemName, SubsystemStatus>;
+}
+
+/**
+ * One subsystem's entry changed. Replace that subsystem's entry with
+ * `entry`; never merge fields. Sent at most every 250 ms per subsystem.
+ */
+export interface SubsystemStatusMsg {
+  type:  "SUBSYSTEM_STATUS";
+  ts:    number;
+  entry: SubsystemStatus;
+}
+
+
 // ─── Discriminated union ──────────────────────────────────────────────────────
 
 export type CrawlMessage =
@@ -241,7 +375,8 @@ export type CrawlMessage =
   | PipelineEventMsg
   | CandidateEvaluatedMsg
   | NodeScoredDetailMsg
-  | NodeErrorMsg;
+  | NodeErrorMsg
+  | SubsystemStatusMsg;
 
 
 // ─── React integration ────────────────────────────────────────────────────────
