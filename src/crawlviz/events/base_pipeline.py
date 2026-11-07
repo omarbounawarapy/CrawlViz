@@ -102,7 +102,13 @@ class BasePipeline:
     def __init__(self, max_concurrency: int = 1):
         self.max_concurrency = max_concurrency
         self.workers: list[asyncio.Task] = []
+        self._items_in_process = 0
         # Subclasses are expected to set self.queue themselves.
+
+    @property
+    def has_pending_work(self) -> bool:
+        """True while an item is queued or a worker is handling one."""
+        return self._items_in_process > 0 or not self.queue.empty()
 
     @property
     def event_types(self) -> tuple[type, ...]:
@@ -190,6 +196,7 @@ class BasePipeline:
     async def _worker_loop(self, worker_id: int) -> None:
         while True:
             item = await self.queue.get()
+            self._items_in_process += 1
             try:
                 if item is SHUTDOWN:
                     break
@@ -206,6 +213,7 @@ class BasePipeline:
                     type(item).__name__,
                 )
             finally:
+                self._items_in_process -= 1
                 self.queue.task_done()
 
     async def _process(self, item, worker_id: int) -> None:

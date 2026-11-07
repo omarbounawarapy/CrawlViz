@@ -10,6 +10,7 @@ class StopCrawlEvent:
         "TARGET_REACHED",
         "TIME_LIMIT_REACHED",
         "NO_PROGRESS",
+        "FRONTIER_EXHAUSTED",
         "MANUAL_STOP",
     ]
     node_count: int

@@ -1,5 +1,6 @@
 import asyncio
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from crawlviz.events import (
@@ -11,6 +12,10 @@ from crawlviz.events import (
 )
 from crawlviz.shared import BackgroundTasks
 
+# How many checks in a row must find the crawl idle before the frontier counts as drained.
+# One check can fall between an event leaving one stage and arriving at the next.
+IDLE_CONFIRMATION_CHECKS = 3
+
 
 @dataclass(frozen=True)
 class StopConditions:
@@ -18,6 +23,8 @@ class StopConditions:
     max_duration: float
     no_progress_timeout: float
     target_url: str = ""
+    # Whether nothing is queued or in flight anywhere in the crawl (see StopController).
+    frontier_idle: Callable[[], bool] | None = None
 
 
 class StopController(BasePipeline):
@@ -29,7 +36,12 @@ class StopController(BasePipeline):
 
     ``max_nodes`` counts successfully fetched pages. ``max_depth`` is not a
     stop condition: StorageSink refuses to admit nodes deeper than it,
-    and the crawl ends naturally once the frontier drains.
+    and the crawl ends with ``FRONTIER_EXHAUSTED`` once the frontier drains.
+
+    ``conditions.frontier_idle`` tells whether nothing is queued or in flight anywhere in the
+    crawl. When it holds for ``IDLE_CONFIRMATION_CHECKS`` checks in a row no new page can
+    appear, so the crawl stops at once instead of waiting for the no-progress timeout.
+    Without it the controller never reports a drained frontier.
     """
 
     def __init__(
@@ -42,6 +54,8 @@ class StopController(BasePipeline):
     ):
         super().__init__(max_concurrency=max_concurrency)
         self.check_interval = check_interval
+        self._frontier_idle = conditions.frontier_idle
+        self._idle_checks = 0
         self.event_broker = event_broker
 
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
@@ -87,6 +101,17 @@ class StopController(BasePipeline):
         while not self.stopped:
             await asyncio.sleep(self.check_interval)
             await self._check_time_conditions()
+            await self._check_frontier_drained()
+
+    async def _check_frontier_drained(self) -> None:
+        if self._frontier_idle is None or self.stopped:
+            return
+        # This controller's own queue counts: a page it has not counted yet may still
+        # reach the page budget.
+        idle = self._frontier_idle() and not self.has_pending_work
+        self._idle_checks = self._idle_checks + 1 if idle else 0
+        if self._idle_checks >= IDLE_CONFIRMATION_CHECKS:
+            await self._stop("FRONTIER_EXHAUSTED")
 
     async def _process(self, event, worker_id: int) -> None:
         handler = self.handlers.get(type(event))

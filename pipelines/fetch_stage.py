@@ -100,6 +100,7 @@ class FetchStage:
         # once (an in-memory site) fetches ahead of that stop, so the budget is held here.
         self._pages_unclaimed = page_budget
         self._pages_in_flight = 0
+        self._nodes_in_process = 0
         self._page_settled = asyncio.Condition()
 
         self.min_delay = min_delay  # minimum seconds between requests to one host
@@ -202,6 +203,11 @@ class FetchStage:
         await self.queue.put(event.node)
 
     @property
+    def has_pending_work(self) -> bool:
+        """True while a node is queued or a worker holds one (fetching or waiting for a page)."""
+        return self._nodes_in_process > 0 or not self.queue.empty()
+
+    @property
     def pages_unclaimed(self) -> int | None:
         """Pages the crawl may still start fetching; None when there is no budget."""
         return self._pages_unclaimed
@@ -262,6 +268,7 @@ class FetchStage:
     async def worker(self, worker_id: int) -> None:
         while True:
             node = await self.queue.get()
+            self._nodes_in_process += 1
             holds_page = False
             page_fetched = False
 
@@ -360,4 +367,5 @@ class FetchStage:
                 if holds_page:
                     # Shielded so a cancelled worker still gives its claim back.
                     await asyncio.shield(self._settle_page(page_fetched))
+                self._nodes_in_process -= 1
                 self.queue.task_done()

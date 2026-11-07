@@ -124,6 +124,11 @@ class RetryStage(BasePipeline):
         # Delayed in the background so the retry worker isn't blocked.
         self._pending.spawn(_reschedule(), name=f"retry-reschedule-{node_id}")
 
+    @property
+    def has_pending_work(self) -> bool:
+        """Also true while a delayed requeue or reschedule is waiting."""
+        return super().has_pending_work or len(self._pending) > 0
+
     async def stop(self) -> None:
         # A requeue still waiting out its delay has nothing to rejoin once the crawl ends.
         await self._pending.cancel_all()

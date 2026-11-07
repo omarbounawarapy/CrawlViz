@@ -14,6 +14,7 @@ PAGE_BUDGET = 300
 CRAWL_TIMEOUT_SECONDS = 60.0
 REACHED_PAGE_BUDGET = "MAX_NODES_REACHED"
 SHORT_GRACE = 0.1
+SMALL_BUDGET = 30
 
 
 async def test_a_crawl_without_the_debug_trace_runs_to_its_page_budget(tmp_path: Path) -> None:
@@ -86,3 +87,24 @@ async def test_a_stage_that_raises_ends_the_crawl_and_cancels_the_others() -> No
         )
 
     assert probe.cancelled == ["bystander"]
+
+
+# Fewer links per page than the scoring cascade's percentile minimum drops every link of the
+# seed page on the synthetic site (see tests/load/site.py), so the frontier empties at once.
+STARVING_OUT_DEGREE = 8
+FRONTIER_EXHAUSTED = "FRONTIER_EXHAUSTED"
+STARVED_CRAWL_TIMEOUT_SECONDS = 20.0
+
+
+async def test_a_crawl_whose_frontier_runs_dry_stops_without_waiting_for_the_timeout(
+    tmp_path: Path,
+) -> None:
+    """The crawl sat idle until the 60 s no-progress timeout (600 s by default)."""
+    crawl = build_synthetic_crawl(
+        tmp_path, SMALL_BUDGET, CrawlOptions(out_degree=STARVING_OUT_DEGREE)
+    )
+
+    await asyncio.wait_for(crawl.crawler.start(), STARVED_CRAWL_TIMEOUT_SECONDS)
+
+    assert crawl.watcher.stop_reason == FRONTIER_EXHAUSTED
+    assert 0 < crawl.fetched_pages < SMALL_BUDGET

@@ -25,6 +25,11 @@ class EventBroker:
         self.active_tasks: set[asyncio.Task] = set()
         self._seq = 0
 
+    @property
+    def is_idle(self) -> bool:
+        """True when no event waits on the bus and no consumer is handling one."""
+        return self.event_bus.empty() and not self.active_tasks
+
     async def start(self) -> None:
         """Drain the event bus, fanning each event out to its subscribers.
 

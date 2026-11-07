@@ -139,6 +139,7 @@ from .base_pipeline import SHUTDOWN, BasePipeline
 from .stage_contracts import (
     Annotator,
     CrawlStage,
+    WorkTracker,
     EventConsumer,
     Fetcher,
     LlmSender,
@@ -235,6 +236,7 @@ __all__ = [
     "Annotator",
     "BasePipeline",
     "CrawlStage",
+    "WorkTracker",
     "EventConsumer",
     "Fetcher",
     "LlmSender",

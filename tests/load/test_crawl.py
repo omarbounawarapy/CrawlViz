@@ -11,7 +11,6 @@ from tests.load.crawl import REACHED_PAGE_BUDGET, CrawlEndedEarlyError, LoadOpti
 
 SMALL_SITE_PAGES = 30
 CRAWL_TIMEOUT_SECONDS = 60.0
-SHORT_NO_PROGRESS_SECONDS = 2.0
 # Pages with fewer links than the cascade's percentile minimum (10) are bucketed by fixed
 # cut-offs, which drop every link of the seed page on this site (see tests/load/site.py).
 STARVING_OUT_DEGREE = 8
@@ -29,13 +28,12 @@ async def test_a_small_site_is_crawled_to_its_page_budget(tmp_path: Path) -> Non
 
 async def test_a_site_that_runs_out_of_links_fails_with_the_stop_reason(tmp_path: Path) -> None:
     """Before the harness checked the stop reason, this crawl sat idle after its first page
-    until the 600 s no-progress timeout and printed nothing."""
-    with pytest.raises(CrawlEndedEarlyError, match=r"NO_PROGRESS after \d+ of 30 pages"):
+    until the 600 s no-progress timeout and printed nothing. Now it ends as soon as the
+    frontier is empty and nothing is in flight."""
+    with pytest.raises(CrawlEndedEarlyError, match=r"FRONTIER_EXHAUSTED after \d+ of 30 pages"):
         await run_load_crawl(
             SMALL_SITE_PAGES,
             tmp_path,
             CRAWL_TIMEOUT_SECONDS,
-            LoadOptions(
-                no_progress_seconds=SHORT_NO_PROGRESS_SECONDS, out_degree=STARVING_OUT_DEGREE
-            ),
+            LoadOptions(out_degree=STARVING_OUT_DEGREE),
         )

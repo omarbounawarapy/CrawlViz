@@ -35,6 +35,16 @@ class CrawlStage(EventConsumer, Protocol):
 
 
 @runtime_checkable
+class WorkTracker(Protocol):
+    """A stage that can say whether it still holds work: events queued, items being
+    handled or delayed requeues. The stop controller reads it to see that the frontier
+    has run dry."""
+
+    @property
+    def has_pending_work(self) -> bool: ...
+
+
+@runtime_checkable
 class RelevanceScorer(Protocol):
     """Cheap similarity stage (NLPService).
 
