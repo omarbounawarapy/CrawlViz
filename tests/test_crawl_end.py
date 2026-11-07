@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from core import Crawler
-from tests.synthetic_crawl import build_synthetic_crawl
+from tests.synthetic_crawl import CrawlOptions, build_synthetic_crawl
 
 # Large enough that the crawl outlasts the short shutdown grace of the helper.
 PAGE_BUDGET = 300
@@ -20,7 +20,7 @@ async def test_a_crawl_without_the_debug_trace_runs_to_its_page_budget(tmp_path:
     """The debug log sink returns from ``start()`` at once when it is off. The crawl took
     that for the end of the crawl, cancelled every stage after the shutdown grace and
     reported no stop reason."""
-    crawl = build_synthetic_crawl(tmp_path, PAGE_BUDGET, debug_enabled=False)
+    crawl = build_synthetic_crawl(tmp_path, PAGE_BUDGET, CrawlOptions(debug_enabled=False))
 
     await asyncio.wait_for(crawl.crawler.start(), CRAWL_TIMEOUT_SECONDS)
 

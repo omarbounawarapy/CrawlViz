@@ -67,23 +67,32 @@ class SyntheticCrawl:
         return len(self.fetcher.fetched)
 
 
+@dataclass(frozen=True)
+class CrawlOptions:
+    """What a test may vary about the crawl; the defaults are the harness's own."""
+
+    debug_enabled: bool = True
+    out_degree: int = OUT_DEGREE
+    no_progress_seconds: float = NO_PROGRESS_SECONDS
+    fetch_queue_size: int | None = None
+    shutdown_grace_seconds: float = SHUTDOWN_GRACE_SECONDS
+
+
 def build_synthetic_crawl(
     work_dir: Path,
     page_budget: int,
-    *,
-    debug_enabled: bool = True,
-    out_degree: int = OUT_DEGREE,
-    no_progress_seconds: float = NO_PROGRESS_SECONDS,
+    options: CrawlOptions = CrawlOptions(),  # noqa: B008
 ) -> SyntheticCrawl:
     """A crawl of ``page_budget`` pages on a site three times that size."""
     site_pages = math.ceil(page_budget * SITE_HEADROOM)
-    script = build_site_script(site_pages, FETCH_WORKERS, SCORE_WORKERS, out_degree)
+    script = build_site_script(site_pages, FETCH_WORKERS, SCORE_WORKERS, options.out_degree)
     config: RuntimeConfig = script.apply_config(default_runtime_config())
     config.embeddings.backend = "hashing"
-    config.observability.debug_enabled = debug_enabled
-    config.run.shutdown_grace = SHUTDOWN_GRACE_SECONDS
+    config.observability.debug_enabled = options.debug_enabled
+    config.run.shutdown_grace = options.shutdown_grace_seconds
+    config.pipelines.fetch.max_queue_size = options.fetch_queue_size
     templates_dir = work_dir / "templates"
-    write_load_blueprint(templates_dir, page_budget, no_progress_seconds)
+    write_load_blueprint(templates_dir, page_budget, options.no_progress_seconds)
     fetcher = script.build_fetcher()
     crawler = Crawler(
         LOAD_BLUEPRINT,

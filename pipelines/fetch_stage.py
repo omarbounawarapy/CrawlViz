@@ -99,7 +99,8 @@ class FetchStage:
         # of that page only after the events queued ahead of it. A fetcher that answers at
         # once (an in-memory site) fetches ahead of that stop, so the budget is held here.
         self._pages_unclaimed = page_budget
-        self._page_released = asyncio.Condition()
+        self._pages_in_flight = 0
+        self._page_settled = asyncio.Condition()
 
         self.min_delay = min_delay  # minimum seconds between requests to one host
         self.pacer = HostPacer()
@@ -166,8 +167,8 @@ class FetchStage:
         needs the same guarantee).
         """
         self._pool_closed = True
-        async with self._page_released:
-            self._page_released.notify_all()
+        async with self._page_settled:
+            self._page_settled.notify_all()
         for _ in range(self.max_concurrency):
             await self.queue.put(SHUTDOWN)
 
@@ -185,6 +186,11 @@ class FetchStage:
     # HANDLER (INGESTION VISIBILITY)
     # =========================================================
     async def _on_node_added(self, event: NodeAddedEvent) -> None:
+        if self.budget_spent:
+            # Nothing more will be fetched. Queueing the node could block this handler on a
+            # full queue that no worker reads from, and the broker waits for its handlers
+            # before it stops the stage.
+            return
         await self.event_broker.emit(
             RequestEnqueuedEvent(
                 correlation_id=str(event.node.get_id()),
@@ -195,27 +201,45 @@ class FetchStage:
 
         await self.queue.put(event.node)
 
+    @property
+    def pages_unclaimed(self) -> int | None:
+        """Pages the crawl may still start fetching; None when there is no budget."""
+        return self._pages_unclaimed
+
+    @property
+    def budget_spent(self) -> bool:
+        """True once every page of the budget is fetched and none is being fetched, so no
+        more fetches can happen: whatever still arrives is drained without a request."""
+        return self._pages_unclaimed == 0 and self._pages_in_flight == 0
+
     async def _claim_page(self) -> bool:
         """Take one page of the budget before fetching it, waiting while the budget is
-        all in use. False when the crawl is stopping, so the node is not fetched."""
-        async with self._page_released:
-            await self._page_released.wait_for(self._can_claim_page)
-            if self._pool_closed:
+        all in use. False when the node must not be fetched: the crawl is stopping or the
+        budget is spent."""
+        async with self._page_settled:
+            await self._page_settled.wait_for(self._can_claim_page)
+            if self._pool_closed or self.budget_spent:
                 return False
             if self._pages_unclaimed is not None:
                 self._pages_unclaimed -= 1
+                self._pages_in_flight += 1
             return True
 
     def _can_claim_page(self) -> bool:
         unclaimed = self._pages_unclaimed
-        return self._pool_closed or unclaimed is None or unclaimed > 0
+        return self._pool_closed or unclaimed is None or unclaimed > 0 or self.budget_spent
 
-    async def _release_page(self) -> None:
-        """Give back the page of a fetch that did not produce a page."""
-        async with self._page_released:
-            if self._pages_unclaimed is not None:
+    async def _settle_page(self, fetched: bool) -> None:
+        """End a claim: the page stays counted when it was fetched and goes back to the
+        budget when the fetch failed or was refused. Wakes every worker waiting for a
+        page, since a failure frees one and the last success spends the budget."""
+        if self._pages_unclaimed is None:
+            return
+        async with self._page_settled:
+            self._pages_in_flight -= 1
+            if not fetched:
                 self._pages_unclaimed += 1
-            self._page_released.notify()
+            self._page_settled.notify_all()
 
     async def _wait_for_slot(self, url: str) -> None:
         """Rate limit, per host: the slot is claimed before sleeping, so
@@ -239,6 +263,7 @@ class FetchStage:
         while True:
             node = await self.queue.get()
             holds_page = False
+            page_fetched = False
 
             try:
                 if node is SHUTDOWN:
@@ -300,7 +325,7 @@ class FetchStage:
                         url=node.link.url if node.link else None,
                     )
                 )
-                holds_page = False  # the page is fetched, so it stays counted
+                page_fetched = True
 
             except Exception as e:
                 error_str = str(e) or type(e).__name__
@@ -333,5 +358,6 @@ class FetchStage:
 
             finally:
                 if holds_page:
-                    await self._release_page()
+                    # Shielded so a cancelled worker still gives its claim back.
+                    await asyncio.shield(self._settle_page(page_fetched))
                 self.queue.task_done()
