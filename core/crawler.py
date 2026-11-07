@@ -24,10 +24,12 @@ from crawlviz.llm import KeyManager, LlmHandler
 from crawlviz.llm import CallBudget
 from models import Storage
 from crawlviz.nlp import BufferManager, SpaceUpdater
-from crawlviz.events import Fetcher, LlmSender
+from crawlviz.events import Fetcher, LlmSender, StatusReporter
 from services import NLPService, ScoringService
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway
+
+from crawlviz.telemetry import StatusBoard
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
@@ -70,6 +72,7 @@ class Crawler:
         ui_port: int | None = None,
         llm: LlmSender | None = None,
         fetcher: Fetcher | None = None,
+        status_reporter: StatusReporter | None = None,
     ):
         self.config = config if config is not None else default_runtime_config()
         configure_url_normalization(
@@ -99,6 +102,14 @@ class Crawler:
         # (see the offline package). Without them the crawl needs keys and network.
         self.llm = llm
         self.fetcher = fetcher
+        # What each subsystem reports to. By default a board that the UI watches and GET
+        # /status reads; the null reporter (benchmark, pins) records nothing and has no board.
+        self.status_board: StatusBoard | None = None
+        if status_reporter is None:
+            status_reporter = StatusBoard()
+        if isinstance(status_reporter, StatusBoard):
+            self.status_board = status_reporter
+        self.status_reporter: StatusReporter = status_reporter
         started_at = datetime.now().strftime(CRAWL_ID_TIME_FORMAT)
         self.crawl_id = f"{template_stem(template_file)}-{started_at}"
 
@@ -137,6 +148,7 @@ class Crawler:
             self._wire_subscriptions(pipelines, space_updater)
             ui_gateway = self._build_ui_layer(pipelines)
             cleanup.push_async_callback(ui_gateway.stop)
+            self._watch_status()
 
             await self._run_until_stopped(
                 [self.event_broker.start(), ui_gateway.start()],
@@ -387,10 +399,17 @@ class Crawler:
             priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
         )
         telemetry.register_handlers()
+        self._telemetry = telemetry
 
         self.event_broker.subscribe(telemetry, telemetry.event_types)
         # Stopping this one closes the event log as well as the server.
         return recording_gateway
+
+    def _watch_status(self) -> None:
+        """Stream the status board to the UI. It needs the running event loop, so it is a
+        step of its own after the UI layer is built."""
+        if self.status_board is not None:
+            self._telemetry.watch_status(self.status_board)
 
     def _collect_stage_tasks(self, p: dict, space_updater: SpaceUpdater) -> list[Awaitable[None]]:
         return [
