@@ -8,6 +8,7 @@ import pytest
 
 from crawlviz.llm import (
     LLM_CALLS_FILE_NAME,
+    CallOutcome,
     CostTable,
     LlmCallRecord,
     LlmCallRecorder,
@@ -65,6 +66,19 @@ async def test_a_call_without_a_valid_answer_counts_as_failed(outcome: str) -> N
     recorder = LlmCallRecorder(None)
     await recorder.record(make_record(outcome=outcome))
     assert recorder.totals.failed_calls == 1
+
+
+async def test_totals_count_calls_by_outcome() -> None:
+    recorder = LlmCallRecorder(None)
+    assert set(recorder.totals.outcomes.values()) == {0}
+    for outcome in ("ok", "ok", "timeout", "repaired"):
+        await recorder.record(make_record(outcome=outcome))
+    outcomes = recorder.totals.outcomes
+    assert outcomes[CallOutcome.OK] == 2
+    assert outcomes[CallOutcome.TIMEOUT] == outcomes[CallOutcome.REPAIRED] == 1
+    assert sum(outcomes.values()) == 4
+    assert set(outcomes) == set(CallOutcome)
+    assert json.loads(recorder.totals.model_dump_json())["outcomes"]["timeout"] == 1
 
 
 async def test_cost_is_unknown_until_a_priced_call_is_recorded() -> None:

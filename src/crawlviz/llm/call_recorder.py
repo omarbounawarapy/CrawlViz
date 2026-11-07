@@ -32,6 +32,7 @@ class LlmCallTotals(BaseModel):
         calls_without_price: Calls left out of the estimate for want of a price.
         budget_calls: The crawl's call cap; None for no cap.
         remaining_calls: Calls left under the cap; None for no cap.
+        outcomes: Calls by how they ended, every outcome listed, cache hits included.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -46,6 +47,7 @@ class LlmCallTotals(BaseModel):
     calls_without_price: int = Field(default=0, ge=0)
     budget_calls: int | None = None
     remaining_calls: int | None = None
+    outcomes: dict[CallOutcome, int] = Field(default_factory=lambda: dict.fromkeys(CallOutcome, 0))
 
 
 class LlmCallRecorder:
@@ -127,6 +129,7 @@ def _add(totals: LlmCallTotals, record: LlmCallRecord) -> LlmCallTotals:
             "estimated_cost_usd": cost,
             "calls_without_price": totals.calls_without_price + int(record.cost_usd is None),
             "remaining_calls": remaining,
+            "outcomes": {**totals.outcomes, record.outcome: totals.outcomes[record.outcome] + 1},
         }
     )
 
