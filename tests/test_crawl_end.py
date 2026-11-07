@@ -26,7 +26,7 @@ async def test_a_crawl_without_the_debug_trace_runs_to_its_page_budget(tmp_path:
     await asyncio.wait_for(crawl.crawler.start(), CRAWL_TIMEOUT_SECONDS)
 
     assert crawl.watcher.stop_reason == REACHED_PAGE_BUDGET
-    assert crawl.fetched_pages >= PAGE_BUDGET
+    assert crawl.fetched_pages == PAGE_BUDGET
 
 
 class _Probe:
