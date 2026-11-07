@@ -26,7 +26,7 @@ _STRING_LITERAL = re.compile(r'"([^"]+)"')
 
 # Declared with their pydantic model before the bridge sends them (ADR 8). An entry is
 # removed in the commit that makes the bridge emit the type; the test below fails until then.
-DECLARED_AHEAD_OF_EMITTER = {"SUBSYSTEM_STATUS"}
+DECLARED_AHEAD_OF_EMITTER: set[str] = set()
 
 # TypeScript declarations whose pydantic model lives in crawlviz.contracts, by TS name.
 MODELLED_INTERFACES: dict[str, type[BaseModel]] = {

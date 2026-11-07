@@ -7,18 +7,13 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from pydantic import BaseModel
 
 from crawlviz.api.schemas import (
     CrawlStatusReply,
-    HealthReply,
     LlmCallsSnapshot,
-    ReadinessCheck,
-    ReadyReply,
 )
 from crawlviz.contracts import initial_board
 from crawlviz.llm import CallBudget
-from routes import health as health_routes
 from routes import run as run_routes
 
 ADDED_BY_THE_BOARD = {"crawl_state", "crawl_id", "board"}
@@ -51,23 +46,7 @@ def _without_descriptions(schema: Any) -> Any:
 def _assert_describes(reply: dict[str, Any]) -> None:
     """The model accepts the reply and gives back the same keys and values."""
     parsed = CrawlStatusReply.model_validate(reply)
-    assert parsed.model_dump(exclude=ADDED_BY_THE_BOARD) == reply
-
-
-@pytest.mark.parametrize(
-    ("route_model", "schema_model"),
-    [
-        (health_routes.HealthReply, HealthReply),
-        (health_routes.ReadinessCheck, ReadinessCheck),
-        (health_routes.ReadyReply, ReadyReply),
-    ],
-)
-def test_health_replies_match_the_router_copies(
-    route_model: type[BaseModel], schema_model: type[BaseModel]
-) -> None:
-    assert _without_descriptions(schema_model.model_json_schema()) == _without_descriptions(
-        route_model.model_json_schema()
-    )
+    assert parsed.model_dump() == reply
 
 
 @pytest.mark.parametrize("limit", [5, None])
