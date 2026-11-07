@@ -44,6 +44,8 @@ New in V2 (see docs/crawl_messages.ts):
                             promote to a node -- the "what didn't happen" signal
     NODE_SCORED_DETAIL   -- the cascade's full explanation for one node's score
     NODE_ERROR           -- a pipeline failure, tied to a node where possible
+    SUBSYSTEM_STATUS     -- one subsystem's status entry changed (not from an event:
+                            from the status board, see watch_status)
 """
 
 from __future__ import annotations
@@ -53,6 +55,7 @@ import time
 from typing import Callable, Dict, Optional
 from urllib.parse import unquote
 
+from crawlviz.contracts import SubsystemStatus, SubsystemStatusMessage
 from crawlviz.events import (
     ContentFilteredEvent,
     ExportBatchCompletedEvent,
@@ -90,6 +93,7 @@ from crawlviz.events import (
     TransformationFailedEvent,
     TransformationStartedEvent,
 )
+from crawlviz.telemetry import StatusBoard, StatusObserver
 
 from .crawl_state_snapshot import CrawlStateSnapshot
 
@@ -134,6 +138,8 @@ class TelemetryBridge:
         # resulting node actually appears (NodeAddedEvent). See the two
         # handlers for the full explanation of why this indirection exists.
         self._pending_detail: Dict[str, dict] = {}
+
+        self._status_observer: StatusObserver | None = None
 
     # ------------------------------------------------------------------
     # Lifecycle — called once by crawler.start()
@@ -193,6 +199,21 @@ class TelemetryBridge:
             RetryOperationFailedEvent: self._on_retry_failed,
         }
 
+    def watch_status(self, board: StatusBoard) -> None:
+        """Send SUBSYSTEM_STATUS to the UI whenever an entry on ``board`` changes (ADR 8).
+
+        Call it on the event loop the gateway runs on, once the gateway exists. Changes are
+        coalesced per subsystem by ``StatusObserver``. ``put`` stops the watch when the
+        crawl's stop event arrives.
+        """
+        self._status_observer = StatusObserver(board, self._send_status)
+        self._status_observer.start()
+
+    async def _send_status(self, entry: SubsystemStatus) -> None:
+        """Broadcast ``{"type": "SUBSYSTEM_STATUS", "ts": ..., "entry": {...}}``."""
+        message = SubsystemStatusMessage(ts=time.time(), entry=entry).model_dump(mode="json")
+        await self.gateway.broadcast(message)
+
     @property
     def event_types(self) -> tuple[type, ...]:
         """The events this bridge translates, which are the events the crawl
@@ -228,8 +249,11 @@ class TelemetryBridge:
             log.exception("Translation failed for event %s", type(event).__name__)
 
         if type(event).__name__ == "StopCrawlEvent":
-            # The final CRAWL_STOPPED has been sent; close the server so
-            # gateway.start() returns and Crawler.start() can finish.
+            # The final CRAWL_STOPPED has been sent. Send the last status changes the
+            # observer still holds, then close the server so gateway.start() returns and
+            # Crawler.start() can finish.
+            if self._status_observer is not None:
+                await self._status_observer.stop()
             await self.gateway.stop()
 
     # ==================================================================
