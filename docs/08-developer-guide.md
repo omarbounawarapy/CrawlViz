@@ -147,6 +147,17 @@ Two probe routes report on the process:
 
 The checks are named `settings`, `settings_dir`, `items_db_dir`, `export_dir`, `log_dir`, `debug_dir`, `space_store_dir` and `presets_dir`. `/ready` never creates a folder. Both routes need the session token (`Authorization: Bearer <token>`) and pass the Host and Origin checks like every other route. The behaviour is covered by `tests/test_logging_pipeline.py`, `tests/test_logging_wiring.py`, `tests/test_traceability_logging_setup.py` and `tests/test_health_routes.py`.
 
+### Subsystem status
+
+`Crawler` builds one `StatusBoard` (`src/crawlviz/telemetry/status_board.py`) for each crawl and keeps it as `crawler.status_board`. The board holds one entry for each of six subsystems: `embedder`, `space`, `llm`, `fetch`, `robots` and `export`. An entry has a `state` (`off`, `starting`, `ready`, `waiting` or `failed`), a `reason` code, the time it entered that state and facts specific to the subsystem. A subsystem reports to the board through the `StatusReporter` it is given; `Crawler(status_reporter=...)` accepts another reporter, and `NullStatusReporter` turns the board off.
+
+The board is read in two places:
+
+- `GET /status` returns it as `board`, together with `crawl_id` and `crawl_state`. After a crawl ends, `board` keeps that crawl's last state until the next crawl starts.
+- The crawl WebSocket sends a `SUBSYSTEM_STATUS` message (`docs/crawl_messages.ts`) whenever an entry changes, at most once every 250 ms for each subsystem.
+
+No stage or service reports to the board yet. A new `StatusBoard` has every subsystem `off`, and that is what `/status` and the WebSocket show today. The plumbing is in place so each subsystem can be wired in on its own.
+
 ## Development workflow
 
 ```bash
