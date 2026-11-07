@@ -245,7 +245,9 @@ class FetchStage:
             self._pages_in_flight -= 1
             if not fetched:
                 self._pages_unclaimed += 1
-            self._page_settled.notify_all()
+                self._page_settled.notify()
+            if self.budget_spent:
+                self._page_settled.notify_all()
 
     async def _wait_for_slot(self, url: str) -> None:
         """Rate limit, per host: the slot is claimed before sleeping, so
