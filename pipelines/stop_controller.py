@@ -13,7 +13,9 @@ from crawlviz.events import (
 from crawlviz.shared import BackgroundTasks
 
 # How many checks in a row must find the crawl idle before the frontier counts as drained.
-# One check can fall between an event leaving one stage and arriving at the next.
+# Every event is on the bus, in a dispatch task, in a stage queue or in a worker, so one idle
+# check is already exact for tracked work. The extra checks are a margin against work a stage
+# holds without tracking it (a timer, a thread).
 IDLE_CONFIRMATION_CHECKS = 3
 
 
@@ -38,8 +40,9 @@ class StopController(BasePipeline):
     stop condition: StorageSink refuses to admit nodes deeper than it,
     and the crawl ends with ``FRONTIER_EXHAUSTED`` once the frontier drains.
 
-    ``conditions.frontier_idle`` tells whether nothing is queued or in flight anywhere in the
-    crawl. When it holds for ``IDLE_CONFIRMATION_CHECKS`` checks in a row no new page can
+    ``conditions.frontier_idle`` tells whether nothing is on the event bus or being handled
+    and no stage that feeds the frontier holds work (the log and export sinks are not asked).
+    When it holds for ``IDLE_CONFIRMATION_CHECKS`` checks in a row no new page can
     appear, so the crawl stops at once instead of waiting for the no-progress timeout.
     Without it the controller never reports a drained frontier.
     """

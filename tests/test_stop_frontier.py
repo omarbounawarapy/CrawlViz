@@ -3,7 +3,11 @@
 import asyncio
 from collections.abc import Callable
 
-from crawlviz.events import StopCrawlEvent
+import pytest
+
+from core.event_broker import EventBroker
+from core.stages import STAGES, _frontier_probe
+from crawlviz.events import CrawlStage, StopCrawlEvent
 from pipelines.stop_controller import IDLE_CONFIRMATION_CHECKS, StopConditions, StopController
 
 CHECK_INTERVAL = 0.01
@@ -59,3 +63,38 @@ async def test_a_busy_frontier_does_not_stop_the_crawl() -> None:
 
 async def test_a_controller_without_a_probe_never_reports_a_drained_frontier() -> None:
     assert await _run_controller(None) == []
+
+
+class _Tracked:
+    def __init__(self, busy: bool) -> None:
+        self.has_pending_work = busy
+
+
+def _built(busy_key: str | None, untracked_key: str | None = None) -> dict[str, CrawlStage]:
+    built: dict[str, CrawlStage] = {}
+    for spec in STAGES:
+        built[spec.key] = object() if spec.key == untracked_key else _Tracked(spec.key == busy_key)  # type: ignore[assignment]  # doubles stand in for stages
+    return built
+
+
+def test_the_probe_is_idle_when_no_stage_that_feeds_the_frontier_holds_work() -> None:
+    assert _frontier_probe(EventBroker(), _built(busy_key=None))()
+
+
+def test_the_probe_sees_work_in_any_stage_that_feeds_the_frontier() -> None:
+    feeding = [spec.key for spec in STAGES if spec.feeds_frontier]
+
+    assert feeding
+    assert not any(_frontier_probe(EventBroker(), _built(busy_key=key))() for key in feeding)
+
+
+def test_the_probe_does_not_ask_the_stages_that_are_sinks() -> None:
+    sinks = [spec.key for spec in STAGES if not spec.feeds_frontier]
+
+    assert sinks
+    assert all(_frontier_probe(EventBroker(), _built(busy_key=key))() for key in sinks)
+
+
+def test_a_stage_that_feeds_the_frontier_but_cannot_report_work_fails_the_build() -> None:
+    with pytest.raises(TypeError, match="has_pending_work"):
+        _frontier_probe(EventBroker(), _built(busy_key=None, untracked_key="scoring"))

@@ -268,23 +268,28 @@ def _stopping(inputs: StageInputs, built: Built) -> CrawlStage:
             max_duration=conditions["max_duration"],
             no_progress_timeout=conditions["no_progress_timeout"],
             target_url=conditions["stop_url"],
-            frontier_idle=lambda: _frontier_idle(inputs.broker, built),
+            frontier_idle=_frontier_probe(inputs.broker, built),
         ),
         check_interval=inputs.config.run.stop_check_interval,
     )
 
 
-def _frontier_idle(broker: EventBroker, built: Built) -> bool:
-    """True when no event is on the bus or being handled and no stage that feeds the
-    frontier holds work. Read at check time, when every stage exists."""
-    trackers = [built[spec.key] for spec in STAGES if spec.feeds_frontier]
-    return broker.is_idle and not any(_tracker(stage).has_pending_work for stage in trackers)
-
-
-def _tracker(stage: CrawlStage) -> WorkTracker:
-    if not isinstance(stage, WorkTracker):
-        raise TypeError(f"{type(stage).__name__} feeds the frontier but reports no pending work")
-    return stage
+def _frontier_probe(broker: EventBroker, built: Built) -> Callable[[], bool]:
+    """A check that no event is on the bus or being handled and no stage that feeds the
+    frontier holds work. The stages are checked once, here, so a stage that cannot report
+    pending work fails the build and not the stop controller's timer."""
+    trackers: list[WorkTracker] = []
+    for spec in STAGES:
+        if not spec.feeds_frontier:
+            continue
+        stage = built[spec.key]
+        if not isinstance(stage, WorkTracker):
+            raise TypeError(
+                f"{type(stage).__name__} feeds the frontier but reports no pending work; "
+                "give it has_pending_work or set feeds_frontier=False on its StageSpec"
+            )
+        trackers.append(stage)
+    return lambda: broker.is_idle and not any(stage.has_pending_work for stage in trackers)
 
 
 @dataclass(frozen=True)
@@ -294,26 +299,27 @@ class StageSpec:
     # for stages without one.
     setting: str | None
     build: Callable[[StageInputs, Built], CrawlStage]
-    # True for the stages a page or link passes through on its way to the frontier. The stop
-    # controller treats the crawl as drained when none of them holds work.
-    feeds_frontier: bool = False
+    # True unless the stage only records the crawl (a sink) or is the stop controller itself.
+    # The stop controller treats the frontier as drained when no stage that feeds it holds
+    # work, so a new stage counts by default and must opt out to be left out.
+    feeds_frontier: bool = True
 
 
 # Build, subscription and start order. A builder may use any stage above it.
 STAGES: tuple[StageSpec, ...] = (
-    StageSpec("logging", None, _logging),
-    StageSpec("canon", None, _canonicalization),
-    StageSpec("debug", "debug_log", _debugging),
-    StageSpec("processing", "extract", _processing, feeds_frontier=True),
-    StageSpec("requests", "fetch", _requests, feeds_frontier=True),
-    StageSpec("retry", "retry", _retry, feeds_frontier=True),
-    StageSpec("scoring", "score", _scoring, feeds_frontier=True),
-    StageSpec("filtering", "filter", _filtering, feeds_frontier=True),
-    StageSpec("priority", "prioritize", _priority, feeds_frontier=True),
-    StageSpec("transformation", "transform", _transformation, feeds_frontier=True),
-    StageSpec("storage", "storage", _storage, feeds_frontier=True),
-    StageSpec("exporting", None, _exporting),
-    StageSpec("stopping", None, _stopping),
+    StageSpec("logging", None, _logging, feeds_frontier=False),
+    StageSpec("canon", None, _canonicalization, feeds_frontier=False),
+    StageSpec("debug", "debug_log", _debugging, feeds_frontier=False),
+    StageSpec("processing", "extract", _processing),
+    StageSpec("requests", "fetch", _requests),
+    StageSpec("retry", "retry", _retry),
+    StageSpec("scoring", "score", _scoring),
+    StageSpec("filtering", "filter", _filtering),
+    StageSpec("priority", "prioritize", _priority),
+    StageSpec("transformation", "transform", _transformation),
+    StageSpec("storage", "storage", _storage),
+    StageSpec("exporting", None, _exporting, feeds_frontier=False),
+    StageSpec("stopping", None, _stopping, feeds_frontier=False),
 )
 
 
