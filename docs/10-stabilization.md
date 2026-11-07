@@ -83,6 +83,7 @@ The backend suite has 248 tests in 26 files, all passing, with no xfail markers.
 
 These describe the code as it is today:
 
-- LLM token usage is always `None`. The translators discard the `usage` field from provider responses, so `TracedLlmHandler` has nothing to record. `benchmark/__main__.py` prints the same caveat.
+- Token usage is read from provider responses. Each translator passes the `usage` field to `src/crawlviz/llm/token_usage.py`, `LlmHandler` leaves the counts on the context, and `TracedLlmHandler` puts them in the `LLM_ResponseParsed` trace event. A response with no usage data counts as zero tokens, and `benchmark/__main__.py` warns when a run used LLM answers but recorded no tokens.
+- The typed LLM layer in `src/crawlviz/llm/` is built but not used by a live crawl. Its call records carry the outcome, temperature, reasoning effort, tokens, cost estimate, latency, attempts and cache hit, and `CallBudget` can cap calls, tokens and estimated cost. A live crawl calls `LlmHandler` directly, and the only cap it applies is `llm.max_calls_per_crawl` through `CallBudget`. No call records are written, and the token and cost caps and the typed layer's request timeout are not wired in yet.
 - `Crawler.start()` builds every service, including the NLP service and the LLM handler, whether or not a run uses them.
 - The frozen-graph benchmark in `benchmark/` compares crawl policies on recorded pages. See `benchmark/README.md`.
