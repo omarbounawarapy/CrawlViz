@@ -84,7 +84,11 @@ class TracedLlmHandler:
             )
 
             output_keys = list(result.keys()) if isinstance(result, dict) else []
-            token_usage = result.get("usage") if isinstance(result, dict) else None
+            # The parsed reply holds no usage; LlmHandler leaves it on the context.
+            token_usage = None
+            if hasattr(context, "get_usage"):
+                input_tokens, output_tokens = context.get_usage()
+                token_usage = {"input_tokens": input_tokens, "output_tokens": output_tokens}
             await self._tracer.emit(
                 LLM_ResponseParsed(
                     trace_id=trace_id,
