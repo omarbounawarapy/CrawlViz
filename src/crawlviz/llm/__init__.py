@@ -1,4 +1,5 @@
-"""The LLM domain: provider handler and translators, keys, endpoints, the typed layer, call budget.
+"""The LLM domain: provider handler and translators, keys, endpoints, the typed layer, call budget
+and the LLM entry on the status board.
 
 The typed layer has no caller yet: callers move to it one at a time, and `LlmHandler` goes last.
 Other areas import from here only (ARCH-2).
@@ -21,6 +22,7 @@ from .json_output import (
 )
 from .key_manager import KeyManager
 from .llm_handler import LlmHandler, RetryPolicy
+from .llm_status import LlmState, LlmStatusTracker, RecentCalls, llm_facts, llm_state
 from .nvidia_translator import NvidiaTranslator
 from .open_router_translator import OpenRouterTranslator
 from .openai_translator import OpenAITranslator
@@ -61,6 +63,8 @@ __all__ = [
     "LlmOutputError",
     "LlmRequest",
     "LlmResponse",
+    "LlmState",
+    "LlmStatusTracker",
     "LlmTimeoutError",
     "ModelPrice",
     "NvidiaTranslator",
@@ -68,12 +72,15 @@ __all__ = [
     "OpenRouterTranslator",
     "PromptFileError",
     "PromptRegistry",
+    "RecentCalls",
     "RenderedPrompt",
     "RepairCall",
     "RetryPolicy",
     "TokenUsage",
     "ValidatedOutput",
     "default_llm_endpoints",
+    "llm_facts",
+    "llm_state",
     "load_cost_table",
     "parse_and_validate",
     "parse_llm_json",
