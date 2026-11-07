@@ -3,7 +3,7 @@
 from models import ScoringContext
 from traceability import LLM_ResponseParsed, TracedLlmHandler
 
-REPLY = {"results": {"a": 0.5}}
+REPLY: dict[str, object] = {"results": {"a": 0.5}}
 
 
 class UsageReportingLlm:
