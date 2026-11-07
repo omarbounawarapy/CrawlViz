@@ -21,6 +21,13 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Log text has registered secrets (session token, provider keys) and credential-shaped text (`Bearer` headers, `key=` and `token=` pairs) replaced with `[redacted]`.
 - `GET /health` reports that the process is up and `GET /ready` reports whether settings load and the write folders are usable, with 503 and the failed check names when not. Both need the session token.
 - Security and politeness hardening in progress, see SECURITY.md.
+- `max_nodes` is a hard cap: a run stopped by `MAX_NODES_REACHED` fetches exactly `max_nodes` pages whatever the worker count. Failed requests do not count, so requests sent can exceed it.
+- A crawl whose frontier drains stops at once with the new stop reason `FRONTIER_EXHAUSTED`, instead of waiting for `NO_PROGRESS`.
+- The crawl ends when the event broker or the UI gateway ends. A stage that returns early, such as the debug log sink with debug off, no longer ends it.
+- A stopped crawl no longer keeps fetching nodes that wait in a bounded fetch queue.
+- `GET /status` returns the crawl id, its state and a subsystem status board, and the UI socket can send `SUBSYSTEM_STATUS`. No subsystem reports to the board yet, so every entry shows `off`.
+- Token usage is read from provider responses and recorded in the LLM trace events.
+- A load harness in `tests/load/` measures a crawl on a synthetic site; a 200-page smoke run is in the normal test suite.
 
 ### Added
 - Multi-provider LLM support: OpenRouter, OpenAI, Anthropic, Gemini, NVIDIA (NIM), and Groq, selectable per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`, behind a shared `LlmHandler` abstraction.
