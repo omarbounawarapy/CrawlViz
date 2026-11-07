@@ -25,9 +25,10 @@ def get_peak_rss_mb() -> float:
 
 @dataclass(frozen=True)
 class Measurement:
-    """One load run. ``fetched_pages`` is what the site served; it may exceed the budget
-    by the fetches already under way when the stop fired. ``event_counts`` maps an event
-    type name to how many were emitted; ``stop_reason`` is the reason on the stop event."""
+    """One load run. ``fetched_pages`` is what the site served; ``FetchStage`` holds the page
+    budget, so a run that reaches it served exactly ``page_budget`` pages.
+    ``event_counts`` maps an event type name to how many were emitted; ``stop_reason`` is the
+    reason on the stop event."""
 
     page_budget: int
     fetched_pages: int
