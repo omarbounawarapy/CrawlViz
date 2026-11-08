@@ -66,6 +66,17 @@ class TransformationFailedEvent:
     error_message: str
 
 
+@dataclass
+class TransformationStepSkippedEvent:
+    """A transform step left a field unchanged because its input was over the regex cap."""
+
+    correlation_id: str
+    node: Any
+    transform_type: str
+    input_length: int
+    limit: int
+
+
 # =========================================================
 # 6. DOWNSTREAM (PIPELINE OUTPUT)
 # =========================================================

@@ -23,9 +23,8 @@ POST /config/prompts/preview  the scoring prompt as the LLM receives it, from dr
 GET  /config/providers  LLM providers and the models templates use
 GET/POST/DELETE /keys   masked key management (full keys never returned)
 
-Access: when CRAWLVIZ_API_TOKEN is set, every route here requires
-``Authorization: Bearer <token>``. Unset, the API is open, which is only
-acceptable bound to localhost.
+Access: every route of the API, these included, requires ``Authorization: Bearer
+<token>``; the session token middleware (routes/session_token.py) enforces it.
 
 Changes apply from the next crawl: pipelines copy their values at
 construction. Fields flagged ``ui_apply: live`` can also be pushed to the
@@ -51,17 +50,13 @@ from .config_support import (
     ConfigPatch,
     get_paths,
     report_settings_file_errors,
-    require_token,
     validation_errors,
     validation_http_error,
 )
 from .keys import get_key_manager
 from .keys import router as keys_router
 
-router = APIRouter(
-    tags=["config"],
-    dependencies=[Depends(require_token), Depends(report_settings_file_errors)],
-)
+router = APIRouter(tags=["config"], dependencies=[Depends(report_settings_file_errors)])
 router.include_router(presets_router)
 router.include_router(keys_router)
 
