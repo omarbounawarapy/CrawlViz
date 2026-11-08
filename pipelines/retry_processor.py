@@ -8,6 +8,7 @@ from events import (
     ScoreRescheduledEvent,
     ScoringFailedEvent,
 )
+from infrastructure import REJECTION_ERROR_NAMES
 from utils import BackgroundTasks
 
 from .base_pipeline import BasePipeline
@@ -138,7 +139,9 @@ class RetryProcessor(BasePipeline):
         """
         node = event.node
         node_id = node.get_id()
-        if event.error_type == "RobotsDisallowed":
+        if event.error_type == "RobotsDisallowed" or event.error_type in REJECTION_ERROR_NAMES:
+            # A decision about the page (robots.txt, address, size, type), so
+            # asking again would get the same answer.
             node.fail()
             return
 

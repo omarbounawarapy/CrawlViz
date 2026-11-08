@@ -139,7 +139,7 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _CrawlHarness:
 
 async def test_gateway_releases_its_port_when_cancelled() -> None:
     port = _free_port()
-    gateway = UIWebSocketGateway(CrawlStateSnapshot(), port=port)
+    gateway = UIWebSocketGateway(CrawlStateSnapshot(), KeepAlive(20, 10), port=port)
     task = asyncio.create_task(gateway.start())
     await _until(lambda: not _can_bind(port))
 
