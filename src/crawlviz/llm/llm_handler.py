@@ -190,11 +190,12 @@ class LlmHandler:
             in time ends the call with `LlmTimeoutError` and is not retried;
             the client's own timeout still applies when it is shorter.
         call_log: Records every call: tokens, cost, latency, attempts and
-            outcome (`LlmCallLog`). None, the default, records nothing.
+            outcome (`LlmCallLog`). None, the default, records nothing. A
+            constructor argument, so a wrapper such as `TracedLlmHandler`
+            cannot hide an assignment from the handler.
     """
 
     retry_policy: RetryPolicy = RetryPolicy()
-    call_log: LlmCallLog | None = None
 
     translators = {
         "openrouter": OpenRouterTranslator,
@@ -205,14 +206,17 @@ class LlmHandler:
         "groq": GroqTranslator,
     }
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 (optional collaborators and request options, each defaulted)
         self,
         key_manager: KeyManager,
         client: RequestSender | None = None,
         max_tokens: int | None = None,
         temperature: float | None = None,
         endpoints: dict[str, str] | None = None,
+        *,
+        call_log: LlmCallLog | None = None,
     ):
+        self.call_log = call_log
         self.client: RequestSender = client or NetworkClient()
         self.timeout_seconds = DEFAULT_TIMEOUT_SECONDS
         self.key_manager = key_manager

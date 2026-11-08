@@ -11,11 +11,12 @@ from crawlviz.llm import (
     LLM_CALLS_FILE_NAME,
     CallOutcome,
     KeyManager,
+    LlmCallLog,
     LlmCallRecorder,
     LlmHandler,
     LlmTimeoutError,
 )
-from crawlviz.llm.call_log import UNKNOWN_MODEL, LlmCallLog
+from crawlviz.llm.call_log import UNKNOWN_MODEL
 from crawlviz.llm.prompt_registry import hash_messages
 from crawlviz.llm.types import ChatRole, LlmMessage
 from crawlviz.shared import set_trace
@@ -68,11 +69,13 @@ def calls_file(tmp_path: Path) -> Path:
 
 
 def _handler(key_manager: KeyManager, calls_file: Path, *answers: object) -> LlmHandler:
-    handler = LlmHandler(
-        key_manager, client=ScriptedClient(*answers), temperature=0.2, max_tokens=256
+    return LlmHandler(
+        key_manager,
+        client=ScriptedClient(*answers),
+        temperature=0.2,
+        max_tokens=256,
+        call_log=LlmCallLog(LlmCallRecorder(calls_file, store_text=True)),
     )
-    handler.call_log = LlmCallLog(LlmCallRecorder(calls_file, store_text=True))
-    return handler
 
 
 def _records(calls_file: Path) -> list[dict[str, object]]:
@@ -106,8 +109,11 @@ async def test_an_answered_call_is_recorded_with_its_tokens_and_request(
 async def test_the_prompt_and_reply_text_are_left_out_unless_asked_for(
     key_manager: KeyManager, calls_file: Path
 ) -> None:
-    handler = LlmHandler(key_manager, client=ScriptedClient(_reply('{"results": {}}')))
-    handler.call_log = LlmCallLog(LlmCallRecorder(calls_file))
+    handler = LlmHandler(
+        key_manager,
+        client=ScriptedClient(_reply('{"results": {}}')),
+        call_log=LlmCallLog(LlmCallRecorder(calls_file)),
+    )
 
     await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT))
 
