@@ -7,12 +7,12 @@ import json
 import pytest
 from websockets.asyncio.client import connect
 
-from ui_bridge import CrawlStateSnapshot, UIWebSocketGateway
+from ui_bridge import CrawlStateSnapshot, KeepAlive, UIWebSocketGateway
 
 
 @pytest.mark.asyncio
 async def test_client_gets_snapshot_then_broadcast_and_stop_closes_server():
-    gateway = UIWebSocketGateway(CrawlStateSnapshot(), port=0)
+    gateway = UIWebSocketGateway(CrawlStateSnapshot(), KeepAlive(20, 10), port=0)
     task = asyncio.create_task(gateway.start())
     for _ in range(100):
         if gateway._server is not None:
