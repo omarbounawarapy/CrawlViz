@@ -1,4 +1,8 @@
-"""Versioned contracts: stored formats, wire messages and their migrations (ADR 5)."""
+"""Versioned contracts for the files CrawlViz stores.
+
+Every stored file carries a ``schema_version``, and one migration chain per format brings
+an older file to the current version when it is loaded.
+"""
 
 from .stored_formats import (
     STORED_FORMATS,

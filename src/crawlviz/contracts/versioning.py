@@ -1,4 +1,4 @@
-"""One migration mechanism for every stored format and the wire (ADR 5).
+"""The one migration mechanism shared by every stored format, and usable for wire messages.
 
 A stored document is a plain JSON object with an integer version under one key
 (``schema_version`` for files, ``protocol`` for the wire). A document without that key is

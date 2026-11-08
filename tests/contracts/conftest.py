@@ -1,4 +1,4 @@
-"""Puts ``src/`` on the import path until the package builds from it (ADR 1, Packaging).
+"""Puts ``src/`` on the import path until the package is built from ``src/``.
 
 Remove this file once ``pytest.ini`` lists ``src`` in ``pythonpath``.
 """

@@ -1,7 +1,7 @@
 """Typed LLM layer, built beside `infrastructure/llm_handler.py`.
 
 No caller uses it yet: callers move to it one at a time, and the old handler
-goes last. Other areas import from here only (ARCH-2).
+goes last. Code outside this package imports from here, not from its modules.
 """
 
 from .call_recorder import LLM_CALLS_FILE_NAME, LlmCallRecorder, LlmCallTotals
