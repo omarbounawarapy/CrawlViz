@@ -1,14 +1,19 @@
 import asyncio
+import logging
 import re
 
+from config import MAX_REGEX_INPUT_CHARS
 from events import (
     ContentFilteredEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
     TransformationStartedEvent,
+    TransformationStepSkippedEvent,
 )
 
 from .base_pipeline import BasePipeline
+
+logger = logging.getLogger(__name__)
 
 
 class TransformationPipeline(BasePipeline):
@@ -25,8 +30,12 @@ class TransformationPipeline(BasePipeline):
         extraction_blueprint,
         max_queue_size: int = 0,
         max_concurrency: int = 3,
+        max_regex_input_chars: int = MAX_REGEX_INPUT_CHARS,
     ):
         super().__init__(max_concurrency=max_concurrency)
+        self.max_regex_input_chars = max_regex_input_chars
+        # Steps skipped while one item list is transformed; `_process` reports and clears them.
+        self._skipped_steps: list[tuple[str, int]] = []
         self.event_broker = event_broker
         self.extraction_blueprint = extraction_blueprint
         self.queue: asyncio.Queue = asyncio.Queue(maxsize=max_queue_size)
@@ -62,7 +71,19 @@ class TransformationPipeline(BasePipeline):
                 )
             )
 
+            self._skipped_steps = []
             transformed_items = self._transform_items(event.items, node)
+            skipped_steps, self._skipped_steps = self._skipped_steps, []
+            for transform_type, input_length in skipped_steps:
+                await self.event_broker.emit(
+                    TransformationStepSkippedEvent(
+                        correlation_id=str(node.get_id()),
+                        node=node,
+                        transform_type=transform_type,
+                        input_length=input_length,
+                        limit=self.max_regex_input_chars,
+                    )
+                )
 
             await self.event_broker.emit(
                 TransformationCompletedEvent(
@@ -119,6 +140,21 @@ class TransformationPipeline(BasePipeline):
     # TRANSFORM OPERATIONS
     # =========================================================
 
+    def _fits_regex_limit(self, text: str, transform_type: str, pattern: str) -> bool:
+        """True if `text` is short enough for a regex; otherwise log, record the skip for
+        `_process` to report as an event, and let the caller leave the value unchanged."""
+        if len(text) <= self.max_regex_input_chars:
+            return True
+        logger.warning(
+            "Skipping %s transform: input is %d characters, limit is %d (pattern %.60r)",
+            transform_type,
+            len(text),
+            self.max_regex_input_chars,
+            pattern,
+        )
+        self._skipped_steps.append((transform_type, len(text)))
+        return False
+
     def _regex(self, value, config):
         """``{"type": "regex", "pattern": ...}``: first match (or its first
         capture group, if the pattern has one), else None.
@@ -130,7 +166,11 @@ class TransformationPipeline(BasePipeline):
         if not pattern:
             return value
 
-        match = re.search(pattern, str(value))
+        text = str(value)
+        if not self._fits_regex_limit(text, "regex", pattern):
+            return value
+
+        match = re.search(pattern, text)
 
         if not match:
             return None
@@ -157,6 +197,8 @@ class TransformationPipeline(BasePipeline):
             return value
 
         text = value if isinstance(value, str) else " ".join(map(str, value))
+        if not self._fits_regex_limit(text, "regex_extract", pattern):
+            return value
 
         return re.findall(pattern, text)
 
