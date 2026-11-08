@@ -22,7 +22,7 @@ from .nvidia_translator import NvidiaTranslator
 from .open_router_translator import OpenRouterTranslator
 from .openai_translator import OpenAITranslator
 from .provider_statuses import REJECTED_KEY_STATUSES, SERVER_ERROR_STATUSES, TOO_MANY_REQUESTS
-from .types import LlmTimeoutError
+from .types import LlmTimeoutError, TokenUsage
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +147,19 @@ def retry_delay(
     return delay
 
 
+@dataclass
+class _CallProgress:
+    """One call as it goes: its name for logs, attempts so far, the tokens it used."""
+
+    name: str
+    attempts: int = 0
+    usage: TokenUsage = field(default_factory=TokenUsage)
+    started: float = field(default_factory=time.monotonic)
+
+    def latency_ms(self) -> float:
+        return (time.monotonic() - self.started) * MILLISECONDS_PER_SECOND
+
+
 class LlmHandler:
     """Routes LLM requests through the correct translator and network client.
 
@@ -252,44 +265,49 @@ class LlmHandler:
                 worker has already waited the whole timeout once.
         """
         llm_type = context.get_scoring_type()
-
         translator_cls = self.translators.get(llm_type)
         if translator_cls is None:
             raise ValueError(
                 f"Unknown scoring type: {llm_type!r}. Registered: {list(self.translators.keys())}"
             )
+        call = _CallProgress(f"{llm_type}/{context.get_model_information()}")
+        return await self._exchange(context, llm_type, translator_cls, call)
 
-        call = f"{llm_type}/{context.get_model_information()}"
-        started = time.monotonic()
-        attempts = retries = 0
+    async def _exchange(self, context, llm_type: str, translator_cls, call: _CallProgress) -> dict:
+        """The attempts of one call, retries included; `call` counts them."""
+        retries = 0
         while True:
             key = await self.key_manager.next_key(llm_type)
             context.set_key(key)
             params = translator_cls.translate_request(context)
             self._apply_endpoint(llm_type, params, context)
             self._apply_options(llm_type, params)
-            attempts += 1
+            call.attempts += 1
             try:
-                response = await self._dispatch(params, call)
+                response = await self._dispatch(params, call.name)
                 break
             except TimeoutError as e:
-                latency_ms = (time.monotonic() - started) * MILLISECONDS_PER_SECOND
-                logger.warning("%s; the call is given up at attempt %d", e, attempts)
-                raise LlmTimeoutError(str(e), attempts=attempts, latency_ms=latency_ms) from e
+                logger.warning("%s; the call is given up at attempt %d", e, call.attempts)
+                raise LlmTimeoutError(
+                    str(e), attempts=call.attempts, latency_ms=call.latency_ms()
+                ) from e
             except aiohttp.ClientResponseError as e:
                 # A rejected key (401/403) will never start working: drop it
                 # from rotation and retry with the next one, if any is left.
                 is_rejected_key = e.status in REJECTED_KEY_STATUSES
                 if is_rejected_key and await self.key_manager.mark_invalid(llm_type, key):
                     continue
-                delay = retry_delay(self.retry_policy, e, retries, call)
+                delay = retry_delay(self.retry_policy, e, retries, call.name)
                 if delay is None:
                     raise
                 retries += 1
                 await self.retry_policy.sleep(delay)
         usage = getattr(translator_cls, "translate_usage", None)
-        if usage is not None and hasattr(context, "set_usage"):
-            context.set_usage(*usage(response))
+        if usage is not None:
+            input_tokens, output_tokens = usage(response)
+            call.usage = TokenUsage(input_tokens=input_tokens, output_tokens=output_tokens)
+            if hasattr(context, "set_usage"):
+                context.set_usage(call.usage.input_tokens, call.usage.output_tokens)
         return translator_cls.translate_response(response)
 
     async def _dispatch(self, params: dict, call: str) -> object:
