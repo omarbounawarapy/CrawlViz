@@ -1,7 +1,7 @@
 """The rule for the crawler's User-Agent: it names the crawler and says how to reach its operator.
 
 Site owners read the User-Agent in their logs to decide whether to block a crawler or write
-to its operator, so a crawl on a live site must carry a contact (ETH-1).
+to its operator, so a crawl on a live site must identify its operator and say how to reach them.
 """
 
 import re

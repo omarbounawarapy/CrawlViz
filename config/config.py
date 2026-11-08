@@ -38,6 +38,20 @@ CORS_ORIGIN_REGEX: str | None = (
     or None
 )
 
+# Host names the API answers to. A request whose Host header names anything else is refused,
+# which stops DNS rebinding (a page on evil.example resolving to 127.0.0.1 and reading the API
+# as its own origin). CRAWLVIZ_ALLOWED_HOSTS adds comma-separated names, without ports, for a
+# deployment behind a proxy.
+LOCAL_HOST_NAMES: tuple[str, ...] = ("localhost", "127.0.0.1", "[::1]")
+ALLOWED_HOSTS: tuple[str, ...] = (
+    *LOCAL_HOST_NAMES,
+    *(
+        name.strip().lower()
+        for name in os.environ.get("CRAWLVIZ_ALLOWED_HOSTS", "").split(",")
+        if name.strip()
+    ),
+)
+
 # =========================================================================
 # NLP EMBEDDINGS
 # =========================================================================
@@ -59,6 +73,16 @@ BUFFER_MAX_SIZE: int = 500
 # crawling live sites should set their own (a web or email address, see config/user_agent.py).
 USER_AGENT: str = "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz)"
 RESPECT_ROBOTS: bool = True
+# Largest page body read, after decompression; a bigger response is refused.
+MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
+# Content types a page fetch accepts, comma-separated; anything else is refused unread.
+ACCEPTED_CONTENT_TYPES: str = "text/html, application/xhtml+xml"
+# Longest text a blueprint regex step runs on; a longer input skips the step. Regex steps run
+# patterns from a blueprint against page text we do not control, so a backtracking pattern
+# must not stall a worker.
+MAX_REGEX_INPUT_CHARS: int = 100_000
+# Redirects followed per page; each target is checked before it is fetched.
+MAX_REDIRECTS: int = 5
 
 # =========================================================================
 # SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")
