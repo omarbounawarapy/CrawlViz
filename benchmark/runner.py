@@ -394,9 +394,10 @@ TOPIC_WORD = re.compile(r"\w")
 def require_topic(topic: str, allow_empty: bool = False) -> None:
     """Refuse a topic with no word character unless the caller allows it.
 
-    Such a topic embeds to an all-zero vector, which makes ``novelty_injection``
-    NaN and gives every link priority 0 (docs/research/phase-c-method-fix-plan.md,
-    fix (g)), so the run would measure insertion order, not the method.
+    Such a topic embeds to an all-zero vector. The cosine similarity of any link
+    to that vector is NaN, so ``novelty_injection`` is NaN and every link gets
+    priority 0. The run would then measure insertion order, not the method, so
+    the cascade refuses such a graph.
     """
     if allow_empty or TOPIC_WORD.search(topic or ""):
         return
