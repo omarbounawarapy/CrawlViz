@@ -10,23 +10,31 @@ from pathlib import Path
 
 from .config import (
     BASE_DIR,
+    EXPORT_DIR_NAME,
     EXPORT_PATH,
+    ITEMS_DB_NAME,
     ITEMS_DB_PATH,
     SPACE_STORE_DIR,
     TEMPLATES_DIR,
 )
+
+LOG_DIR_NAME = "logs"
+DEBUG_DIR_NAME = "debug"
+KEYS_FILE_NAME = "keys.json"
+SETTINGS_FILE_NAME = "settings.json"
+PRESETS_DIR_NAME = "presets"
 
 
 @dataclass(frozen=True)
 class RuntimePaths:
     items_db: Path = ITEMS_DB_PATH
     export_dir: Path = EXPORT_PATH
-    log_dir: Path = BASE_DIR / "logs"
-    debug_dir: Path = BASE_DIR / "debug"
+    log_dir: Path = BASE_DIR / LOG_DIR_NAME
+    debug_dir: Path = BASE_DIR / DEBUG_DIR_NAME
     space_store_dir: Path = BASE_DIR / SPACE_STORE_DIR
-    keys_file: Path = BASE_DIR / "keys.json"
-    settings_file: Path = BASE_DIR / "settings.json"
-    presets_dir: Path = BASE_DIR / "presets"
+    keys_file: Path = BASE_DIR / KEYS_FILE_NAME
+    settings_file: Path = BASE_DIR / SETTINGS_FILE_NAME
+    presets_dir: Path = BASE_DIR / PRESETS_DIR_NAME
     templates_dir: Path = TEMPLATES_DIR
 
     @classmethod
@@ -35,14 +43,14 @@ class RuntimePaths:
         the repo's unless overridden, since blueprints are read-only input."""
         root = Path(root)
         base = {
-            "items_db": root / "items.db",
-            "export_dir": root / "export",
-            "log_dir": root / "logs",
-            "debug_dir": root / "debug",
-            "space_store_dir": root / ".space_store",
-            "keys_file": root / "keys.json",
-            "settings_file": root / "settings.json",
-            "presets_dir": root / "presets",
+            "items_db": root / ITEMS_DB_NAME,
+            "export_dir": root / EXPORT_DIR_NAME,
+            "log_dir": root / LOG_DIR_NAME,
+            "debug_dir": root / DEBUG_DIR_NAME,
+            "space_store_dir": root / SPACE_STORE_DIR,
+            "keys_file": root / KEYS_FILE_NAME,
+            "settings_file": root / SETTINGS_FILE_NAME,
+            "presets_dir": root / PRESETS_DIR_NAME,
         }
         return cls(**{**base, **overrides})
 
