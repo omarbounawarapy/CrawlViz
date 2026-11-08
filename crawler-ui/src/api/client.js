@@ -21,10 +21,16 @@ function describe(res, path, detail) {
   return detail ?? res.statusText;
 }
 
-async function req(method, path, body) {
-  const headers = { "Content-Type": "application/json" };
-  const token = import.meta.env.VITE_API_TOKEN;
-  if (token) headers.Authorization = `Bearer ${token}`;
+const SESSION_PATH = "/session";
+const STATUS_UNAUTHORIZED = 401;
+
+// Every route but /session wants `Authorization: Bearer <token>`. A build that knows the token
+// (VITE_API_TOKEN, matching CRAWLVIZ_API_TOKEN) uses it; otherwise the backend hands out the one
+// it generated at start-up, fetched once and kept as a promise so concurrent first calls share it.
+const configuredToken = () => import.meta.env.VITE_API_TOKEN || null;
+let sessionTokenRequest = null;
+
+async function send(method, path, { headers, body } = {}) {
   const opts = { method, headers };
   if (body !== undefined) opts.body = JSON.stringify(body);
   let res;
@@ -35,18 +41,53 @@ async function req(method, path, body) {
     throw new Error(`Cannot reach the backend at ${BASE}.`);
   }
   announce(true);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: null }));
-    const detail =
-      typeof err.detail === "string"
-        ? err.detail
-        : Array.isArray(err.detail?.errors)
-          ? err.detail.errors.map((e) => `${e.path}: ${e.message}`).join("; ")
-          : err.detail
-            ? JSON.stringify(err.detail)
-            : null;
-    throw Object.assign(new Error(describe(res, path, detail)), { errors: err.detail?.errors });
+  return res;
+}
+
+// The error for a reply that is not ok: the backend's own message when it sent one.
+async function failureOf(res, path) {
+  const err = await res.json().catch(() => ({ detail: null }));
+  const detail =
+    typeof err.detail === "string"
+      ? err.detail
+      : Array.isArray(err.detail?.errors)
+        ? err.detail.errors.map((e) => `${e.path}: ${e.message}`).join("; ")
+        : err.detail
+          ? JSON.stringify(err.detail)
+          : null;
+  return Object.assign(new Error(describe(res, path, detail)), { errors: err.detail?.errors });
+}
+
+function fetchSessionToken() {
+  if (!sessionTokenRequest) {
+    sessionTokenRequest = (async () => {
+      const res = await send("GET", SESSION_PATH);
+      if (!res.ok) throw await failureOf(res, SESSION_PATH);
+      return (await res.json()).token;
+    })().catch((e) => {
+      sessionTokenRequest = null; // a failed lookup must not be cached
+      throw e;
+    });
   }
+  return sessionTokenRequest;
+}
+
+async function authorizedSend(method, path, body) {
+  const token = configuredToken() ?? (await fetchSessionToken());
+  // Content-Type stays on every call, DELETE and bodyless POST included: the backend answers
+  // 415 to a request without it.
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  return send(method, path, { headers, body });
+}
+
+async function req(method, path, body) {
+  let res = await authorizedSend(method, path, body);
+  // The backend restarted and made a new token: drop ours, ask again, retry once.
+  if (res.status === STATUS_UNAUTHORIZED && configuredToken() === null) {
+    sessionTokenRequest = null;
+    res = await authorizedSend(method, path, body);
+  }
+  if (!res.ok) throw await failureOf(res, path);
   return res.json();
 }
 
