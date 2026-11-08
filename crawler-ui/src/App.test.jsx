@@ -20,7 +20,7 @@ beforeEach(() => {
 describe("App — smoke render", () => {
   it("lands on the graph with an empty state and the timeline dock", () => {
     render(<App />);
-    expect(screen.getByRole("heading", { name: /No crawl on the plate yet/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /No crawl to show yet/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Load a synthetic sample" })).toBeTruthy();
     expect(screen.getByLabelText("Replay position")).toBeTruthy();
     cleanup();

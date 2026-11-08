@@ -45,7 +45,7 @@ Starts the FastAPI backend on `:8000` and the Vite dev server on `:5173`. The We
 Or separately:
 
 ```bash
-make dev-backend   # uvicorn main:app --reload --port 8000
+make dev-backend   # uvicorn main:app --reload --reload-exclude <repo>/.claude --port 8000
 make dev-frontend  # cd crawler-ui && npm run dev
 ```
 
