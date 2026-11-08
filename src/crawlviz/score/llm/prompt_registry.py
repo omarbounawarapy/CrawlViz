@@ -1,13 +1,15 @@
 """Prompts as versioned files: `prompts/<id>.md`, TOML front matter, a templated body.
 
 The file format is described in `prompts/README.md`. Rendering returns the
-messages and the sha256 of exactly what is sent, which every manifest and call
-record carries (LLM-2, REPRO-1).
+messages and the sha256 of exactly what is sent. The hash travels with the
+request into its call record, so a run can be reproduced and each result traced
+to the prompt text behind it.
 
 Untrusted text (page content, link text, anything a crawled site wrote) is
 only ever placed in the user message, inside `<untrusted_data>` delimiters,
-and is never re-read as a template (SEC-2). The system message is static
-text from the front matter and cannot hold placeholders.
+and is never re-read as a template, so placeholders in page text stay as
+written. The system message is static text from the front matter and cannot
+hold placeholders.
 """
 
 import hashlib

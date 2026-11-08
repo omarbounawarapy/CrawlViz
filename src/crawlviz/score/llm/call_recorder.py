@@ -1,8 +1,9 @@
 """Records every LLM call: running totals for the crawl and `llm_calls.jsonl` lines.
 
-The totals feed the live cost figures (R-COST-LIVE); the file feeds the "Why"
-tab (R-WHY) through the runs API (ADR 12). The rendered prompt and the raw
-reply hold page text, so they are written only when `store_text` is set.
+The totals give live cost figures while a crawl runs. The file keeps one line
+per call, so a page can later show the prompt and reply behind a score. The
+rendered prompt and the raw reply hold page text, so they are written only
+when `store_text` is set.
 """
 
 import asyncio

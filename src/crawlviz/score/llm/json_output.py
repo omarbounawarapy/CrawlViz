@@ -17,7 +17,7 @@ from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-# A reply longer than this is refused before any parsing (SEC-2: bounded input).
+# A reply longer than this is refused before any parsing.
 MAX_REPLY_CHARS = 200_000
 # Validation errors quoted back to the model in a repair request.
 MAX_REPAIR_ERRORS = 10

@@ -2,8 +2,8 @@
 
 Prices change without notice, so none are built in: they come from a JSON file
 the operator keeps (format below), and every figure computed from them is an
-estimate (R-COST-LIVE). A model with no price has no cost estimate, not a cost
-of zero. Providers listed in `free_providers` (local servers) cost nothing.
+estimate. A model with no price has no cost estimate, not a cost of zero.
+Providers listed in `free_providers` (local servers) cost nothing.
 
 File format::
 
