@@ -145,6 +145,7 @@ class TelemetryBridge:
             TransformationCompletedEvent,
             TransformationFailedEvent,
             TransformationStartedEvent,
+            TransformationStepSkippedEvent,
         )
 
         self._dispatch = {
@@ -184,6 +185,7 @@ class TelemetryBridge:
             TransformationStartedEvent: self._on_transformation_started,
             TransformationCompletedEvent: self._on_transformation_completed,
             TransformationFailedEvent: self._on_transformation_failed,
+            TransformationStepSkippedEvent: self._on_transformation_step_skipped,
             # --- V2: export stage
             ExportBatchStartedEvent: self._on_export_started,
             ExportBatchCompletedEvent: self._on_export_completed,
@@ -696,6 +698,18 @@ class TelemetryBridge:
                 error_message=event.error_message,
             ),
         ]
+
+    def _on_transformation_step_skipped(self, event) -> dict:
+        return self._error(
+            node_id=str(event.node.get_id()),
+            stage="transformation",
+            error_type="TransformSkipped",
+            error_message=(
+                f"The {event.transform_type} step was skipped: the field is "
+                f"{event.input_length} characters and the limit is {event.limit}. "
+                "The field keeps its value from before the step."
+            ),
+        )
 
     # ==================================================================
     # V2 handlers — export stage (table-level, not node-level)
