@@ -14,8 +14,10 @@ from pathlib import Path
 # PATHS
 # =========================================================================
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
-EXPORT_PATH: Path = BASE_DIR / "export"
-ITEMS_DB_PATH: Path = BASE_DIR / "items.db"
+EXPORT_DIR_NAME = "export"
+ITEMS_DB_NAME = "items.db"
+EXPORT_PATH: Path = BASE_DIR / EXPORT_DIR_NAME
+ITEMS_DB_PATH: Path = BASE_DIR / ITEMS_DB_NAME
 TEMPLATES_DIR: Path = BASE_DIR / "templates"
 
 # =========================================================================
@@ -72,6 +74,16 @@ USER_AGENT: str = (
     "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)"
 )
 RESPECT_ROBOTS: bool = True
+# Largest page body read, after decompression; a bigger response is refused.
+MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
+# Content types a page fetch accepts, comma-separated; anything else is refused unread.
+ACCEPTED_CONTENT_TYPES: str = "text/html, application/xhtml+xml"
+# Longest text a blueprint regex step runs on; a longer input skips the step. Regex steps run
+# patterns from a blueprint against page text we do not control, so a backtracking pattern
+# must not stall a worker.
+MAX_REGEX_INPUT_CHARS: int = 100_000
+# Redirects followed per page; each target is checked before it is fetched.
+MAX_REDIRECTS: int = 5
 
 # =========================================================================
 # SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")
