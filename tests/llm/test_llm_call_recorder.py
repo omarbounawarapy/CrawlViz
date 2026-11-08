@@ -15,6 +15,8 @@ from crawlviz.llm import (
     LlmCallRecorder,
     ModelPrice,
 )
+from crawlviz.llm.call_recorder import MAX_STORED_TEXT_CHARS
+from crawlviz.shared import REDACTED
 
 STARTED = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
 TABLE = CostTable(
@@ -133,3 +135,29 @@ async def test_a_failed_write_is_raised_after_the_call_is_counted(tmp_path: Path
     with pytest.raises(OSError):
         await recorder.record(make_record())
     assert recorder.totals.calls == 1
+
+
+async def test_secrets_in_the_error_and_the_text_are_redacted_before_writing(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / LLM_CALLS_FILE_NAME
+    leaked = "Authorization: Bearer sk-live-0123456789abcdef"
+    record = make_record(outcome="http_error", error=leaked, raw_reply=leaked)
+    await LlmCallRecorder(path, store_text=True).record(record)
+    text = path.read_text()
+    assert "sk-live-0123456789abcdef" not in text
+    assert REDACTED in json.loads(text)["error"]
+
+
+async def test_stored_text_longer_than_the_cap_is_cut_and_says_so(tmp_path: Path) -> None:
+    path = tmp_path / LLM_CALLS_FILE_NAME
+    long_reply = "x" * (MAX_STORED_TEXT_CHARS + 50)
+    await LlmCallRecorder(path, store_text=True).record(make_record(raw_reply=long_reply))
+    stored = json.loads(path.read_text())["raw_reply"]
+    assert stored.startswith("x" * MAX_STORED_TEXT_CHARS)
+    assert stored.endswith("[cut: 50 more characters]")
+
+
+async def test_the_returned_record_is_the_one_written(tmp_path: Path) -> None:
+    returned = await LlmCallRecorder(tmp_path / LLM_CALLS_FILE_NAME).record(make_record())
+    assert (returned.rendered_prompt, returned.raw_reply) == (None, None)

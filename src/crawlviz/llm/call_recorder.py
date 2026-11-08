@@ -8,8 +8,11 @@ reply hold page text, so they are written only when `store_text` is set.
 import asyncio
 import logging
 from pathlib import Path
+from typing import Final
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from crawlviz.shared import redact_secrets
 
 from .call_budget import CallBudget
 from .cost_table import CostTable
@@ -18,6 +21,8 @@ from .types import FAILED_OUTCOMES, CallOutcome, LlmCallRecord, TokenUsage
 logger = logging.getLogger(__name__)
 
 LLM_CALLS_FILE_NAME = "llm_calls.jsonl"
+# Longest prompt or reply text a line keeps (SEC-2: crawled text is bounded on disk).
+MAX_STORED_TEXT_CHARS: Final = 200_000
 
 
 class LlmCallTotals(BaseModel):
@@ -94,7 +99,10 @@ class LlmCallRecorder:
         return record.model_copy(update={"cost_usd": cost})
 
     async def record(self, record: LlmCallRecord) -> LlmCallRecord:
-        """Price `record`, count it and append it to the file; returns the priced record.
+        """Price `record`, count it and append it to the file.
+
+        Returns the priced record as it is stored: secrets redacted, and the prompt and
+        reply left out unless `store_text` is set, so no caller gets more than the file.
 
         Raises:
             OSError: If the file cannot be written; the totals still count the call.
@@ -103,10 +111,10 @@ class LlmCallRecorder:
         self._totals = _add(self._totals, priced)
         if self.budget is not None and not priced.cache_hit:
             self.budget.charge(priced.input_tokens, priced.output_tokens, priced.cost_usd)
+        stored = _for_storage(priced, keep_text=self.store_text)
         if self.path is not None:
-            stored = priced if self.store_text else _without_text(priced)
             await self._append(self.path, stored.model_dump_json() + "\n")
-        return priced
+        return stored
 
     async def _append(self, path: Path, line: str) -> None:
         async with self._write_lock:  # keeps lines whole and in call order
@@ -141,8 +149,25 @@ def _add(totals: LlmCallTotals, record: LlmCallRecord) -> LlmCallTotals:
     )
 
 
-def _without_text(record: LlmCallRecord) -> LlmCallRecord:
-    return record.model_copy(update={"rendered_prompt": None, "raw_reply": None})
+def _for_storage(record: LlmCallRecord, *, keep_text: bool) -> LlmCallRecord:
+    return record.model_copy(
+        update={
+            "error": _redacted(record.error),
+            "rendered_prompt": _stored_text(record.rendered_prompt) if keep_text else None,
+            "raw_reply": _stored_text(record.raw_reply) if keep_text else None,
+        }
+    )
+
+
+def _stored_text(text: str | None) -> str | None:
+    if text is None or len(text) <= MAX_STORED_TEXT_CHARS:
+        return _redacted(text)
+    cut = len(text) - MAX_STORED_TEXT_CHARS
+    return f"{redact_secrets(text[:MAX_STORED_TEXT_CHARS])}[cut: {cut} more characters]"
+
+
+def _redacted(text: str | None) -> str | None:
+    return None if text is None else redact_secrets(text)
 
 
 def _append_line(path: Path, line: str) -> None:

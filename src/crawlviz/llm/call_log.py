@@ -110,7 +110,7 @@ class LlmCallLog:
         usage: TokenUsage,
         timing: CallTiming,
     ) -> LlmCallRecord:
-        """Record a call the provider answered; returns the priced record."""
+        """Record a call the provider answered; returns the record as stored."""
         response = LlmResponse(
             text=json.dumps(result, ensure_ascii=False),
             model=request.model,
@@ -127,6 +127,6 @@ class LlmCallLog:
     async def call_failed(
         self, request: LlmRequest, error: LlmCallError, started_at: datetime
     ) -> LlmCallRecord:
-        """Record a call that got no usable answer; returns the priced record."""
+        """Record a call that got no usable answer; returns the record as stored."""
         record = LlmCallRecord.from_error(request, error, started_at=started_at)
         return await self.recorder.record(record)
