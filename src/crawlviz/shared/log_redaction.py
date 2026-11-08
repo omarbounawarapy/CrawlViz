@@ -22,8 +22,12 @@ REDACTED = "[redacted]"
 MIN_SECRET_LENGTH = 8
 
 _BEARER_TOKEN = re.compile(r"(?P<prefix>\bBearer\s+)[^\s\"',;]+", re.IGNORECASE)
+# The name may carry a prefix ("X-Api-Key", "access_token"). The match starts only where a
+# name starts and the prefix is bounded, so a long word costs linear time, not quadratic.
+MAX_NAME_PREFIX_CHARS = 64
 _CREDENTIAL_PAIR = re.compile(
-    r"(?P<prefix>[\w-]*(?:api[-_]?key|key|token|secret|passw(?:or)?d|authorization)"
+    rf"(?P<prefix>(?<![\w-])[\w-]{{0,{MAX_NAME_PREFIX_CHARS}}}?"
+    r"(?:api[-_]?key|key|token|secret|passw(?:or)?d|authorization)"
     r"[\"']?\s*[:=]\s*[\"']?)"
     rf"[^\s&\"',;]{{{MIN_SECRET_LENGTH},}}",
     re.IGNORECASE,

@@ -1,5 +1,6 @@
 """Secrets never reach a log line (SEC-3)."""
 
+import time
 from collections.abc import Iterator
 
 import pytest
@@ -60,3 +61,25 @@ def test_credential_shaped_text_is_replaced_without_registration(
 def test_ordinary_text_is_left_alone() -> None:
     line = "max_tokens=1024 used 12 of 40 calls for node n-7 (key count 3)"
     assert redact_secrets(line) == line
+
+
+# A crawled page's text can reach a log line or a call record; time must grow with its
+# length, not with its square (SEC-2: regex input is bounded in cost).
+LONG_TEXT_CHARS = 200_000
+LONG_TEXT_SECONDS = 1.0
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["x" * LONG_TEXT_CHARS, "a-" * (LONG_TEXT_CHARS // 2)],
+    ids=["one-word", "hyphenated-word"],
+)
+def test_a_long_word_without_a_credential_is_redacted_in_linear_time(text: str) -> None:
+    started = time.perf_counter()
+    assert redact_secrets(text) == text
+    assert time.perf_counter() - started < LONG_TEXT_SECONDS
+
+
+def test_a_credential_after_long_text_is_still_redacted() -> None:
+    line = "x" * LONG_TEXT_CHARS + " access_token=abcdefgh12345678"
+    assert redact_secrets(line).endswith(f"access_token={REDACTED}")
