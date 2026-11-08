@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 from pathlib import Path
 
 import aiohttp
@@ -12,6 +13,7 @@ from crawlviz.llm import (
     CallOutcome,
     KeyManager,
     LlmCallLog,
+    LlmCallRecord,
     LlmCallRecorder,
     LlmHandler,
     LlmTimeoutError,
@@ -191,3 +193,45 @@ async def test_without_a_call_log_nothing_is_recorded(
 
     assert await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT)) == {"results": {}}
     assert not calls_file.exists()
+
+
+class UnwritableRecorder(LlmCallRecorder):
+    """A recorder whose file cannot be written, as on a full disk."""
+
+    def __init__(self) -> None:
+        super().__init__(None)
+
+    async def record(self, record: LlmCallRecord) -> LlmCallRecord:
+        raise OSError(28, "No space left on device")
+
+
+def _unwritable_handler(key_manager: KeyManager, *answers: object) -> LlmHandler:
+    return LlmHandler(
+        key_manager, client=ScriptedClient(*answers), call_log=LlmCallLog(UnwritableRecorder())
+    )
+
+
+async def test_an_answer_is_kept_when_its_record_cannot_be_written(
+    key_manager: KeyManager, caplog: pytest.LogCaptureFixture
+) -> None:
+    handler = _unwritable_handler(key_manager, _reply('{"results": {"a": 1}}'))
+
+    with caplog.at_level(logging.WARNING, logger="crawlviz.llm.llm_handler"):
+        result = await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT))
+
+    assert result == {"results": {"a": 1}}
+    [warning] = [record.getMessage() for record in caplog.records]
+    assert f"{PROVIDER}/{MODEL}: the answer is kept" in warning
+    assert "No space left on device" in warning
+
+
+async def test_a_failed_call_keeps_its_own_error_when_its_record_cannot_be_written(
+    key_manager: KeyManager,
+) -> None:
+    handler = _unwritable_handler(key_manager, _http_error(400))
+
+    with pytest.raises(aiohttp.ClientResponseError) as raised:
+        await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT))
+
+    assert raised.value.status == 400
+    assert any("call record could not be written" in note for note in raised.value.__notes__)

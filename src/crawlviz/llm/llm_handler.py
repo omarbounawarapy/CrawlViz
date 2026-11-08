@@ -291,15 +291,28 @@ class LlmHandler:
     async def _send_logged(
         self, context, llm_type: str, translator_cls, call: _CallProgress, call_log: LlmCallLog
     ) -> dict:
+        """`_exchange`, then its record. A record that cannot be written never
+        changes the call's result: an answer the provider was paid for is
+        returned, and a failed call raises its own error with a note."""
         request = legacy_request(context, temperature=self.temperature, max_tokens=self.max_tokens)
         started_at = datetime.now(UTC)
         try:
             result = await self._exchange(context, llm_type, translator_cls, call)
         except Exception as error:
             failure = call_error(error, call.name, call.timing(started_at))
-            await call_log.call_failed(request, failure, started_at)
+            try:
+                await call_log.call_failed(request, failure, started_at)
+            except OSError as write_error:
+                error.add_note(f"Its call record could not be written: {write_error}")
             raise
-        await call_log.call_answered(request, result, call.usage, call.timing(started_at))
+        try:
+            await call_log.call_answered(request, result, call.usage, call.timing(started_at))
+        except OSError as write_error:
+            logger.warning(
+                "%s: the answer is kept, but its call record could not be written: %s",
+                call.name,
+                write_error,
+            )
         return result
 
     async def _exchange(self, context, llm_type: str, translator_cls, call: _CallProgress) -> dict:
