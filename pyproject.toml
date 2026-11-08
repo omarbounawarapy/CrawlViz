@@ -85,7 +85,6 @@ max-complexity = 10
 "src/crawlviz/events/expansion_events.py" = ["N801"]
 "src/crawlviz/events/nlp_events.py" = ["N801"]
 "src/crawlviz/llm/key_manager.py" = ["PLR2004"]
-"src/crawlviz/llm/llm_handler.py" = ["RUF012"]
 "infrastructure/log_writer.py" = ["UP017"]
 "main.py" = ["I001"]
 "models/links_extractor.py" = ["SIM108"]

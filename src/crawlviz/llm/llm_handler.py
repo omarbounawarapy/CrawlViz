@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
 
 import aiohttp
 from aiohttp import hdrs
@@ -14,7 +14,7 @@ from aiohttp import hdrs
 from crawlviz.shared import NetworkClient
 
 from .anthropic_translator import AnthropicTranslator
-from .call_log import CallTiming, LlmCallLog, call_error, legacy_request
+from .call_log import CallTiming, LlmCallLog, PromptContext, call_error, legacy_request
 from .endpoints import default_llm_endpoints
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
@@ -148,6 +148,22 @@ def retry_delay(
     return delay
 
 
+class HandlerContext(PromptContext, Protocol):
+    """What the handler needs from a legacy context (`models.LlmContext`)."""
+
+    def set_key(self, key: str) -> None: ...
+
+
+class LegacyTranslator(Protocol):
+    """A provider translator class: request shape out, parsed JSON reply in."""
+
+    @staticmethod
+    def translate_request(context: Any) -> dict[str, Any]: ...  # Any: provider JSON
+
+    @staticmethod
+    def translate_response(response: Any) -> dict[str, Any]: ...  # Any: provider JSON
+
+
 @dataclass
 class _CallProgress:
     """One call as it goes: its name for logs, attempts so far, the tokens it used."""
@@ -197,7 +213,7 @@ class LlmHandler:
 
     retry_policy: RetryPolicy = RetryPolicy()
 
-    translators = {
+    translators: ClassVar[dict[str, LegacyTranslator]] = {
         "openrouter": OpenRouterTranslator,
         "openai": OpenAITranslator,
         "anthropic": AnthropicTranslator,
@@ -289,8 +305,13 @@ class LlmHandler:
         return await self._send_logged(context, llm_type, translator_cls, call, self.call_log)
 
     async def _send_logged(
-        self, context, llm_type: str, translator_cls, call: _CallProgress, call_log: LlmCallLog
-    ) -> dict:
+        self,
+        context: HandlerContext,
+        llm_type: str,
+        translator_cls: LegacyTranslator,
+        call: _CallProgress,
+        call_log: LlmCallLog,
+    ) -> dict[str, Any]:  # Any: the parsed reply, provider JSON
         """`_exchange`, then its record. A record that cannot be written never
         changes the call's result: an answer the provider was paid for is
         returned, and a failed call raises its own error with a note."""
@@ -315,7 +336,13 @@ class LlmHandler:
             )
         return result
 
-    async def _exchange(self, context, llm_type: str, translator_cls, call: _CallProgress) -> dict:
+    async def _exchange(
+        self,
+        context: HandlerContext,
+        llm_type: str,
+        translator_cls: LegacyTranslator,
+        call: _CallProgress,
+    ) -> dict[str, Any]:  # Any: the parsed reply, provider JSON
         """The attempts of one call, retries included; `call` counts them."""
         retries = 0
         while True:
