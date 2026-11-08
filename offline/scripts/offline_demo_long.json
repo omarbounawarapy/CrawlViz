@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "site": {
+    "n_pages": 600,
+    "out_degree": 8,
+    "relevant_fraction": 0.15,
+    "seed": 7
+  },
+  "rate_limit_episodes": [
+    {"after_fetches": 20, "rejected_requests": 6},
+    {"after_fetches": 70, "rejected_requests": 6}
+  ],
+  "config": {
+    "fetch": {"min_delay": 1.0},
+    "pipelines": {"requests": {"workers": 1}},
+    "llm": {"max_calls_per_crawl": 40}
+  }
+}

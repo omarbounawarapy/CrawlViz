@@ -4,6 +4,13 @@ All notable changes to this project are documented here. Format follows [Keep a 
 
 ## [Unreleased]
 
+### Recent changes
+- Blueprints reject a topic with no word characters.
+- Landing and graph copy uses plain words.
+- The development server no longer restarts when files under a local `.claude` folder change.
+- New `offline_demo_long.json` blueprint for a longer offline run with two 429 episodes and an LLM call budget (see the README).
+- Security and politeness hardening in progress, see SECURITY.md.
+
 ### Added
 - Multi-provider LLM support: OpenRouter, OpenAI, Anthropic, Gemini, NVIDIA (NIM), and Groq, selectable per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`, behind a shared `LlmHandler` abstraction.
 - Full documentation set under `docs/` (architecture, execution walkthrough, event-pipeline/semantic-scoring/resilience deep dives, algorithms, research & evaluation, developer guide, design decisions).
