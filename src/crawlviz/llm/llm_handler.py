@@ -14,6 +14,7 @@ from aiohttp import hdrs
 from crawlviz.shared import NetworkClient
 
 from .anthropic_translator import AnthropicTranslator
+from .call_log import CallTiming, LlmCallLog, call_error, legacy_request
 from .endpoints import default_llm_endpoints
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
@@ -159,6 +160,9 @@ class _CallProgress:
     def latency_ms(self) -> float:
         return (time.monotonic() - self.started) * MILLISECONDS_PER_SECOND
 
+    def timing(self, started_at: datetime) -> CallTiming:
+        return CallTiming(started_at, self.attempts, self.latency_ms())
+
 
 class LlmHandler:
     """Routes LLM requests through the correct translator and network client.
@@ -185,9 +189,12 @@ class LlmHandler:
             Set it on an instance to change it. An attempt that gets no answer
             in time ends the call with `LlmTimeoutError` and is not retried;
             the client's own timeout still applies when it is shorter.
+        call_log: Records every call: tokens, cost, latency, attempts and
+            outcome (`LlmCallLog`). None, the default, records nothing.
     """
 
     retry_policy: RetryPolicy = RetryPolicy()
+    call_log: LlmCallLog | None = None
 
     translators = {
         "openrouter": OpenRouterTranslator,
@@ -256,6 +263,8 @@ class LlmHandler:
     async def send(self, context) -> dict:
         """Send one LLM request end to end: key, translate, dispatch, normalize.
 
+        With a `call_log`, the call is recorded whether it is answered or fails.
+
         Raises:
             ValueError: If `context`'s scoring type has no registered translator.
             aiohttp.ClientResponseError: If the provider still refuses after the
@@ -271,7 +280,23 @@ class LlmHandler:
                 f"Unknown scoring type: {llm_type!r}. Registered: {list(self.translators.keys())}"
             )
         call = _CallProgress(f"{llm_type}/{context.get_model_information()}")
-        return await self._exchange(context, llm_type, translator_cls, call)
+        if self.call_log is None:
+            return await self._exchange(context, llm_type, translator_cls, call)
+        return await self._send_logged(context, llm_type, translator_cls, call, self.call_log)
+
+    async def _send_logged(
+        self, context, llm_type: str, translator_cls, call: _CallProgress, call_log: LlmCallLog
+    ) -> dict:
+        request = legacy_request(context, temperature=self.temperature, max_tokens=self.max_tokens)
+        started_at = datetime.now(UTC)
+        try:
+            result = await self._exchange(context, llm_type, translator_cls, call)
+        except Exception as error:
+            failure = call_error(error, call.name, call.timing(started_at))
+            await call_log.call_failed(request, failure, started_at)
+            raise
+        await call_log.call_answered(request, result, call.usage, call.timing(started_at))
+        return result
 
     async def _exchange(self, context, llm_type: str, translator_cls, call: _CallProgress) -> dict:
         """The attempts of one call, retries included; `call` counts them."""
