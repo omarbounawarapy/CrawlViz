@@ -2,7 +2,7 @@
 
 `LlmClient` is what callers depend on; provider adapters, the cache and the
 offline doubles implement it. `LlmCallRecord` is one line of `llm_calls.jsonl`
-in the run folder (ADR 12), a stored format with a `schema_version` (ADR 5).
+in the run folder. It is a stored format, so each line carries a `schema_version`.
 """
 
 from datetime import datetime
@@ -23,7 +23,7 @@ class ChatRole(StrEnum):
 
 
 class CallOutcome(StrEnum):
-    """How one call ended, as recorded and shown in the "Why" tab."""
+    """How one call ended, as stored in its call record."""
 
     OK = "ok"
     REPAIRED = "repaired"  # the first reply failed validation, the repair answer passed
@@ -61,7 +61,7 @@ class LlmRequest(_Frozen):
         temperature: None leaves the provider's default.
         max_tokens: None leaves the provider's default.
         json_output: Ask for a JSON object where the provider supports it.
-        crawl_id, node_id, trace_id: Log and record context (OBS-1).
+        crawl_id, node_id, trace_id: Context for logs and call records.
     """
 
     provider: str = Field(min_length=1)
@@ -103,7 +103,7 @@ class LlmCallError(Exception):
     """A call that produced no usable answer, with what it cost to find out.
 
     The message names the provider, model and status only: never the key, the
-    URL, headers or body (SEC-3), so it is safe to log and to record.
+    URL, headers or body, so it is safe to log and to record.
     """
 
     def __init__(
@@ -129,10 +129,10 @@ class LlmClient(Protocol):
 
 
 class LlmCallRecord(_Frozen):
-    """One LLM call as stored in `llm_calls.jsonl` (LLM-3).
+    """One LLM call as stored in `llm_calls.jsonl`, with its tokens, cost and outcome.
 
     `rendered_prompt` and `raw_reply` hold page text and are kept only when the
-    recorder is told to store them. Keys never appear here (SEC-3).
+    recorder is told to store them. API keys never appear here.
     """
 
     schema_version: Literal[1] = LLM_CALL_RECORD_SCHEMA_VERSION
@@ -202,7 +202,7 @@ class LlmCallRecord(_Frozen):
 
 
 def render_messages(messages: tuple[LlmMessage, ...]) -> str:
-    """The conversation as one readable text, as the "Why" tab shows it."""
+    """The conversation as one readable text, to show a person what the model was sent."""
     return "\n\n".join(f"[{message.role}]\n{message.content}" for message in messages)
 
 

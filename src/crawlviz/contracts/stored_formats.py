@@ -2,7 +2,8 @@
 
 Each format reads with ``load_*`` (any older version is migrated, a newer one refused) and
 writes with ``dump_*`` (the current version is stamped). Version 0 is the unversioned
-format written before ADR 5; version 1 is the same content with ``schema_version`` added.
+format written before files carried a ``schema_version``; version 1 is the same content
+with ``schema_version`` added.
 
 | Format | File | Version key kept after loading |
 |---|---|---|
