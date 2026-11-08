@@ -29,7 +29,7 @@ export interface TermProps {
 }
 
 /**
- * A word from `docs/glossary.md` that explains itself on hover, focus or tap. It is a real button,
+ * A glossary word that explains itself on hover, focus or tap. It is a real button,
  * so the keyboard reaches it; Escape, a press elsewhere, leaving it or moving focus away
  * closes the explanation (WCAG 1.4.13). A word the glossary does not have is plain text.
  */
