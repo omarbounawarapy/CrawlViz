@@ -10,6 +10,9 @@ from config import BASE_DIR
 
 logger = logging.getLogger(__name__)
 
+KEYS_FILE_MODE = 0o600
+GROUP_AND_OTHER_BITS = 0o077
+
 
 class KeyManager:
     """Rotates API keys per LLM provider, skipping keys still in cooldown.
@@ -143,10 +146,35 @@ class KeyManager:
         """Atomically write the registry back to ``keys_file`` (0600)."""
         path = Path(self.keys_file)
         tmp = path.with_suffix(path.suffix + ".tmp")
-        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, KEYS_FILE_MODE)
+        os.chmod(tmp, KEYS_FILE_MODE)  # a leftover .tmp keeps the mode it was created with
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(self.registry, f, indent=2)
         os.replace(tmp, path)
+
+    @staticmethod
+    def _restrict_permissions(file_path: Path) -> None:
+        """Make ``keys.json`` readable by its owner only, and say so when that changes it."""
+        if os.name == "nt":
+            return
+        mode = file_path.stat().st_mode & 0o777
+        if not mode & GROUP_AND_OTHER_BITS:
+            return
+        try:
+            os.chmod(file_path, KEYS_FILE_MODE)
+        except OSError:
+            logger.exception(
+                "API keys file %s has mode %o and could not be restricted; run chmod 600 on it",
+                file_path,
+                mode,
+            )
+            return
+        logger.warning(
+            "API keys file %s had mode %o, readable by other users; changed it to %o",
+            file_path,
+            mode,
+            KEYS_FILE_MODE,
+        )
 
     def load_keys(self) -> dict:
         """Read and validate ``keys.json``.
@@ -165,6 +193,8 @@ class KeyManager:
                 f"API keys file not found: {file_path!r}. Copy keys.example.json "
                 "to keys.json and fill in your provider API keys."
             )
+
+        self._restrict_permissions(Path(file_path))
 
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)

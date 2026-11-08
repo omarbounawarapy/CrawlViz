@@ -456,6 +456,24 @@ class FetchConfig(BaseModel):
         gt=0,
         effect="A page or robots.txt larger than this is refused instead of read, which protects memory from huge or compressed-bomb responses.",
     )
+    accepted_content_types: str = _f(
+        _config.ACCEPTED_CONTENT_TYPES,
+        "Content types a page fetch accepts, separated by commas.",
+        "Fetch",
+        "text",
+        advanced=True,
+        min_length=1,
+        effect="A page of any other content type is refused unread. Add a type here, for example text/plain, to crawl pages served that way.",
+    )
+    max_redirects: int = _f(
+        _config.MAX_REDIRECTS,
+        "Redirects followed for one page.",
+        "Fetch",
+        unit="",
+        advanced=True,
+        ge=0,
+        effect="A page that redirects more often than this is given up on, which stops a redirect loop. Each redirect is another request to the site.",
+    )
     allow_private_addresses: bool = _f(
         False,
         "Fetch pages from private, loopback and link-local addresses.",
@@ -464,6 +482,12 @@ class FetchConfig(BaseModel):
         advanced=True,
         effect="Off: links to this machine, your local network or a cloud metadata address are refused. On: they are fetched, which only a crawl of your own test site needs.",
     )
+
+    @field_validator("accepted_content_types")
+    @classmethod
+    def _content_types_are_media_types(cls, v: str) -> str:
+        _config.parse_content_types(v)
+        return v
 
     @model_validator(mode="after")
     def _ordered(self) -> "FetchConfig":
@@ -512,6 +536,20 @@ class PipelineSettings(BaseModel):
         return None if v == 0 else v
 
 
+class TransformationSettings(PipelineSettings):
+    """Worker count and queue bound of the transformation pipeline, and its regex input cap."""
+
+    max_regex_input_chars: int = _f(
+        _config.MAX_REGEX_INPUT_CHARS,
+        "Longest text a regex transform step runs on.",
+        "Pipelines",
+        unit="characters",
+        advanced=True,
+        gt=0,
+        effect="A regex step skips a field longer than this and reports it as an error on the page, which keeps a slow pattern from stalling a worker. Raising it lets longer fields be transformed.",
+    )
+
+
 def _pl(workers: int) -> Any:
     return Field(default_factory=lambda: PipelineSettings(workers=workers))
 
@@ -526,7 +564,9 @@ class PipelinesConfig(BaseModel):
     storage: PipelineSettings = _pl(1)
     filtering: PipelineSettings = _pl(10)
     priority: PipelineSettings = _pl(10)
-    transformation: PipelineSettings = _pl(3)
+    transformation: TransformationSettings = Field(
+        default_factory=lambda: TransformationSettings(workers=3)
+    )
     debugging: PipelineSettings = _pl(2)
     retry: PipelineSettings = _pl(1)
 
@@ -770,6 +810,24 @@ class ObservabilityConfig(BaseModel):
         ge=1,
         le=65535,
         effect="Changing it means the live graph page has to connect to the new port.",
+    )
+    ui_ping_interval: float = _f(
+        20.0,
+        "Seconds between keep-alive pings to the live graph.",
+        "Observability",
+        unit="s",
+        advanced=True,
+        gt=0.0,
+        effect="Shorter notices a closed browser tab sooner but sends more small messages.",
+    )
+    ui_ping_timeout: float = _f(
+        10.0,
+        "Seconds the live graph has to answer a ping before the connection is dropped.",
+        "Observability",
+        unit="s",
+        advanced=True,
+        gt=0.0,
+        effect="Longer keeps a slow browser connected; shorter drops a vanished one sooner.",
     )
     snapshot_max_candidates: int = _f(
         4000,
