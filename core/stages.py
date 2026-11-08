@@ -99,9 +99,7 @@ def _logging(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _canonicalization(inputs: StageInputs, built: Built) -> CrawlStage:
-    return CanonicalizeStage(
-        inputs.crawl_id, inputs.broker, export_path=inputs.paths.export_dir
-    )
+    return CanonicalizeStage(inputs.crawl_id, inputs.broker, export_path=inputs.paths.export_dir)
 
 
 def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:

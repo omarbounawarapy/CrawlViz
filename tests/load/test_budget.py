@@ -106,4 +106,3 @@ def test_every_broken_limit_is_reported_not_just_the_first() -> None:
     broken = dataclasses.replace(WITHIN_LIMITS, wall_seconds=1000.0, peak_rss_mb=9000.0)
 
     assert len(check_budget(broken, LIMITS)) == 2
-
