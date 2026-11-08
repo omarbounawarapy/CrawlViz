@@ -7,16 +7,21 @@ from pathlib import Path
 
 import aiohttp
 import pytest
+from multidict import CIMultiDict, CIMultiDictProxy
+from yarl import URL
 
 from crawlviz.llm import (
     LLM_CALLS_FILE_NAME,
     CallOutcome,
+    CostTable,
     KeyManager,
     LlmCallLog,
     LlmCallRecord,
     LlmCallRecorder,
     LlmHandler,
     LlmTimeoutError,
+    ModelPrice,
+    RetryPolicy,
 )
 from crawlviz.llm.call_log import UNKNOWN_MODEL
 from crawlviz.llm.prompt_registry import hash_messages
@@ -235,3 +240,68 @@ async def test_a_failed_call_keeps_its_own_error_when_its_record_cannot_be_writt
 
     assert raised.value.status == 400
     assert any("call record could not be written" in note for note in raised.value.__notes__)
+
+
+async def _no_wait(seconds: float) -> None:
+    return None
+
+
+async def test_the_record_counts_every_attempt_after_a_dropped_key_and_a_retry(
+    monkeypatch: pytest.MonkeyPatch, calls_file: Path
+) -> None:
+    monkeypatch.setattr(
+        KeyManager, "load_keys", lambda self: {PROVIDER: [SECRET_KEY, SECRET_KEY + "-second"]}
+    )
+    answers = (_http_error(401), _http_error(429), _reply('{"results": {}}'))
+    handler = _handler(KeyManager(keys_file=Path("unused-keys.json")), calls_file, *answers)
+    handler.retry_policy = RetryPolicy(sleep=_no_wait)
+
+    await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT))
+
+    [record] = _records(calls_file)
+    assert (record["outcome"], record["attempts"]) == (CallOutcome.OK, 3)
+
+
+async def test_the_record_carries_the_estimated_cost_from_the_cost_table(
+    key_manager: KeyManager, calls_file: Path
+) -> None:
+    table = CostTable(
+        prices={
+            PROVIDER: {MODEL: ModelPrice(input_usd_per_million=1.0, output_usd_per_million=4.0)}
+        }
+    )
+    recorder = LlmCallRecorder(calls_file, cost_table=table)
+    handler = LlmHandler(
+        key_manager,
+        client=ScriptedClient(_reply('{"results": {}}')),
+        call_log=LlmCallLog(recorder),
+    )
+
+    await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT))
+
+    [record] = _records(calls_file)
+    expected = (INPUT_TOKENS * 1.0 + OUTPUT_TOKENS * 4.0) / 1_000_000
+    assert record["cost_usd"] == pytest.approx(expected)
+    assert recorder.totals.estimated_cost_usd == pytest.approx(expected)
+
+
+def _error_carrying_the_key(status: int) -> aiohttp.ClientResponseError:
+    """An HTTP error as aiohttp builds it: its URL and headers both hold the key."""
+    url = URL(f"https://llm.example/v1/chat?key={SECRET_KEY}")
+    headers = CIMultiDictProxy(CIMultiDict({"Authorization": f"Bearer {SECRET_KEY}"}))
+    request_info = aiohttp.RequestInfo(url, "POST", headers, url)
+    return aiohttp.ClientResponseError(request_info, (), status=status, message="Bad Request")
+
+
+async def test_a_refused_call_keeps_the_key_out_of_its_record_and_the_log(
+    key_manager: KeyManager, calls_file: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    error = _error_carrying_the_key(400)
+    assert SECRET_KEY in str(error)  # the error itself would leak it if copied
+    handler = _handler(key_manager, calls_file, error)
+
+    with caplog.at_level(logging.DEBUG), pytest.raises(aiohttp.ClientResponseError):
+        await handler.send(ScoringContext(PROVIDER, MODEL, PROMPT))
+
+    assert SECRET_KEY not in calls_file.read_text()
+    assert all(SECRET_KEY not in record.getMessage() for record in caplog.records)
