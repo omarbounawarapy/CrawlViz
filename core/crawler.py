@@ -24,11 +24,12 @@ from models import Storage
 from nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
+from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
 from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
+from .manifest_redaction import redact_manifest
 from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
 
 # Traceability is a second, finer-grained event stream (see
@@ -213,8 +214,13 @@ class Crawler:
                 keys_file=self.paths.keys_file,
             )
         fetch = self.config.fetch
+        # LLM endpoints are chosen by the operator (a local server is allowed),
+        # unlike page URLs, which come from crawled pages.
         traced_network = TracedNetworkClient(
-            NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout), tracer
+            NetworkClient(
+                fetch.http_total_timeout, fetch.http_connect_timeout, allow_private_addresses=True
+            ),
+            tracer,
         )
         traced_llm = TracedLlmHandler(
             LlmHandler(
@@ -329,10 +335,15 @@ class Crawler:
         snapshot = CrawlStateSnapshot(
             max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
         )
-        ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
+        ui_gateway = UIWebSocketGateway(
+            snapshot,
+            KeepAlive(obs.ui_ping_interval, obs.ui_ping_timeout),
+            host="localhost",
+            port=self.ui_port,
+        )
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
         recorder.record(snapshot.to_full_snapshot())
-        recorder.write_manifest(self._run_manifest())
+        recorder.write_manifest(redact_manifest(self._run_manifest()))
         telemetry = TelemetryBridge(
             snapshot,
             RecordingGateway(ui_gateway, recorder),
