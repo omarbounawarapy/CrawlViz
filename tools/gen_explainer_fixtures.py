@@ -24,6 +24,7 @@ from yarl import URL
 
 import pipelines.requests_pipeline as rp
 from models.links_extractor import LinkExtractor
+from pipelines import host_pacer
 from pipelines.requests_pipeline import RequestsPipeline
 from pipelines.scoring_pipeline import ScoringPipeline
 from priority import strategy as strat
@@ -149,12 +150,19 @@ async def _backoff_run(cfg: dict, outcomes: list[str]) -> list[float]:
     """Seconds waited before each request, driving the real worker loop."""
     log: list[tuple[str, float]] = []
     real_sleep = asyncio.sleep
+    real_time = host_pacer.time
+    # The host pacer reads the clock to hand out request slots, so a sleep that
+    # returns at once must still move that clock on, or slots pile up as if no
+    # time had passed between requests.
+    clock = SimpleNamespace(now=0.0)
 
     async def fake_sleep(seconds, *a):
         log.append(("sleep", seconds))
+        clock.now += seconds
         await real_sleep(0)
 
     rp.asyncio.sleep = fake_sleep
+    host_pacer.time = SimpleNamespace(monotonic=lambda: clock.now)
     try:
         pipe = RequestsPipeline(
             _Broker(),
@@ -187,6 +195,7 @@ async def _backoff_run(cfg: dict, outcomes: list[str]) -> list[float]:
         await task
     finally:
         rp.asyncio.sleep = real_sleep
+        host_pacer.time = real_time
     # The wait before each request: the sleep logged just ahead of it, else none.
     delays, pending = [], 0.0
     for kind, seconds in log:
