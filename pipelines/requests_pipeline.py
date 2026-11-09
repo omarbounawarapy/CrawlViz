@@ -15,6 +15,7 @@ from events import (
 from infrastructure import NetworkClient
 
 from traceability.trace_context import bind_node
+from utils import BackgroundTasks
 
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
@@ -117,12 +118,14 @@ class RequestsPipeline:
         self._pool_closed = False
         self._pool_next_id = 0
         self.workers = []
+        self._background = BackgroundTasks()
         self._pool_spawn(self.max_concurrency)
         while True:
             pending = [w for w in self.workers if not w.done()]
             if not pending:
                 break
             await asyncio.gather(*pending)
+        await self._background.cancel_all()
 
     def _pool_spawn(self, count: int) -> None:
         for _ in range(count):
@@ -149,7 +152,9 @@ class RequestsPipeline:
         try:
             self.queue.put_nowait(SHUTDOWN)
         except asyncio.QueueFull:
-            asyncio.ensure_future(self.queue.put(SHUTDOWN))
+            self._background.spawn(
+                self.queue.put(SHUTDOWN), name="RequestsPipeline-shrink-shutdown"
+            )
 
     # =========================================================
     # STOP

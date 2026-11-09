@@ -1,7 +1,12 @@
 import asyncio
 import logging
 
+from utils import BackgroundTasks
+
 logger = logging.getLogger(__name__)
+
+# How long stop() waits for room in a full queue before it cancels the workers.
+SHUTDOWN_PUT_TIMEOUT_SECONDS = 5.0
 
 
 class _ShutdownSentinel:
@@ -113,13 +118,16 @@ class BasePipeline:
         self._pool_closed = False
         self._pool_next_id = 0
         self.workers = []
+        self._background = BackgroundTasks()
         self._pool_spawn(self.max_concurrency)
         # resize() may add workers while running; wait for those too.
         while True:
             pending = [w for w in self.workers if not w.done()]
             if not pending:
                 break
-            await asyncio.gather(*pending)
+            # A worker cancelled by a timed-out stop() ends here without raising.
+            await asyncio.gather(*pending, return_exceptions=True)
+        await self._background.cancel_all()
 
     def _pool_spawn(self, count: int) -> None:
         for _ in range(count):
@@ -144,7 +152,9 @@ class BasePipeline:
                 try:
                     self.queue.put_nowait(SHUTDOWN)
                 except asyncio.QueueFull:
-                    asyncio.ensure_future(self.queue.put(SHUTDOWN))
+                    self._background.spawn(
+                        self.queue.put(SHUTDOWN), name=f"{type(self).__name__}-shrink-shutdown"
+                    )
 
     async def stop(self) -> None:
         """Wake every worker so start() returns, even if the queue would
@@ -152,7 +162,30 @@ class BasePipeline:
         """
         self._pool_closed = True
         for _ in range(self.max_concurrency):
-            await self.queue.put(SHUTDOWN)
+            if not await self._put_shutdown():
+                return
+
+    async def _put_shutdown(self) -> bool:
+        """Queue one SHUTDOWN without blocking on a full queue forever.
+        When no room appears in time the workers are stuck: cancel them and
+        report False, so a hung stage cannot keep the crawl running."""
+        try:
+            self.queue.put_nowait(SHUTDOWN)
+            return True
+        except asyncio.QueueFull:
+            pass
+        try:
+            await asyncio.wait_for(self.queue.put(SHUTDOWN), SHUTDOWN_PUT_TIMEOUT_SECONDS)
+            return True
+        except TimeoutError:
+            logger.error(
+                "%s queue stayed full for %.1fs while stopping; cancelling its workers",
+                type(self).__name__,
+                SHUTDOWN_PUT_TIMEOUT_SECONDS,
+            )
+            for worker in self.workers:
+                worker.cancel()
+            return False
 
     async def _worker_loop(self, worker_id: int) -> None:
         while True:

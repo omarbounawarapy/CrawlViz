@@ -1,11 +1,12 @@
 """Crawl lifecycle control: start, stop, and check status.
 
 Only one crawl runs at a time, tracked by the module-level
-``_current_task``. Manual stop (POST /stop) hard-cancels that task,
-which is why it works even when a crawl is mid-request -- unlike the
-graceful StopCrawlEvent path used for automatic stop conditions (see
-pipelines/stopping_pipeline.py), cancellation doesn't depend on every
-pipeline noticing a flag change.
+``_current_task``. Manual stop (POST /stop) works in two phases: it asks the
+crawl to stop the way a stop condition does (a StopCrawlEvent, see
+pipelines/stopping_pipeline.py), so every stage drains and flushes, and waits
+for the task to end; only if the crawl does not end in time does it cancel the
+task and wait for that too. Cancellation works even when a pipeline is stuck
+mid-request, and the crawl's own cleanup (core/crawler.py) still runs.
 """
 
 import asyncio
@@ -23,6 +24,12 @@ from core import Crawler
 from offline import build_offline_session, is_offline
 
 logger = logging.getLogger(__name__)
+
+# How long past the crawl's own shutdown grace a requested stop may take
+# before the task is cancelled.
+STOP_DRAIN_MARGIN_SECONDS = 5.0
+# How long a cancelled crawl gets to run its cleanup.
+CANCEL_CLEANUP_SECONDS = 10.0
 
 router = APIRouter(tags=["run"])
 
@@ -110,15 +117,31 @@ async def run_crawl(body: RunRequest):
     return {"started": body.templateName}
 
 
+async def _ended_within(task: asyncio.Task, seconds: float) -> bool:
+    """Wait for `task` to end, without raising whatever it ended with."""
+    done, _ = await asyncio.wait({task}, timeout=seconds)
+    return bool(done)
+
+
 @router.post("/stop")
-async def stop_crawl():
-    global _current_task
+async def stop_crawl() -> dict[str, bool | str]:
+    task = _current_task
+    if task is None or task.done():
+        return {"stopped": False, "detail": "No active crawl"}
 
-    if _current_task and not _current_task.done():
-        _current_task.cancel()
-        return {"stopped": True}
+    crawler = _current_crawler
+    if crawler is not None and await crawler.request_stop():
+        drain_seconds = crawler.config.run.shutdown_grace + STOP_DRAIN_MARGIN_SECONDS
+        if await _ended_within(task, drain_seconds):
+            return {"stopped": True, "graceful": True}
+        logger.warning(
+            "Crawl did not end within %.0fs of a stop request; cancelling", drain_seconds
+        )
 
-    return {"stopped": False, "detail": "No active crawl"}
+    task.cancel()
+    if not await _ended_within(task, CANCEL_CLEANUP_SECONDS):
+        logger.error("Crawl is still running %.0fs after it was cancelled", CANCEL_CLEANUP_SECONDS)
+    return {"stopped": task.done(), "graceful": False}
 
 
 @router.get("/status")
