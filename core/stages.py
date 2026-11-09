@@ -11,6 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from config import parse_content_types
 from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig
 from infrastructure import NetworkClient
@@ -134,7 +135,13 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         max_concurrency=inputs.fetch_concurrency,
         max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),
         fetcher=inputs.fetcher
-        or NetworkClient(fetch.http_total_timeout, fetch.http_connect_timeout),
+        or NetworkClient(
+            fetch.http_total_timeout,
+            fetch.http_connect_timeout,
+            allow_private_addresses=fetch.allow_private_addresses,
+            max_response_bytes=fetch.max_response_bytes,
+            max_redirects=fetch.max_redirects,
+        ),
         min_delay=fetch.min_delay,
         user_agent=fetch.user_agent,
         respect_robots=fetch.respect_robots,
@@ -150,6 +157,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         accept=fetch.accept,
         accept_encoding=fetch.accept_encoding,
         accept_language=fetch.accept_language,
+        content_types=parse_content_types(fetch.accepted_content_types),
     )
 
 
@@ -228,6 +236,7 @@ def _transformation(inputs: StageInputs, built: Built) -> CrawlStage:
         inputs.extraction,
         max_queue_size=_queue_size(settings.max_queue_size),
         max_concurrency=settings.workers,
+        max_regex_input_chars=settings.max_regex_input_chars,
     )
 
 

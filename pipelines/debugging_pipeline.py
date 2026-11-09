@@ -32,6 +32,7 @@ from events import (
     TransformationStartedEvent,
     TransformationCompletedEvent,
     TransformationFailedEvent,
+    TransformationStepSkippedEvent,
     # Storage
     NodeContentSetEvent,
     # Export
@@ -129,6 +130,7 @@ class DebuggingPipeline(BasePipeline):
             TransformationStartedEvent: self._transformation_started,
             TransformationCompletedEvent: self._transformation_done,
             TransformationFailedEvent: self._transformation_failed,
+            TransformationStepSkippedEvent: self._transformation_step_skipped,
             # Scoring
             ScoringStartedEvent: self._scoring_started,
             ScoringCompletedEvent: self._scoring_done,
@@ -275,6 +277,12 @@ class DebuggingPipeline(BasePipeline):
 
     def _transformation_failed(self, e, w):
         return f"{self._prefix(w)} [TRANSFORM] FAILED error={e.error_message}"
+
+    def _transformation_step_skipped(self, e, w):
+        return (
+            f"{self._prefix(w)} [TRANSFORM] SKIPPED {e.transform_type} "
+            f"length={e.input_length} limit={e.limit}"
+        )
 
     def _scoring_started(self, e, w):
         return f"{self._prefix(w)} [SCORING] START node={e.node_id}"
