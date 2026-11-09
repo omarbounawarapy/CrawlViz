@@ -33,6 +33,7 @@
 {"consumers": ["debug", "TelemetryBridge"], "event": "FilteringPipelineErrorEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "TransformationStartedEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "TransformationFailedEvent"}
+{"consumers": ["debug", "TelemetryBridge"], "event": "TransformationStepSkippedEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "ScoringStartedEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "ScoringCompletedEvent"}
 {"consumers": ["debug", "retry", "TelemetryBridge"], "event": "ScoringFailedEvent"}

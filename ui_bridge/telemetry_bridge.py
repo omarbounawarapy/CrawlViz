@@ -145,6 +145,7 @@ class TelemetryBridge:
             TransformationCompletedEvent,
             TransformationFailedEvent,
             TransformationStartedEvent,
+            TransformationStepSkippedEvent,
         )
 
         self._dispatch = {
@@ -184,6 +185,7 @@ class TelemetryBridge:
             TransformationStartedEvent: self._on_transformation_started,
             TransformationCompletedEvent: self._on_transformation_completed,
             TransformationFailedEvent: self._on_transformation_failed,
+            TransformationStepSkippedEvent: self._on_transformation_step_skipped,
             # --- V2: export stage
             ExportBatchStartedEvent: self._on_export_started,
             ExportBatchCompletedEvent: self._on_export_completed,
@@ -297,21 +299,30 @@ class TelemetryBridge:
             "state": "FETCHED",
         }
 
-    def _on_content_filtered(self, event) -> dict:
+    def _on_content_filtered(self, event) -> list:
         node_id = str(event.node.get_id())
         self.snapshot.set_node_state(node_id, "FILTERED")
         self.snapshot.increment("nodes_filtered")
         self.snapshot.increment("total_links_found", by=event.accepted_links_count)
 
-        return {
-            "type": "NODE_STATE_CHANGED",
-            "ts": time.time(),
-            "node_id": node_id,
-            "state": "FILTERED",
-            "links_accepted": event.accepted_links_count,
-            "links_rejected": event.rejected_links_count,
-            "items_accepted": event.accepted_items_count,
-        }
+        return [
+            {
+                "type": "NODE_STATE_CHANGED",
+                "ts": time.time(),
+                "node_id": node_id,
+                "state": "FILTERED",
+                "links_accepted": event.accepted_links_count,
+                "links_rejected": event.rejected_links_count,
+                "items_accepted": event.accepted_items_count,
+            },
+            # Closes the stage's started tick, which gives it a duration.
+            self._tick(
+                stage="filtering",
+                phase="completed",
+                node_id=node_id,
+                detail=f"{event.accepted_links_count} links accepted",
+            ),
+        ]
 
     def _on_links_scored(self, event) -> dict:
         node_id = str(event.node.get_id())
@@ -326,7 +337,7 @@ class TelemetryBridge:
             "scored_count": len(event.scored_links),
         }
 
-    def _on_priority_calculated(self, event) -> dict:
+    def _on_priority_calculated(self, event) -> list:
         parent_id = str(event.parent.get_id())
         self.snapshot.set_node_state(parent_id, "EXPANDED")
         self.snapshot.increment("nodes_expanded")
@@ -345,24 +356,34 @@ class TelemetryBridge:
             self._pending_detail[url] = {
                 "nlp_score": getattr(link, "_nlp_score", None),
                 "nlp_breakdown": dict(getattr(link, "nlp_vector", {}) or {}),
-                "llm_score": entry.get("score") or None,
+                # The link's own score is None when no LLM call was made; a
+                # score of 0 is a real verdict and must reach the UI as 0.
+                "llm_score": getattr(link, "score", None),
                 "priority": entry.get("priority"),
             }
 
-        return {
-            "type": "NODE_EXPANDED",
-            "ts": time.time(),
-            "parent_id": parent_id,
-            "children_count": len(event.links),
-            "children": [
-                {
-                    "url": unquote(link["link"].url),
-                    "score": link["score"],
-                    "priority": link["priority"],
-                }
-                for link in event.links
-            ],
-        }
+        return [
+            {
+                "type": "NODE_EXPANDED",
+                "ts": time.time(),
+                "parent_id": parent_id,
+                "children_count": len(event.links),
+                "children": [
+                    {
+                        "url": unquote(link["link"].url),
+                        "score": link["score"],
+                        "priority": link["priority"],
+                    }
+                    for link in event.links
+                ],
+            },
+            self._tick(
+                stage="priority",
+                phase="completed",
+                node_id=parent_id,
+                detail=f"{len(event.links)} links prioritised",
+            ),
+        ]
 
     def _on_node_updated(self, event) -> Optional[dict]:
         # Items are now persisted; update metric only. Not broadcast — too
@@ -696,6 +717,18 @@ class TelemetryBridge:
                 error_message=event.error_message,
             ),
         ]
+
+    def _on_transformation_step_skipped(self, event) -> dict:
+        return self._error(
+            node_id=str(event.node.get_id()),
+            stage="transformation",
+            error_type="TransformSkipped",
+            error_message=(
+                f"The {event.transform_type} step was skipped: the field is "
+                f"{event.input_length} characters and the limit is {event.limit}. "
+                "The field keeps its value from before the step."
+            ),
+        )
 
     # ==================================================================
     # V2 handlers — export stage (table-level, not node-level)
