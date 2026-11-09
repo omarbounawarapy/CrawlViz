@@ -1,6 +1,7 @@
-// The wait before each request. Mirrors the worker loop in
-// pipelines/requests_pipeline.py: wait = max(min_delay - time since the last
-// request, 0) + shared backoff + jitter; backoff grows on 429, decays otherwise.
+// The wait before each request. Mirrors the per-host pacer the worker loop
+// reserves a slot from (HostPacer in pipelines/host_pacer.py): per host,
+// wait = max(min_delay - latency, 0) + backoff (+ jitter); backoff grows on
+// 429, decays otherwise.
 
 /**
  * `outcomes`: "ok" | "429" | "fail" per request. `latency` is how long a request
