@@ -1424,6 +1424,7 @@ def _response_error(status=0):
 
 
 def _dropped_connection():
+    # Defence in depth: a real disconnect never quotes a key; the summary must not rely on that.
     return aiohttp.ServerDisconnectedError(f"closed while sending key {FAKE_API_KEY}")
 
 
@@ -1443,6 +1444,8 @@ def _error_quoting_the_key():
 async def test_a_failed_label_batch_prints_the_error_class_and_status_never_the_key(
     tmp_path, monkeypatch, capsys, make_error, summary
 ):
+    from benchmark import label_graph
+
     # The label job's output is the benchmark job log, which the UI shows.
     async def failing_judge(llm, rows):
         raise make_error()
@@ -1456,13 +1459,17 @@ async def test_a_failed_label_batch_prints_the_error_class_and_status_never_the_
     assert sorted(f for f in fragments if f in out) == []
     for header_trace in ("authorization", "api-key", "bearer", "requestinfo", "headers"):
         assert header_trace not in out.lower()
-    assert f"batch at p0 failed: {summary}; waiting 60 s" in out
+    wait = label_graph.FAILED_BATCH_WAIT_SECONDS
+    assert f"batch at p0 failed: {summary}; waiting {wait} s" in out
 
 
 async def test_a_batch_the_judge_cannot_label_is_reported_by_name(tmp_path, monkeypatch, capsys):
+    from benchmark import label_graph
+
     # The failure line shows only the error class, so the class has to say what went wrong.
     await _label_with_judge(tmp_path, monkeypatch)
-    assert "batch at p0 failed: NoUsableAnswerError; waiting 60 s" in capsys.readouterr().out
+    wait = label_graph.FAILED_BATCH_WAIT_SECONDS
+    assert f"batch at p0 failed: NoUsableAnswerError; waiting {wait} s" in capsys.readouterr().out
 
 
 def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_path):

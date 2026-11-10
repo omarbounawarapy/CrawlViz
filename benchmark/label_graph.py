@@ -36,7 +36,9 @@ def failure_summary(error: BaseException) -> str:
     """The error class, plus the HTTP status of a provider response; never the error's text.
 
     This output becomes the benchmark job log the UI shows, and an aiohttp error's repr
-    carries the request headers, provider API key included.
+    carries the request headers, provider API key included. No part of the text is kept,
+    not even an allowlisted part: error text can carry keys, URLs or prompt text, and the
+    class already names the cause.
     """
     if isinstance(error, aiohttp.ClientResponseError) and error.status:  # 0: no status known
         return f"{type(error).__name__} (HTTP {error.status})"
