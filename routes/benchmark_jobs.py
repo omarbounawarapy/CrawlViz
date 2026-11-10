@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 from benchmark import POLICIES
 from config import TEMPLATES_DIR
+from config.redaction import redact_text
 
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR, ROOT
 
@@ -199,7 +200,8 @@ async def _pump(job: _Job) -> None:
     proc = job.proc
     assert proc is not None and proc.stdout is not None
     async for raw in proc.stdout:
-        job.log.append(raw.decode(errors="replace").rstrip())
+        # The subprocess may print a failed request with its key; the log is shown and saved.
+        job.log.append(redact_text(raw.decode(errors="replace").rstrip()))
     job.returncode = await proc.wait()
     job.ended = time.time()
     try:  # the finished job survives a backend restart
