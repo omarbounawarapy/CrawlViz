@@ -12,8 +12,9 @@ from dataclasses import dataclass
 from typing import Any
 
 from config import parse_content_types
+from config.blueprint_schema import stop_condition_defaults
 from config.paths import RuntimePaths
-from config.runtime_config import RuntimeConfig
+from config.runtime_config import FetchConfig, RuntimeConfig
 from infrastructure import NetworkClient
 from infrastructure.call_budget import CallBudget
 from models import Storage
@@ -61,7 +62,11 @@ class StageInputs:
 
     @property
     def stop_conditions(self) -> dict[str, Any]:
-        conditions: dict[str, Any] = self.blueprint["stop_conditions"]
+        # A blueprint may omit the optional conditions; the schema's defaults fill them in.
+        conditions: dict[str, Any] = {
+            **stop_condition_defaults(),
+            **self.blueprint["stop_conditions"],
+        }
         return conditions
 
     @property
@@ -128,20 +133,24 @@ def _processing(inputs: StageInputs, built: Built) -> CrawlStage:
     )
 
 
+def build_page_fetcher(fetch: FetchConfig) -> NetworkClient:
+    """A new HTTP client for fetching pages; the caller closes it (`Crawler._run_session` does)."""
+    return NetworkClient(
+        fetch.http_total_timeout,
+        fetch.http_connect_timeout,
+        allow_private_addresses=fetch.allow_private_addresses,
+        max_response_bytes=fetch.max_response_bytes,
+        max_redirects=fetch.max_redirects,
+    )
+
+
 def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
     fetch = inputs.config.fetch
     return RequestsPipeline(
         inputs.broker,
         max_concurrency=inputs.fetch_concurrency,
         max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),
-        fetcher=inputs.fetcher
-        or NetworkClient(
-            fetch.http_total_timeout,
-            fetch.http_connect_timeout,
-            allow_private_addresses=fetch.allow_private_addresses,
-            max_response_bytes=fetch.max_response_bytes,
-            max_redirects=fetch.max_redirects,
-        ),
+        fetcher=inputs.fetcher if inputs.fetcher is not None else build_page_fetcher(fetch),
         min_delay=fetch.min_delay,
         user_agent=fetch.user_agent,
         respect_robots=fetch.respect_robots,

@@ -73,7 +73,7 @@ def wired_crawler(tmp_path):
     crawler._load_blueprint_config(FAKE_BLUEPRINT)
     pipelines = crawler._build_pipelines(FAKE_BLUEPRINT, Fake(), Fake())
     crawler._wire_subscriptions(pipelines, SpaceUpdater(Fake(), BufferManager()))
-    crawler._build_ui_layer(pipelines)
+    crawler._build_ui_layer()
     return crawler
 
 
