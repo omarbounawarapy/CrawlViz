@@ -79,8 +79,19 @@ async def test_crawl_without_stop_url_runs_to_its_page_budget(tmp_path: Path) ->
         fetcher=session.fetcher,
     )
 
+    stops: list[StopCrawlEvent] = []
+    emit = crawler.event_broker.emit
+
+    async def record_stop(event: object) -> None:
+        if isinstance(event, StopCrawlEvent):
+            stops.append(event)
+        await emit(event)
+
+    crawler.event_broker.emit = record_stop  # type: ignore[method-assign]
+
     await asyncio.wait_for(crawler.start(), CRAWL_TIMEOUT_SECONDS)
 
+    assert [stop.reason for stop in stops] == ["MAX_NODES_REACHED"]
     # Fetches under way when the stop fires still finish, so it may overshoot the budget.
     assert len(session.fetcher.fetched) >= SMALL_PAGE_BUDGET
 
