@@ -115,7 +115,22 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 
 ### CI
 
-`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests. The backend job installs with `uv sync --locked --extra dev` (it fails if `uv.lock` is out of date), then runs ruff, mypy, `pytest -m "not pins"`, `pytest -m pins`, and a check that `tests/pins` is unchanged after the run. On pull requests it also runs `tools/check_baselines.py --base origin/main`. The frontend job runs `npm ci`, lint, tests and the build.
+`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests. It has these jobs:
+
+| Job | What it checks |
+|---|---|
+| `py-static` | ruff, `ruff format --check` and mypy; on pull requests also `tools/check_baselines.py --base origin/main` |
+| `py-tests` | `pytest -m "not pins"` |
+| `pins` ("Method pins (behaviour goldens)") | `pytest -m pins`, then that `tests/pins` is unchanged after the run |
+| `ui-static` | ESLint, the CSS and HTML linters, Prettier and `tsc` |
+| `ui-tests` | vitest and the production build |
+| `commit-titles` | commit titles on a pull request follow the convention (pull requests only; not required) |
+
+The two required checks are `backend` and `frontend`. `backend` passes only if `py-static`, `py-tests` and `pins` all pass, and `frontend` only if `ui-static` and `ui-tests` pass. Each job runs all its steps even after one fails, so a single run lists every failure. A red `pins` job means the behaviour pins moved: the code now produces different output from the goldens. Do not edit the goldens to make it pass; see `tests/pins/README.md`.
+
+The Python jobs use the composite action `.github/actions/setup-python`. It installs with `uv sync --locked --extra dev` (this fails if `uv.lock` is out of date) and then checks that the interpreter matches `.python-version`, which pins Python 3.12.
+
+Dependency audits run in `.github/workflows/audit.yml`, daily and on pull requests that change a dependency file. They are not required checks, so a new advisory does not block unrelated pull requests.
 
 ## Project layout
 
