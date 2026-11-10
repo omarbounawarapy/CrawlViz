@@ -194,9 +194,10 @@ class StopConditions(BaseModel):
 # Stop conditions the crawler resolves itself, so the schema default must not be
 # filled in: the blueprint's priority strategy, else the configured default
 # (`core.stages.priority_strategy_name`). Filling it in would hide a changed config default.
-RESOLVED_BY_CONFIG: frozenset[str] = frozenset({"priority_strategy"})
+STOP_CONDITIONS_RESOLVED_BY_CONFIG: frozenset[str] = frozenset({"priority_strategy"})
 
 
+# Any: the values merge into the blueprint's raw JSON `stop_conditions` dict (a JSON boundary).
 def stop_condition_defaults() -> dict[str, Any]:
     """The default of every optional stop condition, read from `StopConditions`.
 
@@ -205,7 +206,7 @@ def stop_condition_defaults() -> dict[str, Any]:
     return {
         name: field.get_default(call_default_factory=True)
         for name, field in StopConditions.model_fields.items()
-        if not field.is_required() and name not in RESOLVED_BY_CONFIG
+        if not field.is_required() and name not in STOP_CONDITIONS_RESOLVED_BY_CONFIG
     }
 
 
