@@ -1,5 +1,6 @@
 """The frozen-graph benchmark runs policies through the real pipelines."""
 
+import aiohttp
 import pytest
 
 from benchmark import POLICIES, run_policy, synthetic_graph
@@ -1347,7 +1348,21 @@ def test_label_log_is_per_graph(tmp_path):
     assert label_graph.labels_path(tmp_path / "isi.json") == tmp_path / "isi_labels.jsonl"
 
 
-async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monkeypatch):
+class _ClosableClient:
+    """Stands in for the provider's HTTP session and records whether it was closed."""
+
+    def __init__(self):
+        self.closed = False
+
+    async def close(self):
+        self.closed = True
+
+
+async def _label_with_judge(tmp_path, monkeypatch, judge=None, client=None):
+    """Runs label_graph.label on 100 fake pages (p0..p99) with no keys, network or waits.
+
+    Without a judge the real one runs, against an LLM that never gives a usable answer.
+    """
     from benchmark import FrozenGraph, label_graph
 
     graph = FrozenGraph(
@@ -1356,30 +1371,144 @@ async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monk
             f"p{i}": {"title": "t", "text": "x", "relevant": None, "links": []} for i in range(100)
         },
     )
+
+    session = client or _ClosableClient()
+
+    class _Llm:
+        misses = 0
+        inner = type("I", (), {"client": session})()
+
+        async def send(self, context):
+            return {}
+
+    async def no_sleep(_):
+        pass
+
+    if judge is not None:
+        monkeypatch.setattr(label_graph, "judge", judge)
+    monkeypatch.setattr(label_graph, "CachedLlm", lambda *a, **k: _Llm())
+    monkeypatch.setattr(label_graph, "LlmHandler", lambda *a, **k: None)
+    monkeypatch.setattr(label_graph, "KeyManager", lambda *a, **k: None)
+    monkeypatch.setattr(label_graph.asyncio, "sleep", no_sleep)
+    await label_graph.label(graph, tmp_path / "k.json", tmp_path / "l.jsonl")
+
+
+async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monkeypatch):
+    from benchmark import label_graph
+
     calls = []
 
     async def failing_judge(llm, rows):
         calls.append(len(rows))
         raise RuntimeError("no usable answer")
 
-    class _Client:
-        async def close(self):
-            pass
+    await _label_with_judge(tmp_path, monkeypatch, failing_judge)
+    assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
 
-    class _Llm:
-        misses = 0
-        inner = type("I", (), {"client": _Client()})()
 
-    async def no_sleep(_):
+async def test_a_provider_timeout_counts_as_a_failed_batch(tmp_path, monkeypatch, capsys):
+    from benchmark import label_graph
+
+    # aiohttp's total timeout raises a plain TimeoutError, which is not a ClientError.
+    calls = []
+
+    async def timing_out_judge(llm, rows):
+        calls.append(len(rows))
+        raise TimeoutError
+
+    client = _ClosableClient()
+    await _label_with_judge(tmp_path, monkeypatch, timing_out_judge, client)
+    assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
+    wait = label_graph.FAILED_BATCH_WAIT_SECONDS
+    assert f"batch at p0 failed: TimeoutError; waiting {wait} s" in capsys.readouterr().out
+    assert client.closed
+
+
+async def test_label_graph_closes_the_client_when_labelling_raises(tmp_path, monkeypatch):
+    class _UnexpectedError(Exception):
         pass
 
-    monkeypatch.setattr(label_graph, "judge", failing_judge)
-    monkeypatch.setattr(label_graph, "CachedLlm", lambda *a, **k: _Llm())
-    monkeypatch.setattr(label_graph, "LlmHandler", lambda *a, **k: None)
-    monkeypatch.setattr(label_graph, "KeyManager", lambda *a, **k: None)
-    monkeypatch.setattr(label_graph.asyncio, "sleep", no_sleep)
-    await label_graph.label(graph, tmp_path / "k.json", tmp_path / "l.jsonl")
-    assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
+    async def broken_judge(llm, rows):
+        raise _UnexpectedError
+
+    client = _ClosableClient()
+    with pytest.raises(_UnexpectedError):
+        await _label_with_judge(tmp_path, monkeypatch, broken_judge, client)
+    assert client.closed
+
+
+FAKE_API_KEY = "sk-test-SECRET123"
+KEY_FRAGMENT_LENGTH = 6  # no run of this many key characters may reach the output
+
+
+def _provider_rejection():
+    return _response_error(status=401)
+
+
+def _response_error(status=0):
+    """A response error as aiohttp raises it: its repr carries the request headers and key."""
+    from multidict import CIMultiDict, CIMultiDictProxy
+    from yarl import URL
+
+    url = URL("https://api.example.test/v1/chat/completions")
+    headers = CIMultiDict(
+        [
+            ("Authorization", f"Bearer {FAKE_API_KEY}"),
+            ("x-api-key", FAKE_API_KEY),
+            ("x-goog-api-key", FAKE_API_KEY),
+        ]
+    )
+    request = aiohttp.RequestInfo(url, "POST", CIMultiDictProxy(headers), url)
+    return aiohttp.ClientResponseError(request, (), status=status, message="Unauthorized")
+
+
+def _dropped_connection():
+    # Defence in depth: a real disconnect never quotes a key; the summary must not rely on that.
+    return aiohttp.ServerDisconnectedError(f"closed while sending key {FAKE_API_KEY}")
+
+
+def _error_quoting_the_key():
+    return RuntimeError(f"provider said: invalid key {FAKE_API_KEY}")
+
+
+@pytest.mark.parametrize(
+    ("make_error", "summary"),
+    [
+        (_provider_rejection, "ClientResponseError (HTTP 401)"),
+        (_response_error, "ClientResponseError"),  # no status known
+        (_dropped_connection, "ServerDisconnectedError"),
+        (_error_quoting_the_key, "RuntimeError"),
+    ],
+)
+async def test_a_failed_label_batch_prints_the_error_class_and_status_never_the_key(
+    tmp_path, monkeypatch, capsys, make_error, summary
+):
+    from benchmark import label_graph
+
+    # The label job's output is the benchmark job log, which the UI shows.
+    async def failing_judge(llm, rows):
+        raise make_error()
+
+    await _label_with_judge(tmp_path, monkeypatch, failing_judge)
+    out = capsys.readouterr().out
+    fragments = {
+        FAKE_API_KEY[i : i + KEY_FRAGMENT_LENGTH]
+        for i in range(len(FAKE_API_KEY) - KEY_FRAGMENT_LENGTH + 1)
+    }
+    assert sorted(f for f in fragments if f in out) == []
+    for header_trace in ("authorization", "api-key", "bearer", "requestinfo", "headers"):
+        assert header_trace not in out.lower()
+    wait = label_graph.FAILED_BATCH_WAIT_SECONDS
+    assert f"batch at p0 failed: {summary}; waiting {wait} s" in out
+
+
+async def test_a_batch_the_judge_cannot_label_is_reported_by_name(tmp_path, monkeypatch, capsys):
+    from benchmark import label_graph
+
+    # The failure line shows only the error class, so the class has to say what went wrong.
+    await _label_with_judge(tmp_path, monkeypatch)
+    wait = label_graph.FAILED_BATCH_WAIT_SECONDS
+    assert f"batch at p0 failed: NoUsableAnswerError; waiting {wait} s" in capsys.readouterr().out
 
 
 def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_path):
