@@ -20,11 +20,13 @@ from urllib.parse import parse_qsl, urlsplit, urlunsplit
 REDACTED = "[redacted]"
 
 # Header and key names that hold a credential. ``token`` and ``auth`` must end the name
-# so that counts such as ``max_tokens`` are kept.
-_SECRET_NAME = (
-    r"[\w-]*(?:authorization|api[-_]?key|secret|passw(?:or)?d|cookie|token\b|auth\b)[\w-]*"
-)
-_SECRET_NAME_PATTERN = re.compile(_SECRET_NAME, re.IGNORECASE)
+# so that counts such as ``max_tokens`` are kept. A name is found by its core, and the text
+# around the core is bounded, so a long word costs linear time (a ``[\w-]*`` prefix tried
+# from every position of a long word costs quadratic time).
+MAX_NAME_AFFIX_CHARS = 64
+_SECRET_CORE = r"(?:authorization|api[-_]?key|secret|passw(?:or)?d|cookie|token\b|auth\b)"
+_SECRET_NAME_PATTERN = re.compile(_SECRET_CORE, re.IGNORECASE)
+_SECRET_NAME = rf"{_SECRET_CORE}[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}}"
 
 # ``name: value``, ``name=value``, ``'name': 'value'`` and ``"name": "value"``.
 _NAMED_VALUE = re.compile(
@@ -36,11 +38,17 @@ _BEARER = re.compile(r"\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{4,}", re.IGNORECASE
 # Two levels of nested brackets cover ``URL('...')`` and ``<CIMultiDictProxy(...)>``.
 _REQUEST_INFO = re.compile(r"RequestInfo\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)")
 _QUERY_SECRET = re.compile(
-    r"(?P<lead>[?&])(?P<name>key|[\w-]*(?:api[-_]?key|secret|passw(?:or)?d|token|auth)[\w-]*)="
+    rf"(?P<lead>[?&])(?P<name>key|[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}}?"
+    rf"(?:api[-_]?key|secret|passw(?:or)?d|token|auth)[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}})="
     r"[^&\s\"'<>)]*",
     re.IGNORECASE,
 )
-_URL_USERINFO = re.compile(r"(?P<scheme>[A-Za-z][A-Za-z0-9+.-]*://)[^/\s@\"']+@")
+# A URL scheme is short and starts where a word starts.
+MAX_SCHEME_CHARS = 32
+_URL_USERINFO = re.compile(
+    rf"(?P<scheme>(?<![A-Za-z0-9+.-])[A-Za-z][A-Za-z0-9+.-]{{0,{MAX_SCHEME_CHARS - 1}}}://)"
+    r"[^/\s@\"']+@"
+)
 
 
 def is_secret_name(name: str) -> bool:

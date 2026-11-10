@@ -1,3 +1,5 @@
+import time
+
 import aiohttp
 import pytest
 from multidict import CIMultiDict, CIMultiDictProxy
@@ -122,3 +124,33 @@ def test_is_secret_name(name: str, expected: bool) -> None:
 )
 def test_url_carries_credentials(url: str, expected: bool) -> None:
     assert url_carries_credentials(url) is expected
+
+
+LONG_WORD_CHARS = 100_000
+LINEAR_TIME_LIMIT_SECONDS = 0.5
+
+
+def _seconds(call: object) -> float:
+    started = time.perf_counter()
+    call()  # type: ignore[operator]
+    return time.perf_counter() - started
+
+
+@pytest.mark.parametrize("filler", ["a", "api_key", "-", "http://", "key", "token:"])
+def test_redact_text_takes_linear_time_on_a_long_word(filler: str) -> None:
+    word = (filler * LONG_WORD_CHARS)[:LONG_WORD_CHARS]
+
+    assert _seconds(lambda: redact_text(word)) < LINEAR_TIME_LIMIT_SECONDS
+    assert _seconds(lambda: redact_text("http://" + word)) < LINEAR_TIME_LIMIT_SECONDS
+
+
+def test_is_secret_name_takes_linear_time_on_a_long_name() -> None:
+    word = "a" * LONG_WORD_CHARS
+
+    assert _seconds(lambda: is_secret_name(word)) < LINEAR_TIME_LIMIT_SECONDS
+
+
+def test_url_carries_credentials_takes_linear_time_on_a_long_query_name() -> None:
+    url = "https://api.example/v1?" + "a" * LONG_WORD_CHARS + "=1"
+
+    assert _seconds(lambda: url_carries_credentials(url)) < LINEAR_TIME_LIMIT_SECONDS
