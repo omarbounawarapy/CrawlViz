@@ -67,6 +67,12 @@ make dev-frontend  # cd crawler-ui && npm run dev
 
 **Config is editable from the API and the Config page.** `config/runtime_config.py` is a validated Pydantic model; the effective values are code defaults, then `settings.json` (only the difference from the defaults is stored), then per-run overrides sent with `POST /run`. Pipelines copy their values at construction, so a saved change applies from the next crawl. Fields flagged `ui_apply: live` (fetch delay and jitter, backoff cap, retry limits, per-pipeline worker counts) can also be pushed to the crawl in progress with `PATCH /config/live`; anything else is rejected with 422. Prompt wording (`prompts`) and provider request URLs (`providers.endpoints`) are settings too; the scoring output format is not editable because the response parser depends on it. Keys added or removed through `/keys` reach a running crawl immediately. Set `CRAWLVIZ_API_TOKEN` to require `Authorization: Bearer <token>` on the config and key routes (the UI sends `VITE_API_TOKEN`); unset, the API is open and should stay bound to localhost. The logging and canonicalization pipelines stay single-worker on purpose, to preserve output order.
 
+**Secrets in endpoints, traces and logs.**
+- A `providers.endpoints` URL must not contain a user name, password or key (including a key-like query value such as `?api_key=`). Saving one is refused with 422. A `settings.json` saved earlier with one is cleaned when it is loaded: the credential part is removed, the file is rewritten and a warning names the provider. Put keys in the keys store (`/keys`).
+- Trace events and scoring failure events record an error's class and HTTP status, not its text. Network trace URLs drop user info, query and fragment. The scoring failure log line keeps the error text with secrets masked. The masking rules are in `config/redaction.py`.
+- The benchmark job log masks secrets (Authorization and Cookie headers, Bearer and Basic tokens, key-like names and query values) before it is shown or saved, and cuts a line over 4096 characters with a ` ...[cut]` mark. A job ends even if its output cannot be read.
+- A request validation error (422) from any route returns `{"detail": {"errors": [{"path", "message"}]}}` and never echoes the submitted value. `GET /config` returns 422 with a `message` when the stored settings are invalid, instead of 500.
+
 ## Testing
 
 **Backend:** 248 tests across 26 files, all passing. A full run takes about 70 seconds on the development machine:

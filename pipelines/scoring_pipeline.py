@@ -4,6 +4,7 @@ import numpy as np
 import logging
 import random
 
+from config.redaction import redact_bounded_text, safe_error_message
 from events import (
     EmptyScoreResultsEvent,
     HighScoreLinksEvent,
@@ -255,13 +256,22 @@ class ScoringPipeline(BasePipeline):
                 )
 
         except Exception as e:
+            # The log keeps the message so the cause is not lost, with secrets masked; the
+            # event (sent to the UI) keeps only the class and status. No exc_info: a
+            # traceback prints the request URL and headers.
+            logger.warning(
+                "Scoring failed for node %s: %s: %s",
+                node.get_id(),
+                type(e).__name__,
+                redact_bounded_text(str(e)),
+            )
             await self.event_broker.emit(
                 ScoringFailedEvent(
                     correlation_id=str(node.get_id()),
                     node=node,
                     stage="SCORING_SERVICE",
                     error_type=type(e).__name__,
-                    error_message=str(e),
+                    error_message=safe_error_message(e),
                 )
             )
 

@@ -5,22 +5,14 @@ shared with the run. Request headers may carry credentials (``Authorization``,
 ``Cookie``, an API key header), so their values never reach it.
 """
 
-import re
 from typing import Any
 
-REDACTED = "[redacted]"
+from config.redaction import REDACTED, is_secret_name
 
 # Dotted path of the mapping whose values are all redacted, whatever the header is
 # called: a credential can sit under any name. The names stay, so the manifest still
 # shows which headers were set.
 HEADER_MAPPING_PATHS = frozenset({"runtime_config.fetch.extra_headers"})
-
-# Key names that look like they hold a credential. ``token`` must end the name so
-# that counts such as ``max_tokens`` are kept.
-_SECRET_KEY = re.compile(
-    r"authorization|cookie|api[-_]?key|secret|passw(or)?d|token\b",
-    re.IGNORECASE,
-)
 
 
 def redact_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
@@ -34,7 +26,7 @@ def _redact_mapping(mapping: dict[str, Any], path: str) -> dict[str, Any]:
     cleaned: dict[str, Any] = {}
     for key, value in mapping.items():
         child_path = f"{path}.{key}" if path else str(key)
-        if redact_all_values or _SECRET_KEY.search(str(key)):
+        if redact_all_values or is_secret_name(str(key)):
             cleaned[key] = REDACTED
         else:
             cleaned[key] = _redact_value(value, child_path)

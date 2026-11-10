@@ -11,11 +11,15 @@ Writes are atomic (temp file + rename).
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
+from .redaction import sanitize_url, url_carries_credentials
 from .runtime_config import RuntimeConfig, default_runtime_config
+
+logger = logging.getLogger(__name__)
 
 
 def deep_merge(base: dict, over: dict) -> dict:
@@ -48,13 +52,47 @@ def diff(base: dict, new: dict) -> dict:
     return out
 
 
+def _drop_endpoint_credentials(stored: dict) -> list[str]:
+    """Strip user info and credential-like queries from each stored provider endpoint, in
+    place. Returns the names of the providers that were changed."""
+    providers = stored.get("providers")
+    endpoints = providers.get("endpoints") if isinstance(providers, dict) else None
+    if not isinstance(endpoints, dict):
+        return []
+    cleaned: list[str] = []
+    for name, url in endpoints.items():
+        if isinstance(url, str) and url_carries_credentials(url):
+            endpoints[name] = sanitize_url(url)
+            cleaned.append(str(name))
+    return cleaned
+
+
 def read_stored(path: Path) -> dict:
-    """The raw stored overrides, ``{}`` when the file is missing or invalid."""
+    """The raw stored overrides, ``{}`` when the file is missing or invalid.
+
+    A provider endpoint saved with a user name, password or key (allowed before endpoints
+    were checked) is cleaned here and the file is rewritten, so one old file cannot make
+    every later load fail. The key belongs in the keys store."""
     try:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        return {}
+    cleaned = _drop_endpoint_credentials(data)
+    if cleaned:
+        logger.warning(
+            "Dropped the credential from the stored endpoint of provider(s) %r; "
+            "keep the key in the keys store, not in the endpoint URL.",
+            cleaned,
+        )
+        try:
+            _write(Path(path), data)
+        except OSError:
+            logger.exception(
+                "Could not rewrite the cleaned settings file; it still holds a credential."
+            )
+    return data
 
 
 def _write(path: Path, data: dict) -> None:

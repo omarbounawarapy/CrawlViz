@@ -2,6 +2,8 @@ import time
 import uuid
 from typing import TYPE_CHECKING
 
+from config.redaction import is_secret_name, safe_error_message, sanitize_url
+
 from .network_trace_events import (
     NET_RequestCreated,
     NET_RequestDispatched,
@@ -38,9 +40,9 @@ class TracedNetworkClient:
         request_id = uuid.uuid4().hex[:10]
 
         method = params.get("method", "GET").upper()
-        url = params.get("url", "")
+        url = sanitize_url(params.get("url", ""))
         headers = params.get("headers") or {}
-        has_auth = any(k.lower() in ("authorization", "x-api-key") for k in headers)
+        has_auth = any(is_secret_name(name) for name in headers)
 
         await self._tracer.emit(
             NET_RequestCreated(
@@ -108,7 +110,7 @@ class TracedNetworkClient:
                     node_id=node_id,
                     request_id=request_id,
                     error_type=error_type,
-                    error_message=str(exc),
+                    error_message=safe_error_message(exc),
                     status_code=status_code,
                 )
             )
