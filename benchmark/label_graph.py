@@ -25,7 +25,7 @@ from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
 # Batches that fail in a row before the run stops. A provider's daily token cap
-# answers 429 to everything, which the judge reports as "no usable answer";
+# answers 429 to everything, which the judge reports as NoUsableAnswerError;
 # going on would only spend a few minutes per batch for nothing.
 MAX_CONSECUTIVE_FAILURES = 3
 FAILED_BATCH_WAIT_SECONDS = 60

@@ -1348,8 +1348,11 @@ def test_label_log_is_per_graph(tmp_path):
     assert label_graph.labels_path(tmp_path / "isi.json") == tmp_path / "isi_labels.jsonl"
 
 
-async def _label_with_judge(tmp_path, monkeypatch, judge):
-    """Runs label_graph.label on 100 fake pages (p0..p99) with no keys, network or waits."""
+async def _label_with_judge(tmp_path, monkeypatch, judge=None):
+    """Runs label_graph.label on 100 fake pages (p0..p99) with no keys, network or waits.
+
+    Without a judge the real one runs, against an LLM that never gives a usable answer.
+    """
     from benchmark import FrozenGraph, label_graph
 
     graph = FrozenGraph(
@@ -1367,10 +1370,14 @@ async def _label_with_judge(tmp_path, monkeypatch, judge):
         misses = 0
         inner = type("I", (), {"client": _Client()})()
 
+        async def send(self, context):
+            return {}
+
     async def no_sleep(_):
         pass
 
-    monkeypatch.setattr(label_graph, "judge", judge)
+    if judge is not None:
+        monkeypatch.setattr(label_graph, "judge", judge)
     monkeypatch.setattr(label_graph, "CachedLlm", lambda *a, **k: _Llm())
     monkeypatch.setattr(label_graph, "LlmHandler", lambda *a, **k: None)
     monkeypatch.setattr(label_graph, "KeyManager", lambda *a, **k: None)
@@ -1450,6 +1457,12 @@ async def test_a_failed_label_batch_prints_the_error_class_and_status_never_the_
     for header_trace in ("authorization", "api-key", "bearer", "requestinfo", "headers"):
         assert header_trace not in out.lower()
     assert f"batch at p0 failed: {summary}; waiting 60 s" in out
+
+
+async def test_a_batch_the_judge_cannot_label_is_reported_by_name(tmp_path, monkeypatch, capsys):
+    # The failure line shows only the error class, so the class has to say what went wrong.
+    await _label_with_judge(tmp_path, monkeypatch)
+    assert "batch at p0 failed: NoUsableAnswerError; waiting 60 s" in capsys.readouterr().out
 
 
 def test_audit_form_carries_only_the_tsv_columns_and_escapes_script_text(tmp_path):
