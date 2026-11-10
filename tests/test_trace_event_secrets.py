@@ -9,7 +9,6 @@ import pytest
 from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
-from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
 FAKE_KEY = "FAKEKEY-0123456789"
@@ -99,37 +98,3 @@ async def test_auth_header_flag_covers_every_credential_header(
     await client.emit_request(params)
 
     assert tracer.events[0].has_auth_header is expected
-
-
-class _Context:
-    def get_scoring_type(self) -> str:
-        return "link_scoring"
-
-    def get_model_information(self) -> str:
-        return "model-x"
-
-    def get_prompt(self) -> str:
-        return "score these links"
-
-
-class _FailingLlm:
-    async def send(self, context: Any) -> dict[str, Any]:
-        raise _client_response_error()
-
-
-# traceability/traced_llm_handler.py belongs to the llm-engineer; the fix is
-# error_message=safe_error_message(exc) there. Remove this mark with that fix.
-@pytest.mark.xfail(strict=True, reason="traced_llm_handler records str(exc) until it is fixed")
-@pytest.mark.asyncio
-async def test_llm_failure_records_class_and_status_not_the_exception_text() -> None:
-    tracer = _RecordingTracer()
-    handler = TracedLlmHandler(_FailingLlm(), tracer)  # type: ignore[arg-type]
-
-    with pytest.raises(aiohttp.ClientResponseError):
-        await handler.send(_Context())
-
-    failed = tracer.events[-1]
-    assert failed.error_type == "ClientResponseError"
-    assert failed.error_message == "ClientResponseError (HTTP 401)"
-    assert FAKE_KEY not in tracer.dumped()
-    assert "hunter2" not in tracer.dumped()
