@@ -1,0 +1,61 @@
+name: Dependency audit
+
+# Advisories appear without any change in this repository, so the audit runs
+# daily as well as on pull requests that touch a dependency file. It is not part
+# of the required checks: a new advisory must not block unrelated pull requests.
+# A failed scheduled run emails the repository owner through GitHub.
+
+on:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - uv.lock
+      - pyproject.toml
+      - crawler-ui/package.json
+      - crawler-ui/package-lock.json
+      - .github/workflows/audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  pip-audit:
+    name: Python dependency audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: ./.github/actions/setup-python
+
+      - name: Audit locked Python dependencies (pip-audit)
+        run: |
+          uv export --locked --extra dev --no-emit-project --no-emit-package torch --no-hashes -o ${RUNNER_TEMP}/audit-requirements.txt
+          uv run pip-audit --strict -r ${RUNNER_TEMP}/audit-requirements.txt --no-deps --disable-pip
+
+  npm-audit:
+    name: npm dependency audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: crawler-ui
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: crawler-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit locked npm dependencies
+        run: npm audit --audit-level=high
