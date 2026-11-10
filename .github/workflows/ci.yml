@@ -10,30 +10,17 @@ permissions:
   contents: read
 
 jobs:
-  backend:
+  py-checks:
+    name: Python checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: uv sync --locked --extra dev
-
-      - name: Python version matches .python-version
-        run: |
-          expected="$(cat .python-version)"
-          actual="$(uv run python -c 'import platform; print(platform.python_version())')"
-          echo "expected ${expected}.x, running ${actual}"
-          case "${actual}" in
-            "${expected}".*) ;;
-            *) echo "Python ${actual} does not match .python-version ${expected}" >&2; exit 1 ;;
-          esac
+      - uses: ./.github/actions/setup-python
 
       - name: Placeholder keys
         run: cp keys.example.json keys.json
@@ -66,8 +53,20 @@ jobs:
         if: ${{ !cancelled() }}
         run: uv run pytest -m "not pins"
 
+  pins:
+    name: Method pins (behaviour goldens)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: ./.github/actions/setup-python
+
+      - name: Placeholder keys
+        run: cp keys.example.json keys.json
+
       - name: Behaviour pins
-        if: ${{ !cancelled() }}
         run: uv run pytest -m pins
 
       - name: Pin goldens unchanged
@@ -80,9 +79,25 @@ jobs:
             exit 1
           fi
 
+  backend:
+    name: backend
+    if: ${{ always() }}
+    needs: [py-checks, pins]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Every backend job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS}" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "${NEEDS}" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
+
   commit-titles:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -96,6 +111,8 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: crawler-ui

@@ -1,0 +1,25 @@
+name: Set up Python
+description: Install uv and the locked dependencies, then check the interpreter matches .python-version.
+
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      shell: bash
+      run: uv sync --locked --extra dev
+
+    - name: Python version matches .python-version
+      shell: bash
+      run: |
+        expected="$(cat .python-version)"
+        actual="$(uv run python -c 'import platform; print(platform.python_version())')"
+        echo "expected ${expected}.x, running ${actual}"
+        case "${actual}" in
+          "${expected}".*) ;;
+          *) echo "Python ${actual} does not match .python-version ${expected}" >&2; exit 1 ;;
+        esac
