@@ -107,10 +107,10 @@ jobs:
           fetch-depth: 0
 
       - name: Commit titles follow the convention
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: python3 .claude/hooks/commit_msg_check.py --range "${BASE_SHA}..${HEAD_SHA}"
+        # The checkout is the PR merge commit: parent 1 is the current tip of
+        # main, parent 2 is the PR head. The payload's base.sha can be older than
+        # the main merged into the branch and would pull main's commits in.
+        run: python3 .claude/hooks/commit_msg_check.py --range "HEAD^1..HEAD^2"
 
   ui-static:
     name: UI static checks
