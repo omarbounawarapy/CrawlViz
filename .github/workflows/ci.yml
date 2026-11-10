@@ -118,7 +118,8 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: python3 .claude/hooks/commit_msg_check.py --range "${BASE_SHA}..${HEAD_SHA}"
 
-  frontend:
+  ui-static:
+    name: UI static checks
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -137,26 +138,69 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Every check below runs even when an earlier one failed, so one run
+      # reports all failures. A cancelled run still stops.
       - name: Dependency audit (npm)
+        if: ${{ !cancelled() }}
         run: npm audit --audit-level=high
 
       - name: Lint
+        if: ${{ !cancelled() }}
         run: npm run lint
 
       - name: Lint (CSS)
+        if: ${{ !cancelled() }}
         run: npm run lint:css
 
       - name: Lint (HTML)
+        if: ${{ !cancelled() }}
         run: npm run lint:html
 
       - name: Formatting (Prettier)
+        if: ${{ !cancelled() }}
         run: npm run format:check
 
       - name: Type check (tsc)
+        if: ${{ !cancelled() }}
         run: npm run typecheck
+
+  ui-tests:
+    name: UI tests and build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: crawler-ui
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: crawler-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Test
         run: npm run test
 
       - name: Build
+        if: ${{ !cancelled() }}
         run: npm run build
+
+  frontend:
+    name: frontend
+    if: ${{ always() }}
+    needs: [ui-static, ui-tests]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Every frontend job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS}" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "${NEEDS}" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
