@@ -15,6 +15,7 @@ from core.stages import STAGES, StageInputs, StageSpec
 from infrastructure import KeyManager, NetworkClient
 from nlp import BufferManager, SpaceUpdater
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
+from ui_bridge.event_recorder import EventRecorder
 
 FLUSH_INTERVAL_SECONDS = 3600
 LLM_URL = "http://llm.invalid/v1"
@@ -136,3 +137,41 @@ async def test_failed_stage_build_closes_every_http_client_and_session(
     assert spy.sessions, "the LLM client should have opened a session before the failure"
     assert spy.open_sessions() == []
     assert spy.unclosed_clients() == []
+
+
+async def test_failed_ui_layer_build_closes_the_event_log(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    crawler = Crawler(
+        "wikiMD.json",
+        config=default_runtime_config(),
+        paths=RuntimePaths.under(tmp_path),
+        ui_port=_free_port(),
+    )
+    crawler._load_blueprint_config(FAKE_BLUEPRINT)
+    inert: Any = Fake()  # no builder calls the services
+    pipelines = crawler._build_pipelines(FAKE_BLUEPRINT, inert, inert)
+    recorders: list[EventRecorder] = []
+    real_init = EventRecorder.__init__
+    closed: list[EventRecorder] = []
+    real_close = EventRecorder.close
+
+    def init(recorder: EventRecorder, run_dir: Path) -> None:
+        real_init(recorder, run_dir)
+        recorders.append(recorder)
+
+    def close(recorder: EventRecorder) -> None:
+        closed.append(recorder)
+        real_close(recorder)
+
+    def write_manifest(recorder: EventRecorder, manifest: dict[str, Any]) -> None:
+        raise StageBuildError("the manifest could not be written")
+
+    monkeypatch.setattr(EventRecorder, "__init__", init)
+    monkeypatch.setattr(EventRecorder, "close", close)
+    monkeypatch.setattr(EventRecorder, "write_manifest", write_manifest)
+
+    with pytest.raises(StageBuildError):
+        crawler._build_ui_layer(pipelines)
+
+    assert recorders and closed == recorders

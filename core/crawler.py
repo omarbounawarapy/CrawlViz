@@ -370,15 +370,20 @@ class Crawler:
             port=self.ui_port,
         )
         recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
-        recorder.record(snapshot.to_full_snapshot())
-        recorder.write_manifest(redact_manifest(self._run_manifest()))
-        recording_gateway = RecordingGateway(ui_gateway, recorder)
-        telemetry = TelemetryBridge(
-            snapshot,
-            recording_gateway,
-            priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
-        )
-        telemetry.register_handlers()
+        try:
+            recorder.record(snapshot.to_full_snapshot())
+            recorder.write_manifest(redact_manifest(self._run_manifest()))
+            recording_gateway = RecordingGateway(ui_gateway, recorder)
+            telemetry = TelemetryBridge(
+                snapshot,
+                recording_gateway,
+                priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
+            )
+            telemetry.register_handlers()
+        except BaseException:
+            # Nothing owns the open event log yet, so nothing else would close it.
+            recorder.close()
+            raise
 
         self.event_broker.subscribe(telemetry, telemetry.event_types)
         # Stopping this one closes the event log as well as the server.
