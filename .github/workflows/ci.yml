@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  py-checks:
-    name: Python checks
+  py-static:
+    name: Python static checks
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,9 +21,6 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/setup-python
-
-      - name: Placeholder keys
-        run: cp keys.example.json keys.json
 
       # Every check below runs even when an earlier one failed, so one run
       # reports all failures. A cancelled run still stops.
@@ -49,8 +46,20 @@ jobs:
           uv export --locked --extra dev --no-emit-project --no-emit-package torch --no-hashes -o ${RUNNER_TEMP}/audit-requirements.txt
           uv run pip-audit --strict -r ${RUNNER_TEMP}/audit-requirements.txt --no-deps --disable-pip
 
+  py-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: ./.github/actions/setup-python
+
+      - name: Placeholder keys
+        run: cp keys.example.json keys.json
+
       - name: Test (pytest)
-        if: ${{ !cancelled() }}
         run: uv run pytest -m "not pins"
 
   pins:
@@ -82,7 +91,7 @@ jobs:
   backend:
     name: backend
     if: ${{ always() }}
-    needs: [py-checks, pins]
+    needs: [py-static, py-tests, pins]
     runs-on: ubuntu-latest
     permissions: {}
     steps:
