@@ -20,7 +20,7 @@ from infrastructure import KeyManager, LlmHandler
 
 from .graph import FrozenGraph, page_key
 from .judge import judge
-from .llm_cache import CachedLlm
+from .llm_cache import CHARS_PER_TOKEN, CachedLlm
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
@@ -29,6 +29,10 @@ RUBRIC = Path(__file__).with_name("rubric.md")
 # going on would only spend a few minutes per batch for nothing.
 MAX_CONSECUTIVE_FAILURES = 3
 FAILED_BATCH_WAIT_SECONDS = 60
+# Estimated tokens a judge call spends besides its page rows: the rubric prompt
+# (about 1100 at today's rubric) plus room for the answer.
+JUDGE_CALL_OVERHEAD_TOKENS = 1400
+SECONDS_PER_MINUTE = 60
 CACHE = Path("benchmark/data/label_graph_cache.jsonl")
 
 
@@ -101,8 +105,9 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
             for n, v in result.items():
                 f.write(json.dumps({"page": n, "label": v}, ensure_ascii=False) + "\n")
         if llm.misses > before:
-            tokens = sum(len(r["excerpt"]) + len(r["title"]) for r in rows) / 3.5 + 1400
-            await asyncio.sleep(60 * tokens / TOKENS_PER_MINUTE)
+            row_chars = sum(len(r["excerpt"]) + len(r["title"]) for r in rows)
+            tokens = row_chars / CHARS_PER_TOKEN + JUDGE_CALL_OVERHEAD_TOKENS
+            await asyncio.sleep(SECONDS_PER_MINUTE * tokens / TOKENS_PER_MINUTE)
         print(f"\r{len(got) + s + len(batch)}/{len(graph.pages)}", end="", flush=True)
     print()
     await llm.inner.client.close()
