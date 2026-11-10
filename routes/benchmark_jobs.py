@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 LOG_TAIL = 400
+# A subprocess line longer than this is cut before it is masked, so one huge line cannot
+# hold the event loop in the masking regexes or fill the saved log.
+MAX_LOG_LINE_CHARS = 4096
+LOG_LINE_CUT_MARK = " ...[line cut]"
 
 _SAFE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./:-]*$")
 
@@ -196,12 +200,24 @@ class _CurrentJob:
 _slot = _CurrentJob()
 
 
+def _log_line(raw: bytes) -> str:
+    """One subprocess output line, masked and kept to the limit; a cut line is marked.
+
+    The line is cut before it is masked (the cost) and after (masking can lengthen it).
+    """
+    line = raw.decode(errors="replace").rstrip()
+    masked = redact_text(line[:MAX_LOG_LINE_CHARS])
+    if len(line) > MAX_LOG_LINE_CHARS or len(masked) > MAX_LOG_LINE_CHARS:
+        return masked[:MAX_LOG_LINE_CHARS] + LOG_LINE_CUT_MARK
+    return masked
+
+
 async def _pump(job: _Job) -> None:
     proc = job.proc
     assert proc is not None and proc.stdout is not None
     async for raw in proc.stdout:
         # The subprocess may print a failed request with its key; the log is shown and saved.
-        job.log.append(redact_text(raw.decode(errors="replace").rstrip()))
+        job.log.append(_log_line(raw))
     job.returncode = await proc.wait()
     job.ended = time.time()
     try:  # the finished job survives a backend restart

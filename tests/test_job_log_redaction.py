@@ -2,6 +2,7 @@
 failed request must not leak the key (SEC-3)."""
 
 import json
+import time
 from pathlib import Path
 
 import aiohttp
@@ -69,3 +70,41 @@ async def test_job_log_masks_secrets_from_subprocess_output(
     assert "hunter2" not in shown
     assert "judge: starting" in shown
     assert "judge: 3/10 done" in shown
+
+
+LONG_LINE_CHARS = 100_000
+LONG_LINE_TIME_LIMIT_SECONDS = 0.5
+
+
+@pytest.mark.parametrize("filler", ["x", "secret='", "RequestInfo(", "http://"])
+async def test_job_log_cuts_a_very_long_line_before_masking_it(
+    filler: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(benchmark_jobs, "LAST_JOB_FILE", tmp_path / "analysis" / "last_job.json")
+    monkeypatch.setattr(benchmark_jobs, "RESULTS_DIR", tmp_path / "results")
+    job = benchmark_jobs._Job("judge", ["python", "-m", "benchmark"], {})
+    job.proc = _Process(["before", (filler * LONG_LINE_CHARS)[:LONG_LINE_CHARS], "after"])  # type: ignore[assignment]
+
+    started = time.perf_counter()
+    await benchmark_jobs._pump(job)
+    elapsed = time.perf_counter() - started
+
+    before, cut, after = job.log
+    assert (before, after) == ("before", "after")
+    assert cut.endswith(benchmark_jobs.LOG_LINE_CUT_MARK)
+    assert len(cut) <= benchmark_jobs.MAX_LOG_LINE_CHARS + len(benchmark_jobs.LOG_LINE_CUT_MARK)
+    assert elapsed < LONG_LINE_TIME_LIMIT_SECONDS
+
+
+async def test_job_log_keeps_a_line_at_the_limit_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(benchmark_jobs, "LAST_JOB_FILE", tmp_path / "analysis" / "last_job.json")
+    monkeypatch.setattr(benchmark_jobs, "RESULTS_DIR", tmp_path / "results")
+    job = benchmark_jobs._Job("judge", ["python", "-m", "benchmark"], {})
+    line = "x" * benchmark_jobs.MAX_LOG_LINE_CHARS
+    job.proc = _Process([line])  # type: ignore[assignment]
+
+    await benchmark_jobs._pump(job)
+
+    assert list(job.log) == [line]
