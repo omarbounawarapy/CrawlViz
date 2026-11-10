@@ -13,7 +13,10 @@ def get_paths() -> RuntimePaths:
 
 
 def validation_errors(exc: ValidationError) -> list[dict[str, Any]]:
-    return [{"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]} for e in exc.errors()]
+    """Field path and message per error. The submitted value and the pydantic docs URL are
+    never requested, so a refused key or endpoint cannot travel in the 422 body."""
+    errors = exc.errors(include_input=False, include_url=False)
+    return [{"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]} for e in errors]
 
 
 def validation_http_error(exc: ValidationError) -> HTTPException:
