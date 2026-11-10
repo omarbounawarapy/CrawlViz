@@ -104,6 +104,16 @@ def test_redact_text_keeps_ordinary_lines() -> None:
         ("Accept", False),
         ("User-Agent", False),
         ("max_tokens", False),
+        ("access_key", True),
+        ("subscription-key", True),
+        ("Ocp-Apim-Subscription-Key", True),
+        ("key", True),
+        ("monkey", False),
+        ("keys", False),
+        ("key_count", False),
+        ("author", False),
+        ("oauth", False),
+        ("cookie_policy", True),
     ],
 )
 def test_is_secret_name(name: str, expected: bool) -> None:
@@ -120,6 +130,15 @@ def test_is_secret_name(name: str, expected: bool) -> None:
         (f"https://api.example/v1?key={FAKE_KEY}", True),
         (f"https://api.example/v1?alt=sse&api_key={FAKE_KEY}", True),
         (f"https://api.example/v1?access_token={FAKE_KEY}", True),
+        (f"https://api.example/v1?access_key={FAKE_KEY}", True),
+        (f"https://api.example/v1?subscription-key={FAKE_KEY}", True),
+        ("https://api.example/v1?cookie_policy=1", True),
+        ("https://api.example/v1?q=cats", False),
+        ("https://api.example/v1?model=llama&alt=sse", False),
+        ("https://api.example/v1?api-version=2024-02-01", False),
+        ("https://api.example/v1?max_tokens=512", False),
+        ("https://api.example/v1?author=smith", False),
+        ("https://api.example/v1?oauth=1", False),
     ],
 )
 def test_url_carries_credentials(url: str, expected: bool) -> None:
@@ -154,3 +173,41 @@ def test_url_carries_credentials_takes_linear_time_on_a_long_query_name() -> Non
     url = "https://api.example/v1?" + "a" * LONG_WORD_CHARS + "=1"
 
     assert _seconds(lambda: url_carries_credentials(url)) < LINEAR_TIME_LIMIT_SECONDS
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        f"GET https://api.example/v1?access_key={FAKE_KEY}",
+        f"GET https://api.example/v1?subscription-key={FAKE_KEY}&x=1",
+        f"key={FAKE_KEY}",
+        f"retrying with access_key={FAKE_KEY} now",
+        f"Ocp-Apim-Subscription-Key: {FAKE_KEY}",
+    ],
+)
+def test_redact_text_masks_names_that_end_in_key(line: str) -> None:
+    cleaned = redact_text(line)
+
+    assert FAKE_KEY not in cleaned
+    assert REDACTED in cleaned
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "GET https://api.example/v1?max_tokens=512",
+        "GET https://api.example/v1?author=smith&oauth=1",
+        "GET https://api.example/v1?q=cats&model=llama&alt=sse&api-version=2024-02-01",
+        "monkey=banana keys=3 key_count=4",
+    ],
+)
+def test_redact_text_keeps_names_that_only_look_like_secrets(line: str) -> None:
+    assert redact_text(line) == line
+
+
+def test_the_query_rule_and_the_name_rule_agree() -> None:
+    names = ["key", "api_key", "access_key", "max_tokens", "author", "oauth", "cookie_policy", "q"]
+
+    for name in names:
+        masked = redact_text(f"?{name}=VALUE") != f"?{name}=VALUE"
+        assert masked == url_carries_credentials(f"https://h/p?{name}=VALUE"), name

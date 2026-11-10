@@ -19,12 +19,18 @@ from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 REDACTED = "[redacted]"
 
-# Header and key names that hold a credential. ``token`` and ``auth`` must end the name
-# so that counts such as ``max_tokens`` are kept. A name is found by its core, and the text
-# around the core is bounded, so a long word costs linear time (a ``[\w-]*`` prefix tried
-# from every position of a long word costs quadratic time).
+# Header, field and query names that hold a credential: the one rule every helper uses.
+# ``token`` must end the name, and ``auth`` and ``key`` must be a whole word of it, so
+# that counts and flags such as ``max_tokens``, ``author``, ``oauth`` and ``monkey`` are
+# kept while ``access_key``, ``subscription-key`` and ``X-Auth`` are masked. The name is
+# found by its core, and the text around the core is bounded, so a long word costs linear
+# time (a ``[\w-]*`` prefix tried from every position of a long word costs quadratic time).
 MAX_NAME_AFFIX_CHARS = 64
-_SECRET_CORE = r"(?:authorization|api[-_]?key|secret|passw(?:or)?d|cookie|token\b|auth\b)"
+_WORD_START = r"(?<![^\W_])"  # the start of the name, or just after ``-`` or ``_``
+_SECRET_CORE = (
+    r"(?:authorization|api[-_]?key|secret|passw(?:or)?d|cookie|token\b"
+    rf"|{_WORD_START}auth\b|{_WORD_START}key(?![\w-]))"
+)
 _SECRET_NAME_PATTERN = re.compile(_SECRET_CORE, re.IGNORECASE)
 _SECRET_NAME = rf"{_SECRET_CORE}[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}}"
 
@@ -37,12 +43,6 @@ _NAMED_VALUE = re.compile(
 _BEARER = re.compile(r"\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{4,}", re.IGNORECASE)
 # Two levels of nested brackets cover ``URL('...')`` and ``<CIMultiDictProxy(...)>``.
 _REQUEST_INFO = re.compile(r"RequestInfo\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)")
-_QUERY_SECRET = re.compile(
-    rf"(?P<lead>[?&])(?P<name>key|[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}}?"
-    rf"(?:api[-_]?key|secret|passw(?:or)?d|token|auth)[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}})="
-    r"[^&\s\"'<>)]*",
-    re.IGNORECASE,
-)
 # A URL scheme is short and starts where a word starts.
 MAX_SCHEME_CHARS = 32
 _URL_USERINFO = re.compile(
@@ -64,9 +64,7 @@ def url_carries_credentials(url: str) -> bool:
     except ValueError:
         return False
     query_names = (name for name, _ in parse_qsl(parts.query, keep_blank_values=True))
-    return has_user_info or any(
-        name.lower() == "key" or is_secret_name(name) for name in query_names
-    )
+    return has_user_info or any(is_secret_name(name) for name in query_names)
 
 
 def sanitize_url(url: str) -> str:
@@ -95,12 +93,10 @@ def redact_text(text: str) -> str:
     """`text` with credentials masked.
 
     Masks request dumps (``RequestInfo(...)``), ``Bearer`` and ``Basic`` tokens, the
-    value after a header or key name that looks like a credential (``Authorization``,
-    ``x-api-key``, ``x-goog-api-key``, ``password``), user info in URLs, and query values
-    named ``key`` or like a credential.
+    value after a header, field or query name that looks like a credential
+    (``Authorization``, ``x-api-key``, ``access_key``, ``password``) and user info in URLs.
     """
     text = _REQUEST_INFO.sub(f"RequestInfo({REDACTED})", text)
     text = _URL_USERINFO.sub(rf"\g<scheme>{REDACTED}@", text)
-    text = _QUERY_SECRET.sub(rf"\g<lead>\g<name>={REDACTED}", text)
     text = _BEARER.sub(rf"\1 {REDACTED}", text)
     return _NAMED_VALUE.sub(rf"\g<name>\g<separator>{REDACTED}", text)
