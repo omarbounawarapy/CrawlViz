@@ -17,6 +17,7 @@ method_files = [
   "core/crawler.py",
   "core/event_broker.py",
   "core/stages.py",
+  "core/ui_layer.py",
   "pipelines/scoring_pipeline.py",
   "pipelines/priority_pipeline.py",
   "priority/**",
