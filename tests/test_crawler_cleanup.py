@@ -151,8 +151,6 @@ class _UiLayerSpy:
             ui_port=_free_port(),
         )
         self.crawler._load_blueprint_config(FAKE_BLUEPRINT)
-        inert: Any = Fake()  # no builder calls the services
-        self.pipelines = self.crawler._build_pipelines(FAKE_BLUEPRINT, inert, inert)
         self.opened: list[EventRecorder] = []
         self.closed: list[EventRecorder] = []
         real_init = EventRecorder.__init__
@@ -184,7 +182,7 @@ async def test_failed_ui_layer_build_closes_the_event_log(
     monkeypatch.setattr(target, failing_step, _raise_build_error)
 
     with pytest.raises(StageBuildError):
-        spy.crawler._build_ui_layer(spy.pipelines)
+        spy.crawler._build_ui_layer()
 
     assert spy.opened and spy.closed == spy.opened
 
@@ -195,12 +193,16 @@ async def test_failing_to_close_the_event_log_does_not_hide_the_build_error(
     spy = _UiLayerSpy(tmp_path, monkeypatch)
     monkeypatch.setattr(EventRecorder, "write_manifest", _raise_build_error)
 
+    real_close = EventRecorder.close
+
     def close(recorder: EventRecorder) -> None:
+        real_close(recorder)  # release the file handle; only the report of it fails
         raise OSError("disk full")
 
     monkeypatch.setattr(EventRecorder, "close", close)
 
     with pytest.raises(StageBuildError), caplog.at_level(logging.ERROR):
-        spy.crawler._build_ui_layer(spy.pipelines)
+        spy.crawler._build_ui_layer()
 
     assert "Could not close the event log" in caplog.text
+    assert str(spy.opened[0].events_path) in caplog.text

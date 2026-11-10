@@ -122,7 +122,9 @@ class Crawler:
                 cleanup.push_async_callback(traced_network.close)
 
             # Built here, so it is closed even when a later stage fails to build.
-            fetcher = self.fetcher or build_page_fetcher(self.config.fetch)
+            fetcher = (
+                self.fetcher if self.fetcher is not None else build_page_fetcher(self.config.fetch)
+            )
             cleanup.push_async_callback(fetcher.close)
 
             nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
@@ -132,7 +134,7 @@ class Crawler:
 
             pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service, fetcher)
             self._wire_subscriptions(pipelines, space_updater)
-            ui_gateway = self._build_ui_layer(pipelines)
+            ui_gateway = self._build_ui_layer()
             cleanup.push_async_callback(ui_gateway.stop)
 
             tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
@@ -349,7 +351,7 @@ class Crawler:
             "scoring_concurrency": self.scoring_concurrency,
         }
 
-    def _build_ui_layer(self, p: dict) -> RecordingGateway:
+    def _build_ui_layer(self) -> RecordingGateway:
         return build_ui_layer(
             config=self.config,
             ui_port=self.ui_port,

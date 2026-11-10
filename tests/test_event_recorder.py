@@ -38,7 +38,7 @@ def test_recording_gateway_writes_each_message_in_order_and_forwards(tmp_path):
 def test_crawler_ui_layer_records_snapshot_and_manifest(tmp_path):
     crawler = Crawler("wikiMD.json", paths=RuntimePaths.under(tmp_path), seed=7)
     crawler._load_blueprint_config(FAKE_BLUEPRINT)
-    crawler._build_ui_layer({})
+    crawler._build_ui_layer()
     run_dir = tmp_path / "export" / crawler.crawl_id
     first = json.loads((run_dir / "events.jsonl").read_text().splitlines()[0])
     assert first["type"] == "SNAPSHOT_FULL"

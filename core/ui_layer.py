@@ -69,4 +69,7 @@ def _close_after_failure(recorder: EventRecorder) -> None:
     try:
         recorder.close()
     except Exception:
-        logger.exception("Could not close the event log after the UI layer failed to build")
+        logger.exception(
+            "Could not close the event log %s after the UI layer failed to build",
+            recorder.events_path,
+        )
