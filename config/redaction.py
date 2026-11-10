@@ -40,7 +40,23 @@ _NAMED_VALUE = re.compile(
     r"(?:(?P<quote>[\"']).*?(?P=quote)|(?:Bearer|Basic|Token)\s+[^\s\"',&)>}]+|[^\s\"',&)>}]+)",
     re.IGNORECASE,
 )
-_BEARER = re.compile(r"\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{4,}", re.IGNORECASE)
+# ``Authorization: ...`` and ``Cookie: ...`` carry several credentials in one value
+# (``Digest ... response="..."``, ``a=1; sid=...``), so the whole line is the value.
+# A quoted name (``'Cookie': '...'``) is left to ``_NAMED_VALUE``.
+_HEADER_LINE = re.compile(
+    rf"(?P<name>(?:authorization|cookie)[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}})"
+    r"(?P<separator>[ \t]*:[ \t]*)[^\r\n]+",
+    re.IGNORECASE,
+)
+# A scheme word alone is prose ("Basic tests passed"), so a value is masked only when it
+# is long and token-shaped: letters and digits with a digit or one of ``._~+/=-`` in it.
+MIN_BEARER_VALUE_CHARS = 8
+_BEARER = re.compile(
+    r"\b(Bearer|Basic)\s+"
+    rf"(?=[A-Za-z0-9._~+/=-]{{{MIN_BEARER_VALUE_CHARS},}})(?=[A-Za-z]*[\d._~+/=-])"
+    r"[A-Za-z0-9._~+/=-]+",
+    re.IGNORECASE,
+)
 # Two levels of nested brackets cover ``URL('...')`` and ``<CIMultiDictProxy(...)>``.
 _REQUEST_INFO = re.compile(r"RequestInfo\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)")
 # A URL scheme is short and starts where a word starts.
@@ -95,8 +111,10 @@ def redact_text(text: str) -> str:
     Masks request dumps (``RequestInfo(...)``), ``Bearer`` and ``Basic`` tokens, the
     value after a header, field or query name that looks like a credential
     (``Authorization``, ``x-api-key``, ``access_key``, ``password``) and user info in URLs.
+    A ``Cookie`` or ``Authorization`` header is masked to the end of its line.
     """
     text = _REQUEST_INFO.sub(f"RequestInfo({REDACTED})", text)
     text = _URL_USERINFO.sub(rf"\g<scheme>{REDACTED}@", text)
+    text = _HEADER_LINE.sub(rf"\g<name>\g<separator>{REDACTED}", text)
     text = _BEARER.sub(rf"\1 {REDACTED}", text)
     return _NAMED_VALUE.sub(rf"\g<name>\g<separator>{REDACTED}", text)

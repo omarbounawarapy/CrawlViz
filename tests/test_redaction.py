@@ -211,3 +211,53 @@ def test_the_query_rule_and_the_name_rule_agree() -> None:
     for name in names:
         masked = redact_text(f"?{name}=VALUE") != f"?{name}=VALUE"
         assert masked == url_carries_credentials(f"https://h/p?{name}=VALUE"), name
+
+
+@pytest.mark.parametrize(
+    ("line", "leaked"),
+    [
+        ("Cookie: a=1; sid=SECRETSID; theme=dark", ["SECRETSID", "theme=dark"]),
+        ("cookie: first=ONE; second=TWO", ["ONE", "TWO"]),
+        ("Set-Cookie: sid=SECRETSID; Path=/; HttpOnly", ["SECRETSID", "HttpOnly"]),
+        (
+            'Authorization: Digest username="u", realm="r", response="SECRETRESP"',
+            ["SECRETRESP", "username"],
+        ),
+        ("Proxy-Authorization: NTLM SECRETNTLM", ["SECRETNTLM"]),
+        ("Authorization: Bearer FAKEKEY-0123456789 extra=SECRETEXTRA", ["SECRETEXTRA"]),
+    ],
+)
+def test_redact_text_masks_a_header_value_to_the_end_of_the_line(
+    line: str, leaked: list[str]
+) -> None:
+    cleaned = redact_text(f"before\n{line}\nafter")
+
+    assert not any(piece in cleaned for piece in leaked)
+    assert cleaned.startswith("before\n") and cleaned.endswith("\nafter")
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Basic tests passed",
+        "Basic requirements were met",
+        "Bearer tokens are not logged",
+        "the Bearer authentication scheme",
+    ],
+)
+def test_redact_text_keeps_prose_that_starts_with_a_scheme_word(line: str) -> None:
+    assert redact_text(line) == line
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        f"retry sent Bearer {FAKE_KEY}",
+        "token was Basic dXNlcjpwYXNzd29yZA==",
+        "sent Bearer eyJhbGciOi.eyJzdWIi.c2ln",
+    ],
+)
+def test_redact_text_masks_a_token_shaped_value_after_a_scheme_word(line: str) -> None:
+    cleaned = redact_text(line)
+
+    assert cleaned.split()[-1] == REDACTED
