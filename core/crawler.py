@@ -25,13 +25,12 @@ from models import Storage
 from nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
-from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
+from ui_bridge.event_recorder import RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
-from .manifest_redaction import redact_manifest
 from .stages import STAGES, StageInputs, build_page_fetcher, build_stages, priority_strategy_name
+from .ui_layer import RunRecord, build_ui_layer
 
 # Traceability is a second, finer-grained event stream (see
 # traceability/emitter.py) plus thin wrappers around the network/LLM
@@ -351,37 +350,13 @@ class Crawler:
         }
 
     def _build_ui_layer(self, p: dict) -> RecordingGateway:
-        """Build the UI bridge: the WebSocket gateway, the event recorder
-        and the TelemetryBridge, subscribed to every event it translates."""
-        obs = self.config.observability
-        snapshot = CrawlStateSnapshot(
-            max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
+        return build_ui_layer(
+            config=self.config,
+            ui_port=self.ui_port,
+            event_broker=self.event_broker,
+            priority_strategy=priority_strategy_name(self.blueprint, self.config),
+            record=RunRecord(self.paths.export_dir / self.crawl_id, self._run_manifest()),
         )
-        ui_gateway = UIWebSocketGateway(
-            snapshot,
-            KeepAlive(obs.ui_ping_interval, obs.ui_ping_timeout),
-            host="localhost",
-            port=self.ui_port,
-        )
-        recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
-        try:
-            recorder.record(snapshot.to_full_snapshot())
-            recorder.write_manifest(redact_manifest(self._run_manifest()))
-            recording_gateway = RecordingGateway(ui_gateway, recorder)
-            telemetry = TelemetryBridge(
-                snapshot,
-                recording_gateway,
-                priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
-            )
-            telemetry.register_handlers()
-        except BaseException:
-            # Nothing owns the open event log yet, so nothing else would close it.
-            recorder.close()
-            raise
-
-        self.event_broker.subscribe(telemetry, telemetry.event_types)
-        # Stopping this one closes the event log as well as the server.
-        return recording_gateway
 
     def _collect_tasks(
         self, p: dict, space_updater: SpaceUpdater, ui_gateway: RecordingGateway
