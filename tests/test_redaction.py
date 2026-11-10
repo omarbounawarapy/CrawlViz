@@ -6,8 +6,11 @@ from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
 from config.redaction import (
+    MAX_BOUNDED_TEXT_CHARS,
     REDACTED,
+    TEXT_CUT_MARK,
     is_secret_name,
+    redact_bounded_text,
     redact_text,
     safe_error_message,
     sanitize_url,
@@ -359,3 +362,42 @@ def test_names_that_only_look_like_credentials_are_kept_in_text_and_queries(name
     assert not is_secret_name(name)
     assert redact_text(f"?{name}=VALUE&x=1") == f"?{name}=VALUE&x=1"
     assert not url_carries_credentials(f"https://api.example/v1?{name}=VALUE")
+
+
+def test_redact_bounded_text_keeps_a_short_text_whole() -> None:
+    assert redact_bounded_text(f"key={FAKE_KEY} ok") == f"key={REDACTED} ok"
+
+
+def test_redact_bounded_text_cuts_a_long_text_marks_the_cut_and_masks() -> None:
+    text = f"api_key={FAKE_KEY} " + "x" * (MAX_BOUNDED_TEXT_CHARS * 3)
+
+    bounded = redact_bounded_text(text)
+
+    assert bounded.endswith(TEXT_CUT_MARK)
+    assert len(bounded) <= MAX_BOUNDED_TEXT_CHARS + len(TEXT_CUT_MARK)
+    assert FAKE_KEY not in bounded
+
+
+def test_redact_bounded_text_masks_a_secret_cut_off_at_the_limit() -> None:
+    text = "x" * (MAX_BOUNDED_TEXT_CHARS - len("api_key=FAKEK")) + f"api_key={FAKE_KEY}"
+
+    bounded = redact_bounded_text(text)
+
+    assert "FAKEK" not in bounded
+    assert bounded.endswith(TEXT_CUT_MARK)
+
+
+def test_redact_bounded_text_marks_a_text_the_caller_already_cut() -> None:
+    assert redact_bounded_text("short", was_cut=True) == "short" + TEXT_CUT_MARK
+
+
+def test_redact_bounded_text_keeps_a_text_at_the_limit_whole() -> None:
+    text = "x" * MAX_BOUNDED_TEXT_CHARS
+
+    assert redact_bounded_text(text) == text
+
+
+def test_redact_bounded_text_takes_linear_time_on_a_long_text() -> None:
+    text = "api_key=" * LONG_WORD_CHARS
+
+    assert _seconds(lambda: redact_bounded_text(text)) < LINEAR_TIME_LIMIT_SECONDS

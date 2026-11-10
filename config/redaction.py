@@ -1,11 +1,12 @@
 """The one place that masks secrets in text, URLs and error messages.
 
 Trace events, scoring failures and benchmark job logs reach disk and the UI, so no
-credential may be in them. Three helpers cover the ways a secret travels:
+credential may be in them. Four helpers cover the ways a secret travels:
 
 - ``sanitize_url`` for a URL that is recorded as a field,
 - ``safe_error_message`` for an exception that is recorded in place of ``str(exc)``,
-- ``redact_text`` for free text that might hold a header, a key or a request dump.
+- ``redact_text`` for free text that might hold a header, a key or a request dump,
+- ``redact_bounded_text`` for free text that is also logged: cut to a limit, then masked.
 
 ``str(aiohttp.ClientResponseError)`` carries the request URL, and its ``repr`` carries
 the request headers, so an exception is described by its class and HTTP status only.
@@ -18,6 +19,9 @@ import re
 from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 REDACTED = "[redacted]"
+# The longest text kept in a log line, job log or warning; a longer one is cut and marked.
+MAX_BOUNDED_TEXT_CHARS = 4096
+TEXT_CUT_MARK = " ...[cut]"
 
 # Header, field and query names that hold a credential: the one rule every helper uses.
 # A name is secret when it holds one of these words: ``authorization``, ``api_key``,
@@ -135,3 +139,18 @@ def redact_text(text: str) -> str:
     text = _QUOTED_SCHEME_VALUE.sub(rf"\1 {REDACTED}", text)
     text = _BEARER.sub(rf"\1 {REDACTED}", text)
     return _NAMED_VALUE.sub(rf"\g<name>\g<separator>{REDACTED}", text)
+
+
+def redact_bounded_text(
+    text: str, *, max_chars: int = MAX_BOUNDED_TEXT_CHARS, was_cut: bool = False
+) -> str:
+    """`text` cut to `max_chars`, masked, and marked with ``TEXT_CUT_MARK`` when it was cut.
+
+    The text is cut before it is masked, which bounds the cost of masking, and after it,
+    because masking can lengthen it. `was_cut` says the caller already dropped the end.
+    A secret split by the cut still has its name before it, so it is masked.
+    """
+    masked = redact_text(text[:max_chars])
+    if was_cut or len(text) > max_chars or len(masked) > max_chars:
+        return masked[:max_chars] + TEXT_CUT_MARK
+    return masked

@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 from benchmark import POLICIES
 from config import TEMPLATES_DIR
-from config.redaction import redact_text
+from config.redaction import MAX_BOUNDED_TEXT_CHARS, TEXT_CUT_MARK, redact_bounded_text
 
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR, ROOT
 
@@ -29,8 +29,8 @@ router = APIRouter()
 LOG_TAIL = 400
 # A subprocess line longer than this is cut before it is masked, so one huge line cannot
 # hold the event loop in the masking regexes or fill the saved log.
-MAX_LOG_LINE_CHARS = 4096
-LOG_LINE_CUT_MARK = " ...[line cut]"
+MAX_LOG_LINE_CHARS = MAX_BOUNDED_TEXT_CHARS
+LOG_LINE_CUT_MARK = TEXT_CUT_MARK
 OUTPUT_FAILED_LOG_LINE = "[the job output could not be read, so the job was stopped]"
 
 _SAFE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./:-]*$")
@@ -205,14 +205,10 @@ _slot = _CurrentJob()
 def _log_line(raw: bytes, was_cut: bool = False) -> str:
     """One subprocess output line, masked and kept to the limit; a cut line is marked.
 
-    The line is cut before it is masked (the cost) and after (masking can lengthen it).
     `was_cut` says the reader already dropped the end of the line.
     """
     line = raw.decode(errors="replace").rstrip()
-    masked = redact_text(line[:MAX_LOG_LINE_CHARS])
-    if was_cut or len(line) > MAX_LOG_LINE_CHARS or len(masked) > MAX_LOG_LINE_CHARS:
-        return masked[:MAX_LOG_LINE_CHARS] + LOG_LINE_CUT_MARK
-    return masked
+    return redact_bounded_text(line, max_chars=MAX_LOG_LINE_CHARS, was_cut=was_cut)
 
 
 async def _skip_rest_of_line(stream: asyncio.StreamReader) -> None:

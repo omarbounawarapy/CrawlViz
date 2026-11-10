@@ -10,6 +10,7 @@ import pytest
 from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
+from config.redaction import MAX_BOUNDED_TEXT_CHARS, TEXT_CUT_MARK
 from events import ScoringFailedEvent
 from pipelines.scoring_pipeline import ScoringPipeline
 
@@ -90,3 +91,19 @@ async def test_scoring_failure_log_says_what_went_wrong_with_secrets_masked(
     assert FAKE_KEY not in logged
     failed = [e for e in broker.events if isinstance(e, ScoringFailedEvent)]
     assert failed[0].error_message == "ValueError"
+
+
+async def test_scoring_failure_log_keeps_a_long_message_to_the_limit_and_marks_the_cut(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    broker = _Broker()
+    error = ValueError(f"reply with api_key={FAKE_KEY} " + "x" * (MAX_BOUNDED_TEXT_CHARS * 10))
+    pipeline = _pipeline(broker, _FailingNlp(error))
+
+    with caplog.at_level(logging.WARNING, logger="pipelines.scoring_pipeline"):
+        await pipeline._process(_Node(), worker_id=0)
+
+    logged = caplog.records[-1].getMessage()
+    assert FAKE_KEY not in logged
+    assert logged.endswith(TEXT_CUT_MARK)
+    assert len(logged) < MAX_BOUNDED_TEXT_CHARS * 2

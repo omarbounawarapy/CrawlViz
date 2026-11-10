@@ -4,7 +4,7 @@ import numpy as np
 import logging
 import random
 
-from config.redaction import redact_text, safe_error_message
+from config.redaction import redact_bounded_text, safe_error_message
 from events import (
     EmptyScoreResultsEvent,
     HighScoreLinksEvent,
@@ -263,7 +263,7 @@ class ScoringPipeline(BasePipeline):
                 "Scoring failed for node %s: %s: %s",
                 node.get_id(),
                 type(e).__name__,
-                redact_text(str(e)),
+                redact_bounded_text(str(e)),
             )
             await self.event_broker.emit(
                 ScoringFailedEvent(
