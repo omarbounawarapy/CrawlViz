@@ -38,31 +38,40 @@ jobs:
       - name: Placeholder keys
         run: cp keys.example.json keys.json
 
+      # Every check below runs even when an earlier one failed, so one run
+      # reports all failures. A cancelled run still stops.
       - name: Lint (ruff)
+        if: ${{ !cancelled() }}
         run: uv run ruff check .
 
       - name: Formatting (ruff format)
+        if: ${{ !cancelled() }}
         run: uv run ruff format --check .
 
       - name: Type check (mypy)
+        if: ${{ !cancelled() }}
         run: uv run mypy
 
       - name: Baselines only shrink
-        if: github.event_name == 'pull_request'
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         run: uv run python tools/check_baselines.py --base origin/main
 
       - name: Dependency audit (pip-audit)
+        if: ${{ !cancelled() }}
         run: |
           uv export --locked --extra dev --no-emit-project --no-emit-package torch --no-hashes -o ${RUNNER_TEMP}/audit-requirements.txt
           uv run pip-audit --strict -r ${RUNNER_TEMP}/audit-requirements.txt --no-deps --disable-pip
 
       - name: Test (pytest)
+        if: ${{ !cancelled() }}
         run: uv run pytest -m "not pins"
 
       - name: Behaviour pins
+        if: ${{ !cancelled() }}
         run: uv run pytest -m pins
 
       - name: Pin goldens unchanged
+        if: ${{ !cancelled() }}
         run: |
           changed="$(git status --porcelain -- tests/pins)"
           if [ -n "$changed" ]; then
