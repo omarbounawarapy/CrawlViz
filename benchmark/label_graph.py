@@ -28,7 +28,19 @@ RUBRIC = Path(__file__).with_name("rubric.md")
 # answers 429 to everything, which the judge reports as "no usable answer";
 # going on would only spend a few minutes per batch for nothing.
 MAX_CONSECUTIVE_FAILURES = 3
+FAILED_BATCH_WAIT_SECONDS = 60
 CACHE = Path("benchmark/data/label_graph_cache.jsonl")
+
+
+def failure_summary(error: BaseException) -> str:
+    """The error class, plus the HTTP status of a provider response; never the error's text.
+
+    This output becomes the benchmark job log the UI shows, and an aiohttp error's repr
+    carries the request headers, provider API key included.
+    """
+    if isinstance(error, aiohttp.ClientResponseError) and error.status:  # 0: no status known
+        return f"{type(error).__name__} (HTTP {error.status})"
+    return type(error).__name__
 
 
 def rubric_sha() -> str:
@@ -66,9 +78,13 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
         before = llm.misses
         try:
             result = await judge(llm, rows)
-        except (RuntimeError, aiohttp.ClientError) as e:
+        except (RuntimeError, aiohttp.ClientError) as error:
             failures += 1
-            print(f"\nbatch at {batch[0]} failed: {e!r}; waiting 60 s", flush=True)
+            print(
+                f"\nbatch at {batch[0]} failed: {failure_summary(error)}; "
+                f"waiting {FAILED_BATCH_WAIT_SECONDS} s",
+                flush=True,
+            )
             if failures >= MAX_CONSECUTIVE_FAILURES:
                 print(
                     f"\n{failures} batches in a row failed (likely the provider's daily token cap); "
@@ -76,7 +92,7 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
                     flush=True,
                 )
                 break
-            await asyncio.sleep(60)
+            await asyncio.sleep(FAILED_BATCH_WAIT_SECONDS)
             continue
         failures = 0
         with labels.open("a") as f:
