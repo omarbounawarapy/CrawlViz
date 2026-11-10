@@ -1049,7 +1049,7 @@ class RuntimeConfig(BaseModel):
         json_schema_extra={
             "ui_sections": [{"name": n, "help": h} for n, h in SECTION_GUIDE],
             "ui_glossary": GLOSSARY,
-        }
+        },
     )
 
 
