@@ -42,6 +42,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import config as _config
+from config.redaction import url_carries_credentials
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
 from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
@@ -888,6 +889,9 @@ class ProvidersConfig(BaseModel):
     """Request URL per LLM provider (config/config.py). Point a
     provider at any compatible server; Gemini takes a base URL."""
 
+    # A refused URL must not be echoed back in the error text.
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     endpoints: dict[str, str] = _f(
         dict(_config.LLM_DEFAULT_ENDPOINTS),
         "Request URL used for each provider.",
@@ -903,6 +907,11 @@ class ProvidersConfig(BaseModel):
                 raise ValueError(f"Unknown LLM provider: {name}.")
             if not url.startswith(("http://", "https://")):
                 raise ValueError(f"The {name} endpoint must start with http:// or https://.")
+            if url_carries_credentials(url):
+                raise ValueError(
+                    f"The {name} endpoint must not contain a user name, password or key. "
+                    "Remove it from the URL and add the key to the keys store instead."
+                )
         return self
 
 
@@ -1036,6 +1045,7 @@ class RuntimeConfig(BaseModel):
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
 
     model_config = ConfigDict(
+        hide_input_in_errors=True,  # a refused provider URL must not be echoed back
         json_schema_extra={
             "ui_sections": [{"name": n, "help": h} for n, h in SECTION_GUIDE],
             "ui_glossary": GLOSSARY,
