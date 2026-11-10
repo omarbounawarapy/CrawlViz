@@ -122,11 +122,8 @@ class Crawler:
             if traced_network is not None:
                 cleanup.push_async_callback(traced_network.close)
 
-            # Built here, not by the requests stage, so it is closed even when a later
-            # stage fails to build.
-            fetcher = (
-                self.fetcher if self.fetcher is not None else build_page_fetcher(self.config.fetch)
-            )
+            # Built here, so it is closed even when a later stage fails to build.
+            fetcher = self.fetcher or build_page_fetcher(self.config.fetch)
             cleanup.push_async_callback(fetcher.close)
 
             nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
@@ -134,9 +131,7 @@ class Crawler:
             )
             cleanup.push_async_callback(space_updater.force_flush)
 
-            pipelines = self._build_pipelines(
-                blueprint, nlp_service, scoring_service, fetcher=fetcher
-            )
+            pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service, fetcher)
             self._wire_subscriptions(pipelines, space_updater)
             ui_gateway = self._build_ui_layer(pipelines)
             cleanup.push_async_callback(ui_gateway.stop)
@@ -313,8 +308,7 @@ class Crawler:
         fetcher: Fetcher | None = None,
     ) -> dict:
         """Build every stage from the registry in core/stages.py, keyed by
-        stage, and keep them for `queue_depths` and `apply_live`. The requests
-        stage fetches pages with `fetcher`, else the injected one, else its own."""
+        stage, and keep them for `queue_depths` and `apply_live`."""
         # One budget per crawl: every scoring worker draws from the same counter.
         self.call_budget = CallBudget(self.config.llm.max_calls_per_crawl)
         self._pipelines = build_stages(
@@ -331,7 +325,7 @@ class Crawler:
                 fetch_concurrency=self.fetch_concurrency,
                 scoring_concurrency=self.scoring_concurrency,
                 seed=self.seed,
-                fetcher=fetcher if fetcher is not None else self.fetcher,
+                fetcher=fetcher,
             )
         )
         return self._pipelines

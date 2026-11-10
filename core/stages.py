@@ -134,7 +134,7 @@ def _processing(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def build_page_fetcher(fetch: FetchConfig) -> NetworkClient:
-    """The HTTP client the crawl fetches pages with. Whoever builds it closes it."""
+    """A new HTTP client for fetching pages; the caller closes it (`Crawler._run_session` does)."""
     return NetworkClient(
         fetch.http_total_timeout,
         fetch.http_connect_timeout,
@@ -150,7 +150,7 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         inputs.broker,
         max_concurrency=inputs.fetch_concurrency,
         max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),
-        fetcher=inputs.fetcher or build_page_fetcher(fetch),
+        fetcher=inputs.fetcher if inputs.fetcher is not None else build_page_fetcher(fetch),
         min_delay=fetch.min_delay,
         user_agent=fetch.user_agent,
         respect_robots=fetch.respect_robots,
