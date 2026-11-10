@@ -97,7 +97,7 @@ jobs:
           echo "${NEEDS}" | jq -e 'all(.[]; .result == "success" or .result == "skipped")' > /dev/null
 
   commit-titles:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     permissions:
       contents: read
