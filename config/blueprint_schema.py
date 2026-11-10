@@ -34,7 +34,7 @@ files' worth of implicit dict-shape agreement.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, ValidationError
 
@@ -189,6 +189,24 @@ class StopConditions(BaseModel):
                 f"Unknown priority_strategy {v!r}. Allowed: {sorted(ALLOWED_PRIORITY_STRATEGIES)}"
             )
         return v
+
+
+# Stop conditions the crawler resolves itself, so the schema default must not be
+# filled in: the blueprint's priority strategy, else the configured default
+# (`core.stages.priority_strategy_name`). Filling it in would hide a changed config default.
+RESOLVED_BY_CONFIG: frozenset[str] = frozenset({"priority_strategy"})
+
+
+def stop_condition_defaults() -> dict[str, Any]:
+    """The default of every optional stop condition, read from `StopConditions`.
+
+    The crawler reads the raw blueprint dict, not the validated model, so it fills
+    in what validation let the blueprint omit with these (one source for the defaults)."""
+    return {
+        name: field.get_default(call_default_factory=True)
+        for name, field in StopConditions.model_fields.items()
+        if not field.is_required() and name not in RESOLVED_BY_CONFIG
+    }
 
 
 class Blueprint(BaseModel):

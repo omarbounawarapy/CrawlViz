@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from config import parse_content_types
+from config.blueprint_schema import stop_condition_defaults
 from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig
 from infrastructure import NetworkClient
@@ -61,7 +62,11 @@ class StageInputs:
 
     @property
     def stop_conditions(self) -> dict[str, Any]:
-        conditions: dict[str, Any] = self.blueprint["stop_conditions"]
+        # A blueprint may omit the optional conditions; the schema's defaults fill them in.
+        conditions: dict[str, Any] = {
+            **stop_condition_defaults(),
+            **self.blueprint["stop_conditions"],
+        }
         return conditions
 
     @property
