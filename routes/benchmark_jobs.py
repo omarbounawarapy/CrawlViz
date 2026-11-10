@@ -2,13 +2,14 @@
 subprocess, stream its log tail, and survive a backend restart."""
 
 import asyncio
+import contextlib
 import json
 import logging
 import re
 import sys
 import time
 from collections import deque
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,7 @@ LOG_TAIL = 400
 # hold the event loop in the masking regexes or fill the saved log.
 MAX_LOG_LINE_CHARS = 4096
 LOG_LINE_CUT_MARK = " ...[line cut]"
+OUTPUT_FAILED_LOG_LINE = "[the job output could not be read, so the job was stopped]"
 
 _SAFE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_./:-]*$")
 
@@ -200,24 +202,66 @@ class _CurrentJob:
 _slot = _CurrentJob()
 
 
-def _log_line(raw: bytes) -> str:
+def _log_line(raw: bytes, was_cut: bool = False) -> str:
     """One subprocess output line, masked and kept to the limit; a cut line is marked.
 
     The line is cut before it is masked (the cost) and after (masking can lengthen it).
+    `was_cut` says the reader already dropped the end of the line.
     """
     line = raw.decode(errors="replace").rstrip()
     masked = redact_text(line[:MAX_LOG_LINE_CHARS])
-    if len(line) > MAX_LOG_LINE_CHARS or len(masked) > MAX_LOG_LINE_CHARS:
+    if was_cut or len(line) > MAX_LOG_LINE_CHARS or len(masked) > MAX_LOG_LINE_CHARS:
         return masked[:MAX_LOG_LINE_CHARS] + LOG_LINE_CUT_MARK
     return masked
+
+
+async def _skip_rest_of_line(stream: asyncio.StreamReader) -> None:
+    """Drop the input up to and including the next newline, or to the end of the stream."""
+    while True:
+        try:
+            await stream.readuntil(b"\n")
+        except asyncio.LimitOverrunError as overrun:
+            await stream.readexactly(overrun.consumed)
+        except asyncio.IncompleteReadError:
+            return
+        else:
+            return
+
+
+async def _read_log_lines(stream: asyncio.StreamReader) -> AsyncIterator[tuple[bytes, bool]]:
+    """Each line of `stream` with a flag that says its end was dropped.
+
+    ``async for line in stream`` raises ``ValueError`` on a line over the reader's limit
+    (64 KiB) and loses the line, which would stop the pump. A line over the limit is
+    kept up to the limit, its end is skipped and reading goes on with the next line.
+    """
+    while True:
+        try:
+            yield await stream.readuntil(b"\n"), False
+        except asyncio.IncompleteReadError as end_of_stream:
+            if end_of_stream.partial:
+                yield end_of_stream.partial, False
+            return
+        except asyncio.LimitOverrunError as overrun:
+            head = await stream.readexactly(overrun.consumed)
+            await _skip_rest_of_line(stream)
+            yield head, True
 
 
 async def _pump(job: _Job) -> None:
     proc = job.proc
     assert proc is not None and proc.stdout is not None
-    async for raw in proc.stdout:
-        # The subprocess may print a failed request with its key; the log is shown and saved.
-        job.log.append(_log_line(raw))
+    try:
+        async for raw, was_cut in _read_log_lines(proc.stdout):
+            # The subprocess may print a failed request with its key; the log is shown and saved.
+            job.log.append(_log_line(raw, was_cut))
+    except Exception:
+        # Nobody reads the pipe now, so the child would block on a full pipe and the job
+        # would stay "running" and refuse every new job. Stop it and end the job below.
+        logger.exception("could not read the output of the %s job; stopping it", job.kind)
+        job.log.append(OUTPUT_FAILED_LOG_LINE)
+        with contextlib.suppress(ProcessLookupError):
+            proc.kill()
     job.returncode = await proc.wait()
     job.ended = time.time()
     try:  # the finished job survives a backend restart

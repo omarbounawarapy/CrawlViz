@@ -1,6 +1,7 @@
 """A benchmark job's log goes to the UI and to last_job.json, so a subprocess that prints a
 failed request must not leak the key (SEC-3)."""
 
+import asyncio
 import json
 import time
 from pathlib import Path
@@ -15,25 +16,23 @@ from routes import benchmark_jobs
 FAKE_KEY = "FAKEKEY-0123456789"
 
 
-class _Stream:
-    def __init__(self, lines: list[str]) -> None:
-        self._lines = [f"{line}\n".encode() for line in lines]
-
-    def __aiter__(self) -> "_Stream":
-        return self
-
-    async def __anext__(self) -> bytes:
-        if not self._lines:
-            raise StopAsyncIteration
-        return self._lines.pop(0)
-
-
 class _Process:
+    """A subprocess double whose stdout is a real ``StreamReader`` with the default 64 KiB
+    line limit, the reader ``asyncio.create_subprocess_exec`` gives the job pump."""
+
+    killed = False
+
     def __init__(self, lines: list[str]) -> None:
-        self.stdout = _Stream(lines)
+        self.stdout = asyncio.StreamReader()
+        for line in lines:
+            self.stdout.feed_data(f"{line}\n".encode())
+        self.stdout.feed_eof()
+
+    def kill(self) -> None:
+        self.killed = True
 
     async def wait(self) -> int:
-        return 1
+        return -9 if self.killed else 1
 
 
 def _leaky_lines() -> list[str]:
@@ -108,3 +107,71 @@ async def test_job_log_keeps_a_line_at_the_limit_whole(
     await benchmark_jobs._pump(job)
 
     assert list(job.log) == [line]
+
+
+STREAM_READER_LIMIT_BYTES = 2**16
+
+
+async def test_job_log_survives_a_line_over_the_stream_reader_limit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(benchmark_jobs, "LAST_JOB_FILE", tmp_path / "analysis" / "last_job.json")
+    monkeypatch.setattr(benchmark_jobs, "RESULTS_DIR", tmp_path / "results")
+    job = benchmark_jobs._Job("judge", ["python", "-m", "benchmark"], {})
+    too_long = "y" * (STREAM_READER_LIMIT_BYTES + 1)
+    job.proc = _Process(["before", too_long, "after", "after the second"])  # type: ignore[assignment]
+
+    await benchmark_jobs._pump(job)
+
+    before, cut, *rest = job.log
+    assert before == "before"
+    assert cut.endswith(benchmark_jobs.LOG_LINE_CUT_MARK)
+    assert len(cut) <= benchmark_jobs.MAX_LOG_LINE_CHARS + len(benchmark_jobs.LOG_LINE_CUT_MARK)
+    assert rest == ["after", "after the second"]
+    assert job.returncode == 1
+
+
+async def test_job_log_cuts_a_long_line_that_arrives_in_chunks_and_has_no_final_newline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(benchmark_jobs, "LAST_JOB_FILE", tmp_path / "analysis" / "last_job.json")
+    monkeypatch.setattr(benchmark_jobs, "RESULTS_DIR", tmp_path / "results")
+    job = benchmark_jobs._Job("judge", ["python", "-m", "benchmark"], {})
+    process = _Process([])
+    job.proc = process  # type: ignore[assignment]
+    reader = asyncio.StreamReader()
+    for _ in range(3):
+        reader.feed_data(b"z" * STREAM_READER_LIMIT_BYTES)
+    reader.feed_data(b"\nafter\nunfinished")
+    reader.feed_eof()
+    process.stdout = reader
+
+    await benchmark_jobs._pump(job)
+
+    cut, after, unfinished = job.log
+    assert cut.endswith(benchmark_jobs.LOG_LINE_CUT_MARK)
+    assert (after, unfinished) == ("after", "unfinished")
+
+
+class _BrokenStream:
+    async def readuntil(self, separator: bytes) -> bytes:
+        raise OSError("the pipe broke")
+
+
+async def test_job_leaves_running_state_when_its_output_cannot_be_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setattr(benchmark_jobs, "LAST_JOB_FILE", tmp_path / "analysis" / "last_job.json")
+    monkeypatch.setattr(benchmark_jobs, "RESULTS_DIR", tmp_path / "results")
+    job = benchmark_jobs._Job("judge", ["python", "-m", "benchmark"], {})
+    process = _Process([])
+    process.stdout = _BrokenStream()  # type: ignore[assignment]
+    job.proc = process  # type: ignore[assignment]
+
+    await benchmark_jobs._pump(job)
+
+    assert process.killed
+    assert job.returncode == -9
+    assert job.ended is not None
+    assert benchmark_jobs.OUTPUT_FAILED_LOG_LINE in job.log
+    assert "could not read the output" in caplog.text
