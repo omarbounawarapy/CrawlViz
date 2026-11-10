@@ -1,6 +1,7 @@
 """When a crawl fails while its stages are being built, every HTTP client and session
 created so far is closed, so nothing leaks from a run that never started."""
 
+import logging
 import socket
 from pathlib import Path
 from typing import Any
@@ -139,39 +140,67 @@ async def test_failed_stage_build_closes_every_http_client_and_session(
     assert spy.unclosed_clients() == []
 
 
+class _UiLayerSpy:
+    """A crawl ready to build its UI layer, and the event logs that build opens and closes."""
+
+    def __init__(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        self.crawler = Crawler(
+            "wikiMD.json",
+            config=default_runtime_config(),
+            paths=RuntimePaths.under(tmp_path),
+            ui_port=_free_port(),
+        )
+        self.crawler._load_blueprint_config(FAKE_BLUEPRINT)
+        inert: Any = Fake()  # no builder calls the services
+        self.pipelines = self.crawler._build_pipelines(FAKE_BLUEPRINT, inert, inert)
+        self.opened: list[EventRecorder] = []
+        self.closed: list[EventRecorder] = []
+        real_init = EventRecorder.__init__
+        real_close = EventRecorder.close
+        spy = self
+
+        def init(recorder: EventRecorder, run_dir: Path) -> None:
+            real_init(recorder, run_dir)
+            spy.opened.append(recorder)
+
+        def close(recorder: EventRecorder) -> None:
+            spy.closed.append(recorder)
+            real_close(recorder)
+
+        monkeypatch.setattr(EventRecorder, "__init__", init)
+        monkeypatch.setattr(EventRecorder, "close", close)
+
+
+def _raise_build_error(*args: object, **kwargs: object) -> None:
+    raise StageBuildError("the UI layer could not be built")
+
+
+@pytest.mark.parametrize("failing_step", ["write_manifest", "subscribe"])
 async def test_failed_ui_layer_build_closes_the_event_log(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failing_step: str
 ) -> None:
-    crawler = Crawler(
-        "wikiMD.json",
-        config=default_runtime_config(),
-        paths=RuntimePaths.under(tmp_path),
-        ui_port=_free_port(),
-    )
-    crawler._load_blueprint_config(FAKE_BLUEPRINT)
-    inert: Any = Fake()  # no builder calls the services
-    pipelines = crawler._build_pipelines(FAKE_BLUEPRINT, inert, inert)
-    recorders: list[EventRecorder] = []
-    real_init = EventRecorder.__init__
-    closed: list[EventRecorder] = []
-    real_close = EventRecorder.close
-
-    def init(recorder: EventRecorder, run_dir: Path) -> None:
-        real_init(recorder, run_dir)
-        recorders.append(recorder)
-
-    def close(recorder: EventRecorder) -> None:
-        closed.append(recorder)
-        real_close(recorder)
-
-    def write_manifest(recorder: EventRecorder, manifest: dict[str, Any]) -> None:
-        raise StageBuildError("the manifest could not be written")
-
-    monkeypatch.setattr(EventRecorder, "__init__", init)
-    monkeypatch.setattr(EventRecorder, "close", close)
-    monkeypatch.setattr(EventRecorder, "write_manifest", write_manifest)
+    spy = _UiLayerSpy(tmp_path, monkeypatch)
+    target = EventRecorder if failing_step == "write_manifest" else spy.crawler.event_broker
+    monkeypatch.setattr(target, failing_step, _raise_build_error)
 
     with pytest.raises(StageBuildError):
-        crawler._build_ui_layer(pipelines)
+        spy.crawler._build_ui_layer(spy.pipelines)
 
-    assert recorders and closed == recorders
+    assert spy.opened and spy.closed == spy.opened
+
+
+async def test_failing_to_close_the_event_log_does_not_hide_the_build_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    spy = _UiLayerSpy(tmp_path, monkeypatch)
+    monkeypatch.setattr(EventRecorder, "write_manifest", _raise_build_error)
+
+    def close(recorder: EventRecorder) -> None:
+        raise OSError("disk full")
+
+    monkeypatch.setattr(EventRecorder, "close", close)
+
+    with pytest.raises(StageBuildError), caplog.at_level(logging.ERROR):
+        spy.crawler._build_ui_layer(spy.pipelines)
+
+    assert "Could not close the event log" in caplog.text

@@ -1,6 +1,7 @@
 """Builds the crawl's UI bridge: the WebSocket gateway, the event recorder and the
 telemetry bridge that turns crawl events into UI messages."""
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,8 @@ from ui_bridge.event_recorder import EventRecorder, RecordingGateway
 
 from .event_broker import EventBroker
 from .manifest_redaction import redact_manifest
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -51,11 +54,19 @@ def build_ui_layer(
             snapshot, recording_gateway, priority_strategy_name=priority_strategy
         )
         telemetry.register_handlers()
+        event_broker.subscribe(telemetry, telemetry.event_types)
     except BaseException:
         # Nothing owns the open event log yet, so nothing else would close it.
-        recorder.close()
+        _close_after_failure(recorder)
         raise
-
-    event_broker.subscribe(telemetry, telemetry.event_types)
     # Stopping this one closes the event log as well as the server.
     return recording_gateway
+
+
+def _close_after_failure(recorder: EventRecorder) -> None:
+    """Close the event log without letting a failure to close hide the error that
+    is being handled: that one is re-raised by the caller, this one is logged."""
+    try:
+        recorder.close()
+    except Exception:
+        logger.exception("Could not close the event log after the UI layer failed to build")
