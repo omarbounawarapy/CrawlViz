@@ -31,7 +31,7 @@ from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
 from .manifest_redaction import redact_manifest
-from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
+from .stages import STAGES, StageInputs, build_page_fetcher, build_stages, priority_strategy_name
 
 # Traceability is a second, finer-grained event stream (see
 # traceability/emitter.py) plus thin wrappers around the network/LLM
@@ -122,13 +122,21 @@ class Crawler:
             if traced_network is not None:
                 cleanup.push_async_callback(traced_network.close)
 
+            # Built here, not by the requests stage, so it is closed even when a later
+            # stage fails to build.
+            fetcher = (
+                self.fetcher if self.fetcher is not None else build_page_fetcher(self.config.fetch)
+            )
+            cleanup.push_async_callback(fetcher.close)
+
             nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
                 traced_llm, tracer
             )
             cleanup.push_async_callback(space_updater.force_flush)
 
-            pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service)
-            cleanup.push_async_callback(pipelines["requests"].network_client.close)
+            pipelines = self._build_pipelines(
+                blueprint, nlp_service, scoring_service, fetcher=fetcher
+            )
             self._wire_subscriptions(pipelines, space_updater)
             ui_gateway = self._build_ui_layer(pipelines)
             cleanup.push_async_callback(ui_gateway.stop)
@@ -298,10 +306,15 @@ class Crawler:
         return nlp_service, space_updater, scoring_service
 
     def _build_pipelines(
-        self, blueprint: dict, nlp_service: NLPService, scoring_service: ScoringService
+        self,
+        blueprint: dict,
+        nlp_service: NLPService,
+        scoring_service: ScoringService,
+        fetcher: Fetcher | None = None,
     ) -> dict:
         """Build every stage from the registry in core/stages.py, keyed by
-        stage, and keep them for `queue_depths` and `apply_live`."""
+        stage, and keep them for `queue_depths` and `apply_live`. The requests
+        stage fetches pages with `fetcher`, else the injected one, else its own."""
         # One budget per crawl: every scoring worker draws from the same counter.
         self.call_budget = CallBudget(self.config.llm.max_calls_per_crawl)
         self._pipelines = build_stages(
@@ -318,7 +331,7 @@ class Crawler:
                 fetch_concurrency=self.fetch_concurrency,
                 scoring_concurrency=self.scoring_concurrency,
                 seed=self.seed,
-                fetcher=self.fetcher,
+                fetcher=fetcher if fetcher is not None else self.fetcher,
             )
         )
         return self._pipelines
