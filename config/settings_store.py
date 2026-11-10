@@ -89,7 +89,9 @@ def read_stored(path: Path) -> dict:
         try:
             _write(Path(path), data)
         except OSError:
-            logger.exception("Could not rewrite the cleaned settings file; it still holds a credential.")
+            logger.exception(
+                "Could not rewrite the cleaned settings file; it still holds a credential."
+            )
     return data
 
 
