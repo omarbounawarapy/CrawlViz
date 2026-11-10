@@ -124,13 +124,13 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 | `pins` ("Method pins (behaviour goldens)") | `pytest -m pins`, then that `tests/pins` is unchanged after the run |
 | `ui-static` | ESLint, the CSS and HTML linters, Prettier and `tsc` |
 | `ui-tests` | vitest and the production build |
-| `commit-titles` | commit titles on a pull request follow the convention (pull requests only; not required) |
+| `commit-titles` | the titles of the pull request's own commits follow the convention (pull requests only, skipped for dependabot; not required) |
 
-The two required checks are `backend` and `frontend`. `backend` passes only if `py-static`, `py-tests` and `pins` all pass, and `frontend` only if `ui-static` and `ui-tests` pass. Each job runs all its steps even after one fails, so a single run lists every failure. A red `pins` job means the behaviour pins moved: the code now produces different output from the goldens. Do not edit the goldens to make it pass; see `tests/pins/README.md`.
+The two required checks are `backend` and `frontend`. `backend` passes only if `py-static`, `py-tests` and `pins` all pass, and `frontend` only if `ui-static` and `ui-tests` pass. Each check step runs even after an earlier check fails, so a single run lists every failing check. A failed setup step (checkout, the Python setup action, `npm ci`) skips the checks and fails the job. A red `pins` job means the behaviour pins moved: the code now produces different output from the goldens. Do not edit the goldens to make it pass; see `tests/pins/README.md`.
 
-The Python jobs use the composite action `.github/actions/setup-python`. It installs with `uv sync --locked --extra dev` (this fails if `uv.lock` is out of date) and then checks that the interpreter matches `.python-version`, which pins Python 3.12.
+The Python jobs use the composite action `.github/actions/setup-python`. It installs with `uv sync --locked --extra dev` (this fails if `uv.lock` is out of date) and then checks that the interpreter matches `.python-version`. That file is the only place the Python version is set (3.12); the action has no version input.
 
-Dependency audits run in `.github/workflows/audit.yml`, daily and on pull requests that change a dependency file. They are not required checks, so a new advisory does not block unrelated pull requests.
+Dependency audits run in `.github/workflows/audit.yml`, daily and on pull requests that change a dependency file. They are not required checks, so a new advisory does not block unrelated pull requests. The npm audit reads `package-lock.json` and does not install packages.
 
 ## Project layout
 
