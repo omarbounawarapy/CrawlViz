@@ -25,6 +25,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra dev
 
+      - name: Python version matches .python-version
+        run: |
+          expected="$(cat .python-version)"
+          actual="$(uv run python -c 'import platform; print(platform.python_version())')"
+          echo "expected ${expected}.x, running ${actual}"
+          case "${actual}" in
+            "${expected}".*) ;;
+            *) echo "Python ${actual} does not match .python-version ${expected}" >&2; exit 1 ;;
+          esac
+
       - name: Placeholder keys
         run: cp keys.example.json keys.json
 
