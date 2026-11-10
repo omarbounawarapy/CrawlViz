@@ -12,6 +12,7 @@ import json
 import socket
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -21,13 +22,17 @@ from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core import Crawler
 from core.stages import StageInputs, priority_strategy_name
+from events import NodeAddedEvent, StopCrawlEvent
 from offline import build_offline_session
+from pipelines import StopConditions as StageStopConditions
+from pipelines import StoppingPipeline
 from tests.test_stages import BLUEPRINT, inputs
 
 BLUEPRINT_NAME = "offline_demo.json"
 CRAWL_TIMEOUT_SECONDS = 60
 SMALL_PAGE_BUDGET = 3
 NON_DEFAULT_STRATEGY = "aggressive"
+STOP_NEVER_SECONDS = 3600.0
 
 
 def _free_port() -> int:
@@ -76,7 +81,8 @@ async def test_crawl_without_stop_url_runs_to_its_page_budget(tmp_path: Path) ->
 
     await asyncio.wait_for(crawler.start(), CRAWL_TIMEOUT_SECONDS)
 
-    assert session.fetcher.fetched
+    # Fetches under way when the stop fires still finish, so it may overshoot the budget.
+    assert len(session.fetcher.fetched) >= SMALL_PAGE_BUDGET
 
 
 def test_missing_stop_conditions_take_the_schema_defaults(tmp_path: Path) -> None:
@@ -153,3 +159,45 @@ async def test_blueprint_missing_a_required_stop_condition_fails_before_any_llm_
         await crawler.start()
 
     assert llm.calls == 0
+
+
+class _Broker:
+    """Collects the events a stage emits."""
+
+    def __init__(self) -> None:
+        self.emitted: list[StopCrawlEvent] = []
+
+    async def emit(self, event: StopCrawlEvent) -> None:
+        self.emitted.append(event)
+
+
+def _stopping_with_target(target_url: str | None) -> tuple[StoppingPipeline, _Broker]:
+    broker = _Broker()
+    conditions = StageStopConditions(
+        max_nodes=SMALL_PAGE_BUDGET,
+        max_duration=STOP_NEVER_SECONDS,
+        no_progress_timeout=STOP_NEVER_SECONDS,
+        target_url=target_url,  # type: ignore[arg-type]  # a blueprint may hand over None
+    )
+    return StoppingPipeline(broker, conditions), broker
+
+
+def _node_added(url: str) -> NodeAddedEvent:
+    return NodeAddedEvent(correlation_id="1", node=SimpleNamespace(get_full_url=lambda: url))
+
+
+@pytest.mark.parametrize("no_target", ["", None])
+async def test_no_target_url_never_stops_the_crawl(no_target: str | None) -> None:
+    stopping, broker = _stopping_with_target(no_target)
+
+    await stopping._on_node_added(_node_added("https://example.org/any/page"))
+
+    assert broker.emitted == []
+
+
+async def test_a_node_at_the_target_url_stops_the_crawl() -> None:
+    stopping, broker = _stopping_with_target("https://example.org/end")
+
+    await stopping._on_node_added(_node_added("https://example.org/end"))
+
+    assert [event.reason for event in broker.emitted] == ["TARGET_REACHED"]
