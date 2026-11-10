@@ -34,10 +34,16 @@ _SECRET_CORE = (
 _SECRET_NAME_PATTERN = re.compile(_SECRET_CORE, re.IGNORECASE)
 _SECRET_NAME = rf"{_SECRET_CORE}[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}}"
 
-# ``name: value``, ``name=value``, ``'name': 'value'`` and ``"name": "value"``.
+# ``name: value``, ``name=value``, ``'name': 'value'``, ``"name": "value"`` and the pair
+# ``(b'name', b'value')`` that a header list prints. A quoted value may carry a ``b``
+# prefix and spaces; a quote that never closes (a cut line) masks the rest of the word.
 _NAMED_VALUE = re.compile(
-    rf"(?P<name>{_SECRET_NAME})(?P<separator>[\"']?\s*[:=]\s*)"
-    r"(?:(?P<quote>[\"']).*?(?P=quote)|(?:Bearer|Basic|Token)\s+[^\s\"',&)>}]+|[^\s\"',&)>}]+)",
+    rf"(?P<name>{_SECRET_NAME})"
+    r"(?P<separator>[\"']?\s*[:=]\s*|[\"']\s*,\s*)"
+    r"(?:b?(?P<quote>[\"']).*?(?P=quote)"
+    r"|(?:Bearer|Basic|Token)\s+[^\s\"',&)>}]+"
+    r"|b?[\"'][^\s\"',&)>}]*"
+    r"|[^\s\"',&)>}]+)",
     re.IGNORECASE,
 )
 # ``Authorization: ...`` and ``Cookie: ...`` carry several credentials in one value
@@ -48,8 +54,9 @@ _HEADER_LINE = re.compile(
     r"(?P<separator>[ \t]*:[ \t]*)[^\r\n]+",
     re.IGNORECASE,
 )
-# A scheme word alone is prose ("Basic tests passed"), so a value is masked only when it
-# is long and token-shaped: letters and digits with a digit or one of ``._~+/=-`` in it.
+# A scheme word alone is prose ("Basic tests passed"), so a bare value is masked only when
+# it is long and token-shaped: letters and digits with a digit or one of ``._~+/=-`` in it.
+# After a quote the word is the start of a header value, so its value is masked in any shape.
 MIN_BEARER_VALUE_CHARS = 8
 _BEARER = re.compile(
     r"\b(Bearer|Basic)\s+"
@@ -57,6 +64,7 @@ _BEARER = re.compile(
     r"[A-Za-z0-9._~+/=-]+",
     re.IGNORECASE,
 )
+_QUOTED_SCHEME_VALUE = re.compile(r"(?<=[\"'])(Bearer|Basic)\s+[^\s\"']+", re.IGNORECASE)
 # Two levels of nested brackets cover ``URL('...')`` and ``<CIMultiDictProxy(...)>``.
 _REQUEST_INFO = re.compile(r"RequestInfo\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)")
 # A URL scheme is short and starts where a word starts.
@@ -116,5 +124,6 @@ def redact_text(text: str) -> str:
     text = _REQUEST_INFO.sub(f"RequestInfo({REDACTED})", text)
     text = _URL_USERINFO.sub(rf"\g<scheme>{REDACTED}@", text)
     text = _HEADER_LINE.sub(rf"\g<name>\g<separator>{REDACTED}", text)
+    text = _QUOTED_SCHEME_VALUE.sub(rf"\1 {REDACTED}", text)
     text = _BEARER.sub(rf"\1 {REDACTED}", text)
     return _NAMED_VALUE.sub(rf"\g<name>\g<separator>{REDACTED}", text)

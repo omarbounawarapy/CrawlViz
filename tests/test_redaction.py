@@ -155,7 +155,24 @@ def _seconds(call: object) -> float:
     return time.perf_counter() - started
 
 
-@pytest.mark.parametrize("filler", ["a", "api_key", "-", "http://", "key", "token:"])
+LONG_SHAPE_FILLERS = [
+    "a",
+    "api_key",
+    "-",
+    "http://",
+    "key",
+    "token:",
+    "'key', b'",
+    "'Bearer ",
+    "b'api_key': b'",
+    "'Basic a",
+    "auth_",
+    "proxyauth",
+    "tokenid",
+]
+
+
+@pytest.mark.parametrize("filler", LONG_SHAPE_FILLERS)
 def test_redact_text_takes_linear_time_on_a_long_word(filler: str) -> None:
     word = (filler * LONG_WORD_CHARS)[:LONG_WORD_CHARS]
 
@@ -261,3 +278,39 @@ def test_redact_text_masks_a_token_shaped_value_after_a_scheme_word(line: str) -
     cleaned = redact_text(line)
 
     assert cleaned.split()[-1] == REDACTED
+
+
+@pytest.mark.parametrize(
+    ("line", "secret"),
+    [
+        ("{'Authorization': 'Basic dXNlcjpwYXNz'}", "dXNlcjpwYXNz"),
+        ('{"Authorization": "Bearer abcdefgh"}', "abcdefgh"),
+        ("(b'Authorization', b'Bearer abcdefgh')", "abcdefgh"),
+        ("(b'x-api-key', b'SECRETVALUE')", "SECRETVALUE"),
+        ("(b'x-api-key', b'two words')", "words"),
+        ("{'api_key': b'SECRETVALUE'}", "SECRETVALUE"),
+        ("headers=[('Cookie', 'sid=SECRETSID')]", "SECRETSID"),
+        ("sent 'Bearer abcdefgh' to the API", "abcdefgh"),
+        ("{'api_key': 'SECRETVALUE", "SECRETVALUE"),
+    ],
+)
+def test_redact_text_masks_quoted_and_paired_credentials_of_any_shape(
+    line: str, secret: str
+) -> None:
+    cleaned = redact_text(line)
+
+    assert secret not in cleaned
+    assert REDACTED in cleaned
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "('accept', b'application/json')",
+        "('key_count', 4)",
+        "('author', 'smith'), ('model', 'llama')",
+        "{'max_tokens': 512}",
+    ],
+)
+def test_redact_text_keeps_pairs_that_are_not_credentials(line: str) -> None:
+    assert redact_text(line) == line
