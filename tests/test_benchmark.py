@@ -1348,7 +1348,17 @@ def test_label_log_is_per_graph(tmp_path):
     assert label_graph.labels_path(tmp_path / "isi.json") == tmp_path / "isi_labels.jsonl"
 
 
-async def _label_with_judge(tmp_path, monkeypatch, judge=None):
+class _ClosableClient:
+    """Stands in for the provider's HTTP session and records whether it was closed."""
+
+    def __init__(self):
+        self.closed = False
+
+    async def close(self):
+        self.closed = True
+
+
+async def _label_with_judge(tmp_path, monkeypatch, judge=None, client=None):
     """Runs label_graph.label on 100 fake pages (p0..p99) with no keys, network or waits.
 
     Without a judge the real one runs, against an LLM that never gives a usable answer.
@@ -1362,13 +1372,11 @@ async def _label_with_judge(tmp_path, monkeypatch, judge=None):
         },
     )
 
-    class _Client:
-        async def close(self):
-            pass
+    session = client or _ClosableClient()
 
     class _Llm:
         misses = 0
-        inner = type("I", (), {"client": _Client()})()
+        inner = type("I", (), {"client": session})()
 
         async def send(self, context):
             return {}
@@ -1396,6 +1404,37 @@ async def test_label_graph_stops_after_consecutive_failed_batches(tmp_path, monk
 
     await _label_with_judge(tmp_path, monkeypatch, failing_judge)
     assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
+
+
+async def test_a_provider_timeout_counts_as_a_failed_batch(tmp_path, monkeypatch, capsys):
+    from benchmark import label_graph
+
+    # aiohttp's total timeout raises a plain TimeoutError, which is not a ClientError.
+    calls = []
+
+    async def timing_out_judge(llm, rows):
+        calls.append(len(rows))
+        raise TimeoutError
+
+    client = _ClosableClient()
+    await _label_with_judge(tmp_path, monkeypatch, timing_out_judge, client)
+    assert len(calls) == label_graph.MAX_CONSECUTIVE_FAILURES
+    wait = label_graph.FAILED_BATCH_WAIT_SECONDS
+    assert f"batch at p0 failed: TimeoutError; waiting {wait} s" in capsys.readouterr().out
+    assert client.closed
+
+
+async def test_label_graph_closes_the_client_when_labelling_raises(tmp_path, monkeypatch):
+    class _UnexpectedError(Exception):
+        pass
+
+    async def broken_judge(llm, rows):
+        raise _UnexpectedError
+
+    client = _ClosableClient()
+    with pytest.raises(_UnexpectedError):
+        await _label_with_judge(tmp_path, monkeypatch, broken_judge, client)
+    assert client.closed
 
 
 FAKE_API_KEY = "sk-test-SECRET123"

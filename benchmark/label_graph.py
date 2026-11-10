@@ -29,6 +29,10 @@ RUBRIC = Path(__file__).with_name("rubric.md")
 # going on would only spend a few minutes per batch for nothing.
 MAX_CONSECUTIVE_FAILURES = 3
 FAILED_BATCH_WAIT_SECONDS = 60
+# A batch that fails with one of these is skipped and left for a rerun: the judge got
+# no usable answer, the provider refused or dropped the call, or the call timed out
+# (aiohttp's total timeout raises a plain TimeoutError, not a ClientError).
+BATCH_FAILURES = (RuntimeError, aiohttp.ClientError, TimeoutError)
 # Estimated tokens a judge call spends besides its page rows: the rubric prompt
 # (about 1100 at today's rubric) plus room for the answer.
 JUDGE_CALL_OVERHEAD_TOKENS = 1400
@@ -67,9 +71,17 @@ def done(labels: Path) -> dict[str, int]:
 
 
 async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
+    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
+    try:
+        await label_batches(graph, llm, labels)
+    finally:
+        await llm.inner.client.close()
+
+
+async def label_batches(graph: FrozenGraph, llm: CachedLlm, labels: Path) -> None:
+    """Labels the pages not yet in the label log, one judge batch at a time."""
     got = done(labels)
     todo = [n for n in sorted(graph.pages) if n not in got]
-    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
     failures = 0
     for s in range(0, len(todo), BATCH):
         batch = todo[s : s + BATCH]
@@ -84,7 +96,7 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
         before = llm.misses
         try:
             result = await judge(llm, rows)
-        except (RuntimeError, aiohttp.ClientError) as error:
+        except BATCH_FAILURES as error:
             failures += 1
             print(
                 f"\nbatch at {batch[0]} failed: {failure_summary(error)}; "
@@ -110,7 +122,6 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
             await asyncio.sleep(SECONDS_PER_MINUTE * tokens / TOKENS_PER_MINUTE)
         print(f"\r{len(got) + s + len(batch)}/{len(graph.pages)}", end="", flush=True)
     print()
-    await llm.inner.client.close()
 
 
 def merge(graph: FrozenGraph, path: Path, labels: Path) -> None:
