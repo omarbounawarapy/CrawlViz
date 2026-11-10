@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -49,3 +51,32 @@ def test_titles_outside_the_convention_fail(title: str) -> None:
 def test_message_must_be_title_only() -> None:
     assert check_message("Graph: label placement moves\n") == []
     assert check_message("Graph: label placement moves\n\nCo-Authored-By: x\n") != []
+
+
+def test_range_skips_merge_commits(tmp_path: Path) -> None:
+    """GitHub's "Update branch" button writes "Merge branch 'main' into ...";
+    a range check over a pull request must judge the authored commits only."""
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+
+    git("init", "-q", "-b", "main")
+    git("config", "user.name", "Test")
+    git("config", "user.email", "test@example.invalid")
+    git("commit", "-q", "--allow-empty", "-m", "Docs: the base commit")
+    git("checkout", "-q", "-b", "feature")
+    git("commit", "-q", "--allow-empty", "-m", "Fetch: the feature commit")
+    git("checkout", "-q", "main")
+    git("commit", "-q", "--allow-empty", "-m", "Docs: a later main commit")
+    git("checkout", "-q", "feature")
+    git("merge", "-q", "--no-ff", "-m", "Merge branch 'main' into feature", "main")
+
+    result = subprocess.run(
+        [sys.executable, str(HOOKS / "commit_msg_check.py"), "--range", "main..feature"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout
