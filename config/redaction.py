@@ -20,16 +20,24 @@ from urllib.parse import parse_qsl, urlsplit, urlunsplit
 REDACTED = "[redacted]"
 
 # Header, field and query names that hold a credential: the one rule every helper uses.
-# ``token`` must end the name, and ``auth`` and ``key`` must be a whole word of it, so
-# that counts and flags such as ``max_tokens``, ``author``, ``oauth`` and ``monkey`` are
-# kept while ``access_key``, ``subscription-key`` and ``X-Auth`` are masked. The name is
-# found by its core, and the text around the core is bounded, so a long word costs linear
-# time (a ``[\w-]*`` prefix tried from every position of a long word costs quadratic time).
+# A name is secret when it holds one of these words: ``authorization``, ``api_key``,
+# ``secret``, ``password``, ``cookie``, ``token`` (but not the count ``tokens``, a
+# ``tokenizer`` or a ``token_usage``), ``auth`` at the start of a word (``auth_code``,
+# ``authkey``) or after a lowercase letter that ends a word (``basicAuth``, ``proxyauth``),
+# ``oauth_`` (``oauth_verifier``) and ``key`` as a whole word. ``author``, ``authority``,
+# ``oauth`` alone, ``monkey`` and ``keys`` are kept. The name is found by its core, and
+# the text around the core is bounded, so a long word costs linear time (a ``[\w-]*``
+# prefix tried from every position of a long word costs quadratic time).
 MAX_NAME_AFFIX_CHARS = 64
 _WORD_START = r"(?<![^\W_])"  # the start of the name, or just after ``-`` or ``_``
+_TOKEN_THAT_IS_NOT_ONE = r"s(?![a-z0-9])|iz|[-_]?(?:usage|count|limit|budget|total)"
 _SECRET_CORE = (
-    r"(?:authorization|api[-_]?key|secret|passw(?:or)?d|cookie|token\b"
-    rf"|{_WORD_START}auth\b|{_WORD_START}key(?![\w-]))"
+    r"(?:authorization|api[-_]?key|secret|passw(?:or)?d|cookie"
+    rf"|token(?!{_TOKEN_THAT_IS_NOT_ONE})"
+    rf"|{_WORD_START}auth(?!or)"  # auth_code, authkey, authentication
+    r"|(?<=[a-np-z])auth(?![a-z0-9])"  # basicAuth, proxyauth; not oauth, not Unauthorized
+    rf"|{_WORD_START}oauth(?=[-_])"  # oauth_verifier; oauth alone is a flag
+    rf"|{_WORD_START}key(?![\w-]))"
 )
 _SECRET_NAME_PATTERN = re.compile(_SECRET_CORE, re.IGNORECASE)
 _SECRET_NAME = rf"{_SECRET_CORE}[\w-]{{0,{MAX_NAME_AFFIX_CHARS}}}"

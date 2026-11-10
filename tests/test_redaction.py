@@ -314,3 +314,48 @@ def test_redact_text_masks_quoted_and_paired_credentials_of_any_shape(
 )
 def test_redact_text_keeps_pairs_that_are_not_credentials(line: str) -> None:
     assert redact_text(line) == line
+
+
+MASKED_NAMES = [
+    "auth_code",
+    "authkey",
+    "oauth_verifier",
+    "oauth_token",
+    "token_hash",
+    "tokenid",
+    "basicAuth",
+    "proxyauth",
+    "xAuth",
+    "auth",
+    "X-Auth",
+]
+KEPT_NAMES = [
+    "max_tokens",
+    "tokens",
+    "tokens_per_page",
+    "token_usage",
+    "promptTokenCount",
+    "tokenizer",
+    "author",
+    "authority",
+    "authors",
+    "oauth",
+    "monkey",
+    "keys",
+    "Unauthorized",
+]
+
+
+@pytest.mark.parametrize("name", MASKED_NAMES)
+def test_names_that_hold_a_credential_are_masked_in_text_and_queries(name: str) -> None:
+    assert is_secret_name(name)
+    assert redact_text(f"?{name}=SECRETVALUE&x=1") == f"?{name}={REDACTED}&x=1"
+    assert redact_text(f"{name}: SECRETVALUE") == f"{name}: {REDACTED}"
+    assert url_carries_credentials(f"https://api.example/v1?{name}=SECRETVALUE")
+
+
+@pytest.mark.parametrize("name", KEPT_NAMES)
+def test_names_that_only_look_like_credentials_are_kept_in_text_and_queries(name: str) -> None:
+    assert not is_secret_name(name)
+    assert redact_text(f"?{name}=VALUE&x=1") == f"?{name}=VALUE&x=1"
+    assert not url_carries_credentials(f"https://api.example/v1?{name}=VALUE")
