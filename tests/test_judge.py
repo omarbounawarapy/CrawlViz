@@ -49,6 +49,6 @@ def test_incomplete_answer_is_retried_with_a_changed_prompt() -> None:
 
 def test_no_usable_answer_raises_after_the_attempt_limit() -> None:
     llm = ScriptedLlm([{}])
-    with pytest.raises(RuntimeError, match="no usable answer"):
+    with pytest.raises(judge_module.NoUsableAnswerError):
         asyncio.run(judge_module.judge(llm, ROWS))
     assert len(llm.prompts) == judge_module.MAX_ATTEMPTS
