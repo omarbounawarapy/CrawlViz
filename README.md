@@ -84,7 +84,7 @@ A blueprint is a JSON document that says where a crawl starts, what counts as re
       // ... paragraphs, lists, infobox_items, categories
     }
   },
-  "stop_conditions": { "max_nodes": 500, "max_depth": 10 }
+  "stop_conditions": { "max_nodes": 500, "max_depth": 10, "no_progress_timeout": 120 }
 }
 ```
 
