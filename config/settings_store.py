@@ -11,12 +11,16 @@ Writes are atomic (temp file + rename).
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 from utils import save_json
 
+from .redaction import sanitize_url, url_carries_credentials
 from .runtime_config import RuntimeConfig, default_runtime_config
+
+logger = logging.getLogger(__name__)
 
 
 def deep_merge(base: dict, over: dict) -> dict:
@@ -49,6 +53,21 @@ def diff(base: dict, new: dict) -> dict:
     return out
 
 
+def _drop_endpoint_credentials(stored: dict) -> list[str]:
+    """Strip user info and credential-like queries from each stored provider endpoint, in
+    place. Returns the names of the providers that were changed."""
+    providers = stored.get("providers")
+    endpoints = providers.get("endpoints") if isinstance(providers, dict) else None
+    if not isinstance(endpoints, dict):
+        return []
+    cleaned: list[str] = []
+    for name, url in endpoints.items():
+        if isinstance(url, str) and url_carries_credentials(url):
+            endpoints[name] = sanitize_url(url)
+            cleaned.append(str(name))
+    return cleaned
+
+
 class SettingsFileError(Exception):
     """The stored settings file exists but cannot be read as a settings object."""
 
@@ -58,6 +77,10 @@ def read_stored(path: Path) -> dict:
 
     Raises ``SettingsFileError`` when the file exists but is unreadable or is not a
     JSON object, so a damaged file is never mistaken for "no settings".
+
+    A provider endpoint saved with a user name, password or key (allowed before endpoints
+    were checked) is cleaned here and the file is rewritten, so one old file cannot make
+    every later load fail. The key belongs in the keys store.
     """
     path = Path(path)
     try:
@@ -83,6 +106,19 @@ def read_stored(path: Path) -> dict:
             f"{type(data).__name__}. Fix it by hand, or reset the settings "
             "from the Config page, which replaces it with the defaults."
         )
+    cleaned = _drop_endpoint_credentials(data)
+    if cleaned:
+        logger.warning(
+            "Dropped the credential from the stored endpoint of provider(s) %r; "
+            "keep the key in the keys store, not in the endpoint URL.",
+            cleaned,
+        )
+        try:
+            _write(Path(path), data)
+        except OSError:
+            logger.exception(
+                "Could not rewrite the cleaned settings file; it still holds a credential."
+            )
     return data
 
 

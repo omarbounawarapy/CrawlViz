@@ -75,8 +75,10 @@ def check_message(message: str) -> list[str]:
 
 
 def _messages_in_range(revision_range: str) -> list[tuple[str, str]]:
+    # Merge commits are skipped: GitHub's "Update branch" writes its own title,
+    # and local merges are already checked by the commit-msg hook.
     output = subprocess.run(
-        ["git", "log", "--format=%H%x00%B%x1e", revision_range],
+        ["git", "log", "--no-merges", "--format=%H%x00%B%x1e", revision_range],
         capture_output=True,
         text=True,
         check=True,
