@@ -9,12 +9,13 @@ installed package.
 """
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import ALLOWED_HOSTS, CORS_ORIGIN_REGEX, CORS_ORIGINS
 from traceability.logging_setup import configure_logging
 from crawlviz.shared import register_secrets
-from routes.error_handlers import register_error_handlers
+from routes.config_support import request_validation_response
 from routes.request_guards import RequestGuardMiddleware
 from routes.session_token import SessionTokenMiddleware
 from routes.session_token import get_session_token
@@ -32,7 +33,7 @@ configure_logging()
 register_secrets([get_session_token()])
 
 app = FastAPI(title="CrawlViz Control API")
-register_error_handlers(app)
+app.add_exception_handler(RequestValidationError, request_validation_response)
 
 # The last middleware added is the outermost. The checks sit inside CORS so that a refusal
 # still carries the CORS headers and the UI can show its message. Host, Origin and content

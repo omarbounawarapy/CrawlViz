@@ -62,6 +62,11 @@ router.include_router(presets_router)
 router.include_router(keys_router)
 
 
+SAVED_SETTINGS_INVALID_MESSAGE = (
+    "The saved settings are not valid. Fix the listed settings, or reset them from the config page."
+)
+
+
 @router.get("/config/schema")
 def get_config_schema() -> dict:
     """JSON Schema for RuntimeConfig, including the ui_* hints used by the
@@ -72,7 +77,15 @@ def get_config_schema() -> dict:
 @router.get("/config")
 def get_config() -> dict:
     """The runtime configuration currently in effect."""
-    return store.load_runtime_config(get_paths().settings_file).model_dump()
+    try:
+        return store.load_runtime_config(get_paths().settings_file).model_dump()
+    except ValidationError as exc:
+        raise validation_http_error(exc, SAVED_SETTINGS_INVALID_MESSAGE)
+    except store.SettingsFileError as exc:
+        # Settings that parse but hold invalid values list each entry, so the form can show them.
+        if isinstance(exc.__cause__, ValidationError):
+            raise validation_http_error(exc.__cause__, str(exc)) from exc
+        raise
 
 
 @router.get("/config/defaults")

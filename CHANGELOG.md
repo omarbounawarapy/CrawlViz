@@ -20,6 +20,10 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Logs are JSON lines on stderr by default, with `ts`, `level`, `logger`, `message`, `exception` and the `crawl_id`, `node_id` and `trace_id` that are set. `CRAWLVIZ_LOG_FORMAT=text` gives readable lines and `CRAWLVIZ_LOG_LEVEL` sets the level.
 - Log text has registered secrets (session token, provider keys) and credential-shaped text (`Bearer` headers, `key=` and `token=` pairs) replaced with `[redacted]`.
 - `GET /health` reports that the process is up and `GET /ready` reports whether settings load and the write folders are usable, with 503 and the failed check names when not. Both need the session token.
+- A provider endpoint URL with a user name, password or key is refused when saved. A settings file saved earlier with one is cleaned when loaded (the credential is removed, the file is rewritten, a warning names the provider). Keys belong in the keys store.
+- Traces and scoring failure events record an error's class and HTTP status, not its text; network trace URLs drop user info, query and fragment. The scoring failure log keeps the error text with secrets masked.
+- The benchmark job log masks secrets and cuts lines over 4096 characters with a ` ...[cut]` mark; a job always ends, even if its output cannot be read.
+- Request validation errors (422) from every route return `{"detail": {"errors": [{"path", "message"}]}}` and never echo the submitted value. `GET /config` returns 422 with a message when the stored settings are invalid, instead of 500.
 - Security and politeness hardening in progress, see SECURITY.md.
 - `max_nodes` is a hard cap: a run stopped by `MAX_NODES_REACHED` fetches exactly `max_nodes` pages whatever the worker count. Failed requests do not count, so requests sent can exceed it.
 - A crawl whose frontier drains stops at once with the new stop reason `FRONTIER_EXHAUSTED`, instead of waiting for `NO_PROGRESS`.

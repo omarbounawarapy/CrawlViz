@@ -1,5 +1,5 @@
+from config.redaction import REDACTED
 from core.manifest_redaction import redact_manifest
-from crawlviz.shared import REDACTED
 
 
 def test_extra_header_values_are_redacted_and_names_kept() -> None:
