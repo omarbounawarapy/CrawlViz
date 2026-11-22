@@ -17,11 +17,22 @@ import json
 import random
 import warnings
 from dataclasses import dataclass, field
+from http import HTTPStatus
 from pathlib import Path
+
+import aiohttp
+from multidict import CIMultiDict, CIMultiDictProxy
+from yarl import URL
 
 from utils.html_utils import normalize_url
 
 BASE_URL = "https://frozen.test"
+
+# The frozen site has no robots.txt. A request for it is answered the way a real
+# server without one answers (a 404 ClientResponseError, as NetworkClient raises),
+# so RobotsPolicy allows every page. It is not a page of the graph: it costs no
+# budget and is not an absent-page hit.
+ROBOTS_FILE = "robots.txt"
 
 TOPIC_TERMS = (
     "diabetes insulin glucose pancreas glycemic neuropathy retinopathy "
@@ -210,6 +221,8 @@ class GraphFetcher:
 
     async def emit_request(self, params: dict) -> str:
         name = params["url"].rsplit("/", 1)[1]
+        if name == ROBOTS_FILE:
+            raise _not_found(params["url"])
         page = self.graph.pages.get(name)
         if page is None:
             self.absent_hits += 1
@@ -234,6 +247,15 @@ class GraphFetcher:
 
     async def close(self) -> None:
         pass
+
+
+def _not_found(url: str) -> aiohttp.ClientResponseError:
+    """The error NetworkClient raises when a server answers 404."""
+    request_url = URL(url)
+    info = aiohttp.RequestInfo(request_url, "GET", CIMultiDictProxy(CIMultiDict()), request_url)
+    return aiohttp.ClientResponseError(
+        info, (), status=HTTPStatus.NOT_FOUND, message=HTTPStatus.NOT_FOUND.phrase
+    )
 
 
 def synthetic_graph(
