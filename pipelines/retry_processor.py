@@ -9,8 +9,10 @@ from events import (
     ScoringFailedEvent,
 )
 from infrastructure import REJECTION_ERROR_NAMES
+from utils import BackgroundTasks
 
 from .base_pipeline import BasePipeline
+from .http_failure import is_permanent_failure
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ class RetryProcessor(BasePipeline):
         self.empty_score_demotion = empty_score_demotion
         self.fetch_retry_demotion = fetch_retry_demotion
         self._scoring_retry_counts: dict[int, int] = {}
-        self._pending: set[asyncio.Task] = set()
+        self._pending = BackgroundTasks()  # delayed requeues; the benchmark runner reads it
         # Per-node retry attempt counter, keyed by node id.
         self._retry_counts: dict[int, int] = {}
 
@@ -120,13 +122,13 @@ class RetryProcessor(BasePipeline):
                 ScoreRescheduledEvent(correlation_id=str(node_id), node=node)
             )
 
-        self._spawn(_reschedule())
+        # Delayed in the background so the retry worker isn't blocked.
+        self._pending.spawn(_reschedule(), name=f"retry-reschedule-{node_id}")
 
-    def _spawn(self, coro) -> None:
-        """Run a delayed requeue in the background so the retry worker isn't blocked."""
-        task = asyncio.create_task(coro)
-        self._pending.add(task)
-        task.add_done_callback(self._pending.discard)
+    async def stop(self) -> None:
+        # A requeue still waiting out its delay has nothing to rejoin once the crawl ends.
+        await self._pending.cancel_all()
+        await super().stop()
 
     async def _on_request_failed(self, event: RequestFailedEvent) -> None:
         """Requeue a node whose page fetch failed, up to `max_request_retries`.
@@ -141,6 +143,16 @@ class RetryProcessor(BasePipeline):
         if event.error_type == "RobotsDisallowed" or event.error_type in REJECTION_ERROR_NAMES:
             # A decision about the page (robots.txt, address, size, type), so
             # asking again would get the same answer.
+            node.fail()
+            return
+        if is_permanent_failure(event.status_code):
+            # The site answered 404, 403, 410 or another 4xx that will not change.
+            logger.info(
+                "Node %s failed with HTTP %s: %s -- not retrying",
+                node_id,
+                event.status_code,
+                event.error_message,
+            )
             node.fail()
             return
 
@@ -183,4 +195,4 @@ class RetryProcessor(BasePipeline):
             await asyncio.sleep(self.retry_base_delay * self.retry_growth ** (attempts - 1))
             await self.requests_pipeline.queue.put(node)
 
-        self._spawn(_requeue())
+        self._pending.spawn(_requeue(), name=f"retry-requeue-{node_id}")
