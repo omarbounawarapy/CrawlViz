@@ -66,6 +66,8 @@ class RequestFailedEvent:
     node: Any
     error_type: str
     error_message: str
+    # HTTP status of the failed response; None when no response arrived.
+    status_code: int | None = None
 
 
 # =========================================================

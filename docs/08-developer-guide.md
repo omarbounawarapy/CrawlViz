@@ -67,6 +67,12 @@ make dev-frontend  # cd crawler-ui && npm run dev
 
 **Config is editable from the API and the Config page.** `config/runtime_config.py` is a validated Pydantic model; the effective values are code defaults, then `settings.json` (only the difference from the defaults is stored), then per-run overrides sent with `POST /run`. Pipelines copy their values at construction, so a saved change applies from the next crawl. Fields flagged `ui_apply: live` (fetch delay and jitter, backoff cap, retry limits, per-pipeline worker counts) can also be pushed to the crawl in progress with `PATCH /config/live`; anything else is rejected with 422. Prompt wording (`prompts`) and provider request URLs (`providers.endpoints`) are settings too; the scoring output format is not editable because the response parser depends on it. Keys added or removed through `/keys` reach a running crawl immediately. Set `CRAWLVIZ_API_TOKEN` to require `Authorization: Bearer <token>` on the config and key routes (the UI sends `VITE_API_TOKEN`); unset, the API is open and should stay bound to localhost. The logging and canonicalization pipelines stay single-worker on purpose, to preserve output order.
 
+**Secrets in endpoints, traces and logs.**
+- A `providers.endpoints` URL must not contain a user name, password or key (including a key-like query value such as `?api_key=`). Saving one is refused with 422. A `settings.json` saved earlier with one is cleaned when it is loaded: the credential part is removed, the file is rewritten and a warning names the provider. Put keys in the keys store (`/keys`).
+- Trace events and scoring failure events record an error's class and HTTP status, not its text. Network trace URLs drop user info, query and fragment. The scoring failure log line keeps the error text with secrets masked. The masking rules are in `config/redaction.py`.
+- The benchmark job log masks secrets (Authorization and Cookie headers, Bearer and Basic tokens, key-like names and query values) before it is shown or saved, and cuts a line over 4096 characters with a ` ...[cut]` mark. A job ends even if its output cannot be read.
+- A request validation error (422) from any route returns `{"detail": {"errors": [{"path", "message"}]}}` and never echoes the submitted value. `GET /config` returns 422 with a `message` when the stored settings are invalid, instead of 500.
+
 ## Testing
 
 **Backend:** 248 tests across 26 files, all passing. A full run takes about 70 seconds on the development machine:
@@ -115,7 +121,22 @@ pytest reads `pytest.ini`: it imports from the repo root (no `PYTHONPATH`), reje
 
 ### CI
 
-`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests. The backend job installs with `uv sync --locked --extra dev` (it fails if `uv.lock` is out of date), then runs ruff, mypy, `pytest -m "not pins"`, `pytest -m pins`, and a check that `tests/pins` is unchanged after the run. On pull requests it also runs `tools/check_baselines.py --base origin/main`. The frontend job runs `npm ci`, lint, tests and the build.
+`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests. It has these jobs:
+
+| Job | What it checks |
+|---|---|
+| `py-static` | ruff, `ruff format --check` and mypy; on pull requests also `tools/check_baselines.py --base origin/main` |
+| `py-tests` | `pytest -m "not pins"` |
+| `pins` ("Method pins (behaviour goldens)") | `pytest -m pins`, then that `tests/pins` is unchanged after the run |
+| `ui-static` | ESLint, the CSS and HTML linters, Prettier and `tsc` |
+| `ui-tests` | vitest and the production build |
+| `commit-titles` | the titles of the pull request's own commits follow the convention (pull requests only, skipped for dependabot; not required) |
+
+The two required checks are `backend` and `frontend`. `backend` passes only if `py-static`, `py-tests` and `pins` all pass, and `frontend` only if `ui-static` and `ui-tests` pass. Each check step runs even after an earlier check fails, so a single run lists every failing check. A failed setup step (checkout, the Python setup action, `npm ci`) skips the checks and fails the job. A red `pins` job means the behaviour pins moved: the code now produces different output from the goldens. Do not edit the goldens to make it pass; see `tests/pins/README.md`.
+
+The Python jobs use the composite action `.github/actions/setup-python`. It installs with `uv sync --locked --extra dev` (this fails if `uv.lock` is out of date) and then checks that the interpreter matches `.python-version`. That file is the only place the Python version is set (3.12); the action has no version input.
+
+Dependency audits run in `.github/workflows/audit.yml`, daily and on pull requests that change a dependency file. They are not required checks, so a new advisory does not block unrelated pull requests. The npm audit reads `package-lock.json` and does not install packages.
 
 ## Project layout
 

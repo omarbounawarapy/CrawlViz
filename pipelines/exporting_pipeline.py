@@ -8,8 +8,10 @@ from datetime import UTC, datetime
 from config import ITEMS_DB_PATH
 from events import ExportBatchCompletedEvent, StopCrawlEvent, TransformationCompletedEvent
 from models import Node
+from utils import BackgroundTasks
 
 from .base_pipeline import SHUTDOWN
+from .export_tables import ensure_table
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,7 @@ class ExportingPipeline:
 
         self._initialized_tables = set()
         self._buffer = []
+        self._background = BackgroundTasks()
 
         self.running = True  # internal lifecycle flag
 
@@ -90,7 +93,7 @@ class ExportingPipeline:
         coming) would otherwise never wake up to notice.
         """
         self.running = False
-        await self.queue.put(SHUTDOWN)
+        self.queue.put_nowait(SHUTDOWN)  # the queue is unbounded, so there is always room
 
     # =========================================================
     # START
@@ -135,7 +138,10 @@ class ExportingPipeline:
                 finally:
                     self.queue.task_done()
         finally:
-            self._finalize()
+            try:
+                self._finalize()
+            finally:
+                await self._background.cancel_all()
 
     def _finalize(self) -> None:
         try:
@@ -150,6 +156,25 @@ class ExportingPipeline:
     # =========================================================
     # FLUSH
     # =========================================================
+    def _write_buffer(self) -> int:
+        """Insert every buffered row in one transaction and return how many.
+
+        The buffer is cleared only after the commit. On failure the transaction
+        is rolled back, the rows stay buffered for the next flush, and the
+        error is raised.
+        """
+        try:
+            self.cursor.execute("BEGIN")
+            for table, node, item, extraction_blueprint, item_hash in self._buffer:
+                self._insert_row(table, node, item, extraction_blueprint, item_hash)
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
+        inserted = len(self._buffer)
+        self._buffer.clear()
+        return inserted
+
     def _flush_with_events(self, table: str) -> None:
         """Batch flush that also emits ExportBatchCompletedEvent for observability."""
         if not self._buffer:
@@ -158,47 +183,44 @@ class ExportingPipeline:
         start = time.time()
 
         try:
-            self.cursor.execute("BEGIN")
-            for t, node, item, extraction_blueprint, item_hash in self._buffer:
-                self._insert_row(t, node, item, extraction_blueprint, item_hash)
-            self.conn.commit()
-
-            duration = (time.time() - start) * 1000
-            asyncio.create_task(
-                self.event_broker.emit(
-                    ExportBatchCompletedEvent(
-                        correlation_id="export",
-                        table=table,
-                        inserted_count=len(self._buffer),
-                        duration_ms=duration,
-                    )
-                )
-            )
-
+            inserted = self._write_buffer()
         except Exception:
-            self.conn.rollback()
-            logger.exception("Batch flush failed for table %s", table)
+            logger.exception(
+                "Batch flush failed for table %s; keeping %d rows for the next flush",
+                table,
+                len(self._buffer),
+            )
+            return
 
-        finally:
-            self._buffer.clear()
+        duration = (time.time() - start) * 1000
+        self._background.spawn(
+            self.event_broker.emit(
+                ExportBatchCompletedEvent(
+                    correlation_id="export",
+                    table=table,
+                    inserted_count=inserted,
+                    duration_ms=duration,
+                )
+            ),
+            name="export-batch-completed",
+        )
 
     def _flush(self) -> None:
-        """Simple flush with no event emission -- used at shutdown."""
+        """Flush with no event emission, used at shutdown.
+
+        Rows that cannot be written now have no later flush to wait for, so the
+        failure is logged with the number of rows lost and raised.
+        """
         if not self._buffer:
             return
 
         try:
-            self.cursor.execute("BEGIN")
-            for table, node, item, extraction_blueprint, item_hash in self._buffer:
-                self._insert_row(table, node, item, extraction_blueprint, item_hash)
-            self.conn.commit()
-
+            self._write_buffer()
         except Exception:
-            self.conn.rollback()
-            logger.exception("Final flush failed")
-
-        finally:
-            self._buffer.clear()
+            logger.exception(
+                "Final flush failed; %d buffered rows were not saved", len(self._buffer)
+            )
+            raise
 
     # =========================================================
     # SCHEMA / ROW HELPERS
@@ -210,35 +232,8 @@ class ExportingPipeline:
     def _ensure_table(self, table_name: str, extraction_blueprint: dict) -> None:
         if table_name in self._initialized_tables:
             return
-        fields = extraction_blueprint.get("fields", {})
-        columns = ["id TEXT", "crawl_id TEXT", "url TEXT", "created_at TEXT"]
-        for field_name, spec in fields.items():
-            store_type = spec.get("export_type", "text")
-            sql_type = self._map_type(store_type)
-            columns.append(f"{field_name} {sql_type}")
-        columns.append("PRIMARY KEY (crawl_id, id)")
-        sql = f"CREATE TABLE IF NOT EXISTS {table_name} ({', '.join(columns)})"
-        self.cursor.execute(sql)
-        self._migrate_primary_key(table_name)
+        ensure_table(self.cursor, table_name, extraction_blueprint)
         self._initialized_tables.add(table_name)
-
-    def _migrate_primary_key(self, table_name: str) -> None:
-        """Tables created before runs were isolated key rows on `id` alone, so a
-        second crawl overwrote the first's rows. Rebuild them on (crawl_id, id)."""
-        info = self.cursor.execute(f"PRAGMA table_info({table_name})").fetchall()
-        pk = {row[1] for row in info if row[5]}
-        if pk == {"crawl_id", "id"}:
-            return
-        cols = ", ".join(row[1] for row in info)
-        defs = ", ".join(f"{row[1]} {row[2]}" for row in info)
-        legacy = f"{table_name}__legacy"
-        self.cursor.execute(f"ALTER TABLE {table_name} RENAME TO {legacy}")
-        self.cursor.execute(f"CREATE TABLE {table_name} ({defs}, PRIMARY KEY (crawl_id, id))")
-        self.cursor.execute(
-            f"INSERT OR REPLACE INTO {table_name} ({cols}) SELECT {cols} FROM {legacy}"
-        )
-        self.cursor.execute(f"DROP TABLE {legacy}")
-        logger.info("Migrated %s to primary key (crawl_id, id)", table_name)
 
     def _cast(self, value, t: str, field: str):
         if value is None:
@@ -258,14 +253,6 @@ class ExportingPipeline:
         except Exception:
             logger.warning("Failed to cast field=%s value=%r as %s", field, value, t)
             return None
-
-    def _map_type(self, t: str) -> str:
-        return {
-            "real": "REAL",
-            "int": "INTEGER",
-            "json": "TEXT",
-            "text": "TEXT",
-        }.get(t, "TEXT")
 
     def _insert_row(
         self, table: str, node: Node, item: dict, extraction_blueprint: dict, item_hash: str

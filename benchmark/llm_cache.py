@@ -21,9 +21,28 @@ import hashlib
 import json
 import time
 from collections import deque
+from dataclasses import replace
 from pathlib import Path
 
 import aiohttp
+
+from infrastructure import KeyManager, LlmHandler
+
+
+def retry_free_handler(keys_file: Path) -> LlmHandler:
+    """An ``LlmHandler`` that does not retry 429 and 5xx answers itself.
+
+    ``PacedLlm``, the judge and the labeller each run their own bounded retries
+    and count them. Handler retries underneath would multiply the attempts,
+    stretch the waits past their caps and keep them out of the recorded counts.
+    """
+    handler = LlmHandler(KeyManager(keys_file=keys_file))
+    handler.retry_policy = replace(handler.retry_policy, max_retries=0)
+    return handler
+
+
+# Rough characters per token for the benchmark's prompts; pacing estimates use it.
+CHARS_PER_TOKEN = 3.5
 
 
 class ReplayMiss(RuntimeError):
@@ -148,7 +167,7 @@ class PacedLlm:
     @staticmethod
     def estimate(context) -> float:
         # Prompt tokens plus room for the answer (reasoning tokens count too).
-        return len(context.get_prompt()) / 3.5 + 600
+        return len(context.get_prompt()) / CHARS_PER_TOKEN + 600
 
     @property
     def waiting(self) -> bool:
