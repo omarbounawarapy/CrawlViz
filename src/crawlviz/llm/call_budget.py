@@ -86,7 +86,7 @@ class CallBudget:
             return f"estimated cost budget of {self.max_cost_usd:g} USD"
         return f"call budget of {self.limit}"
 
-    def snapshot(self) -> dict:
+    def snapshot(self) -> dict[str, int | bool | None]:
         return {
             "limit": self.limit,
             "used": self.used,
