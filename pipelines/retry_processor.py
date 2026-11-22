@@ -12,6 +12,7 @@ from infrastructure import REJECTION_ERROR_NAMES
 from utils import BackgroundTasks
 
 from .base_pipeline import BasePipeline
+from .http_failure import is_permanent_failure
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,16 @@ class RetryProcessor(BasePipeline):
         if event.error_type == "RobotsDisallowed" or event.error_type in REJECTION_ERROR_NAMES:
             # A decision about the page (robots.txt, address, size, type), so
             # asking again would get the same answer.
+            node.fail()
+            return
+        if is_permanent_failure(event.status_code):
+            # The site answered 404, 403, 410 or another 4xx that will not change.
+            logger.info(
+                "Node %s failed with HTTP %s: %s -- not retrying",
+                node_id,
+                event.status_code,
+                event.error_message,
+            )
             node.fail()
             return
 

@@ -1,8 +1,6 @@
 import asyncio
 import random
 
-import aiohttp
-
 from config import ACCEPTED_CONTENT_TYPES, parse_content_types
 from events import (
     NodeAddedEvent,
@@ -21,19 +19,20 @@ from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
 from .host_pacer import HostPacer, host_of
+from .http_failure import BACKOFF_STATUSES, retry_after_seconds, status_of
 from .robots import RobotsPolicy
 
 ROBOTS_DISALLOWED = "RobotsDisallowed"
 
 
 def is_rate_limited(error: Exception) -> bool:
-    """True when the server answered 429 Too Many Requests."""
-    return isinstance(error, aiohttp.ClientResponseError) and error.status == 429
+    """True when the server answered 429 Too Many Requests or 503 Service Unavailable."""
+    return status_of(error) in BACKOFF_STATUSES
 
 
 class RequestsPipeline:
     """Fetches page content for every node, one HTTP request at a time
-    per worker, with per-host rate limiting and 429 backoff shared across
+    per worker, with per-host rate limiting and 429/503 backoff shared across
     all workers.
 
     Deliberately not a BasePipeline subclass: unlike the event-dispatch
@@ -288,12 +287,17 @@ class RequestsPipeline:
                 else:
                     self.backoff_delay = max(self.backoff_delay * self.backoff_failure_decay, 0)
 
+                retry_after = retry_after_seconds(e)
+                if retry_after is not None:
+                    self.pacer.hold_off(host_of(node.get_full_url()), retry_after)
+
                 await self.event_broker.emit(
                     RequestFailedEvent(
                         correlation_id=str(node.get_id()),
                         node=node,
                         error_type=type(e).__name__,
                         error_message=error_str,
+                        status_code=status_of(e),
                     )
                 )
 
