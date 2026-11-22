@@ -194,12 +194,35 @@ def delete_preset(name: str) -> dict[str, Any]:
     return {"removed": name}
 
 
-@router.post("/config/presets/{name}/apply")
-def apply_preset(name: str) -> dict[str, Any]:
+def _preset_values(name: str) -> dict[str, Any]:
     values = BUILTIN_PRESETS.get(name) or _read_presets().get(name)
     if values is None:
         raise HTTPException(status_code=404, detail="Preset not found")
+    return values
+
+
+@router.post("/config/presets/{name}/preview")
+def preview_preset(name: str) -> dict[str, Any]:
+    """What applying the preset would change, without saving anything."""
+    values = _preset_values(name)
     try:
-        return store.replace_settings(get_paths().settings_file, values).model_dump()
+        current = store.load_runtime_config(get_paths().settings_file)
+        after = store.load_runtime_config(get_paths().settings_file, values)
     except ValidationError as exc:
         raise validation_http_error(exc) from exc
+    return {"changes": store.changed_fields(current.model_dump(), after.model_dump())}
+
+
+@router.post("/config/presets/{name}/apply")
+def apply_preset(name: str) -> dict[str, Any]:
+    """Merge the preset over the current settings. The reply is the new config plus `changes`."""
+    values = _preset_values(name)
+    try:
+        current = store.load_runtime_config(get_paths().settings_file)
+        after = store.save_settings(get_paths().settings_file, values)
+    except ValidationError as exc:
+        raise validation_http_error(exc) from exc
+    return {
+        **after.model_dump(),
+        "changes": store.changed_fields(current.model_dump(), after.model_dump()),
+    }

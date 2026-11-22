@@ -14,8 +14,12 @@ export function applyEvent(state, event) {
   switch (event.type) {
     case "SNAPSHOT_FULL": {
       const nodes = new Map();
+      // A client that joins mid-crawl never saw the NODE_ADDED events, so the edges come from the
+      // parent of each node the snapshot lists.
+      const edges = new Set();
       (event.nodes || []).forEach((n) => {
         nodes.set(n.node_id, { ...n });
+        if (n.parent_id) edges.add(`${n.parent_id}→${n.node_id}`);
       });
 
       // V2: hydrate the telemetry slices too, so a client that connects
@@ -30,8 +34,9 @@ export function applyEvent(state, event) {
           // ticks blend into this average instead of discarding pre-join
           // history (the backend snapshot only carries the derived
           // average, not the raw sum/count it was built from).
+          // A stage that reports completions with no timing (avg null) has no samples to blend.
           _totalDuration: (s.avg_duration_ms || 0) * completed,
-          _samples: completed,
+          _samples: s.avg_duration_ms == null ? 0 : completed,
         };
       });
 
@@ -47,9 +52,11 @@ export function applyEvent(state, event) {
       return {
         ...state,
         nodes,
-        edges: new Set(),
+        edges,
         status: event.status || "RUNNING",
         stop_reason: event.stop_reason || null,
+        stop_detail: event.stop_detail ?? null,
+        stopped_by_user: false,
         metrics: event.metrics || state.metrics,
         pipelineStats,
         candidates,
@@ -118,6 +125,7 @@ export function applyEvent(state, event) {
         ...state,
         status: "STOPPED",
         stop_reason: event.reason ?? event.stop_reason ?? null,
+        stop_detail: event.detail ?? null,
         metrics: event.metrics || state.metrics,
       };
     }
@@ -146,6 +154,9 @@ export function applyEvent(state, event) {
         if (event.queue_size != null) next.queue_size = event.queue_size;
       } else if (event.phase === "started") {
         next.started = prev.started + 1;
+        // An item leaving the queue: the backend sends the depth only when it enqueues, so without
+        // this the queue length never falls.
+        next.queue_size = event.queue_size != null ? event.queue_size : Math.max(0, prev.queue_size - 1);
       } else if (event.phase === "completed") {
         next.completed = prev.completed + 1;
         if (event.duration_ms != null) {
@@ -223,6 +234,11 @@ export function applyEvent(state, event) {
       return { ...state, connectionStatus: "CONNECTED" };
     case "__WS_DISCONNECTED":
       return { ...state, connectionStatus: "DISCONNECTED" };
+
+    // Raised by this client when the user's stop request was accepted, so the status can say
+    // "stopped by you" and not "finished": the backend's CRAWL_STOPPED does not say who asked.
+    case "__USER_STOPPED":
+      return { ...state, stopped_by_user: true };
 
     default:
       return state;

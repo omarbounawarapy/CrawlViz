@@ -50,6 +50,35 @@ describe("crawlReducer — V2 message types", () => {
     expect(state.pipelineStats.scoring.last_duration_ms).toBe(20);
   });
 
+  it("the queue length falls when an item starts, never below zero, unless the event carries the depth", () => {
+    let state = INITIAL_STATE;
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "enqueued", queue_size: 2 });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "started", node_id: "1" });
+    expect(state.pipelineStats.request.queue_size).toBe(1);
+
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "started", node_id: "2" });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "request", phase: "started", node_id: "3" });
+    expect(state.pipelineStats.request.queue_size).toBe(0);
+
+    state = crawlReducer(state, {
+      type: "PIPELINE_EVENT",
+      stage: "request",
+      phase: "started",
+      node_id: "4",
+      queue_size: 7,
+    });
+    expect(state.pipelineStats.request.queue_size).toBe(7);
+  });
+
+  it("a completed tick without a duration still counts and leaves the average empty", () => {
+    let state = INITIAL_STATE;
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "started", node_id: "1" });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "completed", node_id: "1" });
+
+    expect(state.pipelineStats.filtering.completed).toBe(1);
+    expect(state.pipelineStats.filtering.avg_duration_ms).toBeNull();
+  });
+
   it("CANDIDATE_EVALUATED records dropped/trusted candidates without promoting them to nodes", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, nodeAdded(1, null, 1));
@@ -91,7 +120,107 @@ describe("crawlReducer — V2 message types", () => {
     let state = INITIAL_STATE;
     state = crawlReducer(state, { type: "__WS_DISCONNECTED" });
     expect(state.connectionStatus).toBe("DISCONNECTED");
-    expect(state.status).toBe("CONNECTING"); // untouched -- crawl lifecycle is independent of socket health
+    expect(state.status).toBe("IDLE"); // untouched -- crawl lifecycle is independent of socket health
+  });
+});
+
+describe("crawlReducer — stop detail", () => {
+  it("CRAWL_STOPPED keeps the detail next to the reason, and a new snapshot clears it", () => {
+    let state = crawlReducer(INITIAL_STATE, {
+      type: "CRAWL_STOPPED",
+      reason: "MAX_NODES",
+      detail: "Reached 500 pages",
+    });
+    expect(state.stop_reason).toBe("MAX_NODES");
+    expect(state.stop_detail).toBe("Reached 500 pages");
+
+    state = crawlReducer(state, { type: "SNAPSHOT_FULL", nodes: [], status: "RUNNING" });
+    expect(state.stop_detail).toBeNull();
+  });
+
+  it("a snapshot of a stopped crawl carries the detail, and replay restores it", () => {
+    const log = [
+      { type: "SNAPSHOT_FULL", nodes: [], status: "RUNNING" },
+      { type: "CRAWL_STOPPED", reason: "MAX_NODES", detail: "Reached 500 pages" },
+    ];
+    let state = INITIAL_STATE;
+    for (const ev of log) state = crawlReducer(state, ev);
+    state = crawlReducer(state, { type: "__REPLAY_SEEK", index: 0 });
+    expect(state.stop_detail).toBeNull();
+    state = crawlReducer(state, { type: "__REPLAY_SEEK", index: 1 });
+    expect(state.stop_detail).toBe("Reached 500 pages");
+
+    const joined = crawlReducer(INITIAL_STATE, {
+      type: "SNAPSHOT_FULL",
+      nodes: [],
+      status: "STOPPED",
+      stop_reason: "MAX_NODES",
+      stop_detail: "Reached 500 pages",
+    });
+    expect(joined.stop_detail).toBe("Reached 500 pages");
+  });
+});
+
+describe("crawlReducer — stopped by the user", () => {
+  it("__USER_STOPPED marks the stop as the user's, whichever of it and CRAWL_STOPPED arrives first", () => {
+    const asked = crawlReducer(INITIAL_STATE, { type: "__USER_STOPPED" });
+    expect(asked.stopped_by_user).toBe(true);
+
+    const stopped = crawlReducer(asked, { type: "CRAWL_STOPPED", reason: "USER_REQUEST" });
+    expect(stopped.status).toBe("STOPPED");
+    expect(stopped.stopped_by_user).toBe(true);
+
+    const other = crawlReducer(crawlReducer(INITIAL_STATE, { type: "CRAWL_STOPPED", reason: "MAX_NODES" }), {
+      type: "__USER_STOPPED",
+    });
+    expect(other.stopped_by_user).toBe(true);
+  });
+
+  it("a snapshot of a new crawl clears the mark", () => {
+    const asked = crawlReducer(INITIAL_STATE, { type: "__USER_STOPPED" });
+    const next = crawlReducer(asked, { type: "SNAPSHOT_FULL", nodes: [], status: "RUNNING" });
+    expect(next.stopped_by_user).toBe(false);
+  });
+});
+
+describe("crawlReducer — SNAPSHOT_FULL", () => {
+  it("carries the completed counts, and a stage with no timing does not dilute later averages", () => {
+    let state = crawlReducer(INITIAL_STATE, {
+      type: "SNAPSHOT_FULL",
+      nodes: [],
+      pipeline_stats: {
+        filtering: { started: 4, completed: 4, failed: 0, queue_size: 0, avg_duration_ms: null },
+        scoring: { started: 2, completed: 2, failed: 0, queue_size: 0, avg_duration_ms: 10 },
+      },
+    });
+    expect(state.pipelineStats.filtering.completed).toBe(4);
+
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "filtering", phase: "completed", duration_ms: 30 });
+    state = crawlReducer(state, { type: "PIPELINE_EVENT", stage: "scoring", phase: "completed", duration_ms: 40 });
+
+    expect(state.pipelineStats.filtering.avg_duration_ms).toBe(30);
+    expect(state.pipelineStats.scoring.avg_duration_ms).toBeCloseTo(20);
+  });
+
+  it("rebuilds the edges from the parent of every node, so a late joiner sees the same graph", () => {
+    const nodes = [
+      { node_id: "1", parent_id: null, state: "EXPANDED" },
+      { node_id: "2", parent_id: "1", state: "SCORED" },
+      { node_id: "3", parent_id: "1", state: "FETCHED" },
+      { node_id: "4", parent_id: "2", state: "CREATED" },
+    ];
+    const joined = crawlReducer(INITIAL_STATE, { type: "SNAPSHOT_FULL", status: "RUNNING", nodes });
+    const live = nodes.reduce((s, n) => crawlReducer(s, { type: "NODE_ADDED", node: n }), INITIAL_STATE);
+
+    expect([...joined.edges].sort()).toEqual(["1→2", "1→3", "2→4"]);
+    expect([...joined.edges].sort()).toEqual([...live.edges].sort());
+  });
+
+  it("drops the edges of an earlier crawl when a new snapshot arrives", () => {
+    const first = crawlReducer(INITIAL_STATE, add("a"));
+    const withEdge = crawlReducer(first, add("b", "a"));
+    const next = crawlReducer(withEdge, { type: "SNAPSHOT_FULL", status: "RUNNING", nodes: [] });
+    expect(next.edges.size).toBe(0);
   });
 });
 

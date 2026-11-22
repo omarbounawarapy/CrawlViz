@@ -25,6 +25,9 @@ from pathlib import Path
 
 import aiohttp
 
+# Rough characters per token for the benchmark's prompts; pacing estimates use it.
+CHARS_PER_TOKEN = 3.5
+
 
 class ReplayMiss(RuntimeError):
     """A replay-only run needed an LLM answer that was not recorded."""
@@ -148,7 +151,7 @@ class PacedLlm:
     @staticmethod
     def estimate(context) -> float:
         # Prompt tokens plus room for the answer (reasoning tokens count too).
-        return len(context.get_prompt()) / 3.5 + 600
+        return len(context.get_prompt()) / CHARS_PER_TOKEN + 600
 
     @property
     def waiting(self) -> bool:
