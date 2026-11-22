@@ -207,7 +207,7 @@
           "ui_widget": "number"
         },
         "user_agent": {
-          "default": "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)",
+          "default": "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz)",
           "description": "User-Agent header sent with every request.",
           "title": "User Agent",
           "type": "string",

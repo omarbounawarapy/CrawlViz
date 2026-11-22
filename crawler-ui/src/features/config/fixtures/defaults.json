@@ -35,7 +35,7 @@
     "http_connect_timeout": 10.0,
     "respect_robots": true,
     "robots_ttl_seconds": 0.0,
-    "user_agent": "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)",
+    "user_agent": "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz)",
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "accept_encoding": "gzip, deflate",
     "accept_language": "",

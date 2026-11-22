@@ -1,7 +1,7 @@
 import asyncio
 import random
 
-from config import ACCEPTED_CONTENT_TYPES, parse_content_types
+from config import ACCEPTED_CONTENT_TYPES, USER_AGENT, parse_content_types
 from events import (
     NodeAddedEvent,
     PageFetchedEvent,
@@ -51,7 +51,7 @@ class RequestsPipeline:
         max_queue_size: int = 0,
         fetcher: Fetcher | None = None,
         min_delay: float = 1,
-        user_agent: str = "CrawlViz/1.0",
+        user_agent: str = USER_AGENT,
         respect_robots: bool = False,
         rng: random.Random | None = None,
         jitter_max: float = 0.2,
