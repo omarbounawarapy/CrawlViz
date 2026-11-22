@@ -1,0 +1,5 @@
+{
+  "fetch": {"jitter_max": 0.5, "min_delay": 2.0},
+  "pipelines": {"requests": {"workers": 2}},
+  "scoring_cascade": {"high_score_llm_fraction": 0.1}
+}

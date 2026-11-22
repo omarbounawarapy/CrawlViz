@@ -1,7 +1,11 @@
+import { NODE_STATES } from "./nodeStates";
+
 export function deriveMetrics(state) {
   let total_links_found = 0;
   let total_items_stored = 0;
-  let nodes_created = state.nodes.size;
+  const nodes_created = state.nodes.size;
+  // A CREATED node is a link found but not yet fetched; every other state means the page was fetched.
+  let nodes_fetched = 0;
 
   let start_time = null;
   let last_time = null;
@@ -35,6 +39,7 @@ export function deriveMetrics(state) {
     }
 
     if (node.state in stateCounts) stateCounts[node.state] += 1;
+    if (node.state !== NODE_STATES.CREATED) nodes_fetched += 1;
   }
 
   const elapsed_seconds = start_time && last_time ? last_time - start_time : 0;
@@ -50,6 +55,7 @@ export function deriveMetrics(state) {
 
   return {
     nodes_created,
+    nodes_fetched,
     total_links_found,
     total_items_stored,
     elapsed_seconds,

@@ -220,7 +220,7 @@ def reweighted_agreement(pairs, label_counts: dict[int, int]) -> tuple[float, li
     return (total / weight if weight else float("nan")), missing
 
 
-def binary(pairs):
+def binary(pairs: list[tuple[int, int]]) -> list[tuple[int, int]]:
     return [(int(a >= 1), int(b >= 1)) for a, b in pairs]
 
 

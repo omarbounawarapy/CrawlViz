@@ -15,7 +15,6 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from benchmark import audit as audit_mod
 from benchmark.analyze import (
     by_policy,
     dedupe_records,
@@ -28,78 +27,17 @@ from benchmark.graph import FrozenGraph
 from benchmark.graph_stats import stats as graph_stats
 from benchmark.results import RunRecord
 
+from .benchmark_audit_score import audit_result, labels_of
+from .benchmark_graph_view import seed_subgraph
 from .benchmark_jobs import router as jobs_router
+from .benchmark_json import nan_to_none
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR
+from .benchmark_protocol import read_protocol
 
 router = APIRouter(prefix="/benchmark", tags=["benchmark"])
 router.include_router(jobs_router)
 
 PROTOCOL_FILE = BENCH_DIR / "PROTOCOL.md"
-
-
-def _section(text: str, number: str) -> str:
-    """The body of '## <number>. ...' up to the next '## ' heading."""
-    m = re.search(rf"^## {re.escape(number)}\.? .*?$(.*?)(?=^## |\Z)", text, re.S | re.M)
-    return m.group(1) if m else ""
-
-
-def _cells(line: str) -> list[str]:
-    return [c.strip().replace("`", "") for c in line.strip().strip("|").split("|")]
-
-
-def read_protocol() -> dict:
-    """Hypotheses, arms, budgets, models and amendments, read from PROTOCOL.md itself."""
-    if not PROTOCOL_FILE.is_file():
-        return {
-            "hypotheses": [],
-            "arms": [],
-            "budgets": [],
-            "models": [],
-            "primary_metric": "",
-            "amendments": [],
-        }
-    text = PROTOCOL_FILE.read_text()
-    hypotheses = []
-    for line in _section(text, "1").splitlines():
-        c = _cells(line) if line.startswith("|") else []
-        if len(c) >= 3 and re.fullmatch(r"H\d", c[0]):
-            hypotheses.append({"id": c[0], "text": c[1], "comparison": c[2]})
-    arms = []
-    sec5 = _section(text, "5")
-    for line in sec5.splitlines():
-        c = _cells(line) if line.startswith("|") else []
-        if len(c) >= 4 and re.match(r"\d+", c[1]):
-            arms.append({"arm": c[0], "repeats": c[1], "scopes": c[2], "llm": c[3]})
-    budgets = [
-        int(b)
-        for b in re.findall(
-            r"\d+", (re.search(r"Budgets[^:]*:\s*([^.]*)\.", sec5) or [None, ""])[1]
-        )
-    ]
-    models = []
-    for line in _section(text, "6").splitlines():
-        c = _cells(line) if line.startswith("|") else []
-        if len(c) == 3 and c[0] not in ("Role", "") and not set(c[0]) <= set("-"):
-            models.append({"role": c[0], "provider": c[1], "model": c[2]})
-    metric = re.search(r"^harvest@30[^\n]*(?:\n[^\n]+)*", _section(text, "2").strip(), re.M)
-    tail = text.split("\n## Amendments", 1)[1] if "\n## Amendments" in text else ""
-    parts = re.split(r"^\*\*(\d{4}-\d{2}-\d{2}[^*]*)\*\*", tail, flags=re.M)
-    amendments = [
-        {"title": parts[k].strip().rstrip("."), "body": parts[k + 1].strip().replace("`", "")}
-        for k in range(1, len(parts) - 1, 2)
-    ]
-    return {
-        "hypotheses": hypotheses,
-        "arms": arms,
-        "budgets": budgets,
-        "models": models,
-        "primary_metric": " ".join(metric.group(0).split()).replace("`", "") if metric else "",
-        "amendments": amendments,
-    }
-
-
-def _nan(v):
-    return None if isinstance(v, float) and math.isnan(v) else v
 
 
 def _file(name: str, suffix: str) -> Path:
@@ -218,7 +156,7 @@ def get_curves(
         points = []
         for k in range(1, max_k + 1):
             mean, ci = mean_ci([harvest_at(r.labels, k, min_grade) for r in runs])
-            points.append({"k": k, "mean": _nan(mean), "ci95": _nan(ci)})
+            points.append({"k": k, "mean": nan_to_none(mean), "ci95": nan_to_none(ci)})
         eff = [efficiency(r) for r in runs]
 
         def avg(vals):
@@ -264,9 +202,9 @@ def overview():
         }
     key = DATA_DIR / "audit_key.json"
     return {
-        "protocol": read_protocol(),
+        "protocol": read_protocol(PROTOCOL_FILE),
         "graphs": graphs,
-        "audit": _audit_result(key, DATA_DIR / "audit_filled.tsv") if key.is_file() else None,
+        "audit": audit_result(key, DATA_DIR / "audit_filled.tsv") if key.is_file() else None,
         "runs": len(_records()),
     }
 
@@ -277,57 +215,8 @@ def get_graph(
     max_depth: int = Query(1, ge=0, le=6),
     limit: int = Query(400, ge=10, le=3000),
 ):
-    """Seed-centred subgraph as a breadth-first spanning tree (what the crawl graph view draws).
-
-    Pages up to ``max_depth``, relevant pages first. ``parent`` is the page each
-    one was first reached from; links that are not tree edges are counted in
-    ``cross_links`` and not drawn.
-    """
-    from collections import deque
-
-    graph = _graph(name)
-    depth, parent = {graph.seed: 0}, {graph.seed: None}
-    queue = deque([graph.seed])
-    while queue:
-        n = queue.popleft()
-        for link in graph.pages[n]["links"]:
-            t = link["to"]
-            if t in graph.pages and t not in depth:
-                depth[t], parent[t] = depth[n] + 1, n
-                queue.append(t)
-    ranked = sorted(
-        (n for n, d in depth.items() if d <= max_depth),
-        key=lambda n: (-graph.label(n), depth[n], n),
-    )
-    keep = set(ranked[:limit])
-    # A kept page needs its chain of ancestors, or the tree falls apart.
-    for n in list(keep):
-        a = parent[n]
-        while a is not None and a not in keep:
-            keep.add(a)
-            a = parent[a]
-    nodes = [
-        {
-            "id": n,
-            "parent": parent[n],
-            "title": graph.pages[n].get("title") or n,
-            "label": graph.label(n),
-            "depth": depth[n],
-            "out": len(graph.pages[n]["links"]),
-        }
-        for n in sorted(keep, key=lambda n: (depth[n], n))
-    ]
-    tree = sum(1 for n in keep if parent[n] is not None)
-    all_links = sum(1 for n in keep for link in graph.pages[n]["links"] if link["to"] in keep)
-    return {
-        "name": name,
-        "seed": graph.seed,
-        "topic": graph.topic,
-        "total": len(graph.pages),
-        "shown": len(nodes),
-        "cross_links": all_links - tree,
-        "nodes": nodes,
-    }
+    """Seed-centred subgraph of a frozen graph, relevant pages first."""
+    return seed_subgraph(_graph(name), name, max_depth, limit)
 
 
 @router.get("/page")
@@ -389,14 +278,10 @@ def _audit_rows(annotator: str = "1") -> list[dict]:
     return rows[:SECOND_ANNOTATOR_ITEMS] if annotator == "2" else rows
 
 
-def _labels_of(path: Path) -> dict[str, int]:
-    return audit_mod.read_labels(path) if path.is_file() else {}
-
-
 @router.get("/audit")
 def get_audit(annotator: str = "1"):
     """The sample for a human. The judge's label is never sent (blind audit)."""
-    labels = _labels_of(_audit_paths(annotator))
+    labels = labels_of(_audit_paths(annotator))
     items = [
         {
             "id": r["id"],
@@ -425,7 +310,7 @@ def put_audit(item_id: str, body: LabelBody, annotator: str = "1"):
     rows = _audit_rows(annotator)
     if item_id not in {r["id"] for r in rows}:
         raise HTTPException(status_code=404, detail="unknown item id")
-    labels = _labels_of(path)
+    labels = labels_of(path)
     if body.human_label is None:
         labels.pop(item_id, None)
     else:
@@ -440,51 +325,6 @@ def put_audit(item_id: str, body: LabelBody, annotator: str = "1"):
     return {"id": item_id, "human_label": body.human_label, "done": len(labels)}
 
 
-def _audit_result(
-    key_path: Path, tsv: Path, total: int | None = None, other: Path | None = None
-) -> dict | None:
-    key = json.loads(key_path.read_text())
-    human = _labels_of(tsv)
-    ids = sorted((i for i in human if i in key["items"]), key=int)
-    if not ids:
-        return None
-    pairs = [(key["items"][i]["judge_label"], human[i]) for i in ids]
-    bp = audit_mod.binary(pairs)
-    counts = {int(g): n for g, n in key["graph_label_counts"].items()}
-    prec, rec = audit_mod.per_class(bp, (1,))[1]
-    return {
-        "n": len(pairs),
-        "sampled": total or len(key["items"]),
-        "confusion": audit_mod.confusion(pairs, (0, 1, 2)),
-        "confusion_binary": audit_mod.confusion(bp, (0, 1)),
-        "agreement": _nan(audit_mod.agreement(pairs)),
-        "kappa": _nan(audit_mod.kappa(pairs)),
-        "agreement_binary": _nan(audit_mod.agreement(bp)),
-        "kappa_binary": _nan(audit_mod.kappa(bp)),
-        "kappa_ci": [_nan(v) for v in audit_mod.bootstrap_ci(pairs, audit_mod.kappa)],
-        "relevant_precision": _nan(prec),
-        "relevant_recall": _nan(rec),
-        "reweighted": _nan(audit_mod.reweighted_agreement(pairs, counts)[0]),
-        "human_vs_annotator1": _human_pair(human, other),
-    }
-
-
-def _human_pair(human: dict[str, int], other: Path | None) -> dict | None:
-    """Annotator 2 against annotator 1 on the ids both labelled ."""
-    first = _labels_of(other) if other else {}
-    both = sorted(set(human) & set(first), key=int)
-    if not both:
-        return None
-    pairs = [(first[i], human[i]) for i in both]
-    return {
-        "n": len(pairs),
-        "agreement": _nan(audit_mod.agreement(pairs)),
-        "kappa": _nan(audit_mod.kappa(pairs)),
-        "agreement_binary": _nan(audit_mod.agreement(audit_mod.binary(pairs))),
-        "kappa_binary": _nan(audit_mod.kappa(audit_mod.binary(pairs))),
-    }
-
-
 @router.post("/audit/score")
 def score_audit(annotator: str = "1", source: str = "ui"):
     """Judge against a human. ``source=filled`` scores the original audit_filled.tsv."""
@@ -493,7 +333,7 @@ def score_audit(annotator: str = "1", source: str = "ui"):
         raise HTTPException(status_code=404, detail="no audit key")
     tsv = DATA_DIR / "audit_filled.tsv" if source == "filled" else _audit_paths(annotator)
     second = annotator == "2" and source != "filled"
-    result = _audit_result(
+    result = audit_result(
         key,
         tsv,
         SECOND_ANNOTATOR_ITEMS if second else None,

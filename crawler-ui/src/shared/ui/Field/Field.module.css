@@ -1,0 +1,70 @@
+/* A form field: label over hint over error over control, set tight so they read as one. */
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  min-inline-size: 0;
+}
+
+.label {
+  color: var(--color-ink);
+  font-family: var(--type-label-family);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-strong-weight);
+  line-height: var(--type-label-line-height);
+}
+
+.required {
+  color: var(--color-muted);
+  font-weight: var(--type-label-weight);
+}
+
+.hint {
+  max-inline-size: var(--size-measure);
+  color: var(--color-muted);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+}
+
+/* Plum and a sentence: the error never rests on colour alone. */
+.error {
+  max-inline-size: var(--size-measure);
+  color: var(--color-plum-error);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line-height);
+}
+
+.input {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-block-size: var(--size-field);
+  padding-block: 0;
+  padding-inline: var(--space-sm);
+  border: var(--stroke-hairline) solid var(--color-control);
+  border-radius: var(--radius-md);
+  background: var(--color-sheet);
+  color: var(--color-ink);
+  font-family: var(--type-body-family);
+  font-size: var(--type-body-size);
+
+  &:disabled {
+    border-color: var(--color-rule);
+    background: var(--color-paper);
+    color: var(--color-muted);
+    cursor: not-allowed;
+  }
+
+  /* The edge doubles in plum, so an invalid box differs by weight as well as hue. */
+  &[aria-invalid="true"] {
+    border-color: var(--color-plum-error);
+    box-shadow: inset 0 0 0 var(--stroke-hairline) var(--color-plum-error);
+  }
+}
+
+@media (pointer: coarse) {
+  .input {
+    min-block-size: var(--size-target-touch);
+  }
+}
