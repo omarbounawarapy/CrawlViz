@@ -159,7 +159,7 @@ python_version = "3.12"
 strict = true
 explicit_package_bases = true
 # tests/pins is also on sys.path under pytest (no __init__.py), so its modules import each other by bare name.
-mypy_path = [".", "tests/pins"]
+mypy_path = [".", "src", "tests/pins"]
 files = [
     "main.py",
     "benchmark",
@@ -173,6 +173,7 @@ files = [
     "priority",
     "routes",
     "services",
+    "src/crawlviz",
     "tests",
     "tools",
     "traceability",
