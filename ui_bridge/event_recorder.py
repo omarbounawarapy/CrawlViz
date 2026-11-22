@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from config.config import BASE_DIR
+from utils import save_json
 
 log = logging.getLogger("ui_bridge.recorder")
 
@@ -52,7 +53,7 @@ class EventRecorder:
 
     def write_manifest(self, manifest: dict) -> None:
         path = self.run_dir / "manifest.json"
-        path.write_text(json.dumps(manifest, indent=2, default=str), encoding="utf-8")
+        save_json(path, manifest, default=str)
 
     def close(self) -> None:
         if self._fh is not None:
