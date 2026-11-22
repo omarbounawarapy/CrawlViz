@@ -1,12 +1,12 @@
 {
   "scoring_cascade": {
+    "percentile_bucketing": true,
     "low_threshold": 0.2,
     "high_threshold": 0.75,
     "high_score_llm_fraction": 0.3,
     "high_score_random_fraction": 0.3,
     "low_score_sample_fraction": 0.01,
     "default_priority_strategy": "balanced",
-    "percentile_bucketing": true,
     "low_percentile": 20.0,
     "high_percentile": 75.0,
     "percentile_min_links": 10,
@@ -39,7 +39,9 @@
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "accept_encoding": "gzip, deflate",
     "accept_language": "",
-    "extra_headers": {}
+    "extra_headers": {},
+    "max_response_bytes": 5242880,
+    "allow_private_addresses": false
   },
   "pipelines": {
     "processing": {
@@ -130,6 +132,7 @@
     "link_context_length": 100
   },
   "llm": {
+    "max_calls_per_crawl": null,
     "max_tokens": null,
     "temperature": null,
     "key_cooldown_seconds": 0.0

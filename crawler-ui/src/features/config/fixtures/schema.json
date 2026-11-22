@@ -8,6 +8,9 @@
           "description": "Embedding backend used to build the crawl's semantic space.",
           "title": "Backend",
           "type": "string",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Switching backend changes every similarity score the crawl computes.",
           "ui_options": ["sentence_transformers"],
           "ui_section": "Embeddings",
           "ui_widget": "select"
@@ -17,6 +20,9 @@
           "description": "Model identifier passed to the embedding backend.",
           "title": "Model Name",
           "type": "string",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "A different model gives different vectors, so similarity scores shift.",
           "ui_section": "Embeddings",
           "ui_widget": "text"
         },
@@ -26,7 +32,12 @@
           "exclusiveMinimum": 0,
           "title": "Flush Interval Seconds",
           "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Longer waits let more scored links accumulate before the space learns from them; shorter updates it more often.",
           "ui_section": "Embeddings",
+          "ui_step": 0.1,
+          "ui_unit": "s",
           "ui_widget": "number"
         },
         "flush_threshold": {
@@ -35,7 +46,11 @@
           "exclusiveMinimum": 0,
           "title": "Flush Threshold",
           "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Lower flushes sooner when many links arrive quickly; higher lets the buffer grow between flushes.",
           "ui_section": "Embeddings",
+          "ui_unit": "links",
           "ui_widget": "number"
         },
         "buffer_max_size": {
@@ -44,7 +59,11 @@
           "exclusiveMinimum": 0,
           "title": "Buffer Max Size",
           "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "When the buffer is full, the stage that feeds it waits instead of queuing more links.",
           "ui_section": "Embeddings",
+          "ui_unit": "links",
           "ui_widget": "number"
         }
       },
@@ -60,7 +79,11 @@
           "exclusiveMinimum": 0,
           "title": "Batch Size",
           "type": "integer",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Larger batches mean fewer writes; smaller batches write more often.",
           "ui_section": "Export",
+          "ui_unit": "items",
           "ui_widget": "number"
         }
       },
@@ -78,6 +101,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "live",
+          "ui_effect": "The main politeness control: raising it slows every request the crawler makes, across all workers.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -91,6 +115,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "live",
+          "ui_effect": "Adds a random pause up to this length to each request, so requests do not arrive on a fixed beat.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -104,6 +129,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Sets how long the crawler waits after the first 429 (too many requests) response from a site.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -117,6 +143,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "live",
+          "ui_effect": "Caps how long the shared backoff can grow after repeated 429 responses.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -130,7 +157,9 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Each further 429 multiplies the backoff by this, so higher values back off faster.",
           "ui_section": "Fetch",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "backoff_success_decay": {
@@ -142,7 +171,9 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Each successful fetch multiplies the backoff by this; 1 keeps it unchanged, lower values restore speed faster.",
           "ui_section": "Fetch",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "backoff_failure_decay": {
@@ -154,7 +185,9 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "A failure that is not a 429 multiplies the backoff by this; lower values let a struggling site recover speed faster.",
           "ui_section": "Fetch",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "http_total_timeout": {
@@ -165,6 +198,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "A page or LLM reply that takes longer than this counts as a failed request and is retried.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -178,6 +212,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "A host that does not accept the connection within this time counts as a failed request.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -190,6 +225,7 @@
           "type": "boolean",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "On: pages a site disallows in robots.txt are skipped. Off: they are fetched anyway.",
           "ui_section": "Fetch",
           "ui_widget": "toggle"
         },
@@ -201,6 +237,7 @@
           "type": "number",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Longer keeps robots.txt rules longer before the file is fetched again.",
           "ui_section": "Fetch",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -213,6 +250,7 @@
           "type": "string",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Sites read this name on every request, and some block agents they do not know; changing it changes how the crawler identifies itself.",
           "ui_section": "Fetch",
           "ui_widget": "text"
         },
@@ -223,6 +261,7 @@
           "type": "string",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Tells servers which content types to send; a different list can change which version of a page comes back.",
           "ui_section": "Fetch",
           "ui_widget": "text"
         },
@@ -233,6 +272,7 @@
           "type": "string",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Tells servers which compressions the crawler can read; removing one makes servers send pages uncompressed or with another method.",
           "ui_section": "Fetch",
           "ui_widget": "text"
         },
@@ -243,6 +283,7 @@
           "type": "string",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Asks sites for pages in this language when they offer several; empty lets each site choose.",
           "ui_section": "Fetch",
           "ui_widget": "text"
         },
@@ -255,8 +296,33 @@
           "type": "object",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Each header is sent on every request and replaces a default header of the same name.",
           "ui_section": "Fetch",
           "ui_widget": "headers"
+        },
+        "max_response_bytes": {
+          "default": 5242880,
+          "description": "Largest page body read, counted after decompression.",
+          "exclusiveMinimum": 0,
+          "title": "Max Response Bytes",
+          "type": "integer",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_effect": "A page or robots.txt larger than this is refused instead of read, which protects memory from huge or compressed-bomb responses.",
+          "ui_section": "Fetch",
+          "ui_unit": "bytes",
+          "ui_widget": "number"
+        },
+        "allow_private_addresses": {
+          "default": false,
+          "description": "Fetch pages from private, loopback and link-local addresses.",
+          "title": "Allow Private Addresses",
+          "type": "boolean",
+          "ui_advanced": true,
+          "ui_apply": "next_run",
+          "ui_effect": "Off: links to this machine, your local network or a cloud metadata address are refused. On: they are fetched, which only a crawl of your own test site needs.",
+          "ui_section": "Fetch",
+          "ui_widget": "toggle"
         }
       },
       "title": "FetchConfig",
@@ -265,6 +331,26 @@
     "LlmConfig": {
       "description": "Request parameters shared by every LLM provider call.",
       "properties": {
+        "max_calls_per_crawl": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Total LLM calls one crawl may make; empty means no cap.",
+          "title": "Max Calls Per Crawl",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "At the cap the crawl keeps going, but links the LLM would have judged are scored on NLP alone.",
+          "ui_section": "LLM",
+          "ui_unit": "calls",
+          "ui_widget": "number"
+        },
         "max_tokens": {
           "anyOf": [
             {
@@ -280,7 +366,9 @@
           "title": "Max Tokens",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Caps how long each LLM reply can be; a cap that is too low cuts replies short.",
           "ui_section": "LLM",
+          "ui_unit": "tokens",
           "ui_widget": "number"
         },
         "temperature": {
@@ -299,7 +387,9 @@
           "title": "Temperature",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Higher values make the LLM's judgements vary more between calls; lower values make them more repeatable.",
           "ui_section": "LLM",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "key_cooldown_seconds": {
@@ -310,6 +400,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "After a key is used it waits this long before it is used again, which spreads requests across keys.",
           "ui_section": "LLM",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -331,19 +422,24 @@
           "type": "object",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Raising a feature's weight adds more of it to the NLP score; a negative weight lowers the score.",
           "ui_section": "NLP",
           "ui_widget": "weights"
         },
         "target_top_k": {
           "default": 2,
           "description": "Nearest target-basis vectors averaged into target similarity.",
+          "maximum": 10,
           "minimum": 1,
           "title": "Target Top K",
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Averages more reference vectors into each link's topic similarity, so one odd reference counts for less.",
           "ui_section": "NLP",
-          "ui_widget": "number"
+          "ui_step": 1,
+          "ui_unit": "",
+          "ui_widget": "slider"
         },
         "cluster_eps": {
           "default": 0.3,
@@ -353,6 +449,7 @@
           "type": "number",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "A larger radius groups looser neighbours into one cluster, so fewer pages count as new.",
           "ui_section": "NLP",
           "ui_widget": "number"
         },
@@ -364,20 +461,24 @@
           "type": "integer",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Higher values need more similar pages before a cluster forms, so fewer clusters are found.",
           "ui_section": "NLP",
           "ui_widget": "number"
         },
         "link_context_length": {
           "default": 100,
           "description": "Characters of surrounding text kept as a link's context.",
-          "minimum": 1,
+          "maximum": 1000,
+          "minimum": 10,
           "title": "Link Context Length",
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "More surrounding text gives each link more to score on, and costs more time and tokens.",
           "ui_section": "NLP",
+          "ui_step": 10,
           "ui_unit": "chars",
-          "ui_widget": "number"
+          "ui_widget": "slider"
         }
       },
       "title": "NlpConfig",
@@ -392,6 +493,7 @@
           "type": "boolean",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "On writes a detailed trace file for each crawl, which takes disk space.",
           "ui_section": "Observability",
           "ui_widget": "toggle"
         },
@@ -404,7 +506,9 @@
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Changing it means the live graph page has to connect to the new port.",
           "ui_section": "Observability",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "snapshot_max_candidates": {
@@ -415,6 +519,7 @@
           "type": "integer",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Caps how many scoring decisions the live view can show; older ones are dropped.",
           "ui_section": "Observability",
           "ui_widget": "number"
         },
@@ -426,6 +531,7 @@
           "type": "integer",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Caps how many crawl errors the live view keeps; older ones are dropped.",
           "ui_section": "Observability",
           "ui_widget": "number"
         }
@@ -443,7 +549,11 @@
           "minimum": 1,
           "title": "Workers",
           "type": "integer",
+          "ui_advanced": false,
           "ui_apply": "live",
+          "ui_effect": "More workers drain this stage's queue faster, so the crawl moves faster, but more work is held in memory at once and more calls go out in parallel.",
+          "ui_section": "Pipelines",
+          "ui_unit": "",
           "ui_widget": "stepper"
         },
         "max_queue_size": {
@@ -459,7 +569,12 @@
           "default": null,
           "description": "Queue bound; empty is unbounded.",
           "title": "Max Queue Size",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Caps how much work waits for this stage. Once it is full, the stage before it waits, so memory stays flat and the crawl slows. Empty lets memory grow without limit.",
+          "ui_section": "Pipelines",
           "ui_step": 100,
+          "ui_unit": "items",
           "ui_widget": "limit"
         }
       },
@@ -505,25 +620,31 @@
       "properties": {
         "nlp_bias": {
           "default": 60,
-          "description": "Weight of the NLP score (normalized with llm_bias).",
+          "description": "Weight of the NLP score in a link's priority; only its ratio to llm_bias matters.",
           "minimum": 0,
           "title": "Nlp Bias",
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Raising it lets the cheap similarity score move links up the queue more; only its ratio to the LLM weight matters.",
+          "ui_pair": "llm_bias",
           "ui_section": "Priority",
-          "ui_widget": "slider"
+          "ui_unit": "",
+          "ui_widget": "split"
         },
         "llm_bias": {
           "default": 40,
-          "description": "Weight of the LLM score (normalized with nlp_bias).",
+          "description": "Weight of the LLM score in a link's priority; only its ratio to nlp_bias matters.",
           "minimum": 0,
           "title": "Llm Bias",
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Raising it lets the LLM's judgement move links up the queue more; only its ratio to the NLP weight matters.",
+          "ui_pair": "nlp_bias",
           "ui_section": "Priority",
-          "ui_widget": "slider"
+          "ui_unit": "",
+          "ui_widget": "split"
         },
         "aggressive_weights": {
           "additionalProperties": {
@@ -534,6 +655,7 @@
           "type": "object",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Raising one feature's weight ranks links with more of it higher. Raising all of them together makes the NLP part count for more against the LLM score.",
           "ui_section": "Priority",
           "ui_widget": "weights"
         },
@@ -546,6 +668,7 @@
           "type": "object",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Raising one feature's weight ranks links with more of it higher. Raising all of them together makes the NLP part count for more against the LLM score.",
           "ui_section": "Priority",
           "ui_widget": "weights"
         },
@@ -558,6 +681,7 @@
           "type": "object",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Raising one feature's weight ranks links with more of it higher. Raising all of them together makes the NLP part count for more against the LLM score.",
           "ui_section": "Priority",
           "ui_widget": "weights"
         }
@@ -576,6 +700,7 @@
           "type": "string",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Changes the instructions the LLM follows on every scoring call; the output format stays fixed so replies still parse.",
           "ui_section": "Prompts",
           "ui_widget": "textarea"
         },
@@ -587,6 +712,7 @@
           "type": "string",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Changes the rules the LLM applies when it judges links, on every call.",
           "ui_section": "Prompts",
           "ui_widget": "textarea"
         },
@@ -599,6 +725,7 @@
           "type": "object",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Each line tilts the LLM toward that strategy's goal, so changing it shifts which links score high.",
           "ui_section": "Prompts",
           "ui_widget": "stringmap"
         }
@@ -618,6 +745,7 @@
           "type": "object",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Changing a URL sends that provider's requests to another server, such as a local or compatible one.",
           "ui_section": "Providers",
           "ui_widget": "stringmap"
         }
@@ -636,7 +764,9 @@
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "live",
+          "ui_effect": "A page that fails to fetch is requeued this many times before the crawler gives up on it. Each retry sends another request to the site, so a failing site gets more load.",
           "ui_section": "Retries",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "max_scoring_retries": {
@@ -647,7 +777,9 @@
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "live",
+          "ui_effect": "A page whose scoring fails is rescheduled this many times before the crawler gives up on it. Each reschedule sends the LLM call again, so it spends LLM calls and budget.",
           "ui_section": "Retries",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "base_delay": {
@@ -658,6 +790,7 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "The wait before the first retry; later retries wait longer by the growth multiplier.",
           "ui_section": "Retries",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -671,29 +804,35 @@
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Multiplies the retry wait on each attempt; 1 waits the same time every attempt.",
           "ui_section": "Retries",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "empty_score_demotion": {
           "default": 5,
-          "description": "Priority removed from a node whose LLM result was empty.",
+          "description": "Places a page later in the queue when its LLM result was empty.",
           "minimum": 0,
           "title": "Empty Score Demotion",
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Lowers the page's place in the queue by this many priority points when its LLM result came back empty, so it is crawled later.",
           "ui_section": "Retries",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "fetch_retry_demotion": {
           "default": 2,
-          "description": "Priority removed from a node on each fetch retry.",
+          "description": "Places a page later in the queue on each fetch retry.",
           "minimum": 0,
           "title": "Fetch Retry Demotion",
           "type": "number",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Lowers the page's place in the queue by this many priority points on every fetch retry, so failing pages are tried later.",
           "ui_section": "Retries",
+          "ui_unit": "",
           "ui_widget": "number"
         }
       },
@@ -716,7 +855,9 @@
           "title": "Seed",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "A fixed seed makes every random choice repeat, so two runs with the same settings sample the same links.",
           "ui_section": "Run",
+          "ui_unit": "",
           "ui_widget": "number"
         },
         "stop_check_interval": {
@@ -727,6 +868,7 @@
           "type": "number",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Shorter checks stop a quiet crawl sooner but use a little more CPU.",
           "ui_section": "Run",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -740,6 +882,7 @@
           "type": "number",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Longer gives in-flight work more time to finish before the crawl stops; shorter stops sooner.",
           "ui_section": "Run",
           "ui_step": 0.1,
           "ui_unit": "s",
@@ -759,6 +902,7 @@
           "type": "boolean",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Percentiles judge each link against its own page; fixed cut-offs judge every link against the same scale.",
           "ui_options": [
             {
               "label": "Fixed score cut-offs",
@@ -783,9 +927,13 @@
             "field": "percentile_bucketing",
             "value": false
           },
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Raising it moves more links into the low-confidence bucket, where most are dropped.",
           "ui_pair": "high_threshold",
           "ui_section": "Scoring cascade",
           "ui_step": 0.01,
+          "ui_unit": "",
           "ui_widget": "range"
         },
         "high_threshold": {
@@ -799,29 +947,41 @@
             "field": "percentile_bucketing",
             "value": false
           },
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Lowering it moves more links into the high-confidence bucket, which the LLM judges less often.",
           "ui_pair": "low_threshold",
           "ui_section": "Scoring cascade",
           "ui_step": 0.01,
+          "ui_unit": "",
           "ui_widget": "range"
         },
         "high_score_llm_fraction": {
           "default": 0.3,
-          "description": "Fraction of the high-confidence bucket still sent to the LLM rather than trusted outright -- this is the cascade's cost-saving lever.",
+          "description": "Fraction of the high-confidence bucket still sent to the LLM rather than trusted outright.",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "High Score Llm Fraction",
           "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Lowering it saves LLM calls; raising it checks more of the high bucket with the LLM.",
           "ui_section": "Scoring cascade",
+          "ui_unit": "",
           "ui_widget": "slider"
         },
         "high_score_random_fraction": {
           "default": 0.3,
-          "description": "Of the LLM-bound slice of the high bucket, the fraction chosen at random rather than by top NLP rank (bias correction).",
+          "description": "Of the LLM-bound slice of the high bucket, the fraction chosen at random rather than by top NLP rank.",
           "maximum": 1.0,
           "minimum": 0.0,
           "title": "High Score Random Fraction",
           "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Raising it checks more random high-bucket links, which corrects bias from always taking the top-ranked ones.",
           "ui_section": "Scoring cascade",
+          "ui_unit": "",
           "ui_widget": "slider"
         },
         "low_score_sample_fraction": {
@@ -831,7 +991,11 @@
           "minimum": 0.0,
           "title": "Low Score Sample Fraction",
           "type": "number",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Raising it keeps more doubtful links for the LLM, so the crawl explores more and spends more calls.",
           "ui_section": "Scoring cascade",
+          "ui_unit": "",
           "ui_widget": "slider"
         },
         "default_priority_strategy": {
@@ -839,8 +1003,11 @@
           "description": "Priority strategy used when a blueprint doesn't specify one.",
           "title": "Default Priority Strategy",
           "type": "string",
+          "ui_advanced": false,
+          "ui_apply": "next_run",
+          "ui_effect": "Sets how the queue is ordered when a blueprint does not pick a strategy. Chosen with the cards above the weights.",
           "ui_options": ["aggressive", "balanced", "exploration"],
-          "ui_section": "Scoring cascade",
+          "ui_section": "Priority",
           "ui_widget": "select"
         },
         "low_percentile": {
@@ -856,6 +1023,7 @@
           },
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Raising it sends fewer links to the low bucket, so fewer are dropped outright.",
           "ui_pair": "high_percentile",
           "ui_section": "Scoring cascade",
           "ui_step": 1,
@@ -875,6 +1043,7 @@
           },
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Lowering it sends more links to the high bucket, which the LLM judges less often.",
           "ui_pair": "low_percentile",
           "ui_section": "Scoring cascade",
           "ui_step": 1,
@@ -889,7 +1058,9 @@
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Raising it makes small pages use the fixed cut-offs instead of percentiles.",
           "ui_section": "Scoring cascade",
+          "ui_unit": "links",
           "ui_widget": "number"
         },
         "max_llm_links_per_node": {
@@ -900,7 +1071,9 @@
           "type": "integer",
           "ui_advanced": false,
           "ui_apply": "next_run",
+          "ui_effect": "Caps the LLM work of any single page; links above the cap are not judged by the LLM.",
           "ui_section": "Scoring cascade",
+          "ui_unit": "links",
           "ui_widget": "number"
         },
         "llm_batch_size": {
@@ -918,7 +1091,9 @@
           "title": "Llm Batch Size",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "Smaller batches make more calls with shorter prompts; larger batches make fewer calls.",
           "ui_section": "Scoring cascade",
+          "ui_unit": "links",
           "ui_widget": "number"
         }
       },
@@ -935,6 +1110,7 @@
           "type": "boolean",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "On: links that differ only after # count as one page. Off: each anchor is crawled as its own page.",
           "ui_section": "URLs",
           "ui_widget": "toggle"
         },
@@ -945,6 +1121,7 @@
           "type": "boolean",
           "ui_advanced": true,
           "ui_apply": "next_run",
+          "ui_effect": "On: a trailing slash does not make a new page. Off: /page and /page/ are crawled separately.",
           "ui_section": "URLs",
           "ui_widget": "toggle"
         }
@@ -1000,6 +1177,56 @@
   },
   "title": "RuntimeConfig",
   "type": "object",
+  "ui_glossary": {
+    "429": "The HTTP status 'too many requests': the site asks the crawler to slow down.",
+    "backoff": "The pause the crawler takes after a site answers with too many requests (429), growing with each one.",
+    "backoff decay": "How much each successful fetch shrinks the backoff pause (0.5 halves it). Example: a 4 s pause becomes 2 s after one success.",
+    "backpressure": "A full queue or buffer making the stage before it wait, so that memory does not grow without limit.",
+    "best-ranked": "The rest of the LLM-bound high-confidence links, taken in NLP rank order. Example: with a 0.5 random fraction, the other half are the top-ranked links.",
+    "blueprint": "A saved description of one crawl: its target, seeds, scoring focus and extraction schema.",
+    "bucket": "A group of links that the cascade treats the same way: dropped, kept to explore, sent to the LLM, or trusted on the NLP score.",
+    "cascade": "The two-stage filter: a cheap NLP score settles most links, and only the uncertain ones go to the LLM.",
+    "cascade replay": "The cascade run again from its saved LLM answers; no live LLM calls are made.",
+    "cosine": "A measure of how closely two embeddings point the same way; 1 is identical direction, 0 is unrelated.",
+    "coverage gap": "A priority bonus for a topic region the crawl has barely visited. Example: 40 bread pages and no flour page, so flour pages get the boost.",
+    "dbscan": "A clustering method that groups points lying close together and leaves isolated ones out.",
+    "debug trace": "A log of each decision the crawler made for a page, which can include link text. It is written only while debugging is on.",
+    "demotion": "Lowering a page's priority so it is crawled later.",
+    "embedding": "A list of numbers that stands for a text's meaning, so that similar texts get similar numbers.",
+    "flush": "Writing the buffered work out at once, instead of waiting for the next scheduled write.",
+    "harvest": "The share of the first k fetched pages that are relevant; harvest@k is that share over the first k fetches.",
+    "high-confidence bucket": "The links the NLP score rates above the high cut-off. Only a share of them goes to the LLM; the rest is trusted.",
+    "in flight": "Requests that have been sent and not yet answered. The number of workers caps it.",
+    "jitter": "A random extra pause added to each delay so that requests do not arrive on a fixed rhythm.",
+    "key cooldown": "Minimum gap before the same API key is reused. Example: at 2 s, one key sends at most one request every 2 s and a second key takes the next.",
+    "llm bias": "The share of a link's priority that comes from the LLM's judgement. Only its ratio to the NLP bias matters.",
+    "llm score": "A relevance judgement from the language model, which costs a request per batch of links.",
+    "llm_all": "Baseline that asks the LLM about every candidate link, instead of letting the NLP score choose which to ask.",
+    "middle band": "The links between the two cut-offs. Every one of them goes to the LLM. Raise the low cut-off or lower the high one to shrink it.",
+    "nlp bias": "The share of a link's priority that comes from its NLP score. Only its ratio to the LLM bias matters.",
+    "nlp score": "A fast similarity score computed locally from the link's text and its context, with no LLM call.",
+    "no_llm": "Baseline that replays the cascade's expansion without calling the LLM, so it shows what the NLP side does alone.",
+    "novelty injection": "A priority bonus for pages unlike those already seen. Example: after ten bread recipes, a page about bread ovens ranks higher.",
+    "percentile": "A link's place in its own page's scores: 90 % means it scores higher than 90 % of that page's links.",
+    "percentile bucketing": "Splitting a page's links by their place in that page's own scores, instead of by fixed cut-offs, so every page has links in every band.",
+    "politeness": "How gently the crawler treats a site: the pause between requests, how many run at once, and how much a site's refusals slow it.",
+    "priority": "A page's place in the queue; higher priority is crawled sooner.",
+    "priority points": "The units of a link's priority score, where higher is crawled sooner. A demotion subtracts points, so the page waits longer in the queue.",
+    "queue": "The line of work waiting for a pipeline stage to pick it up.",
+    "queue bound": "The most items a stage's queue may hold. When it is full, the stage before it waits.",
+    "random fraction": "Of the high-confidence links sent to the LLM, the share picked at random rather than by NLP rank. Example: at 0.5, half are a random draw.",
+    "requeue": "Putting a page back in the queue to be tried again later.",
+    "robots.txt": "A file where a site states which pages automated crawlers may fetch.",
+    "seed": "The number that starts a random sequence; the same seed gives the same random choices.",
+    "semantic delta": "How far a page's meaning moves from the page that linked to it. Example: a shop's contact page differs from its bread parent page.",
+    "temperature": "How much randomness the LLM uses when it picks its reply; 0 is the most repeatable.",
+    "template": "A saved blueprint for one kind of crawl. It fixes the target, the seeds and the scoring focus the crawl starts with.",
+    "token": "The unit an LLM reads and bills: about four characters of English text.",
+    "tokens": "The units an LLM reads and bills: about four characters of English text each. The cost readouts estimate them from the prompt and link text.",
+    "top-k": "Keeping only the k best matches, here the k closest reference vectors to a link.",
+    "user-agent": "The name a crawler sends with each request so that a site knows who is asking.",
+    "worker": "One of the parallel loops that take items from a stage's queue and process them."
+  },
   "ui_sections": [
     {
       "help": "Decides which links the cheap NLP score settles and which are worth an LLM call.",
@@ -1010,7 +1237,7 @@
       "name": "Fetch"
     },
     {
-      "help": "How the score, depth and strategy weights order the queue of pages still to visit.",
+      "help": "How the queue of pages still to visit is ordered: the NLP and LLM shares, and the weights of each priority strategy.",
       "name": "Priority"
     },
     {
@@ -1026,7 +1253,7 @@
       "name": "Pipelines"
     },
     {
-      "help": "What happens to a page whose fetch or scoring failed.",
+      "help": "What happens to a page whose fetch or scoring failed. Every retry sends another request or LLM call, so retries add load.",
       "name": "Retries"
     },
     {
