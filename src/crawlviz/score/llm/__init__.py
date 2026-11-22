@@ -12,6 +12,7 @@ from .json_output import (
     parse_llm_json,
     validate_llm_output,
 )
+from .prompt_registry import PromptFileError, PromptRegistry, RenderedPrompt
 from .types import (
     LLM_CALL_RECORD_SCHEMA_VERSION,
     CallOutcome,
@@ -37,6 +38,9 @@ __all__ = [
     "LlmOutputError",
     "LlmRequest",
     "LlmResponse",
+    "PromptFileError",
+    "PromptRegistry",
+    "RenderedPrompt",
     "RepairCall",
     "TokenUsage",
     "ValidatedOutput",
