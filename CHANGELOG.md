@@ -9,6 +9,10 @@ All notable changes to this project are documented here. Format follows [Keep a 
 - Landing and graph copy uses plain words.
 - The development server no longer restarts when files under a local `.claude` folder change.
 - New `offline_demo_long.json` blueprint for a longer offline run with two 429 episodes and an LLM call budget (see the README).
+- A provider endpoint URL with a user name, password or key is refused when saved. A settings file saved earlier with one is cleaned when loaded (the credential is removed, the file is rewritten, a warning names the provider). Keys belong in the keys store.
+- Traces and scoring failure events record an error's class and HTTP status, not its text; network trace URLs drop user info, query and fragment. The scoring failure log keeps the error text with secrets masked.
+- The benchmark job log masks secrets and cuts lines over 4096 characters with a ` ...[cut]` mark; a job always ends, even if its output cannot be read.
+- Request validation errors (422) from every route return `{"detail": {"errors": [{"path", "message"}]}}` and never echo the submitted value. `GET /config` returns 422 with a message when the stored settings are invalid, instead of 500.
 - Security and politeness hardening in progress, see SECURITY.md.
 
 ### Added

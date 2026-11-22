@@ -1,8 +1,5 @@
 import asyncio
 import random
-import time
-
-import aiohttp
 
 from config import ACCEPTED_CONTENT_TYPES, parse_content_types
 from events import (
@@ -16,23 +13,26 @@ from events import (
 from infrastructure import NetworkClient
 
 from traceability.trace_context import bind_node
+from utils import BackgroundTasks
 
 from .base_pipeline import SHUTDOWN
 from .contracts import Fetcher
 from .frontier_queue import FrontierQueue
+from .host_pacer import HostPacer, host_of
+from .http_failure import BACKOFF_STATUSES, retry_after_seconds, status_of
 from .robots import RobotsPolicy
 
 ROBOTS_DISALLOWED = "RobotsDisallowed"
 
 
 def is_rate_limited(error: Exception) -> bool:
-    """True when the server answered 429 Too Many Requests."""
-    return isinstance(error, aiohttp.ClientResponseError) and error.status == 429
+    """True when the server answered 429 Too Many Requests or 503 Service Unavailable."""
+    return status_of(error) in BACKOFF_STATUSES
 
 
 class RequestsPipeline:
     """Fetches page content for every node, one HTTP request at a time
-    per worker, with global rate limiting and 429 backoff shared across
+    per worker, with per-host rate limiting and 429/503 backoff shared across
     all workers.
 
     Deliberately not a BasePipeline subclass: unlike the event-dispatch
@@ -100,8 +100,8 @@ class RequestsPipeline:
             NodeAddedEvent: self._on_node_added,
         }
 
-        self.min_delay = min_delay  # minimum seconds between requests
-        self.last_request_time = 0.0
+        self.min_delay = min_delay  # minimum seconds between requests to one host
+        self.pacer = HostPacer()
         self.backoff_delay = 0.0  # dynamic (grows on 429)
         self.max_backoff = max_backoff
         self.jitter_max = jitter_max
@@ -117,12 +117,14 @@ class RequestsPipeline:
         self._pool_closed = False
         self._pool_next_id = 0
         self.workers = []
+        self._background = BackgroundTasks()
         self._pool_spawn(self.max_concurrency)
         while True:
             pending = [w for w in self.workers if not w.done()]
             if not pending:
                 break
             await asyncio.gather(*pending)
+        await self._background.cancel_all()
 
     def _pool_spawn(self, count: int) -> None:
         for _ in range(count):
@@ -149,7 +151,9 @@ class RequestsPipeline:
         try:
             self.queue.put_nowait(SHUTDOWN)
         except asyncio.QueueFull:
-            asyncio.ensure_future(self.queue.put(SHUTDOWN))
+            self._background.spawn(
+                self.queue.put(SHUTDOWN), name="RequestsPipeline-shrink-shutdown"
+            )
 
     # =========================================================
     # STOP
@@ -188,6 +192,21 @@ class RequestsPipeline:
 
         await self.queue.put(event.node)
 
+    async def _wait_for_slot(self, url: str) -> None:
+        """Rate limit, per host: the slot is claimed before sleeping, so
+        concurrent workers queue behind each other instead of all seeing the
+        same idle host. The spacing is the configured delay or the site's
+        Crawl-delay, whichever is longer; backoff and jitter are added to this
+        request's wait (jitter keeps workers from bursting in sync)."""
+        crawl_delay = await self.robots.crawl_delay(url) if self.robots else None
+        wait = self.pacer.reserve(
+            host_of(url),
+            spacing=max(self.min_delay, crawl_delay or 0.0),
+            lead=self.backoff_delay + self.rng.uniform(0, self.jitter_max),
+        )
+        if wait > 0:
+            await asyncio.sleep(wait)
+
     # =========================================================
     # WORKER LOOP (FULL TRACE)
     # =========================================================
@@ -220,19 +239,8 @@ class RequestsPipeline:
                     )
                     continue
 
-                # Rate limiting (global pace): minimum inter-request delay,
-                # plus any active backoff, plus jitter to avoid workers
-                # bursting in sync.
-                now = time.monotonic()
-                elapsed = now - self.last_request_time
-                delay = max(self.min_delay - elapsed, 0)
-                delay += self.backoff_delay
-                delay += self.rng.uniform(0, self.jitter_max)
+                await self._wait_for_slot(node.get_full_url())
 
-                if delay > 0:
-                    await asyncio.sleep(delay)
-
-                self.last_request_time = time.monotonic()
                 response = await self.network_client.emit_request(
                     {
                         "url": node.get_full_url(),
@@ -279,12 +287,17 @@ class RequestsPipeline:
                 else:
                     self.backoff_delay = max(self.backoff_delay * self.backoff_failure_decay, 0)
 
+                retry_after = retry_after_seconds(e)
+                if retry_after is not None:
+                    self.pacer.hold_off(host_of(node.get_full_url()), retry_after)
+
                 await self.event_broker.emit(
                     RequestFailedEvent(
                         correlation_id=str(node.get_id()),
                         node=node,
                         error_type=type(e).__name__,
                         error_message=error_str,
+                        status_code=status_of(e),
                     )
                 )
 

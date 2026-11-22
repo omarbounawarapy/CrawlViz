@@ -9,6 +9,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "0", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "0", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 16, "links_rejected": 0, "node_id": "0", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "16 links accepted", "duration_ms": "<volatile>", "node_id": "0", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "0", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "0", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "0", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -17,8 +18,10 @@
 {"node_id": "0", "scored_count": 13, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "0", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.304505, "score": 0, "url": "https://frozen.test/p5"}, {"priority": 0.304505, "score": 0, "url": "https://frozen.test/p138"}, {"priority": 0.25, "score": 0, "url": "https://frozen.test/p63"}], "children_count": 3, "parent_id": "0", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "3 links prioritised", "duration_ms": "<volatile>", "node_id": "0", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "0", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.418, "score": 67, "url": "https://frozen.test/p1"}, {"priority": 0.436, "score": 79, "url": "https://frozen.test/p3"}, {"priority": 0.228, "score": 27, "url": "https://frozen.test/p41"}, {"priority": 0.476, "score": 89, "url": "https://frozen.test/p144"}, {"priority": 0.1835, "score": 14, "url": "https://frozen.test/p47"}, {"priority": 0.37, "score": 55, "url": "https://frozen.test/p95"}, {"priority": 0.175, "score": 10, "url": "https://frozen.test/p87"}, {"priority": 0.4825, "score": 85, "url": "https://frozen.test/p40"}, {"priority": 0.462, "score": 78, "url": "https://frozen.test/p115"}, {"priority": 0.499, "score": 91, "url": "https://frozen.test/p111"}, {"priority": 0.3025, "score": 40, "url": "https://frozen.test/p92"}, {"priority": 0.411, "score": 69, "url": "https://frozen.test/p104"}, {"priority": 0.232703, "score": 5, "url": "https://frozen.test/p2"}], "children_count": 13, "parent_id": "0", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "13 links prioritised", "duration_ms": "<volatile>", "node_id": "0", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 1, "llm_score": 0, "node_id": "1", "parent_id": "0", "priority": 0.304505, "state": "CREATED", "url": "https://frozen.test/p5"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": null, "nlp_breakdown": {"anchor_similarity": 0.408248, "boilerplate_score": 0.5, "cluster_distance": 0.701858, "contextual_consistency": 0.0, "coverage_gap": 0.298142, "lexical_overlap": 0.5, "novelty_injection": 0.801238, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.908713, "target_similarity": 0.298142}, "nlp_score": 0.063514, "node_id": "1", "priority": 0.304505, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 1, "llm_score": 0, "node_id": "2", "parent_id": "0", "priority": 0.304505, "state": "CREATED", "url": "https://frozen.test/p138"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -91,6 +94,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "13", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "13", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 13, "links_rejected": 3, "node_id": "13", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "13 links accepted", "duration_ms": "<volatile>", "node_id": "13", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "13", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "13", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "13", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -99,8 +103,10 @@
 {"node_id": "13", "scored_count": 10, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "13", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.249682, "score": 0, "url": "https://frozen.test/p178"}, {"priority": 0.225593, "score": 0, "url": "https://frozen.test/p27"}, {"priority": 0.225593, "score": 0, "url": "https://frozen.test/p100"}], "children_count": 3, "parent_id": "13", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "3 links prioritised", "duration_ms": "<volatile>", "node_id": "13", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "13", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.494036, "score": 97, "url": "https://frozen.test/p184"}, {"priority": 0.318054, "score": 51, "url": "https://frozen.test/p185"}, {"priority": 0.134, "score": 11, "url": "https://frozen.test/p97"}, {"priority": 0.354054, "score": 60, "url": "https://frozen.test/p25"}, {"priority": 0.490089, "score": 90, "url": "https://frozen.test/p120"}, {"priority": 0.150071, "score": 7, "url": "https://frozen.test/p158"}, {"priority": 0.282071, "score": 40, "url": "https://frozen.test/p116"}, {"priority": 0.498036, "score": 98, "url": "https://frozen.test/p30"}, {"priority": 0.374, "score": 71, "url": "https://frozen.test/p36"}, {"priority": 0.142054, "score": 7, "url": "https://frozen.test/p130"}], "children_count": 10, "parent_id": "13", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "10 links prioritised", "duration_ms": "<volatile>", "node_id": "13", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 0, "node_id": "17", "parent_id": "13", "priority": 0.249682, "state": "CREATED", "url": "https://frozen.test/p178"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": null, "nlp_breakdown": {"anchor_similarity": 0.408248, "boilerplate_score": 0.5, "cluster_distance": 0.719944, "contextual_consistency": 0.0, "coverage_gap": 0.280056, "lexical_overlap": 0.5, "novelty_injection": 0.813296, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.81666, "target_similarity": 0.280056}, "nlp_score": 0.049045, "node_id": "17", "priority": 0.249682, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 0, "node_id": "18", "parent_id": "13", "priority": 0.225593, "state": "CREATED", "url": "https://frozen.test/p27"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -161,6 +167,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "27", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "27", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 6, "links_rejected": 1, "node_id": "27", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "6 links accepted", "duration_ms": "<volatile>", "node_id": "27", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "27", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "27", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "27", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -175,6 +182,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "20", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "20", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 7, "links_rejected": 0, "node_id": "20", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "7 links accepted", "duration_ms": "<volatile>", "node_id": "20", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "20", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "20", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "20", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -189,6 +197,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "24", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "24", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 6, "links_rejected": 1, "node_id": "24", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "6 links accepted", "duration_ms": "<volatile>", "node_id": "24", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "24", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "24", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "24", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -203,6 +212,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "11", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "11", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 6, "links_rejected": 1, "node_id": "11", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "6 links accepted", "duration_ms": "<volatile>", "node_id": "11", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "11", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "11", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "11", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -211,6 +221,7 @@
 {"node_id": "11", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "11", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.508047, "score": 69, "url": "https://frozen.test/p14"}], "children_count": 1, "parent_id": "11", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "11", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 69, "node_id": "30", "parent_id": "11", "priority": 0.508047, "state": "CREATED", "url": "https://frozen.test/p14"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 69, "nlp_breakdown": {"anchor_similarity": 0.816497, "boilerplate_score": 0.0, "cluster_distance": 0.403715, "contextual_consistency": 0.27735, "coverage_gap": 0.596285, "lexical_overlap": 1.0, "novelty_injection": 0.602477, "parent_relevance": 0.339683, "region_density": 0.0, "semantic_delta": 0.594904, "target_similarity": 0.596285}, "nlp_score": 0.490895, "node_id": "30", "priority": 0.508047, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "enqueued", "queue_size": 24, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -223,6 +234,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 13, "links_rejected": 2, "node_id": "30", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "13 links accepted", "duration_ms": "<volatile>", "node_id": "30", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "30", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -231,8 +243,10 @@
 {"node_id": "30", "scored_count": 10, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.37972, "score": 0, "url": "https://frozen.test/p56"}, {"priority": 0.23986, "score": 0, "url": "https://frozen.test/p59"}, {"priority": 0.222182, "score": 0, "url": "https://frozen.test/p39"}], "children_count": 3, "parent_id": "30", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "3 links prioritised", "duration_ms": "<volatile>", "node_id": "30", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "30", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.089213, "score": 2, "url": "https://frozen.test/p18"}, {"priority": 0.426607, "score": 89, "url": "https://frozen.test/p16"}, {"priority": 0.388613, "score": 63, "url": "https://frozen.test/p151"}, {"priority": 0.201213, "score": 30, "url": "https://frozen.test/p122"}, {"priority": 0.399, "score": 81, "url": "https://frozen.test/p146"}, {"priority": 0.406607, "score": 84, "url": "https://frozen.test/p90"}, {"priority": 0.336, "score": 69, "url": "https://frozen.test/p96"}, {"priority": 0.331916, "score": 47, "url": "https://frozen.test/p126"}, {"priority": 0.336, "score": 69, "url": "https://frozen.test/p89"}, {"priority": 0.421022, "score": 70, "url": "https://frozen.test/p157"}], "children_count": 10, "parent_id": "30", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "10 links prioritised", "duration_ms": "<volatile>", "node_id": "30", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 0, "node_id": "31", "parent_id": "30", "priority": 0.37972, "state": "CREATED", "url": "https://frozen.test/p56"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": null, "nlp_breakdown": {"anchor_similarity": 0.816497, "boilerplate_score": 0.0, "cluster_distance": 0.403715, "contextual_consistency": 0.707107, "coverage_gap": 0.596285, "lexical_overlap": 1.0, "novelty_injection": 0.602477, "parent_relevance": 0.721688, "region_density": 0.0, "semantic_delta": 0.419052, "target_similarity": 0.596285}, "nlp_score": 0.512383, "node_id": "31", "priority": 0.37972, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 0, "node_id": "32", "parent_id": "30", "priority": 0.23986, "state": "CREATED", "url": "https://frozen.test/p59"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -293,6 +307,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "7", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "7", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 12, "links_rejected": 3, "node_id": "7", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "12 links accepted", "duration_ms": "<volatile>", "node_id": "7", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "7", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "7", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "7", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -301,8 +316,10 @@
 {"node_id": "7", "scored_count": 9, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "7", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.374821, "score": 0, "url": "https://frozen.test/p44"}, {"priority": 0.259374, "score": 0, "url": "https://frozen.test/p154"}, {"priority": 0.254505, "score": 0, "url": "https://frozen.test/p167"}], "children_count": 3, "parent_id": "7", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "3 links prioritised", "duration_ms": "<volatile>", "node_id": "7", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "7", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.388606, "score": 71, "url": "https://frozen.test/p179"}, {"priority": 0.373163, "score": 48, "url": "https://frozen.test/p84"}, {"priority": 0.194, "score": 26, "url": "https://frozen.test/p13"}, {"priority": 0.453795, "score": 88, "url": "https://frozen.test/p73"}, {"priority": 0.155487, "score": 14, "url": "https://frozen.test/p64"}, {"priority": 0.440833, "score": 81, "url": "https://frozen.test/p21"}, {"priority": 0.433635, "score": 70, "url": "https://frozen.test/p93"}, {"priority": 0.278461, "score": 40, "url": "https://frozen.test/p140"}, {"priority": 0.49958, "score": 94, "url": "https://frozen.test/p174"}], "children_count": 9, "parent_id": "7", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "9 links prioritised", "duration_ms": "<volatile>", "node_id": "7", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 0, "node_id": "44", "parent_id": "7", "priority": 0.374821, "state": "CREATED", "url": "https://frozen.test/p44"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": null, "nlp_breakdown": {"anchor_similarity": 0.816497, "boilerplate_score": 0.408248, "cluster_distance": 0.403715, "contextual_consistency": 0.158114, "coverage_gap": 0.596285, "lexical_overlap": 1.0, "novelty_injection": 0.602477, "parent_relevance": 0.258199, "region_density": 0.0, "semantic_delta": 0.76906, "target_similarity": 0.596285}, "nlp_score": 0.342047, "node_id": "44", "priority": 0.374821, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 0, "node_id": "45", "parent_id": "7", "priority": 0.259374, "state": "CREATED", "url": "https://frozen.test/p154"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -359,6 +376,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "55", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "55", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 4, "links_rejected": 2, "node_id": "55", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "4 links accepted", "duration_ms": "<volatile>", "node_id": "55", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "55", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "55", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "55", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -367,6 +385,7 @@
 {"node_id": "55", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "55", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.313587, "score": 23, "url": "https://frozen.test/p148"}], "children_count": 1, "parent_id": "55", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "55", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 23, "node_id": "56", "parent_id": "55", "priority": 0.313587, "state": "CREATED", "url": "https://frozen.test/p148"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 23, "nlp_breakdown": {"anchor_similarity": 0.816497, "boilerplate_score": 0.0, "cluster_distance": 0.403715, "contextual_consistency": 0.603023, "coverage_gap": 0.596285, "lexical_overlap": 1.0, "novelty_injection": 0.602477, "parent_relevance": 0.738549, "region_density": 0.0, "semantic_delta": 0.559614, "target_similarity": 0.596285}, "nlp_score": 0.507179, "node_id": "56", "priority": 0.313587, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "56", "phase": "enqueued", "queue_size": 47, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -379,6 +398,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "12", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "12", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 5, "links_rejected": 3, "node_id": "12", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "5 links accepted", "duration_ms": "<volatile>", "node_id": "12", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "12", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "12", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "12", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -393,6 +413,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "50", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "50", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 8, "links_rejected": 3, "node_id": "50", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "8 links accepted", "duration_ms": "<volatile>", "node_id": "50", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "50", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "50", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "50", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -407,6 +428,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "52", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "52", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 6, "node_id": "52", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "52", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "52", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "52", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "52", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -421,6 +443,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "5", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "5", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 8, "node_id": "5", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "5", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "5", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "5", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "5", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -435,6 +458,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "53", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "53", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 11, "node_id": "53", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "53", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "53", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "53", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "53", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -449,6 +473,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "35", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "35", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 4, "links_rejected": 4, "node_id": "35", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "4 links accepted", "duration_ms": "<volatile>", "node_id": "35", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "35", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "35", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "35", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -463,6 +488,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "43", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "43", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 6, "links_rejected": 6, "node_id": "43", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "6 links accepted", "duration_ms": "<volatile>", "node_id": "43", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "43", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "43", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "43", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -471,8 +497,9 @@
 {"node_id": "43", "scored_count": 2, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "43", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.113916, "score": 0, "url": "https://frozen.test/p38"}, {"priority": 0.437992, "score": 85, "url": "https://frozen.test/p159"}], "children_count": 2, "parent_id": "43", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "2 links prioritised", "duration_ms": "<volatile>", "node_id": "43", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 0, "node_id": "57", "parent_id": "43", "priority": 0.113916, "state": "CREATED", "url": "https://frozen.test/p38"}, "ts": "<volatile>", "type": "NODE_ADDED"}
-{"llm_score": null, "nlp_breakdown": {"anchor_similarity": 0.408248, "boilerplate_score": 0.0, "cluster_distance": 0.701858, "contextual_consistency": 0.353553, "coverage_gap": 0.298142, "lexical_overlap": 0.5, "novelty_injection": 0.801238, "parent_relevance": 0.144338, "region_density": 0.0, "semantic_delta": 0.741801, "target_similarity": 0.298142}, "nlp_score": 0.256192, "node_id": "57", "priority": 0.113916, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
+{"llm_score": 0, "nlp_breakdown": {"anchor_similarity": 0.408248, "boilerplate_score": 0.0, "cluster_distance": 0.701858, "contextual_consistency": 0.353553, "coverage_gap": 0.298142, "lexical_overlap": 0.5, "novelty_injection": 0.801238, "parent_relevance": 0.144338, "region_density": 0.0, "semantic_delta": 0.741801, "target_similarity": 0.298142}, "nlp_score": 0.256192, "node_id": "57", "priority": 0.113916, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 85, "node_id": "58", "parent_id": "43", "priority": 0.437992, "state": "CREATED", "url": "https://frozen.test/p159"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 85, "nlp_breakdown": {"anchor_similarity": 0.408248, "boilerplate_score": 0.0, "cluster_distance": 0.735093, "contextual_consistency": 0.176777, "coverage_gap": 0.264906, "lexical_overlap": 0.5, "novelty_injection": 0.823396, "parent_relevance": 0.144338, "region_density": 0.0, "semantic_delta": 0.885292, "target_similarity": 0.264906}, "nlp_score": 0.220764, "node_id": "58", "priority": 0.437992, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "57", "phase": "enqueued", "queue_size": 41, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -487,6 +514,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "58", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "58", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 6, "node_id": "58", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "58", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "58", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "58", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "58", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -501,6 +529,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "4", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "4", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 10, "links_rejected": 3, "node_id": "4", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "10 links accepted", "duration_ms": "<volatile>", "node_id": "4", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "4", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "4", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "4", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -509,8 +538,10 @@
 {"node_id": "4", "scored_count": 7, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "4", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.199188, "score": 0, "url": "https://frozen.test/p51"}, {"priority": 0.219338, "score": 0, "url": "https://frozen.test/p54"}, {"priority": 0.20547, "score": 0, "url": "https://frozen.test/p194"}], "children_count": 3, "parent_id": "4", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "3 links prioritised", "duration_ms": "<volatile>", "node_id": "4", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "4", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.427282, "score": 76, "url": "https://frozen.test/p12"}, {"priority": 0.266962, "score": 38, "url": "https://frozen.test/p134"}, {"priority": 0.322321, "score": 56, "url": "https://frozen.test/p6"}, {"priority": 0.185767, "score": 21, "url": "https://frozen.test/p150"}, {"priority": 0.278321, "score": 45, "url": "https://frozen.test/p190"}, {"priority": 0.455282, "score": 83, "url": "https://frozen.test/p193"}, {"priority": 0.378, "score": 72, "url": "https://frozen.test/p19"}], "children_count": 7, "parent_id": "4", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "7 links prioritised", "duration_ms": "<volatile>", "node_id": "4", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 0, "node_id": "59", "parent_id": "4", "priority": 0.199188, "state": "CREATED", "url": "https://frozen.test/p51"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": null, "nlp_breakdown": {"anchor_similarity": 0.0, "boilerplate_score": 0.0, "cluster_distance": 0.867547, "contextual_consistency": 0.138675, "coverage_gap": 0.132453, "lexical_overlap": 0.0, "novelty_injection": 0.911698, "parent_relevance": 0.113228, "region_density": 0.0, "semantic_delta": 0.865024, "target_similarity": 0.132453}, "nlp_score": 0.112896, "node_id": "59", "priority": 0.199188, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 0, "node_id": "60", "parent_id": "4", "priority": 0.219338, "state": "CREATED", "url": "https://frozen.test/p54"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -559,6 +590,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "67", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "67", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 4, "links_rejected": 6, "node_id": "67", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "4 links accepted", "duration_ms": "<volatile>", "node_id": "67", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "67", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "67", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "67", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -567,6 +599,7 @@
 {"node_id": "67", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "67", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.149856, "score": 4, "url": "https://frozen.test/p199"}], "children_count": 1, "parent_id": "67", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "67", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 4, "node_id": "69", "parent_id": "67", "priority": 0.149856, "state": "CREATED", "url": "https://frozen.test/p199"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 4, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.956781, "contextual_consistency": 0.452267, "coverage_gap": 0.243332, "lexical_overlap": 0.0, "novelty_injection": 0.902667, "parent_relevance": 0.123092, "region_density": 0.0, "semantic_delta": 0.559796, "target_similarity": 0.243332}, "nlp_score": 0.217279, "node_id": "69", "priority": 0.149856, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "69", "phase": "enqueued", "queue_size": 50, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -579,6 +612,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "62", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "62", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 8, "node_id": "62", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "62", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "62", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "62", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p104", "duration_ms": "<volatile>", "node_id": "15", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -589,6 +623,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "15", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "15", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 8, "node_id": "15", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "15", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "15", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "15", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "15", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -603,6 +638,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "39", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "39", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 8, "node_id": "39", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "39", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "39", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "39", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "39", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -617,6 +653,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "38", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "38", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 12, "node_id": "38", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "38", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "38", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "38", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "38", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -631,6 +668,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "36", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "36", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 9, "node_id": "36", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "36", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "36", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "36", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "36", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -645,6 +683,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "47", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "47", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 10, "node_id": "47", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "47", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "47", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "47", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "47", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -659,6 +698,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "31", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "31", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 4, "node_id": "31", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "31", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "31", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "31", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "31", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -673,6 +713,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "68", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "68", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 4, "links_rejected": 12, "node_id": "68", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "4 links accepted", "duration_ms": "<volatile>", "node_id": "68", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "68", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "68", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "68", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -681,6 +722,7 @@
 {"node_id": "68", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "68", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.26481, "score": 35, "url": "https://frozen.test/p34"}], "children_count": 1, "parent_id": "68", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "68", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 35, "node_id": "70", "parent_id": "68", "priority": 0.26481, "state": "CREATED", "url": "https://frozen.test/p34"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 35, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.956781, "contextual_consistency": 0.301511, "coverage_gap": 0.243332, "lexical_overlap": 0.0, "novelty_injection": 0.902667, "parent_relevance": 0.369274, "region_density": 0.0, "semantic_delta": 0.608707, "target_similarity": 0.243332}, "nlp_score": 0.209741, "node_id": "70", "priority": 0.26481, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "70", "phase": "enqueued", "queue_size": 43, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -693,6 +735,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "44", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "44", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 12, "node_id": "44", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "44", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "44", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "44", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "44", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -707,6 +750,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "28", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "28", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 6, "node_id": "28", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "28", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "28", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "28", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "28", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -715,6 +759,7 @@
 {"node_id": "28", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "28", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.4952, "score": 85, "url": "https://frozen.test/p80"}], "children_count": 1, "parent_id": "28", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "28", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 85, "node_id": "71", "parent_id": "28", "priority": 0.4952, "state": "CREATED", "url": "https://frozen.test/p80"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 85, "nlp_breakdown": {"anchor_similarity": 0.603553, "boilerplate_score": 0.0, "cluster_distance": 0.541472, "contextual_consistency": 0.213201, "coverage_gap": 0.472748, "lexical_overlap": 0.5, "novelty_injection": 0.616235, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.792486, "target_similarity": 0.472748}, "nlp_score": 0.388858, "node_id": "71", "priority": 0.4952, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "71", "phase": "enqueued", "queue_size": 42, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -727,6 +772,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "71", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "71", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 12, "node_id": "71", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "71", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "71", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "71", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "71", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -735,6 +781,7 @@
 {"node_id": "71", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "71", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.384044, "score": 66, "url": "https://frozen.test/p113"}], "children_count": 1, "parent_id": "71", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "71", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 66, "node_id": "72", "parent_id": "71", "priority": 0.384044, "state": "CREATED", "url": "https://frozen.test/p113"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 66, "nlp_breakdown": {"anchor_similarity": 0.603553, "boilerplate_score": 0.5, "cluster_distance": 0.46773, "contextual_consistency": 0.133631, "coverage_gap": 0.456436, "lexical_overlap": 0.5, "novelty_injection": 0.531572, "parent_relevance": 0.0, "region_density": 0.166667, "semantic_delta": 0.80482, "target_similarity": 0.547723}, "nlp_score": 0.26986, "node_id": "72", "priority": 0.384044, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "72", "phase": "enqueued", "queue_size": 42, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -747,6 +794,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "72", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "72", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 7, "node_id": "72", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "72", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "72", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "72", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "72", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -761,6 +809,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "48", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "48", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 9, "node_id": "48", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "48", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "48", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "48", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "48", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -775,6 +824,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "9", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "9", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 9, "node_id": "9", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "9", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "9", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "9", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "9", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -789,6 +839,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "23", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "23", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 9, "node_id": "23", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "23", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "23", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "23", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p96", "duration_ms": "<volatile>", "node_id": "40", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -799,6 +850,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "40", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "40", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 16, "node_id": "40", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "40", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "40", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "40", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p89", "duration_ms": "<volatile>", "node_id": "42", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -809,6 +861,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "42", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "42", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 6, "node_id": "42", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "42", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "42", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "42", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "42", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -817,6 +870,7 @@
 {"node_id": "42", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "42", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.315172, "score": 58, "url": "https://frozen.test/p107"}], "children_count": 1, "parent_id": "42", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "42", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 58, "node_id": "73", "parent_id": "42", "priority": 0.315172, "state": "CREATED", "url": "https://frozen.test/p107"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 58, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.850929, "contextual_consistency": 0.129099, "coverage_gap": 0.273861, "lexical_overlap": 0.0, "novelty_injection": 0.830827, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.764298, "target_similarity": 0.273861}, "nlp_score": 0.225544, "node_id": "73", "priority": 0.315172, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "73", "phase": "enqueued", "queue_size": 37, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -829,6 +883,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "41", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "41", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 14, "node_id": "41", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "41", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "41", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "41", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "41", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -837,6 +892,7 @@
 {"node_id": "41", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "41", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.494518, "score": 90, "url": "https://frozen.test/p26"}], "children_count": 1, "parent_id": "41", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "41", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 90, "node_id": "74", "parent_id": "41", "priority": 0.494518, "state": "CREATED", "url": "https://frozen.test/p26"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 90, "nlp_breakdown": {"anchor_similarity": 0.603553, "boilerplate_score": 0.5, "cluster_distance": 0.483944, "contextual_consistency": 0.316228, "coverage_gap": 0.472942, "lexical_overlap": 0.5, "novelty_injection": 0.568087, "parent_relevance": 0.258199, "region_density": 0.111111, "semantic_delta": 0.76906, "target_similarity": 0.53206}, "nlp_score": 0.26646, "node_id": "74", "priority": 0.494518, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "74", "phase": "enqueued", "queue_size": 37, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -849,6 +905,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "74", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "74", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 15, "node_id": "74", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "74", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "74", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "74", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "74", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -863,6 +920,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "64", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "64", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 8, "node_id": "64", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "64", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "64", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "64", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "64", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -877,6 +935,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "21", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "21", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 10, "node_id": "21", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "21", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "21", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "21", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p107", "duration_ms": "<volatile>", "node_id": "73", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -887,6 +946,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "73", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "73", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 7, "node_id": "73", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "73", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "73", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "73", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "73", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -895,6 +955,7 @@
 {"node_id": "73", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "73", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.392599, "score": 83, "url": "https://frozen.test/p136"}], "children_count": 1, "parent_id": "73", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "73", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 5, "llm_score": 83, "node_id": "75", "parent_id": "73", "priority": 0.392599, "state": "CREATED", "url": "https://frozen.test/p136"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 83, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.951359, "contextual_consistency": 0.133631, "coverage_gap": 0.273861, "lexical_overlap": 0.0, "novelty_injection": 0.890455, "parent_relevance": 0.109109, "region_density": 0.0, "semantic_delta": 0.853615, "target_similarity": 0.273861}, "nlp_score": 0.225771, "node_id": "75", "priority": 0.392599, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "75", "phase": "enqueued", "queue_size": 34, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -907,6 +968,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "75", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "75", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 8, "node_id": "75", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "75", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "75", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "75", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "75", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -914,6 +976,7 @@
 {"node_id": "75", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "75", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.382002, "score": 83, "url": "https://frozen.test/p60"}], "children_count": 1, "parent_id": "75", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "75", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 6, "llm_score": 83, "node_id": "76", "parent_id": "75", "priority": 0.382002, "state": "CREATED", "url": "https://frozen.test/p60"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 83, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.985594, "contextual_consistency": 0.5547, "coverage_gap": 0.243332, "lexical_overlap": 0.0, "novelty_injection": 0.902667, "parent_relevance": 0.113228, "region_density": 0.0, "semantic_delta": 0.505087, "target_similarity": 0.243332}, "nlp_score": 0.222401, "node_id": "76", "priority": 0.382002, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "76", "phase": "enqueued", "queue_size": 34, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -926,6 +989,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "76", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "76", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 7, "node_id": "76", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "76", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "76", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "76", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "76", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -933,6 +997,7 @@
 {"node_id": "76", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "76", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.08844, "score": 18, "url": "https://frozen.test/p172"}], "children_count": 1, "parent_id": "76", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "76", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 7, "llm_score": 18, "node_id": "77", "parent_id": "76", "priority": 0.08844, "state": "CREATED", "url": "https://frozen.test/p172"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 18, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.669377, "contextual_consistency": 0.573539, "coverage_gap": 0.316118, "lexical_overlap": 0.0, "novelty_injection": 0.717991, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.441758, "target_similarity": 0.316118}, "nlp_score": 0.281572, "node_id": "77", "priority": 0.08844, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "77", "phase": "enqueued", "queue_size": 34, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -945,6 +1010,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "56", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "56", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 13, "node_id": "56", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "56", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "56", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "56", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "56", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -952,6 +1018,7 @@
 {"node_id": "56", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "56", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.334087, "score": 54, "url": "https://frozen.test/p118"}], "children_count": 1, "parent_id": "56", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "56", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 54, "node_id": "78", "parent_id": "56", "priority": 0.334087, "state": "CREATED", "url": "https://frozen.test/p118"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 54, "nlp_breakdown": {"anchor_similarity": 0.408114, "boilerplate_score": 0.5, "cluster_distance": 0.456285, "contextual_consistency": 0.150756, "coverage_gap": 0.516501, "lexical_overlap": 0.0, "novelty_injection": 0.593398, "parent_relevance": 0.492366, "region_density": 0.047619, "semantic_delta": 0.896582, "target_similarity": 0.542326}, "nlp_score": 0.266399, "node_id": "78", "priority": 0.334087, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "78", "phase": "enqueued", "queue_size": 34, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -964,6 +1031,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "78", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "78", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 12, "node_id": "78", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "78", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "78", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "78", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "78", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -972,6 +1040,7 @@
 {"node_id": "78", "scored_count": 2, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "78", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.092644, "score": 7, "url": "https://frozen.test/p17"}, {"priority": 0.10396, "score": 12, "url": "https://frozen.test/p142"}], "children_count": 2, "parent_id": "78", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "2 links prioritised", "duration_ms": "<volatile>", "node_id": "78", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 5, "llm_score": 7, "node_id": "79", "parent_id": "78", "priority": 0.092644, "state": "CREATED", "url": "https://frozen.test/p17"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 7, "nlp_breakdown": {"anchor_similarity": 0.353553, "boilerplate_score": 0.0, "cluster_distance": 0.699499, "contextual_consistency": 0.0, "coverage_gap": 0.414057, "lexical_overlap": 0.0, "novelty_injection": 0.684707, "parent_relevance": 0.0, "region_density": 0.047619, "semantic_delta": 0.914874, "target_similarity": 0.43476}, "nlp_score": 0.347808, "node_id": "79", "priority": 0.092644, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 5, "llm_score": 12, "node_id": "80", "parent_id": "78", "priority": 0.10396, "state": "CREATED", "url": "https://frozen.test/p142"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -988,6 +1057,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "1", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "1", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 14, "node_id": "1", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "1", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "1", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "1", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "1", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -995,6 +1065,7 @@
 {"node_id": "1", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "1", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.5253, "score": 97, "url": "https://frozen.test/p68"}], "children_count": 1, "parent_id": "1", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "1", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 97, "node_id": "81", "parent_id": "1", "priority": 0.5253, "state": "CREATED", "url": "https://frozen.test/p68"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 97, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.627896, "contextual_consistency": 0.0, "coverage_gap": 0.355779, "lexical_overlap": 0.0, "novelty_injection": 0.682609, "parent_relevance": 0.421637, "region_density": 0.0, "semantic_delta": 1.0, "target_similarity": 0.355779}, "nlp_score": 0.284623, "node_id": "81", "priority": 0.5253, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "81", "phase": "enqueued", "queue_size": 35, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1007,6 +1078,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "81", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "81", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 6, "node_id": "81", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "81", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "81", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "81", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p138", "duration_ms": "<volatile>", "node_id": "2", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1017,6 +1089,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "2", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "2", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 10, "node_id": "2", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "2", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "2", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "2", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "2", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1024,6 +1097,7 @@
 {"node_id": "2", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "2", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.367624, "score": 47, "url": "https://frozen.test/p22"}], "children_count": 1, "parent_id": "2", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "2", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 2, "llm_score": 47, "node_id": "82", "parent_id": "2", "priority": 0.367624, "state": "CREATED", "url": "https://frozen.test/p22"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 47, "nlp_breakdown": {"anchor_similarity": 0.158114, "boilerplate_score": 0.5, "cluster_distance": 0.545206, "contextual_consistency": 0.333333, "coverage_gap": 0.439886, "lexical_overlap": 0.0, "novelty_injection": 0.672936, "parent_relevance": 0.136083, "region_density": 0.047619, "semantic_delta": 0.513135, "target_similarity": 0.46188}, "nlp_score": 0.211171, "node_id": "82", "priority": 0.367624, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "82", "phase": "enqueued", "queue_size": 34, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1036,6 +1110,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "82", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "82", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 9, "node_id": "82", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "82", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "82", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "82", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p92", "duration_ms": "<volatile>", "node_id": "14", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1046,6 +1121,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "14", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "14", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 6, "node_id": "14", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "14", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "14", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "14", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "14", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1060,6 +1136,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "26", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "26", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 6, "node_id": "26", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "26", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "26", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "26", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p140", "duration_ms": "<volatile>", "node_id": "54", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1070,6 +1147,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "54", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "54", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 8, "node_id": "54", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "54", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "54", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "54", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p190", "duration_ms": "<volatile>", "node_id": "66", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1080,6 +1158,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "66", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "66", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 6, "node_id": "66", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "66", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "66", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "66", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "66", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1088,6 +1167,7 @@
 {"node_id": "66", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "66", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.500668, "score": 91, "url": "https://frozen.test/p108"}], "children_count": 1, "parent_id": "66", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "66", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 91, "node_id": "83", "parent_id": "66", "priority": 0.500668, "state": "CREATED", "url": "https://frozen.test/p108"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 91, "nlp_breakdown": {"anchor_similarity": 0.25, "boilerplate_score": 0.0, "cluster_distance": 0.669377, "contextual_consistency": 0.57735, "coverage_gap": 0.316118, "lexical_overlap": 0.0, "novelty_injection": 0.717991, "parent_relevance": 0.117851, "region_density": 0.0, "semantic_delta": 0.531707, "target_similarity": 0.316118}, "nlp_score": 0.281762, "node_id": "83", "priority": 0.500668, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "83", "phase": "enqueued", "queue_size": 30, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1100,6 +1180,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "83", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "83", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 3, "links_rejected": 11, "node_id": "83", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "3 links accepted", "duration_ms": "<volatile>", "node_id": "83", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "83", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "83", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "83", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1107,6 +1188,7 @@
 {"node_id": "83", "scored_count": 3, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "83", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.305227, "score": 55, "url": "https://frozen.test/p69"}, {"priority": 0.490733, "score": 90, "url": "https://frozen.test/p11"}, {"priority": 0.207808, "score": 29, "url": "https://frozen.test/p131"}], "children_count": 3, "parent_id": "83", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "3 links prioritised", "duration_ms": "<volatile>", "node_id": "83", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 55, "node_id": "84", "parent_id": "83", "priority": 0.305227, "state": "CREATED", "url": "https://frozen.test/p69"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 55, "nlp_breakdown": {"anchor_similarity": 0.0, "boilerplate_score": 0.0, "cluster_distance": 0.699499, "contextual_consistency": 0.196116, "coverage_gap": 0.279751, "lexical_overlap": 0.0, "novelty_injection": 0.802661, "parent_relevance": 0.113228, "region_density": 0.0, "semantic_delta": 0.754642, "target_similarity": 0.279751}, "nlp_score": 0.233607, "node_id": "84", "priority": 0.305227, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 90, "node_id": "85", "parent_id": "83", "priority": 0.490733, "state": "CREATED", "url": "https://frozen.test/p11"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -1127,6 +1209,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "85", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "85", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 13, "node_id": "85", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "85", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "85", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "85", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p69", "duration_ms": "<volatile>", "node_id": "84", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1137,6 +1220,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "84", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "84", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 10, "node_id": "84", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "84", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "84", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "84", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "https://frozen.test/p134", "duration_ms": "<volatile>", "node_id": "63", "phase": "started", "queue_size": null, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1147,6 +1231,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "63", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "63", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 1, "links_rejected": 14, "node_id": "63", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "1 links accepted", "duration_ms": "<volatile>", "node_id": "63", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "63", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "63", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "63", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1154,6 +1239,7 @@
 {"node_id": "63", "scored_count": 1, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "63", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.453907, "score": 82, "url": "https://frozen.test/p66"}], "children_count": 1, "parent_id": "63", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "1 links prioritised", "duration_ms": "<volatile>", "node_id": "63", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 3, "llm_score": 82, "node_id": "87", "parent_id": "63", "priority": 0.453907, "state": "CREATED", "url": "https://frozen.test/p66"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 82, "nlp_breakdown": {"anchor_similarity": 0.0, "boilerplate_score": 0.0, "cluster_distance": 0.669377, "contextual_consistency": 0.301511, "coverage_gap": 0.307794, "lexical_overlap": 0.0, "novelty_injection": 0.78288, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.70653, "target_similarity": 0.307794}, "nlp_score": 0.26131, "node_id": "87", "priority": 0.453907, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "87", "phase": "enqueued", "queue_size": 30, "stage": "request", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1166,6 +1252,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "87", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "87", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 2, "links_rejected": 5, "node_id": "87", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "2 links accepted", "duration_ms": "<volatile>", "node_id": "87", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "87", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "87", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "87", "phase": "started", "queue_size": null, "stage": "scoring", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
@@ -1173,6 +1260,7 @@
 {"node_id": "87", "scored_count": 2, "state": "SCORED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "87", "phase": "started", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"children": [{"priority": 0.195098, "score": 21, "url": "https://frozen.test/p37"}, {"priority": 0.1413, "score": 16, "url": "https://frozen.test/p78"}], "children_count": 2, "parent_id": "87", "ts": "<volatile>", "type": "NODE_EXPANDED"}
+{"detail": "2 links prioritised", "duration_ms": "<volatile>", "node_id": "87", "phase": "completed", "queue_size": null, "stage": "priority", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 21, "node_id": "88", "parent_id": "87", "priority": 0.195098, "state": "CREATED", "url": "https://frozen.test/p37"}, "ts": "<volatile>", "type": "NODE_ADDED"}
 {"llm_score": 21, "nlp_breakdown": {"anchor_similarity": 0.0, "boilerplate_score": 0.0, "cluster_distance": 0.669377, "contextual_consistency": 0.5547, "coverage_gap": 0.307794, "lexical_overlap": 0.0, "novelty_injection": 0.78288, "parent_relevance": 0.0, "region_density": 0.0, "semantic_delta": 0.595071, "target_similarity": 0.307794}, "nlp_score": 0.27397, "node_id": "88", "priority": 0.195098, "priority_strategy": "balanced", "ts": "<volatile>", "type": "NODE_SCORED_DETAIL"}
 {"node": {"created_at": "<volatile>", "depth": 4, "llm_score": 16, "node_id": "89", "parent_id": "87", "priority": 0.1413, "state": "CREATED", "url": "https://frozen.test/p78"}, "ts": "<volatile>", "type": "NODE_ADDED"}
@@ -1189,6 +1277,7 @@
 {"detail": null, "duration_ms": "<volatile>", "node_id": "70", "phase": "enqueued", "queue_size": 0, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "70", "phase": "started", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"items_accepted": 1, "links_accepted": 0, "links_rejected": 7, "node_id": "70", "state": "FILTERED", "ts": "<volatile>", "type": "NODE_STATE_CHANGED"}
+{"detail": "0 links accepted", "duration_ms": "<volatile>", "node_id": "70", "phase": "completed", "queue_size": null, "stage": "filtering", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": null, "duration_ms": "<volatile>", "node_id": "70", "phase": "started", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"detail": "1 items", "duration_ms": "<volatile>", "node_id": "70", "phase": "completed", "queue_size": null, "stage": "transformation", "ts": "<volatile>", "type": "PIPELINE_EVENT", "worker_id": "<volatile>"}
 {"reason": "NO_PROGRESS", "type": "CRAWL_STOPPED"}
