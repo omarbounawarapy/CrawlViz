@@ -41,6 +41,8 @@
     "accept_language": "",
     "extra_headers": {},
     "max_response_bytes": 5242880,
+    "accepted_content_types": "text/html, application/xhtml+xml",
+    "max_redirects": 5,
     "allow_private_addresses": false
   },
   "pipelines": {
@@ -70,7 +72,8 @@
     },
     "transformation": {
       "workers": 3,
-      "max_queue_size": null
+      "max_queue_size": null,
+      "max_regex_input_chars": 100000
     },
     "debugging": {
       "workers": 2,
@@ -140,6 +143,8 @@
   "observability": {
     "debug_enabled": true,
     "ui_port": 8765,
+    "ui_ping_interval": 20.0,
+    "ui_ping_timeout": 10.0,
     "snapshot_max_candidates": 4000,
     "snapshot_max_errors": 1000
   },
