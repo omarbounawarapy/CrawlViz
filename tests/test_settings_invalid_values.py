@@ -80,9 +80,9 @@ def test_config_route_reports_invalid_stored_settings_then_reset_repairs_them(
 
     response = client.get("/config")
 
-    assert response.status_code == 500
-    detail = response.json()["detail"]
-    assert str(paths.settings_file) in detail and "fetch.min_delay" in detail
+    assert response.status_code == 422
+    message = response.json()["detail"]["message"]
+    assert str(paths.settings_file) in message and "fetch.min_delay" in message
     assert client.post("/config/reset").status_code == 200
     assert client.get("/config").status_code == 200
 

@@ -102,7 +102,8 @@ def test_the_config_route_reports_an_unknown_stored_key_then_reset_repairs_it(
 ) -> None:
     paths.settings_file.write_text('{"bogus": 1}', encoding="utf-8")
     response = client.get("/config")
-    assert response.status_code == 500 and "bogus" in response.json()["detail"]
+    assert response.status_code == 422
+    assert "bogus" in response.json()["detail"]["message"]
     assert client.post("/config/reset").status_code == 200
 
 

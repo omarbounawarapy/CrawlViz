@@ -59,16 +59,16 @@ def test_a_rejected_key_body_is_not_echoed_back(
     reply = client.post("/keys", json=body, headers=headers)
     assert reply.status_code == 422
     assert FAKE_SECRET not in reply.text
-    for problem in reply.json()["detail"]:
-        assert set(problem) == {"type", "loc", "msg"}
+    for problem in reply.json()["detail"]["errors"]:
+        assert set(problem) == {"path", "message"}
 
 
 def test_a_validation_reply_keeps_where_and_why(
     client: TestClient, headers: dict[str, str], paths: RuntimePaths
 ) -> None:
     reply = client.post("/keys", json={"key": FAKE_SECRET}, headers=headers)
-    assert reply.json()["detail"] == [
-        {"type": "missing", "loc": ["body", "provider"], "msg": "Field required"}
+    assert reply.json()["detail"]["errors"] == [
+        {"path": "body.provider", "message": "Field required"}
     ]
 
 
