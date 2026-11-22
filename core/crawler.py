@@ -12,6 +12,7 @@ outside (the manual STOP endpoint in ``routes.run``).
 
 import asyncio
 import logging
+from contextlib import AsyncExitStack
 from datetime import datetime
 
 from config.paths import RuntimePaths, default_runtime_paths
@@ -24,13 +25,12 @@ from models import Storage
 from nlp import BufferManager, SpaceUpdater
 from pipelines.contracts import Fetcher, LlmSender
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
-from ui_bridge.event_recorder import EventRecorder, RecordingGateway, git_sha
+from ui_bridge.event_recorder import RecordingGateway, git_sha
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
-from .manifest_redaction import redact_manifest
-from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
+from .stages import STAGES, StageInputs, build_page_fetcher, build_stages, priority_strategy_name
+from .ui_layer import RunRecord, build_ui_layer
 
 # Traceability is a second, finer-grained event stream (see
 # traceability/emitter.py) plus thin wrappers around the network/LLM
@@ -105,33 +105,49 @@ class Crawler:
             self.template_file,
             templates_dir=self.paths.templates_dir,
         ).bootstrap()
+        await self._run_session(blueprint)
 
-        self._load_blueprint_config(blueprint)
+    async def _run_session(self, blueprint: dict) -> None:
+        """Build the stages for `blueprint` and run them until the crawl ends.
 
-        tracer, traced_network, traced_llm = self._setup_traceability()
-
-        nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
-            traced_llm, tracer
-        )
-
-        pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service)
-        self._wire_subscriptions(pipelines, space_updater)
-        ui_gateway = self._build_ui_layer(pipelines)
-
-        tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
-        try:
-            await self._run_until_stopped(tasks, grace=self.config.run.shutdown_grace)
-        finally:
-            # Two separate aiohttp.ClientSessions get opened for this
-            # crawl -- requests_pipeline.network_client (page fetches)
-            # and traced_network (LLM calls) -- and neither was ever
-            # explicitly closed, which leaks connectors and logs
-            # "Unclosed client session" warnings on any server that runs
-            # more than one crawl per process lifetime. `finally` so this
-            # still runs if a pipeline task raises.
-            await pipelines["requests"].network_client.close()
+        Whatever ends it -- a stop condition, a failure, a cancelled task --
+        every resource built on the way is released, in reverse order: the HTTP
+        sessions, the UI gateway (its port) and event log, and the vectors still
+        buffered for the semantic space. A step that fails does not skip the
+        steps after it."""
+        async with AsyncExitStack() as cleanup:
+            self._load_blueprint_config(blueprint)
+            tracer, traced_network, traced_llm = self._setup_traceability()
             if traced_network is not None:
-                await traced_network.close()
+                cleanup.push_async_callback(traced_network.close)
+
+            # Built here, so it is closed even when a later stage fails to build.
+            fetcher = (
+                self.fetcher if self.fetcher is not None else build_page_fetcher(self.config.fetch)
+            )
+            cleanup.push_async_callback(fetcher.close)
+
+            nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
+                traced_llm, tracer
+            )
+            cleanup.push_async_callback(space_updater.force_flush)
+
+            pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service, fetcher)
+            self._wire_subscriptions(pipelines, space_updater)
+            ui_gateway = self._build_ui_layer()
+            cleanup.push_async_callback(ui_gateway.stop)
+
+            tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
+            await self._run_until_stopped(tasks, grace=self.config.run.shutdown_grace)
+
+    async def request_stop(self) -> bool:
+        """Ask a running crawl to stop the way a stop condition does, so every
+        stage drains and flushes. False when the stages are not built yet."""
+        stopping = getattr(self, "_pipelines", {}).get("stopping")
+        if stopping is None:
+            return False
+        await stopping.stop_on_request()
+        return True
 
     def queue_depths(self) -> dict:
         """Items waiting in each stage's queue right now, keyed by the Pipelines setting name."""
@@ -170,8 +186,11 @@ class Crawler:
                 if not d.cancelled() and d.exception():
                     raise d.exception()
         finally:
+            # Await the cancelled tasks: their own `finally` blocks (the export
+            # flush, closing the log files) only run once they get the cancel.
             for t in running:
                 t.cancel()
+            await asyncio.gather(*running, return_exceptions=True)
 
     # =========================================================
     # COMPOSITION STEPS
@@ -283,7 +302,11 @@ class Crawler:
         return nlp_service, space_updater, scoring_service
 
     def _build_pipelines(
-        self, blueprint: dict, nlp_service: NLPService, scoring_service: ScoringService
+        self,
+        blueprint: dict,
+        nlp_service: NLPService,
+        scoring_service: ScoringService,
+        fetcher: Fetcher | None = None,
     ) -> dict:
         """Build every stage from the registry in core/stages.py, keyed by
         stage, and keep them for `queue_depths` and `apply_live`."""
@@ -303,7 +326,7 @@ class Crawler:
                 fetch_concurrency=self.fetch_concurrency,
                 scoring_concurrency=self.scoring_concurrency,
                 seed=self.seed,
-                fetcher=self.fetcher,
+                fetcher=fetcher,
             )
         )
         return self._pipelines
@@ -328,34 +351,17 @@ class Crawler:
             "scoring_concurrency": self.scoring_concurrency,
         }
 
-    def _build_ui_layer(self, p: dict) -> UIWebSocketGateway:
-        """Build the UI bridge: the WebSocket gateway, the event recorder
-        and the TelemetryBridge, subscribed to every event it translates."""
-        obs = self.config.observability
-        snapshot = CrawlStateSnapshot(
-            max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
+    def _build_ui_layer(self) -> RecordingGateway:
+        return build_ui_layer(
+            config=self.config,
+            ui_port=self.ui_port,
+            event_broker=self.event_broker,
+            priority_strategy=priority_strategy_name(self.blueprint, self.config),
+            record=RunRecord(self.paths.export_dir / self.crawl_id, self._run_manifest()),
         )
-        ui_gateway = UIWebSocketGateway(
-            snapshot,
-            KeepAlive(obs.ui_ping_interval, obs.ui_ping_timeout),
-            host="localhost",
-            port=self.ui_port,
-        )
-        recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
-        recorder.record(snapshot.to_full_snapshot())
-        recorder.write_manifest(redact_manifest(self._run_manifest()))
-        telemetry = TelemetryBridge(
-            snapshot,
-            RecordingGateway(ui_gateway, recorder),
-            priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
-        )
-        telemetry.register_handlers()
-
-        self.event_broker.subscribe(telemetry, telemetry.event_types)
-        return ui_gateway
 
     def _collect_tasks(
-        self, p: dict, space_updater: SpaceUpdater, ui_gateway: UIWebSocketGateway
+        self, p: dict, space_updater: SpaceUpdater, ui_gateway: RecordingGateway
     ) -> list:
         return [
             self.event_broker.start(),

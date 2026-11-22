@@ -42,6 +42,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import config as _config
+from config.redaction import url_carries_credentials
+from config.user_agent import require_contact
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
 from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
@@ -489,6 +491,21 @@ class FetchConfig(BaseModel):
         _config.parse_content_types(v)
         return v
 
+    @field_validator("user_agent")
+    @classmethod
+    def _user_agent_names_a_contact(cls, value: str) -> str:
+        return require_contact(value)
+
+    @field_validator("extra_headers")
+    @classmethod
+    def _extra_headers_keep_the_user_agent(cls, value: dict[str, str]) -> dict[str, str]:
+        if any(name.strip().lower() == "user-agent" for name in value):
+            raise ValueError(
+                "Extra headers cannot replace the User-Agent. "
+                "Set it in the User-Agent field, with a contact."
+            )
+        return value
+
     @model_validator(mode="after")
     def _ordered(self) -> "FetchConfig":
         if self.backoff_start > self.backoff_max:
@@ -888,6 +905,9 @@ class ProvidersConfig(BaseModel):
     """Request URL per LLM provider (config/config.py). Point a
     provider at any compatible server; Gemini takes a base URL."""
 
+    # A refused URL must not be echoed back in the error text.
+    model_config = ConfigDict(hide_input_in_errors=True)
+
     endpoints: dict[str, str] = _f(
         dict(_config.LLM_DEFAULT_ENDPOINTS),
         "Request URL used for each provider.",
@@ -903,6 +923,11 @@ class ProvidersConfig(BaseModel):
                 raise ValueError(f"Unknown LLM provider: {name}.")
             if not url.startswith(("http://", "https://")):
                 raise ValueError(f"The {name} endpoint must start with http:// or https://.")
+            if url_carries_credentials(url):
+                raise ValueError(
+                    f"The {name} endpoint must not contain a user name, password or key. "
+                    "Remove it from the URL and add the key to the keys store instead."
+                )
         return self
 
 
@@ -1036,10 +1061,11 @@ class RuntimeConfig(BaseModel):
     providers: ProvidersConfig = Field(default_factory=ProvidersConfig)
 
     model_config = ConfigDict(
+        hide_input_in_errors=True,  # a refused provider URL must not be echoed back
         json_schema_extra={
             "ui_sections": [{"name": n, "help": h} for n, h in SECTION_GUIDE],
             "ui_glossary": GLOSSARY,
-        }
+        },
     )
 
 
