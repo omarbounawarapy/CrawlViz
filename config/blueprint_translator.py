@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import copy
 import json
-import os
 from typing import Any
 
 import pydantic
@@ -33,27 +32,7 @@ from config.blueprint_schema import (
     Blueprint,
 )
 from config.blueprint_schema import _PARAMETERISED_TRANSFORMS  # noqa: F401 (used below)
-
-# =========================================================
-# PROFILE REGISTRY
-# =========================================================
-
-# Profiles are loaded once from the static JSON file that lives alongside this
-# module. The registry maps profile_id -> profile dict.
-_PROFILES_FILE = os.path.join(os.path.dirname(__file__), "extraction_profiles.json")
-
-
-def _load_profiles() -> dict[str, Any]:
-    """Load profiles from the static JSON file; return empty dict on error."""
-    if not os.path.exists(_PROFILES_FILE):
-        return {}
-    with open(_PROFILES_FILE, encoding="utf-8") as fh:
-        data = json.load(fh)
-    return data.get("profiles", {})
-
-
-_PROFILE_REGISTRY: dict[str, Any] = _load_profiles()
-
+from config.extraction_profiles import ProfileError, resolve_profile_fields
 
 # =========================================================
 # VALIDATION HELPERS
@@ -158,23 +137,6 @@ def _build_field(field_name: str, field_def: dict[str, Any]) -> dict[str, Any]:
         "type": field_def["type"],
         "transform": list(field_def.get("transform", [])),
         "export_type": field_def["export_type"],
-    }
-
-
-def _build_field_from_profile(field_name: str, profile_field: dict[str, Any]) -> dict[str, Any]:
-    """Return a fully-specified field dict resolved from a profile definition.
-
-    Expected keys in `profile_field`:
-        selector: str
-        type: "scalar" | "list"
-        default_transforms: list of transform-step dicts
-        export_type: "text" | "real" | "int" | "json"
-    """
-    return {
-        "selector": profile_field["selector"],
-        "type": profile_field["type"],
-        "transform": list(profile_field.get("default_transforms", [])),
-        "export_type": profile_field["export_type"],
     }
 
 
@@ -298,32 +260,10 @@ class BlueprintTranslator:
 
     def _resolve_profile_fields(self) -> dict[str, Any]:
         """Load the selected profile and return its resolved field definitions."""
-        if not self._selected_profile:
-            raise BlueprintValidationError(
-                "extraction_mode is 'profile' but no selected_profile was provided."
-            )
-        if self._selected_profile not in _PROFILE_REGISTRY:
-            raise BlueprintValidationError(
-                f"Profile {self._selected_profile!r} not found in registry. "
-                f"Available: {list(_PROFILE_REGISTRY)}"
-            )
-        profile = _PROFILE_REGISTRY[self._selected_profile]
-        all_fields: dict[str, Any] = profile["fields"]
-
-        # Apply checklist filter if provided.
-        if self._profile_field_checklist is not None:
-            unknown = set(self._profile_field_checklist) - set(all_fields)
-            if unknown:
-                raise BlueprintValidationError(
-                    f"Profile {self._selected_profile!r} does not contain "
-                    f"field(s): {sorted(unknown)}"
-                )
-            all_fields = {k: v for k, v in all_fields.items() if k in self._profile_field_checklist}
-
-        resolved: dict[str, Any] = {}
-        for field_name, profile_field in all_fields.items():
-            resolved[field_name] = _build_field_from_profile(field_name, profile_field)
-        return resolved
+        try:
+            return resolve_profile_fields(self._selected_profile, self._profile_field_checklist)
+        except ProfileError as exc:
+            raise BlueprintValidationError(str(exc)) from exc
 
     def _resolve_manual_fields(self) -> dict[str, Any]:
         """Validate and build field definitions from manually supplied data."""
@@ -395,37 +335,15 @@ class BlueprintTranslator:
         Raises:
             BlueprintValidationError: On any constraint violation.
         """
-        # Re-validate strategy (belt-and-suspenders).
-        _validate_strategy(blueprint["scoring"]["strategy"])
-        _validate_priority_strategy(blueprint["stop_conditions"]["priority_strategy"])
-
-        # Validate every field in extraction.
+        # Strategies, field types, export types, seeds and domains are checked by the
+        # schema pass below (and the strategies also in step 1). Only the transform
+        # parameters are not: the schema accepts any extra keys on a step.
         for field_name, field_def in blueprint["extraction"]["fields"].items():
-            _validate_export_type(field_def.get("export_type", ""), field_name)
-            _validate_field_type(field_def.get("type", ""), field_name)
             _validate_transform_pipeline(field_def.get("transform", []), field_name)
 
-        # Validate seeds structure.
-        for i, seed in enumerate(blueprint["seeds"]):
-            for sk in ("url", "domain"):
-                if sk not in seed:
-                    raise BlueprintValidationError(f"seeds[{i}] is missing required key {sk!r}.")
-
-        # Validate domains structure.
-        for domain_name, domain_cfg in blueprint["domains"].items():
-            for dk in ("base_url", "link_selector"):
-                if dk not in domain_cfg:
-                    raise BlueprintValidationError(
-                        f"domains[{domain_name!r}] is missing required key {dk!r}."
-                    )
-
         # Schema pass: validates the *assembled* blueprint against
-        # blueprint_schema.Blueprint -- on top of, not instead of, the
-        # checks above. This is what actually catches the next instance
-        # of the "producer/consumer shape drifted apart" bug class (see
-        # blueprint_schema.py's docstring for the three times that's
-        # already happened), even for a field nobody remembered to add
-        # a hand-written check for above.
+        # blueprint_schema.Blueprint, the one place the shape is defined (see its
+        # docstring for the "producer/consumer shape drifted apart" bug class).
         try:
             Blueprint.model_validate(blueprint)
         except pydantic.ValidationError as e:

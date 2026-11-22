@@ -83,3 +83,8 @@ export function pathOf(url) {
     return url || "";
   }
 }
+
+/** Whether a score field holds a score. A score of 0 is a score; null, undefined, "" and NaN are not. */
+export function hasScore(value) {
+  return value != null && value !== "" && !Number.isNaN(value);
+}
