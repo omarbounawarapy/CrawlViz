@@ -53,6 +53,22 @@ def diff(base: dict, new: dict) -> dict:
     return out
 
 
+def changed_fields(old: dict, new: dict, _prefix: str = "") -> list[dict[str, Any]]:
+    """Every leaf that differs between two configs, as ``{"path", "old", "new"}`` in key order.
+
+    Paths are dotted (``fetch.min_delay``). Lists and scalars are leaves; a key present on
+    one side only reports ``None`` for the missing value."""
+    changes: list[dict[str, Any]] = []
+    for key in [*old, *(k for k in new if k not in old)]:
+        path = f"{_prefix}{key}"
+        before, after = old.get(key), new.get(key)
+        if isinstance(before, dict) and isinstance(after, dict):
+            changes.extend(changed_fields(before, after, f"{path}."))
+        elif before != after:
+            changes.append({"path": path, "old": before, "new": after})
+    return changes
+
+
 def _drop_endpoint_credentials(stored: dict) -> list[str]:
     """Strip user info and credential-like queries from each stored provider endpoint, in
     place. Returns the names of the providers that were changed."""

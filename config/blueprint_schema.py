@@ -34,11 +34,18 @@ files' worth of implicit dict-shape agreement.
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, ValidationError
 
-from .config import DEFAULT_PRIORITY_STRATEGY
+from .config import (
+    DEFAULT_MAX_DEPTH,
+    DEFAULT_MAX_DURATION_SECONDS,
+    DEFAULT_MAX_NODES,
+    DEFAULT_PRIORITY_STRATEGY,
+)
+from .extraction_profiles import ProfileError, resolve_profile_fields
 from priority.strategy import STRATEGY_REGISTRY
 
 # =========================================================
@@ -78,6 +85,10 @@ _PARAMETERISED_TRANSFORMS: dict[str, list[str]] = {
 ALLOWED_TRANSFORMS: frozenset[str] = frozenset(
     _NO_CONFIG_TRANSFORMS | set(_PARAMETERISED_TRANSFORMS)
 )
+
+
+# What the embedding engines tokenise as a word (nlp/embedding_engine.py).
+_WORD_CHARACTER = re.compile(r"\w")
 
 
 class BlueprintSchemaError(ValueError):
@@ -122,6 +133,20 @@ class ExtractionConfig(BaseModel):
     mode: Literal["document", "container"] = "document"
     container: str | None = None
     fields: dict[str, FieldSpec] = Field(default_factory=dict)
+    # Profile mode: the editor stores these and no `fields`; `resolve_extraction_profile`
+    # fills `fields` in when the blueprint is loaded for a crawl.
+    profile_mode: bool = False
+    profile_id: str | None = None
+    profile_field_checklist: list[str] | None = None
+
+    @model_validator(mode="after")
+    def _validate_profile(self) -> ExtractionConfig:
+        if self.profile_mode:
+            try:
+                resolve_profile_fields(self.profile_id, self.profile_field_checklist)
+            except ProfileError as exc:
+                raise ValueError(str(exc)) from exc
+        return self
 
 
 # =========================================================
@@ -172,9 +197,9 @@ class DomainConfig(BaseModel):
 
 
 class StopConditions(BaseModel):
-    max_nodes: int
-    max_depth: int
-    max_duration: float
+    max_nodes: int = DEFAULT_MAX_NODES
+    max_depth: int = DEFAULT_MAX_DEPTH
+    max_duration: float = DEFAULT_MAX_DURATION_SECONDS  # seconds, as the stopping stage reads it
     no_progress_timeout: float
     stop_url: str = ""
     # This default, and the validator below, are exactly what issue #2
@@ -231,6 +256,19 @@ class Blueprint(BaseModel):
     expansion: ExpansionConfig
     extraction: ExtractionConfig
     stop_conditions: StopConditions
+
+    @field_validator("target_topic")
+    @classmethod
+    def _require_word_in_target_topic(cls, topic: str) -> str:
+        # A topic with no word character embeds to an all-zero vector. Its similarity to
+        # any link is then zero, so every link would get priority 0 and the crawl could
+        # not tell relevant links from irrelevant ones.
+        if not _WORD_CHARACTER.search(topic):
+            raise ValueError(
+                "the target topic has no letters or digits; enter the subject the crawl "
+                "should follow, for example 'type 2 diabetes'"
+            )
+        return topic
 
 
 def validate_blueprint(data: object) -> Blueprint:

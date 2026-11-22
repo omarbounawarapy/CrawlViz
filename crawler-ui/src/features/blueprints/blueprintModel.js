@@ -67,7 +67,11 @@ export const DEFAULT_BLUEPRINT = {
 };
 
 // ─── VALIDATION ────────────────────────────────────────────────────────────────
-// Returns [{ id, message }]. `id` is the DOM id of the field to focus
+// A topic made only of punctuation or spaces gives the scorer nothing to compare against. Same rule
+// as the backend's (config/blueprint_schema.py): at least one letter, digit or underscore.
+const TOPIC_HAS_WORD_CHARACTER = /[\p{L}\p{N}_]/u;
+
+// validateBlueprint returns [{ id, message }]. `id` is the DOM id of the field to focus
 // (see BlueprintManager's bpId), so an error can link straight to its field.
 
 export function validateBlueprint(bp) {
@@ -76,6 +80,8 @@ export function validateBlueprint(bp) {
   if (!bp.blueprint_id?.trim()) add("bp-blueprint_id", "Blueprint ID is required.");
   if (!bp.id?.trim()) add("bp-id", "Run ID is required.");
   if (!bp.target_topic?.trim()) add("bp-target_topic", "Target topic is required.");
+  else if (!TOPIC_HAS_WORD_CHARACTER.test(bp.target_topic))
+    add("bp-target_topic", "Target topic needs at least one letter or digit. Describe the subject in words.");
 
   (bp.seeds || []).forEach((s, i) => {
     if (!s.url?.trim()) add(`bp-seed-${i}-url`, `Starting page ${i + 1}: URL is required.`);

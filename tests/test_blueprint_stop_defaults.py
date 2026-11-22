@@ -150,9 +150,7 @@ class _CountingLlm:
         raise AssertionError("no LLM call before the blueprint is accepted")
 
 
-@pytest.mark.parametrize(
-    "required", ["max_nodes", "max_depth", "max_duration", "no_progress_timeout"]
-)
+@pytest.mark.parametrize("required", ["no_progress_timeout"])
 async def test_blueprint_missing_a_required_stop_condition_fails_before_any_llm_call(
     tmp_path: Path, required: str
 ) -> None:
