@@ -69,10 +69,9 @@ BUFFER_MAX_SIZE: int = 500
 # =========================================================================
 # POLITENESS
 # =========================================================================
-# Identify the crawler honestly: replace the contact before crawling live sites.
-USER_AGENT: str = (
-    "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz; omar.bounawara.py@gmail.com)"
-)
+# Identify the crawler honestly. The project page is the default contact; an operator
+# crawling live sites should set their own (a web or email address, see config/user_agent.py).
+USER_AGENT: str = "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz)"
 RESPECT_ROBOTS: bool = True
 # Largest page body read, after decompression; a bigger response is refused.
 MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
@@ -125,6 +124,12 @@ NLP_COMPOSITE_WEIGHTS: dict[str, float] = {
 }
 
 DEFAULT_PRIORITY_STRATEGY: str = "balanced"
+
+# Stop conditions a blueprint gets when it does not set its own: a crawl that ends on
+# its own after a modest, bounded amount of work, so a default run is polite to the sites it visits.
+DEFAULT_MAX_NODES: int = 500
+DEFAULT_MAX_DEPTH: int = 5
+DEFAULT_MAX_DURATION_SECONDS: float = 3600.0
 
 # =========================================================================
 # LLM PROVIDERS

@@ -7,10 +7,18 @@ demonstrate the schema pass is adding real coverage, not just duplicating
 what was already there.
 """
 
+import json
+
 import pytest
 
-from config.blueprint_schema import Blueprint, StopConditions
+from config.blueprint_schema import (
+    Blueprint,
+    BlueprintSchemaError,
+    StopConditions,
+    validate_blueprint,
+)
 from config.blueprint_translator import BlueprintValidationError
+from core.boot_strapper import BootStrapper
 from tests.test_blueprint_translator import base_user_input, translate
 
 
@@ -46,6 +54,28 @@ class TestStopConditionsModelDirectly:
             )
 
 
+class TestCrawlLimitDefaults:
+    def test_a_blueprint_without_limits_gets_500_pages_depth_5_and_one_hour(self):
+        sc = StopConditions(no_progress_timeout=60)
+        assert (sc.max_nodes, sc.max_depth, sc.max_duration) == (500, 5, 3600)
+
+    def test_limits_the_blueprint_sets_are_kept(self):
+        sc = StopConditions(max_nodes=7, max_depth=2, max_duration=30, no_progress_timeout=60)
+        assert (sc.max_nodes, sc.max_depth, sc.max_duration) == (7, 2, 30)
+
+    def test_the_bootstrapper_fills_in_the_limits_a_blueprint_left_out(self, tmp_path):
+        blueprint = translate()
+        for limit in ("max_nodes", "max_depth", "max_duration"):
+            del blueprint["stop_conditions"][limit]
+        (tmp_path / "limits.json").write_text(json.dumps(blueprint))
+        bootstrapper = BootStrapper(None, None, "limits.json", templates_dir=tmp_path)
+
+        loaded = bootstrapper.load_template()
+
+        stop = loaded["stop_conditions"]
+        assert (stop["max_nodes"], stop["max_depth"], stop["max_duration"]) == (500, 5, 3600)
+
+
 class TestBlueprintModelAcceptsRealAssembledOutput:
     def test_full_translate_output_validates_against_schema_standalone(self):
         # The exact dict translate() produces should also validate on its
@@ -53,3 +83,21 @@ class TestBlueprintModelAcceptsRealAssembledOutput:
         # schema for BlueprintTranslator's actual output, not a fiction.
         result = translate()
         Blueprint.model_validate(result)  # should not raise
+
+
+class TestTargetTopicNeedsAWord:
+    """A topic with no word character embeds to an all-zero vector, so every
+    link scored against it gets priority 0."""
+
+    @pytest.mark.parametrize("topic", ["", "   ", "\t\n", "?!-", "..."])
+    def test_topic_without_a_word_character_is_rejected(self, topic):
+        blueprint = translate()
+        blueprint["target_topic"] = topic
+        with pytest.raises(BlueprintSchemaError, match="target_topic"):
+            validate_blueprint(blueprint)
+
+    @pytest.mark.parametrize("topic", ["tea", " Type 2 Diabetes ", "AI", "café", "2"])
+    def test_topic_with_a_word_character_is_accepted(self, topic):
+        blueprint = translate()
+        blueprint["target_topic"] = topic
+        assert validate_blueprint(blueprint).target_topic == topic
