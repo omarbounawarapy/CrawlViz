@@ -1,16 +1,12 @@
 import { Fragment, useId, useMemo } from "react";
 import { getTheme } from "../../theme";
-import { SectionTitle } from "../common/Page";
-import { Button } from "../common/Form";
+import { SectionTitle, Button, Hint, EmptyState, ScrollRegion } from "../common";
 import FieldControl from "./FieldControl";
 import RangeSlider from "./RangeSlider";
-import { Explain } from "./Term";
-import { Hint } from "../common/Hint";
-import EmptyState from "../common/EmptyState";
+import { Explain } from "../../shared/ui";
 import { badgeStyle, slug } from "./settingsStyle";
 import { stageName } from "./pipelineNames";
 import { getIn, groupBySection, isActive, matches, rangeOf, sameValue, validateField } from "./configModel";
-import ScrollRegion from "../common/ScrollRegion";
 
 const theme = getTheme();
 

@@ -6,14 +6,13 @@ composition root (``core/crawler.py``, ``core/stages.py``). The same blueprint
 it: ``build_offline_session`` supplies the frozen ISI site, ``ScriptedLlm`` and
 hashing embeddings.
 
-Unlike the runner, ``Crawler`` has no lockstep: stages run as concurrent tasks and
-the crawl ends when a stop event races the next fetch. So only what does not depend
-on that race is recorded:
+Unlike the runner, ``Crawler`` has no lockstep: stages run as concurrent tasks, so
+only what does not depend on how they interleave is recorded:
 
 * ``composition``: every stage the registry builds, in start order, and the
   consumers of every event type in the order the broker dispatches them,
-* ``fetch_order``: the first ``budget`` pages fetched with one fetch worker (fetches
-  already under way when the stop fires finish too, so the crawl may fetch one more),
+* ``fetch_order``: the pages fetched with one fetch worker; ``FetchStage`` holds the page
+  budget, so the crawl fetches exactly ``budget`` pages,
 * ``llm_requests``: the first ``LLM_PROMPTS_PINNED`` prompts, in order (the expansion
   and the first scoring call; a later call may or may not start before the stop).
 """
@@ -31,7 +30,8 @@ from pin_paths import REPO_ROOT
 from config.paths import RuntimePaths
 from config.runtime_config import default_runtime_config
 from core import Crawler
-from offline import build_offline_session
+from crawlviz.events import NullStatusReporter
+from crawlviz.offline import build_offline_session
 
 BLUEPRINT_NAME = "offline_demo.json"
 PIN_RANDOM_SEED = 0
@@ -98,6 +98,7 @@ async def run_pin_crawler(budget: int, work_dir: Path) -> CrawlerRun:
         ui_port=_free_port(),
         llm=llm,
         fetcher=session.fetcher,
+        status_reporter=NullStatusReporter(),
     )
     await asyncio.wait_for(crawler.start(), CRAWL_TIMEOUT_SECONDS)
     fetched = session.fetcher.fetched

@@ -1,12 +1,7 @@
-import { createContext, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
+import { GlossaryContext, useGlossaryDefinitions, type GlossaryDefinitions } from "./glossaryContext";
 import styles from "./Term.module.css";
-
-/** Glossary definitions by lower-case term ("seed page", "backoff"), as the backend serves them. */
-export type GlossaryDefinitions = Readonly<Record<string, string>>;
-
-const NO_DEFINITIONS: GlossaryDefinitions = {};
-const GlossaryContext = createContext<GlossaryDefinitions>(NO_DEFINITIONS);
 
 export interface GlossaryProviderProps {
   definitions: GlossaryDefinitions;
@@ -15,7 +10,7 @@ export interface GlossaryProviderProps {
 
 /**
  * Hands the glossary to every Term below it. The container that loads the glossary renders
- * this; Term only displays what it is given and never fetches.
+ * this; Term itself never fetches (ARCH-4).
  */
 export function GlossaryProvider({ definitions, children }: GlossaryProviderProps) {
   return <GlossaryContext.Provider value={definitions}>{children}</GlossaryContext.Provider>;
@@ -29,12 +24,12 @@ export interface TermProps {
 }
 
 /**
- * A glossary word that explains itself on hover, focus or tap. It is a real button,
+ * A glossary word (NAME-4) that explains itself on hover, focus or tap. It is a real button,
  * so the keyboard reaches it; Escape, a press elsewhere, leaving it or moving focus away
  * closes the explanation (WCAG 1.4.13). A word the glossary does not have is plain text.
  */
 export function Term({ term, children }: TermProps) {
-  const definitions = useContext(GlossaryContext);
+  const definitions = useGlossaryDefinitions();
   const definition = definitions[term.toLowerCase()];
   const shown = children ?? term;
   if (definition === undefined) return <>{shown}</>;

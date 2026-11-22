@@ -1,6 +1,7 @@
 """Rules of the shrink-only baseline guard (tools/check_baselines.py)."""
 
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -75,6 +76,22 @@ class TestParseBaselines:
         assert parsed == baselines()
 
 
+REPO_ROOT = Path(__file__).resolve().parent.parent
+# Folders with Python that mypy does not check yet; the list may only shrink.
+UNCHECKED_PYTHON_FOLDERS: set[str] = set()
+
+
+def test_mypy_files_cover_every_tracked_python_folder() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "*.py"], cwd=REPO_ROOT, capture_output=True, text=True, check=True
+    ).stdout.split()
+    top_level = {name.split("/")[0] for name in tracked}
+    config = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    covered = {entry.split("/")[0] for entry in config["tool"]["mypy"]["files"]}
+
+    assert top_level - covered - UNCHECKED_PYTHON_FOLDERS - {"main.py"} == set()
+
+
 class TestPathHelpers:
     @pytest.mark.parametrize(
         ("path", "module"),
@@ -82,7 +99,12 @@ class TestPathHelpers:
             ("core/crawler.py", "core.crawler"),
             ("core/__init__.py", "core"),
             ("main.py", "main"),
-            ("src/crawlviz/fetch/__init__.py", "src.crawlviz.fetch"),
+            ("src/crawlviz/fetch/__init__.py", "crawlviz.fetch"),
+            ("src/crawlviz/score/llm/types.py", "crawlviz.score.llm.types"),
+            ("src/crawlviz/score/llm/__init__.py", "crawlviz.score.llm"),
+            ("tests/test_robots.py", "tests.test_robots"),
+            ("tests/pins/pin_crawl.py", "pin_crawl"),
+            ("tools/check_baselines.py", "tools.check_baselines"),
         ],
     )
     def test_path_to_module(self, path: str, module: str) -> None:
@@ -98,6 +120,22 @@ class TestPathHelpers:
 
 
 class TestFindAdditions:
+    def test_moving_a_legacy_module_into_src_is_not_growth(self) -> None:
+        base = baselines({"core.crawler"})
+        current = baselines({"crawlviz.crawl.crawler"})
+        renames = {"core/crawler.py": "src/crawlviz/crawl/crawler.py"}
+
+        assert guard.find_additions(base, current, renames) == []
+
+    def test_moving_a_legacy_module_but_keeping_its_old_name_is_growth(self) -> None:
+        base = baselines({"core.crawler"})
+        current = baselines({"core.crawler", "crawlviz.crawl.crawler"})
+        renames = {"core/crawler.py": "src/crawlviz/crawl/crawler.py"}
+
+        assert guard.find_additions(base, current, renames) == [
+            "mypy legacy list gained core.crawler"
+        ]
+
     def test_identical_baselines_have_no_additions(self) -> None:
         both = baselines({"core.crawler"}, {"main.py": {"I001"}})
 
@@ -147,14 +185,14 @@ class TestFindAdditions:
 
     def test_renamed_mypy_module_is_not_growth(self) -> None:
         base = baselines({"core.crawler"})
-        current = baselines({"src.crawlviz.crawl.crawler"})
+        current = baselines({"crawlviz.crawl.crawler"})
         renames = {"core/crawler.py": "src/crawlviz/crawl/crawler.py"}
 
         assert guard.find_additions(base, current, renames) == []
 
     def test_renamed_package_init_maps_to_the_package_module(self) -> None:
         base = baselines({"events"})
-        current = baselines({"src.crawlviz.events"})
+        current = baselines({"crawlviz.events"})
         renames = {"events/__init__.py": "src/crawlviz/events/__init__.py"}
 
         assert guard.find_additions(base, current, renames) == []
@@ -375,3 +413,71 @@ class TestMain:
 
         assert self.run_main(monkeypatch) == 0
         assert "has no baselines yet" in capsys.readouterr().out
+
+
+def _loosening(base_text: str, current_text: str) -> list[str]:
+    return guard.find_additions(
+        guard.parse_baselines(base_text), guard.parse_baselines(current_text), {}
+    )
+
+
+class TestLoosenedSettings:
+    def test_dropping_a_ruff_rule_family_from_select_is_reported(self) -> None:
+        problems = _loosening(
+            '[tool.ruff.lint]\nselect = ["E", "PL"]\n', '[tool.ruff.lint]\nselect = ["E"]\n'
+        )
+
+        assert problems == ["ruff select lost PL"]
+
+    def test_adding_a_rule_to_select_is_fine(self) -> None:
+        assert (
+            _loosening(
+                '[tool.ruff.lint]\nselect = ["E"]\n', '[tool.ruff.lint]\nselect = ["E", "B"]\n'
+            )
+            == []
+        )
+
+    def test_a_new_global_ruff_ignore_is_reported(self) -> None:
+        problems = _loosening("[tool.ruff.lint]\n", '[tool.ruff.lint]\nignore = ["E501"]\n')
+
+        assert problems == ["ruff ignore gained E501"]
+
+    def test_extend_per_file_ignores_cannot_grow(self) -> None:
+        problems = _loosening(
+            "[tool.ruff.lint]\n",
+            '[tool.ruff.lint.extend-per-file-ignores]\n"main.py" = ["E501"]\n',
+        )
+
+        assert problems == ["ruff extend-per-file-ignores gained E501 for main.py"]
+
+    def test_a_new_relaxed_mypy_override_is_reported(self) -> None:
+        problems = _loosening(
+            "[tool.mypy]\n",
+            '[[tool.mypy.overrides]]\nmodule = ["core.crawler"]\ndisallow_untyped_defs = false\n',
+        )
+
+        assert problems == ["mypy override relaxes disallow_untyped_defs for core.crawler"]
+
+    def test_an_existing_relaxed_override_is_not_new(self) -> None:
+        text = '[[tool.mypy.overrides]]\nmodule = ["lxml.*"]\nignore_missing_imports = true\n'
+
+        assert _loosening(text, text) == []
+
+    def test_a_new_mypy_exclude_is_reported(self) -> None:
+        problems = _loosening("[tool.mypy]\n", '[tool.mypy]\nexclude = ["^tests/"]\n')
+
+        assert problems == ["mypy exclude gained ^tests/"]
+
+    def test_dropping_an_existing_mypy_files_entry_is_reported(self) -> None:
+        problems = _loosening(
+            '[tool.mypy]\nfiles = ["tools", "tests"]\n', '[tool.mypy]\nfiles = ["tools"]\n'
+        )
+
+        assert problems == ["mypy files dropped tests, which still exists"]
+
+    def test_dropping_a_mypy_files_entry_whose_folder_moved_is_fine(self) -> None:
+        problems = _loosening(
+            '[tool.mypy]\nfiles = ["gone_folder", "tools"]\n', '[tool.mypy]\nfiles = ["tools"]\n'
+        )
+
+        assert problems == []

@@ -1,9 +1,9 @@
-"""RetryProcessor: scoring failures are rescheduled, and fetch retries are delayed."""
+"""RetryStage: scoring failures are rescheduled, and fetch retries are delayed."""
 
 import asyncio
 
-from events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
-from pipelines.retry_processor import RetryProcessor
+from crawlviz.events import RequestFailedEvent, ScoreRescheduledEvent, ScoringFailedEvent
+from pipelines.retry_stage import RetryStage
 
 
 class FakeNode:
@@ -32,7 +32,7 @@ class FakeRequests:
 
 def make(**kw):
     broker, reqs = FakeBroker(), FakeRequests()
-    rp = RetryProcessor(None, broker, requests_pipeline=reqs, retry_base_delay=0.01, **kw)
+    rp = RetryStage(None, broker, requests_pipeline=reqs, retry_base_delay=0.01, **kw)
     return rp, broker, reqs
 
 
@@ -81,6 +81,21 @@ class FailableNode(FakeNode):
         self.failed = True
 
 
+async def test_request_the_fetch_policy_refused_is_not_retried():
+    refusals = ("BlockedAddressError", "ResponseTooLargeError", "UnsupportedContentTypeError")
+    for error_type in refusals:
+        rp, _, reqs = make()
+        node = FailableNode()
+        await rp._process(
+            RequestFailedEvent(
+                correlation_id="1", node=node, error_type=error_type, error_message="refused"
+            ),
+            0,
+        )
+        await asyncio.gather(*rp._pending)
+        assert node.failed and reqs.queue.empty()
+
+
 HTTP_FORBIDDEN = 403
 HTTP_NOT_FOUND = 404
 HTTP_GONE = 410
@@ -117,21 +132,3 @@ async def test_timeouts_and_rate_limits_and_server_errors_are_retried() -> None:
         await asyncio.gather(*rp._pending)
         assert not node.failed
         assert reqs.queue.get_nowait() is node
-
-
-async def test_request_the_fetch_policy_refused_is_not_retried():
-    for error_type in (
-        "BlockedAddressError",
-        "ResponseTooLargeError",
-        "UnsupportedContentTypeError",
-    ):
-        rp, _, reqs = make()
-        node = FailableNode()
-        await rp._process(
-            RequestFailedEvent(
-                correlation_id="1", node=node, error_type=error_type, error_message="refused"
-            ),
-            0,
-        )
-        await asyncio.gather(*rp._pending)
-        assert node.failed and reqs.queue.empty()

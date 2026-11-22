@@ -16,9 +16,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 UI_DIR = ROOT / "crawler-ui"
+UI_SOURCE_DIR = "src"
 BASE_BRANCH = "main"
 PYTHON_SUFFIXES = {".py"}
+# Linters and tests run with the interpreter that runs this tool (`make` starts it with
+# `uv run`), so a worktree never falls back to the system Python through a second `uv run`.
+PYTHON_M = [sys.executable, "-m"]
 PYTEST_NO_TESTS_COLLECTED = 5
+RENAME_OR_COPY_STATUSES = "RC"
 # A change to any of these can alter the result for every Python file, so the whole
 # Python side is checked instead of only the changed files.
 PYTHON_TOOLING_FILES = {
@@ -35,23 +40,30 @@ HOOKS_COMMON = ROOT / ".claude" / "hooks" / "_common.py"
 UI_SUFFIXES = {".js", ".jsx", ".ts", ".tsx"}
 
 
-def _git(*args: str) -> list[str]:
+def _git(*args: str) -> str:
     result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=False)
-    return [line for line in result.stdout.splitlines() if line.strip()]
+    return result.stdout
+
+
+def _git_paths(*args: str) -> list[str]:
+    """NUL-separated output of a command run with `-z`, so odd file names stay whole."""
+    return [entry for entry in _git(*args).split("\0") if entry]
 
 
 def _changed_names(*diff_args: str) -> set[str]:
     """Paths in a diff, including deleted files and the old side of renames."""
+    tokens = iter(_git_paths("diff", "-M", "-z", "--name-status", *diff_args))
     names: set[str] = set()
-    for line in _git("diff", "-M", "--name-status", *diff_args):
-        _status, *paths = line.split("\t")
-        names.update(paths)
+    for status in tokens:
+        paths_in_entry = 2 if status[0] in RENAME_OR_COPY_STATUSES else 1
+        names.update(next(tokens) for _ in range(paths_in_entry))
     return names
 
 
 def changed_files(base: str) -> list[Path]:
-    """Changed paths. Deleted and renamed-away Python files stay in, so their importers run."""
-    merge_base = _git("merge-base", "HEAD", base)
+    """Changed paths. Deleted and renamed-away files stay in, so their importers and
+    the checks for tooling and UI files still run."""
+    merge_base = _git("merge-base", "HEAD", base).split()
     if not merge_base:
         raise SystemExit(
             f"check-changed: no merge base between HEAD and '{base}'; "
@@ -60,18 +72,14 @@ def changed_files(base: str) -> list[Path]:
     names = _changed_names(merge_base[0])
     names.update(_changed_names())
     names.update(_changed_names("--cached"))
-    names.update(_git("ls-files", "--others", "--exclude-standard"))
-    kept = {
-        name
-        for name in names
-        if (ROOT / name).is_file() or (name.endswith(".py") and not (ROOT / name).exists())
-    }
+    names.update(_git_paths("ls-files", "-z", "--others", "--exclude-standard"))
+    kept = {name for name in names if (ROOT / name).is_file() or not (ROOT / name).exists()}
     return sorted(ROOT / name for name in kept)
 
 
 def python_modules() -> dict[str, Path]:
     """Dotted module name to file for every tracked or new Python file, packages by `__init__`."""
-    names = _git("ls-files", "--cached", "--others", "--exclude-standard", "*.py")
+    names = _git_paths("ls-files", "-z", "--cached", "--others", "--exclude-standard", "*.py")
     modules: dict[str, Path] = {}
     for name in names:
         if (ROOT / name).is_file():
@@ -113,11 +121,16 @@ def import_names_of(path: Path) -> set[str]:
     return names
 
 
-def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
-    """Repo files that `path` imports."""
-    found = {modules[name] for name in import_names_of(path) if name in modules}
+def repo_files_named(path: Path, names: set[str], modules: dict[str, Path]) -> set[Path]:
+    """Repo files among `names`, the dotted names `path` may import (never `path` itself)."""
+    found = {modules[name] for name in names if name in modules}
     found.discard(path)
     return found
+
+
+def imports_of(path: Path, modules: dict[str, Path]) -> set[Path]:
+    """Repo files that `path` imports."""
+    return repo_files_named(path, import_names_of(path), modules)
 
 
 def dotted_name(path: Path) -> str:
@@ -137,9 +150,10 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
     A changed conftest.py selects every test beneath its directory.
     """
     modules = python_modules()
+    names_by_path = {path: import_names_of(path) for path in modules.values()}  # parsed once
     importers: dict[Path, set[Path]] = {}
-    for path in modules.values():
-        for imported in imports_of(path, modules):
+    for path, names in names_by_path.items():
+        for imported in repo_files_named(path, names, modules):
             importers.setdefault(imported, set()).add(path)
     reached: set[Path] = set()
     pending = list(sources)
@@ -148,7 +162,7 @@ def python_tests_for(sources: list[Path]) -> list[Path]:
         dotted_name(source) for source in sources if source.suffix == ".py" and not source.exists()
     }
     if removed:
-        pending.extend(path for path in modules.values() if removed & import_names_of(path))
+        pending.extend(path for path, names in names_by_path.items() if removed & names)
     while pending:
         current = pending.pop()
         if current not in reached:
@@ -185,16 +199,16 @@ def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
     relative = [str(path.relative_to(ROOT)) for path in python_files if path.exists()]
     ok = True
     if relative or tooling_changed:
-        ok = run(["uv", "run", "ruff", "check", *([] if tooling_changed else relative)], ROOT)
+        ok = run([*PYTHON_M, "ruff", "check", *([] if tooling_changed else relative)], ROOT)
     # mypy follows imports, so a change anywhere can break another module: always whole.
-    ok &= run(["uv", "run", "mypy"], ROOT)
+    ok &= run([*PYTHON_M, "mypy"], ROOT)
     tests = [] if tooling_changed else python_tests_for(python_files)
     if tests or tooling_changed:
         # Slow tests run in `make check` and CI; the stop hook has a 600 s limit.
         # Exit code 5 means every selected test was slow, which is not a failure.
         selected = [str(t.relative_to(ROOT)) for t in tests]
         ok &= run(
-            ["uv", "run", "pytest", "-q", "-m", "not slow", *selected],
+            [*PYTHON_M, "pytest", "-q", "-m", "not slow", *selected],
             ROOT,
             accepted=(0, PYTEST_NO_TESTS_COLLECTED),
         )
@@ -202,9 +216,11 @@ def check_python(python_files: list[Path], tooling_changed: bool) -> bool:
 
 
 def check_ui(ui_files: list[Path]) -> bool:
-    relative = [str(path.relative_to(UI_DIR)) for path in ui_files]
+    existing = [str(path.relative_to(UI_DIR)) for path in ui_files if path.exists()]
+    # A deleted file cannot be linted, but its importers can break: lint the whole source tree.
+    relative = existing if len(existing) == len(ui_files) else [UI_SOURCE_DIR]
     ok = run(["npx", "eslint", *relative], UI_DIR)
-    ok &= run(["npx", "vitest", "related", "--run", "--passWithNoTests", *relative], UI_DIR)
+    ok &= run(["npx", "vitest", "related", "--run", "--passWithNoTests", *existing], UI_DIR)
     return ok
 
 
@@ -236,7 +252,7 @@ def main() -> int:
     if method_changed:
         # The method guards must hold even when slow: no `not slow` filter here.
         ok &= run(
-            ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"],
+            [*PYTHON_M, "pytest", "-q", "-m", "pins or method_guard"],
             ROOT,
             accepted=(0, PYTEST_NO_TESTS_COLLECTED),
         )

@@ -1,5 +1,5 @@
-import services.link_features as link_features
-from utils.html_utils import document_text
+import crawlviz.nlp.link_features as link_features
+from crawlviz.shared import document_text
 
 PAGE = (
     "<html><head><style>p{}</style><script>var x=1;</script></head><body>"

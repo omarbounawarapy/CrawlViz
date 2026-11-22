@@ -11,17 +11,17 @@ import { getTheme } from "./theme";
 import { pathOf } from "./utils/formatters";
 
 import Shell from "./app/Shell";
-import NodeInspector from "./features/inspector/NodeInspector";
-import OverviewPage from "./features/overview/OverviewPage";
-import GraphView from "./features/graph/GraphView";
-import PipelineMonitor from "./features/pipeline/PipelineMonitor";
-import TimelineDock from "./features/timeline/TimelinePage";
-import RunPage from "./features/run/RunPage";
-import BlueprintManager from "./features/blueprints/BlueprintManager";
-import DataExplorer from "./features/data/DataExplorer";
-import ConfigPage from "./features/config/ConfigPage";
-import BenchmarkPage from "./features/benchmark/BenchmarkPage";
-import NotFoundPage from "./features/errors/NotFoundPage";
+import { NodeInspector } from "./features/inspector";
+import { OverviewPage } from "./features/overview";
+import { GraphView } from "./features/graph";
+import { PipelineMonitor } from "./features/pipeline";
+import { TimelinePage as TimelineDock } from "./features/timeline";
+import { RunPage } from "./features/run";
+import { BlueprintManager } from "./features/blueprints";
+import { DataExplorer } from "./features/data";
+import { ConfigPage } from "./features/config";
+import { BenchmarkPage } from "./features/benchmark";
+import { NotFoundPage } from "./features/errors";
 
 const theme = getTheme();
 const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:8765";

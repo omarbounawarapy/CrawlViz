@@ -77,7 +77,7 @@ def test_patch_live_route_applies_to_running_crawler(monkeypatch):
 
 def test_resize_grows_and_shrinks_a_running_pipeline():
     import asyncio
-    from pipelines.base_pipeline import BasePipeline
+    from crawlviz.events import BasePipeline
 
     class P(BasePipeline):
         def __init__(self):
@@ -113,5 +113,5 @@ def test_resize_grows_and_shrinks_a_running_pipeline():
 def test_worker_fields_are_live_via_resize():
     pipes = {"requests": SimpleNamespace(resized=None)}
     pipes["requests"].resize = lambda n: setattr(pipes["requests"], "resized", n)
-    cfg = apply_live(default_runtime_config(), pipes, {"pipelines": {"requests": {"workers": 7}}})
-    assert pipes["requests"].resized == 7 and cfg.pipelines.requests.workers == 7
+    cfg = apply_live(default_runtime_config(), pipes, {"pipelines": {"fetch": {"workers": 7}}})
+    assert pipes["requests"].resized == 7 and cfg.pipelines.fetch.workers == 7

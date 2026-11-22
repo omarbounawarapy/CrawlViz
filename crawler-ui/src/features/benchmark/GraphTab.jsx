@@ -1,9 +1,8 @@
 import { useMemo, useState, useEffect } from "react";
 import { fetchBenchmarkGraph, fetchBenchmarkPage } from "../../api/client";
 import { getTheme } from "../../theme";
-import { SectionTitle } from "../common/Page";
-import { Field, Select } from "../common/Form";
-import GraphView from "../graph/GraphView";
+import { SectionTitle, Field, Select } from "../common";
+import { GraphView } from "../graph";
 import Loading from "./Loading";
 import { LABEL, useLoad } from "./shared";
 

@@ -1,0 +1,15 @@
+{
+  "crawl_id": "20261030-101500-abc123",
+  "blueprint": {"blueprint_id": "offline_demo", "target_topic": "diabetes"},
+  "runtime_config": {
+    "fetch": {"min_delay": 1.0},
+    "pipelines": {"fetch": {"workers": 4}, "debug_log": {"workers": 2}, "retry": {"workers": 1}}
+  },
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "llm_model": "openai/gpt-oss-120b:free",
+  "git_sha": "0d21314",
+  "seed": 7,
+  "fetch_concurrency": 4,
+  "scoring_concurrency": 2,
+  "schema_version": 2
+}

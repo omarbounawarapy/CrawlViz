@@ -1,21 +1,21 @@
-{"class": "LoggingPipeline", "stage": "logging"}
-{"class": "CanonicalizationPipeline", "stage": "canon"}
-{"class": "DebuggingPipeline", "stage": "debug"}
-{"class": "ProcessingPipeline", "stage": "processing"}
-{"class": "RequestsPipeline", "stage": "requests"}
-{"class": "RetryProcessor", "stage": "retry"}
-{"class": "ScoringPipeline", "stage": "scoring"}
-{"class": "FilteringPipeline", "stage": "filtering"}
-{"class": "PriorityPipeline", "stage": "priority"}
-{"class": "TransformationPipeline", "stage": "transformation"}
-{"class": "StoragePipeline", "stage": "storage"}
-{"class": "ExportingPipeline", "stage": "exporting"}
-{"class": "StoppingPipeline", "stage": "stopping"}
+{"class": "CrawlLogSink", "stage": "logging"}
+{"class": "CanonicalizeStage", "stage": "canon"}
+{"class": "DebugLogSink", "stage": "debug"}
+{"class": "ExtractStage", "stage": "processing"}
+{"class": "FetchStage", "stage": "requests"}
+{"class": "RetryStage", "stage": "retry"}
+{"class": "ScoreStage", "stage": "scoring"}
+{"class": "FilterStage", "stage": "filtering"}
+{"class": "PrioritizeStage", "stage": "priority"}
+{"class": "TransformStage", "stage": "transformation"}
+{"class": "StorageSink", "stage": "storage"}
+{"class": "ExportSink", "stage": "exporting"}
+{"class": "StopController", "stage": "stopping"}
 {"consumers": ["logging", "requests", "scoring", "stopping", "TelemetryBridge"], "event": "NodeAddedEvent"}
 {"consumers": ["logging", "canon", "processing", "storage", "stopping", "TelemetryBridge"], "event": "PageFetchedEvent"}
 {"consumers": ["logging", "transformation", "TelemetryBridge"], "event": "ContentFilteredEvent"}
 {"consumers": ["logging", "debug", "storage", "exporting", "TelemetryBridge"], "event": "TransformationCompletedEvent"}
-{"consumers": ["logging", "exporting", "stopping", "SpaceUpdater", "TelemetryBridge"], "event": "StopCrawlEvent"}
+{"consumers": ["logging", "requests", "exporting", "stopping", "SpaceUpdater", "TelemetryBridge"], "event": "StopCrawlEvent"}
 {"consumers": ["logging", "priority", "TelemetryBridge"], "event": "LinksScoredEvent"}
 {"consumers": ["logging", "debug", "storage", "TelemetryBridge"], "event": "PriorityCalculatedEvent"}
 {"consumers": ["logging", "TelemetryBridge"], "event": "ExportBatchCompletedEvent"}
@@ -33,7 +33,6 @@
 {"consumers": ["debug", "TelemetryBridge"], "event": "FilteringPipelineErrorEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "TransformationStartedEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "TransformationFailedEvent"}
-{"consumers": ["debug", "TelemetryBridge"], "event": "TransformationStepSkippedEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "ScoringStartedEvent"}
 {"consumers": ["debug", "TelemetryBridge"], "event": "ScoringCompletedEvent"}
 {"consumers": ["debug", "retry", "TelemetryBridge"], "event": "ScoringFailedEvent"}

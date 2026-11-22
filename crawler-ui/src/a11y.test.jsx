@@ -153,18 +153,18 @@ vi.mock("./api/client", () => {
 });
 
 import App from "./App";
-import Landing from "./features/landing/Landing";
-import SpiderLoader from "./features/loading/SpiderLoader";
-import GraphView from "./features/graph/GraphView";
-import NodeInspector from "./features/inspector/NodeInspector";
-import TimelineDock from "./features/timeline/TimelinePage";
+import { Landing } from "./features/landing";
+import { SpiderLoader } from "./features/loading";
+import { GraphView } from "./features/graph";
+import { NodeInspector } from "./features/inspector";
+import { TimelinePage as TimelineDock } from "./features/timeline";
 import ConfigPage from "./features/config/ConfigPage";
 import HeaderPresets from "./features/config/HeaderPresets";
-import RunPage from "./features/run/RunPage";
-import BlueprintManager from "./features/blueprints/BlueprintManager";
-import DataExplorer from "./features/data/DataExplorer";
-import BenchmarkPage from "./features/benchmark/BenchmarkPage";
-import NotFoundPage from "./features/errors/NotFoundPage";
+import { RunPage } from "./features/run";
+import { BlueprintManager } from "./features/blueprints";
+import { DataExplorer } from "./features/data";
+import { BenchmarkPage } from "./features/benchmark";
+import { NotFoundPage } from "./features/errors";
 import { INITIAL_STATE } from "./state/initialState";
 
 class FakeWebSocket {

@@ -13,8 +13,9 @@ from config.paths import RuntimePaths
 from config.runtime_config import default_runtime_config
 from core.crawler import Crawler
 from core.stages import STAGES, StageInputs, StageSpec
-from infrastructure import KeyManager, NetworkClient
-from nlp import BufferManager, SpaceUpdater
+from crawlviz.llm import KeyManager
+from crawlviz.nlp import BufferManager, SpaceUpdater
+from crawlviz.shared import NetworkClient
 from tests.test_event_wiring import FAKE_BLUEPRINT, Fake
 from ui_bridge.event_recorder import EventRecorder
 

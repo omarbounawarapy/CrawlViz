@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from config.config import BASE_DIR
-from utils import get_git_revision, save_json
+from crawlviz.shared import get_git_revision, save_json
 
 log = logging.getLogger("ui_bridge.recorder")
 

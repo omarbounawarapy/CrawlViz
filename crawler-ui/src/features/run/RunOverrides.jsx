@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button, Chip, Select, TextInput } from "../common/Form";
+import { Button, Chip, Select, TextInput } from "../common";
 import { fetchConfig, fetchConfigDefaults, fetchConfigSchema } from "../../api/client";
-import SettingsEditor from "../config/SettingsEditor";
-import { buildFields, buildPatch, buildSections, sectionSlug, setIn } from "../config/configModel";
-import { presetChanges, shown } from "../config/presetModel";
+import {
+  SettingsEditor,
+  buildFields,
+  buildPatch,
+  buildSections,
+  presetChanges,
+  sectionSlug,
+  setIn,
+  shown,
+} from "../config";
 
 const theme = getTheme();
 const { text } = theme.colors;
@@ -27,20 +34,14 @@ export default function RunOverrides({ onPatch, disabled }) {
 
   useEffect(() => {
     if (!open || schema) return;
-    // An answer that arrives after the panel has closed or the page has gone must not touch state.
-    let cancelled = false;
     Promise.all([fetchConfigSchema(), fetchConfig(), fetchConfigDefaults()])
       .then(([s, v, d]) => {
-        if (cancelled) return;
         setSchema(s);
         setSaved(v);
         setDraft(v);
         setDefaults(d);
       })
-      .catch((e) => !cancelled && setError(e.message));
-    return () => {
-      cancelled = true;
-    };
+      .catch((e) => setError(e.message));
   }, [open, schema]);
 
   const fields = useMemo(() => (schema ? buildFields(schema) : []), [schema]);

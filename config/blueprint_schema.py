@@ -2,7 +2,7 @@
 blueprint_schema.py
 --------------------
 Pydantic schema for the *assembled* blueprint dict -- the shape every
-consumer (core.Crawler, pipelines.exporting_pipeline.ExportingPipeline,
+consumer (core.Crawler, pipelines.export_sink.ExportSink,
 models.item_extractor.ItemExtractor, nlp.SpaceUpdater's caller, ...)
 actually reads.
 
@@ -10,7 +10,7 @@ This exists because the informal shape agreement between
 BlueprintTranslator (the producer) and its consumers has silently
 drifted out of sync three separate times in this codebase's history:
 
-    1. ExportingPipeline read `field_spec["store"]["type"]`, a key that
+    1. ExportSink read `field_spec["store"]["type"]`, a key that
        never existed anywhere -- the translator only ever produced a
        flat `export_type`. Every field silently exported as TEXT.
     2. `stop_conditions.priority_strategy` was read by core.Crawler but
@@ -18,7 +18,7 @@ drifted out of sync three separate times in this codebase's history:
        authored through the UI silently fell back to "balanced" no
        matter what was selected.
     3. The LLM *scoring* strategy (models/prompts.py) and the frontier
-       *priority* strategy (priority/strategy.py) share enough surface
+       *priority* strategy (src/crawlviz/priority/strategy.py) share enough surface
        area (both called "strategy" informally, one name "exploration"
        used by both with different meanings) to be conflated in code
        and documentation.
@@ -46,7 +46,7 @@ from .config import (
     DEFAULT_PRIORITY_STRATEGY,
 )
 from .extraction_profiles import ProfileError, resolve_profile_fields
-from priority.strategy import STRATEGY_REGISTRY
+from crawlviz.priority.strategy import STRATEGY_REGISTRY
 
 # =========================================================
 # STRICT ENUMERATIONS -- single source of truth
@@ -54,7 +54,7 @@ from priority.strategy import STRATEGY_REGISTRY
 
 # LLM scoring strategy (blueprint key: scoring.strategy) -- biases the
 # wording of the prompt sent to the scoring LLM. NOT the same as
-# priority_strategy below; see models/prompts.py and priority/strategy.py.
+# priority_strategy below; see models/prompts.py and src/crawlviz/priority/strategy.py.
 ALLOWED_STRATEGIES: frozenset[str] = frozenset(
     {
         "TOPICAL",
@@ -104,9 +104,9 @@ class BlueprintSchemaError(ValueError):
 # FIELD-LEVEL SHAPE
 # =========================================================
 # This is the exact shape models.item_extractor.FieldExtractor and
-# pipelines.exporting_pipeline.ExportingPipeline both read -- issue #1
+# pipelines.export_sink.ExportSink both read -- issue #1
 # above was this shape drifting between the translator and
-# ExportingPipeline specifically.
+# ExportSink specifically.
 
 
 class TransformStep(BaseModel):
@@ -260,9 +260,8 @@ class Blueprint(BaseModel):
     @field_validator("target_topic")
     @classmethod
     def _require_word_in_target_topic(cls, topic: str) -> str:
-        # A topic with no word character embeds to an all-zero vector. Its similarity to
-        # any link is then zero, so every link would get priority 0 and the crawl could
-        # not tell relevant links from irrelevant ones.
+        # A topic with no word character embeds to an all-zero vector, and every link
+        # scored against it gets priority 0 (docs/research/phase-b-method-review.md).
         if not _WORD_CHARACTER.search(topic):
             raise ValueError(
                 "the target topic has no letters or digits; enter the subject the crawl "

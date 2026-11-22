@@ -10,7 +10,7 @@ import { clusterAngles, linkContext, topKMean } from "./topkModel";
 
 describe("cascadeCounts", () => {
   cases.cascade.forEach((c, i) => {
-    it(`case ${i} matches ScoringPipeline.bucket_links`, () => {
+    it(`case ${i} matches ScoreStage.bucket_links`, () => {
       const got = cascadeCounts(c.scores, c.config);
       expect({ toLlm: got.toLlm, trusted: got.trusted, dropped: got.dropped }).toEqual(c.expected);
     });

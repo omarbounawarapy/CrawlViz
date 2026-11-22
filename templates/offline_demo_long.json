@@ -1,6 +1,6 @@
 {
   "blueprint_id": "offline_demo_long",
-  "id": "demo",
+  "id": "pfe",
   "target_topic": "diabetes insulin glucose pancreas care",
   "seeds": [
     {

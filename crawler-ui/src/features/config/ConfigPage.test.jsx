@@ -78,7 +78,7 @@ describe("ConfigPage", () => {
     expect(within(table).getByLabelText("Decrease Filter workers").disabled).toBe(true);
     fireEvent.keyDown(workers, { key: "ArrowUp" });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    await waitFor(() => expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { workers: 2 } } }));
+    await waitFor(() => expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filter: { workers: 2 } } }));
   });
 
   it("stores no queue limit as null and a limit as a number", async () => {
@@ -90,7 +90,7 @@ describe("ConfigPage", () => {
     fireEvent.click(none);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     await waitFor(() =>
-      expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filtering: { max_queue_size: 100 } } }),
+      expect(api.saveConfig).toHaveBeenCalledWith({ pipelines: { filter: { max_queue_size: 100 } } }),
     );
   });
 
@@ -199,7 +199,7 @@ describe("ConfigPage", () => {
   it("suggests a fix for a risky value and applies it with one click", async () => {
     const risky = JSON.parse(JSON.stringify(defaults));
     risky.fetch.min_delay = 0.2;
-    risky.pipelines.requests.workers = 8;
+    risky.pipelines.fetch.workers = 8;
     api.fetchConfig.mockResolvedValueOnce(risky);
     at("fetch");
     render(<ConfigPage />);

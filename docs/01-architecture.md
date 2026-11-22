@@ -22,20 +22,20 @@ flowchart TB
         Broker["EventBroker<br/>in-process pub/sub bus"]
         Boot --> Broker
 
-        subgraph Pipelines["~13 BasePipeline subclasses, each its own asyncio queue + worker pool"]
-            Req["RequestsPipeline<br/>HTTP fetch"]
-            Proc["ProcessingPipeline<br/>link + item extraction"]
-            Filt["FilteringPipeline<br/>dedup"]
-            Trans["TransformationPipeline<br/>field shaping"]
-            Score["ScoringPipeline<br/>NLP → LLM cascade"]
-            Prio["PriorityPipeline<br/>final priority function"]
-            Store["StoragePipeline<br/>writes the in-memory Storage"]
-            Export["ExportingPipeline<br/>SQLite batch writer"]
-            Retry["RetryProcessor<br/>backoff on transient failures"]
-            Stop["StoppingPipeline<br/>evaluates stop conditions"]
-            Canon["CanonicalizationPipeline<br/>URL/domain normalization"]
-            Log["LoggingPipeline<br/>node lifecycle log"]
-            Debug["DebuggingPipeline<br/>fine-grained trace (optional)"]
+        subgraph Pipelines["13 stage and sink classes (11 subclass BasePipeline), each with its own queue and workers"]
+            Req["FetchStage<br/>HTTP fetch"]
+            Proc["ExtractStage<br/>link + item extraction"]
+            Filt["FilterStage<br/>dedup"]
+            Trans["TransformStage<br/>field shaping"]
+            Score["ScoreStage<br/>NLP → LLM cascade"]
+            Prio["PrioritizeStage<br/>final priority function"]
+            Store["StorageSink<br/>writes the in-memory Storage"]
+            Export["ExportSink<br/>SQLite batch writer"]
+            Retry["RetryStage<br/>backoff on transient failures"]
+            Stop["StopController<br/>evaluates stop conditions"]
+            Canon["CanonicalizeStage<br/>URL/domain normalization"]
+            Log["CrawlLogSink<br/>node lifecycle log"]
+            Debug["DebugLogSink<br/>fine-grained trace (optional)"]
         end
 
         Broker <--> Req & Proc & Filt & Trans & Score & Prio & Store & Export & Retry & Stop & Canon & Log & Debug
@@ -73,11 +73,11 @@ flowchart TB
 |---|---|---|
 | `EventBroker` (`core/event_broker.py`) | Routing typed events to subscribed pipelines | Any domain logic. It doesn't know what a `NodeAddedEvent` *means*. |
 | `EventRegistry` (`core/event_registry.py`) | The subscription table (event type → list of handlers) | Dispatch. That's the broker's job. |
-| `BasePipeline` (`pipelines/base_pipeline.py`) | Generic worker-pool-over-a-queue lifecycle every pipeline inherits | Business logic. Subclasses override `_process()`. |
+| `BasePipeline` (`src/crawlviz/events/base_pipeline.py`) | Generic worker-pool-over-a-queue lifecycle every pipeline inherits | Business logic. Subclasses override `_process()`. |
 | `Storage` (`models/storage.py`) | The single in-memory source of truth for nodes, links, domains, and extracted items during a crawl | Persistence. It's gone when the process exits. |
-| `ExportingPipeline` | The *only* writer to `items.db` | Anything about the live crawl graph. Export is a one-way, append-only sink. |
+| `ExportSink` | The *only* writer to `items.db` | Anything about the live crawl graph. Export is a one-way, append-only sink. |
 | `NLPService` (`services/nlp_service.py`) | A stable interface (`score_links`, `update_space`) over the embedding engine and vector space; link features live in `services/link_features.py` and the first space is built by `services/space_bootstrap.py` | Vector-space mutation. That's `SpaceUpdater`'s job, invoked only through `NLPService`. |
-| `LlmHandler` (`infrastructure/llm_handler.py`) | Provider-agnostic orchestration of one LLM request: key selection, translation, retries | Prompt construction or result interpretation. Those live in `models/prompts.py` and `services/results_mapper.py`. |
+| `LlmHandler` (`src/crawlviz/llm/llm_handler.py`) | Provider-agnostic orchestration of one LLM request: key selection, translation, retries | Prompt construction or result interpretation. Those live in `models/prompts.py` and `services/results_mapper.py`. |
 | `TelemetryBridge` (`ui_bridge/telemetry_bridge.py`) | Translating domain events into the small set of typed UI messages defined in `docs/crawl_messages.ts` | Any transport. It hands finished messages to the gateway and nothing else. |
 | `UIWebSocketGateway` (`ui_bridge/ui_websocket_gateway.py`) | Accepting connections, sending catch-up snapshots, broadcasting | Any interpretation of what it's broadcasting. By its own docstring: "no business logic of any kind." |
 
@@ -91,10 +91,10 @@ This separation lets `routes/validation.py` stay a small, read-only, allowlisted
 
 The report and the code both separate two persistence concepts that are easy to confuse ([Chapter 3: Design, "Global View"](../report/rapport-english.pdf#page=29), on the in-memory storage object versus the export database):
 
-1. **The in-memory `Storage` object** (`models/storage.py`): a set of dicts holding `Node`, `Link`, `Domain`, and extracted-item objects, keyed by ID, with content-hash-based dedup sets for both links and items. This is mutated exclusively by `StoragePipeline` and is the graph the UI is watching live. It does not survive process exit.
-2. **`items.db`**: a SQLite database, one table per `(domain, blueprint_id)` pair, written exclusively by `ExportingPipeline` in response to `TransformationCompletedEvent`. This is what `routes/validation.py` reads, and what actually survives a crawl.
+1. **The in-memory `Storage` object** (`models/storage.py`): a set of dicts holding `Node`, `Link`, `Domain`, and extracted-item objects, keyed by ID, with content-hash-based dedup sets for both links and items. This is mutated exclusively by `StorageSink` and is the graph the UI is watching live. It does not survive process exit.
+2. **`items.db`**: a SQLite database, one table per `(domain, blueprint_id)` pair, written exclusively by `ExportSink` in response to `TransformationCompletedEvent`. This is what `routes/validation.py` reads, and what actually survives a crawl.
 
-A node's *links* live only in-memory (they're needed for graph traversal, not for the export sink); a node's *extracted items* are the only thing that reaches `items.db`. The two pipelines that write each (`StoragePipeline` and `ExportingPipeline`) both subscribe to `TransformationCompletedEvent`. They're two independent consumers of the same signal, not a producer/consumer chain between them.
+A node's *links* live only in-memory (they're needed for graph traversal, not for the export sink); a node's *extracted items* are the only thing that reaches `items.db`. The two pipelines that write each (`StorageSink` and `ExportSink`) both subscribe to `TransformationCompletedEvent`. They're two independent consumers of the same signal, not a producer/consumer chain between them.
 
 ## Semantic and LLM services, encapsulated
 
@@ -103,7 +103,7 @@ The scoring pipeline never touches an embedding model, a vector index, or an HTT
 - `NLPService` wraps `EmbeddingEngine` (a `sentence-transformers` model wrapper; `encode()` is not cached), `FeatureExtractor` (turns a `Link` into ~7 named scalar signals), and `VectorSpace` (the semantic basis vectors + `numpy`-backed cosine similarity, with a `DBSCAN`-based coverage/novelty measure; see [`04-deep-dive-semantic-scoring.md`](04-deep-dive-semantic-scoring.md)).
 - `LlmHandler` wraps `KeyManager` (cooldown-based multi-key rotation), a per-provider `Translator` (`OpenRouterTranslator`, `OpenAITranslator`, `AnthropicTranslator`, `GeminiTranslator`, or `NvidiaTranslator`, selected by the blueprint's `scoring_type`/`llm_type` string), and `NetworkClient` (the actual `aiohttp` request/retry loop).
 
-Both are constructed once by `BootStrapper` and handed to the pipelines that need them. This is plain dependency injection, not a framework. It makes it possible to unit-test, say, `PriorityPipeline`'s strategy functions (see `tests/test_priority_strategy.py`) without spinning up a real embedding model or a network client.
+Both are constructed once by `BootStrapper` and handed to the pipelines that need them. This is plain dependency injection, not a framework. It makes it possible to unit-test, say, `PrioritizeStage`'s strategy functions (see `tests/test_priority_strategy.py`) without spinning up a real embedding model or a network client.
 
 ## Extensibility
 

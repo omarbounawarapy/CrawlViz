@@ -15,7 +15,19 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from utils import save_json
+from pydantic import ValidationError
+from pydantic_core import PydanticCustomError
+
+from crawlviz.contracts import (
+    PIPELINES_SECTION,
+    SCHEMA_VERSION_KEY,
+    SchemaVersionError,
+    StoredFormatError,
+    dump_settings_document,
+    load_settings_document,
+    rename_pipeline_settings,
+)
+from crawlviz.shared import save_json
 
 from .redaction import sanitize_url, url_carries_credentials
 from .runtime_config import RuntimeConfig, default_runtime_config
@@ -32,6 +44,55 @@ def deep_merge(base: dict, over: dict) -> dict:
         else:
             out[key] = value
     return out
+
+
+def _refused_document(
+    exc: Exception, location: tuple[str, ...], given: object, error_type: str
+) -> ValidationError:
+    """``exc`` as the ``ValidationError`` the routes already report, at ``location``."""
+    return ValidationError.from_exception_data(
+        RuntimeConfig.__name__,
+        [
+            {
+                "type": PydanticCustomError(error_type, str(exc)),
+                "loc": location,
+                "input": given,
+            }
+        ],
+    )
+
+
+def with_current_names(patch: dict) -> dict:
+    """``patch`` with its ``pipelines`` sections under the ADR 6 keys.
+
+    A patch from an older client, preset or file names the stages ``requests``, ``scoring``
+    and so on. Merged onto the defaults as written it would sit beside the new key, so it
+    is renamed first. Raises ``ValidationError`` for one section given under both names."""
+    try:
+        return rename_pipeline_settings(patch)
+    except StoredFormatError as exc:
+        raise _refused_document(
+            exc, (PIPELINES_SECTION,), patch[PIPELINES_SECTION], "setting_given_twice"
+        ) from exc
+
+
+def load_uploaded_settings(uploaded: dict) -> dict:
+    """The settings patch in an uploaded ``settings.json`` copy, at the current version.
+
+    An upload goes through the same loader as the stored file, so a file with
+    ``schema_version`` or the old pipeline section names is read, not refused as unknown
+    keys. Raises ``ValidationError`` (so the routes report it like the other problems) for
+    a version this build cannot read or a section given under both names."""
+    try:
+        return load_settings_document(uploaded)
+    except SchemaVersionError as exc:
+        raise _refused_document(
+            exc, (SCHEMA_VERSION_KEY,), uploaded.get(SCHEMA_VERSION_KEY), "unreadable_version"
+        ) from exc
+    except StoredFormatError as exc:
+        raise _refused_document(
+            exc, (PIPELINES_SECTION,), uploaded.get(PIPELINES_SECTION), "setting_given_twice"
+        ) from exc
 
 
 def diff(base: dict, new: dict) -> dict:
@@ -69,6 +130,27 @@ def changed_fields(old: dict, new: dict, _prefix: str = "") -> list[dict[str, An
     return changes
 
 
+class SettingsFileError(Exception):
+    """The stored settings file exists but cannot be read as a settings object."""
+
+
+EXTRA_KEY_MESSAGE = "This setting does not exist. Check its spelling, or remove it."
+
+
+def validation_errors(exc: ValidationError) -> list[dict[str, Any]]:
+    """The problems of a failed config validation as ``{"path", "message"}``, where the
+    path is the dotted key (``pipelines.fetchh``)."""
+    return [
+        {
+            "path": ".".join(str(part) for part in problem["loc"]),
+            "message": EXTRA_KEY_MESSAGE
+            if problem["type"] == "extra_forbidden"
+            else problem["msg"],
+        }
+        for problem in exc.errors()
+    ]
+
+
 def _drop_endpoint_credentials(stored: dict) -> list[str]:
     """Strip user info and credential-like queries from each stored provider endpoint, in
     place. Returns the names of the providers that were changed."""
@@ -84,19 +166,11 @@ def _drop_endpoint_credentials(stored: dict) -> list[str]:
     return cleaned
 
 
-class SettingsFileError(Exception):
-    """The stored settings file exists but cannot be read as a settings object."""
-
-
 def read_stored(path: Path) -> dict:
     """The raw stored overrides: ``{}`` when no file exists yet.
 
     Raises ``SettingsFileError`` when the file exists but is unreadable or is not a
     JSON object, so a damaged file is never mistaken for "no settings".
-
-    A provider endpoint saved with a user name, password or key (allowed before endpoints
-    were checked) is cleaned here and the file is rewritten, so one old file cannot make
-    every later load fail. The key belongs in the keys store.
     """
     path = Path(path)
     try:
@@ -122,7 +196,14 @@ def read_stored(path: Path) -> dict:
             f"{type(data).__name__}. Fix it by hand, or reset the settings "
             "from the Config page, which replaces it with the defaults."
         )
-    cleaned = _drop_endpoint_credentials(data)
+    try:
+        stored = load_settings_document(data)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        raise SettingsFileError(
+            f"{exc} The file is {path}. To start over instead, reset the settings from "
+            "the Config page, which replaces it with the defaults."
+        ) from exc
+    cleaned = _drop_endpoint_credentials(stored)
     if cleaned:
         logger.warning(
             "Dropped the credential from the stored endpoint of provider(s) %r; "
@@ -130,16 +211,44 @@ def read_stored(path: Path) -> dict:
             cleaned,
         )
         try:
-            _write(Path(path), data)
+            _write(path, stored)
         except OSError:
             logger.exception(
                 "Could not rewrite the cleaned settings file; it still holds a credential."
             )
-    return data
+    return stored
 
 
 def _write(path: Path, data: dict) -> None:
-    save_json(path, data, sort_keys=True)
+    save_json(path, dump_settings_document(data), sort_keys=True)
+
+
+def _validate(merged: dict, settings_file: Path | None, stored: dict) -> RuntimeConfig:
+    """``merged`` as a ``RuntimeConfig``.
+
+    A failure caused by the stored settings alone is a ``SettingsFileError`` that names
+    the file and the entries, because the person cannot fix it from the request that
+    hit it; a failure from the new values stays a ``ValidationError``."""
+    try:
+        return RuntimeConfig.model_validate(merged)
+    except ValidationError:
+        if settings_file is not None and stored:
+            _raise_if_stored_settings_invalid(settings_file, stored)
+        raise
+
+
+def _raise_if_stored_settings_invalid(settings_file: Path, stored: dict) -> None:
+    try:
+        RuntimeConfig.model_validate(deep_merge(default_runtime_config().model_dump(), stored))
+    except ValidationError as stored_error:
+        problems = "; ".join(
+            f"{found['path']}: {found['message']}" for found in validation_errors(stored_error)
+        )
+        raise SettingsFileError(
+            f"The settings file {settings_file} holds settings that are not valid ({problems}). "
+            "Fix or remove those entries by hand, or reset the settings from the Config page, "
+            "which replaces the file with the defaults."
+        ) from stored_error
 
 
 def load_runtime_config(
@@ -147,22 +256,25 @@ def load_runtime_config(
 ) -> RuntimeConfig:
     """Defaults + stored settings + `overrides`, validated.
 
-    Raises ``pydantic.ValidationError`` when the merge is invalid."""
+    Raises ``SettingsFileError`` when the stored settings are not valid and
+    ``pydantic.ValidationError`` when the `overrides` are."""
     merged = default_runtime_config().model_dump()
-    if settings_file is not None:
-        merged = deep_merge(merged, read_stored(settings_file))
+    stored = read_stored(settings_file) if settings_file is not None else {}
+    merged = deep_merge(merged, stored)
     if overrides:
-        merged = deep_merge(merged, overrides)
-    return RuntimeConfig.model_validate(merged)
+        merged = deep_merge(merged, with_current_names(overrides))
+    return _validate(merged, settings_file, stored)
 
 
 def save_settings(settings_file: Path, patch: dict) -> RuntimeConfig:
     """Merge `patch` into the stored settings and persist the difference
     from the defaults. Returns the new effective config; raises
-    ``ValidationError`` (and writes nothing) when it is invalid."""
+    ``ValidationError`` (and writes nothing) when the patch is invalid and
+    ``SettingsFileError`` when the stored settings already were."""
     defaults = default_runtime_config().model_dump()
-    merged = deep_merge(deep_merge(defaults, read_stored(settings_file)), patch)
-    cfg = RuntimeConfig.model_validate(merged)
+    stored = read_stored(settings_file)
+    merged = deep_merge(deep_merge(defaults, stored), with_current_names(patch))
+    cfg = _validate(merged, settings_file, stored)
     _write(settings_file, diff(defaults, cfg.model_dump()))
     return cfg
 
@@ -170,7 +282,7 @@ def save_settings(settings_file: Path, patch: dict) -> RuntimeConfig:
 def replace_settings(settings_file: Path, full: dict) -> RuntimeConfig:
     """Replace the stored settings with `full` (a complete config)."""
     defaults = default_runtime_config().model_dump()
-    cfg = RuntimeConfig.model_validate(deep_merge(defaults, full))
+    cfg = RuntimeConfig.model_validate(deep_merge(defaults, with_current_names(full)))
     _write(settings_file, diff(defaults, cfg.model_dump()))
     return cfg
 

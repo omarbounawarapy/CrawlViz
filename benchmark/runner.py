@@ -1,9 +1,12 @@
-"""Runs one policy on one frozen graph through the real pipelines.
+"""Runs one policy, or the cascade, on one frozen graph through the real stages.
 
-Wired like core.Crawler._build_pipelines at concurrency 1 (so the visit order
-is deterministic for a seed), minus the LLM, embeddings, exporter, loggers
-and UI. The scoring pipeline's LLM stage is a no-op, so every link is
-ranked by the policy's own score.
+Wired like the crawler's stage registry (core.stages.build_stages) at
+concurrency 1, so the visit order is deterministic for a seed. Only the stages
+a visit order needs are built: fetch, extract, filter, transform, storage,
+score, prioritize and retry. In ``run_policy`` the score stage's LLM call is a
+no-op and there are no embeddings, so every link is ranked by the policy's own
+score. ``run_cascade`` runs the embeddings, the topic expansion and the LLM
+scoring as a crawl would.
 """
 
 import asyncio
@@ -23,7 +26,8 @@ from config import (
     PERCENTILE_MIN_LINKS,
 )
 from core.event_broker import EventBroker
-from events import (
+from crawlviz.events import (
+    SHUTDOWN,
     EmptyScoreResultsEvent,
     NodeAddedEvent,
     PriorityCalculationFailedEvent,
@@ -33,18 +37,18 @@ from events import (
     StopCrawlEvent,
     StorageOperationFailedEvent,
 )
-from models import Domain, Node, Storage
+from crawlviz.shared import Domain, Node
+from models import Storage
 from pipelines import (
-    FilteringPipeline,
-    PriorityPipeline,
-    ProcessingPipeline,
-    RequestsPipeline,
-    RetryProcessor,
-    ScoringPipeline,
-    StoragePipeline,
-    TransformationPipeline,
+    ExtractStage,
+    FetchStage,
+    FilterStage,
+    PrioritizeStage,
+    RetryStage,
+    ScoreStage,
+    StorageSink,
+    TransformStage,
 )
-from pipelines.base_pipeline import SHUTDOWN
 from pipelines.frontier_queue import FrontierQueue
 
 from .graph import BASE_URL, FrozenGraph
@@ -65,8 +69,8 @@ class _NoLlm:
         return links
 
 
-# The cascade runs with the production retry processor's own backoff
-# (RetryProcessor default: 2s, doubling, 3 scoring retries). Rate limits are
+# The cascade runs with the production retry stage's own backoff
+# (RetryStage default: 2s, doubling, 3 scoring retries). Rate limits are
 # absorbed upstream by PacedLlm, so a retry here means the LLM stage itself
 # failed. The idle limit only has to outlast one slow LLM call plus backoff:
 # time spent waiting on a rate limit does not count towards it (the run loop
@@ -104,7 +108,7 @@ class _BudgetGate:
 class _CountedFlush:
     """NLPService stand-in that commits semantic-space growth by count, not time.
 
-    The space only changes inside ``update_space``, which ScoringPipeline
+    The space only changes inside ``update_space``, which ScoreStage
     awaits before it moves to the next node, so the growth lands at the same
     point in the scoring sequence on every execution.
     """
@@ -123,8 +127,8 @@ class _CountedFlush:
             await self._updater.force_flush()
 
 
-class _ParkingScoring(ScoringPipeline):
-    """ScoringPipeline that says when its worker is only waiting for a page.
+class _ParkingScoring(ScoreStage):
+    """ScoreStage that says when its worker is only waiting for a page.
 
     The worker takes the best node off its queue and waits for that page to
     be fetched. Waiting for a fetch is not work in progress, so the lockstep
@@ -160,7 +164,7 @@ class _ParkingScoring(ScoringPipeline):
                     break
                 await self._process(item, worker_id)
             except Exception:
-                logging.getLogger("pipelines.base_pipeline").exception(
+                logging.getLogger("crawlviz.events.base_pipeline").exception(
                     "scoring worker %d failed processing %s", worker_id, type(item).__name__
                 )
             finally:
@@ -394,10 +398,9 @@ TOPIC_WORD = re.compile(r"\w")
 def require_topic(topic: str, allow_empty: bool = False) -> None:
     """Refuse a topic with no word character unless the caller allows it.
 
-    Such a topic embeds to an all-zero vector. The cosine similarity of any link
-    to that vector is NaN, so ``novelty_injection`` is NaN and every link gets
-    priority 0. The run would then measure insertion order, not the method, so
-    the cascade refuses such a graph.
+    Such a topic embeds to an all-zero vector, which makes ``novelty_injection``
+    NaN and gives every link priority 0 (docs/research/phase-c-method-fix-plan.md,
+    fix (g)), so the run would measure insertion order, not the method.
     """
     if allow_empty or TOPIC_WORD.search(topic or ""):
         return
@@ -497,7 +500,7 @@ async def _run(
     storage.add_domain(domain)
 
     gated = _Lockstep(fetcher, lambda: False, budget) if lockstep else fetcher
-    requests = RequestsPipeline(
+    requests = FetchStage(
         broker,
         max_concurrency=1,
         fetcher=gated,
@@ -515,14 +518,14 @@ async def _run(
         rng=random.Random(f"{seed}:scoring"),
         **scoring_kwargs,
     )
-    retry = RetryProcessor(
+    retry = RetryStage(
         storage, broker, requests_pipeline=requests, retry_base_delay=retry_base_delay
     )
-    processing = ProcessingPipeline(broker, extraction)
-    filtering = FilteringPipeline(broker, storage)
-    transformation = TransformationPipeline(broker, extraction)
-    store = StoragePipeline(storage, broker)
-    priority = PriorityPipeline(storage, broker)
+    processing = ExtractStage(broker, extraction)
+    filtering = FilterStage(broker, storage)
+    transformation = TransformStage(broker, extraction)
+    store = StorageSink(storage, broker)
+    priority = PrioritizeStage(storage, broker)
     if strategy is not None:
         priority.strategy = strategy  # not registered: the registry is global
     pipelines = [requests, processing, filtering, transformation, store, scoring, priority, retry]
@@ -665,8 +668,8 @@ async def run_cascade(
     """
     require_topic(graph.topic, allow_empty=allow_empty_topic)
     from config.runtime_config import default_runtime_config
-    from nlp import BufferManager, SpaceUpdater
-    from priority.strategy import get_strategy
+    from crawlviz.nlp import BufferManager, SpaceUpdater
+    from crawlviz.priority.strategy import get_strategy
     from services import NLPService, ScoringService
 
     cfg = default_runtime_config()

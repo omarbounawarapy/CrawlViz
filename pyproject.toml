@@ -38,6 +38,7 @@ dev = [
     "hypothesis>=6.170.5",
     "mypy>=2.4.0",
     "pip-audit>=2.7",
+    "import-linter>=2.0",
 ]
 
 [tool.ruff]
@@ -79,36 +80,36 @@ max-complexity = 10
 "config/blueprint_schema.py" = ["I001"]
 "config/blueprint_translator.py" = ["C901", "I001", "RUF100"]
 "config/runtime_config.py" = ["E501", "PLR0913", "UP037"]
-"core/boot_strapper.py" = ["UP015"]
-"core/crawler.py" = ["I001", "PLC0415", "PLR0913"]
-"events/__init__.py" = ["I001", "RUF022"]
-"infrastructure/key_manager.py" = ["PLR2004"]
-"infrastructure/llm_handler.py" = ["RUF012"]
+"core/crawler.py" = ["I001", "PLR0913"]
+"src/crawlviz/events/__init__.py" = ["I001", "RUF022"]
+"src/crawlviz/events/expansion_events.py" = ["N801"]
+"src/crawlviz/events/nlp_events.py" = ["N801"]
+"src/crawlviz/llm/key_manager.py" = ["PLR2004"]
 "infrastructure/log_writer.py" = ["UP017"]
 "main.py" = ["I001"]
 "models/links_extractor.py" = ["SIM108"]
-"models/node.py" = ["PLR0913"]
 "models/prompts.py" = ["RUF001"]
-"models/storage.py" = ["I001"]
-"nlp/embedding_engine.py" = ["PLC0415"]
-"nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
-"nlp/space_updater.py" = ["SIM105", "UP041"]
-"nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
-"pipelines/debugging_pipeline.py" = ["I001", "PLR0913", "RUF010"]
-"pipelines/exporting_pipeline.py" = ["PLR0911", "PLR0913", "PLW2901", "SIM105"]
-"pipelines/priority_pipeline.py" = ["PLR0913"]
-"pipelines/processing_pipeline.py" = ["I001"]
-"pipelines/requests_pipeline.py" = ["I001", "PLR0913"]
-"pipelines/retry_processor.py" = ["PLR0913"]
-"pipelines/scoring_pipeline.py" = ["I001", "PLR0913"]
-"priority/__init__.py" = ["RUF022"]
-"priority/strategy.py" = ["PLR0913"]
+"src/crawlviz/nlp/embedding_engine.py" = ["PLC0415"]
+"src/crawlviz/nlp/feature_extractor.py" = ["PLR0913", "PLR2004"]
+"src/crawlviz/nlp/space_updater.py" = ["SIM105", "UP041"]
+"src/crawlviz/nlp/vector_space.py" = ["B905", "I001", "PLR2004"]
+"pipelines/debug_log_sink.py" = ["I001", "PLR0913", "RUF010"]
+"pipelines/export_sink.py" = ["PLR0911", "PLR0913", "PLW2901", "SIM105"]
+"pipelines/prioritize_stage.py" = ["PLR0913"]
+"pipelines/extract_stage.py" = ["I001"]
+"pipelines/fetch_stage.py" = ["PLR0913"]
+"pipelines/retry_stage.py" = ["PLR0913"]
+"pipelines/score_stage.py" = ["I001", "PLR0913"]
+"src/crawlviz/priority/__init__.py" = ["RUF022"]
+"src/crawlviz/priority/strategy.py" = ["PLR0913"]
+"src/crawlviz/shared/html_utils.py" = ["PLW0603"]
+"src/crawlviz/shared/node.py" = ["PLR0913"]
 "routes/benchmark.py" = ["E501", "PLR2004"]
 "routes/config.py" = ["B904", "E501"]
-"routes/run.py" = ["B904", "E501", "N815", "PLW0603"]
+"routes/run.py" = ["B904", "N815", "PLW0603"]
 "routes/templates.py" = ["B904", "I001"]
 "routes/validation.py" = ["B904", "RUF001"]
-"services/nlp_service.py" = ["I001", "PLR0913"]
+"services/nlp_service.py" = ["PLR0913"]
 "services/scoring_service.py" = ["PLR0913", "PLR2004"]
 "tests/agents/test_commit_msg_check.py" = ["RUF100"]
 "tests/agents/test_guard_bash.py" = ["E501"]
@@ -133,16 +134,13 @@ max-complexity = 10
 "tools/nlp_eval.py" = ["B905", "E501", "N806", "PLC0415", "RUF100"]
 "traceability/__init__.py" = ["RUF022"]
 "traceability/emitter.py" = ["SIM102"]
-"traceability/expansion_trace_events.py" = ["N801"]
 "traceability/llm_trace_events.py" = ["N801"]
 "traceability/network_trace_events.py" = ["N801"]
-"traceability/nlp_trace_events.py" = ["N801"]
 "ui_bridge/__init__.py" = ["I001", "RUF022"]
 "ui_bridge/crawl_state_snapshot.py" = ["I001", "PLR0913", "UP006", "UP035", "UP045"]
 "ui_bridge/event_recorder.py" = ["SIM115"]
-"ui_bridge/telemetry_bridge.py" = ["PLC0415", "PLR0913", "UP006", "UP035", "UP045"]
+"ui_bridge/telemetry_bridge.py" = ["PLR0913", "UP006", "UP035", "UP045"]
 "ui_bridge/ui_websocket_gateway.py" = ["B904", "UP006", "UP035"]
-"utils/html_utils.py" = ["PLW0603"]
 
 [build-system]
 requires = ["hatchling"]
@@ -153,6 +151,9 @@ build-backend = "hatchling.build"
 # to package as a wheel. Declaring one package keeps `hatchling` (and
 # therefore `uv sync`) happy without trying to guess a layout.
 packages = ["config"]
+# The editable install puts the repo root and src/ on sys.path, so `crawlviz` imports
+# outside pytest too (pytest.ini sets the same two paths for the test run).
+dev-mode-dirs = [".", "src"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -161,16 +162,14 @@ explicit_package_bases = true
 # tests/pins is also on sys.path under pytest (no __init__.py), so its modules import each other by bare name.
 mypy_path = [".", "src", "tests/pins"]
 files = [
+    ".claude/hooks",
     "main.py",
     "benchmark",
     "config",
     "core",
-    "events",
     "infrastructure",
     "models",
-    "nlp",
     "pipelines",
-    "priority",
     "routes",
     "services",
     "src/crawlviz",
@@ -178,7 +177,6 @@ files = [
     "tools",
     "traceability",
     "ui_bridge",
-    "utils",
 ]
 
 # Libraries that ship no stubs or py.typed marker. Listed one by one so a new
@@ -213,44 +211,44 @@ module = [
     "core.event_broker",
     "core.event_registry",
     "core.live_settings",
-    "infrastructure.anthropic_translator",
-    "infrastructure.call_budget",
-    "infrastructure.gemini_translator",
-    "infrastructure.groq_translator",
-    "infrastructure.key_manager",
-    "infrastructure.llm_handler",
+    "crawlviz.llm.anthropic_translator",
+    "crawlviz.llm.gemini_translator",
+    "crawlviz.llm.groq_translator",
+    "crawlviz.llm.key_manager",
+    "crawlviz.llm.llm_handler",
     "infrastructure.log_writer",
-    "infrastructure.network_client",
-    "infrastructure.nvidia_translator",
-    "infrastructure.open_router_translator",
-    "infrastructure.openai_translator",
+    "crawlviz.llm.nvidia_translator",
+    "crawlviz.llm.open_router_translator",
+    "crawlviz.llm.openai_translator",
+    "crawlviz.shared.html_utils",
+    "crawlviz.shared.link",
+    "crawlviz.shared.network_client",
+    "crawlviz.shared.node",
     "models.item_extractor",
-    "models.link",
-    "models.node",
-    "nlp.buffer_manager",
-    "nlp.embedding_engine",
-    "nlp.expansion_prompt_builder",
-    "nlp.space_store",
-    "nlp.space_updater",
-    "nlp.vector_space",
-    "pipelines.base_pipeline",
-    "pipelines.canonicalization_pipeline",
-    "pipelines.contracts",
-    "pipelines.debugging_pipeline",
-    "pipelines.exporting_pipeline",
-    "pipelines.filtering_pipeline",
+    "crawlviz.nlp.buffer_manager",
+    "crawlviz.nlp.embedding_engine",
+    "crawlviz.nlp.expansion_prompt_builder",
+    "crawlviz.nlp.space_store",
+    "crawlviz.nlp.space_updater",
+    "crawlviz.nlp.vector_space",
+    "crawlviz.events.base_pipeline",
+    "pipelines.canonicalize_stage",
+    "crawlviz.events.stage_contracts",
+    "pipelines.debug_log_sink",
+    "pipelines.export_sink",
+    "pipelines.filter_stage",
     "pipelines.frontier_queue",
-    "pipelines.logging_pipeline",
-    "pipelines.priority_pipeline",
-    "pipelines.processing_pipeline",
-    "pipelines.requests_pipeline",
-    "pipelines.retry_processor",
+    "pipelines.crawl_log_sink",
+    "pipelines.prioritize_stage",
+    "pipelines.extract_stage",
+    "pipelines.fetch_stage",
+    "pipelines.retry_stage",
     "pipelines.robots",
-    "pipelines.scoring_pipeline",
-    "pipelines.stopping_pipeline",
-    "pipelines.storage_pipeline",
-    "pipelines.transformation_pipeline",
-    "priority.strategy",
+    "pipelines.score_stage",
+    "pipelines.stop_controller",
+    "pipelines.storage_sink",
+    "pipelines.transform_stage",
+    "crawlviz.priority.strategy",
     "routes.benchmark",
     "routes.config",
     "routes.run",
@@ -258,11 +256,9 @@ module = [
     "routes.validation",
     "routes.validation_db",
     "services.llm_contracts",
-    "services.nlp_service",
     "services.results_mapper",
     "services.scoring_service",
     "tests.agents.hook_runner",
-    "tests.agents.test_commit_msg_check",
     "tests.test_base_pipeline",
     "tests.test_benchmark",
     "tests.test_benchmark_routes",
@@ -309,6 +305,39 @@ module = [
     "ui_bridge.event_recorder",
     "ui_bridge.telemetry_bridge",
     "ui_bridge.ui_websocket_gateway",
-    "utils.html_utils",
 ]
 ignore_errors = true
+
+# ADR 4: backend layers import downwards only. Only the packages that exist under
+# src/crawlviz are listed; the others join the contract when they move. The graph counts
+# imports inside functions and under TYPE_CHECKING. Run with `make lint-imports`.
+[tool.importlinter]
+root_packages = [
+    "crawlviz",
+    "benchmark", "config", "core", "infrastructure", "models", "pipelines",
+    "routes", "services", "traceability", "ui_bridge",
+]
+
+[[tool.importlinter.contracts]]
+name = "Backend layers import downwards only"
+type = "layers"
+layers = [
+    "crawlviz.nlp",
+    "crawlviz.llm",
+    "crawlviz.events",
+    "crawlviz.shared",
+]
+
+[[tool.importlinter.contracts]]
+name = "Lower layers do not import the packages that have not moved yet"
+type = "forbidden"
+source_modules = [
+    "crawlviz.shared",
+    "crawlviz.events",
+    "crawlviz.llm",
+    "crawlviz.nlp",
+]
+forbidden_modules = [
+    "benchmark", "config", "core", "infrastructure", "models", "pipelines",
+    "routes", "services", "traceability", "ui_bridge",
+]

@@ -1,0 +1,102 @@
+"""Structural contracts for the collaborators the pipelines are given.
+
+These describe what is consumed today, nothing more. Implementations
+(the pipelines, NLPService, ScoringService, NetworkClient,
+TracedNetworkClient, and test doubles) satisfy them by shape, without
+inheriting.
+"""
+
+from typing import Any, Protocol, runtime_checkable
+
+
+@runtime_checkable
+class EventConsumer(Protocol):
+    """Anything the broker delivers events to (pipelines, SpaceUpdater,
+    TelemetryBridge, observers).
+
+    ``event_types`` names the events it is subscribed to; the composition
+    root subscribes it to exactly those.
+    """
+
+    @property
+    def event_types(self) -> tuple[type, ...]: ...
+
+    # Any, not object: each consumer annotates the narrower events it accepts,
+    # which an `object` parameter would reject.
+    async def put(self, event: Any) -> None: ...
+
+
+@runtime_checkable
+class CrawlStage(EventConsumer, Protocol):
+    """A pipeline the crawl runs as a task: ``start`` returns once it has
+    been stopped and has drained."""
+
+    async def start(self) -> None: ...
+
+
+@runtime_checkable
+class WorkTracker(Protocol):
+    """A stage that can say whether it still holds work: events queued, items being
+    handled or delayed requeues. The stop controller reads it to see that the frontier
+    has run dry."""
+
+    @property
+    def has_pending_work(self) -> bool: ...
+
+
+@runtime_checkable
+class RelevanceScorer(Protocol):
+    """Cheap similarity stage (NLPService).
+
+    ``score_links`` writes ``_nlp_score`` and ``nlp_vector`` on every link
+    and returns the links. ``update_space`` feeds scored links back into
+    the semantic space.
+    """
+
+    async def score_links(self, links: list, parent: Any) -> list: ...
+
+    async def update_space(self, links: list) -> None: ...
+
+
+@runtime_checkable
+class Annotator(Protocol):
+    """Expensive LLM stage (ScoringService).
+
+    ``score_links`` writes ``score``, ``relevance_type`` and ``expansions``
+    on the links it annotates and returns them.
+    """
+
+    async def score_links(self, node: Any, links: list) -> list: ...
+
+
+@runtime_checkable
+class Fetcher(Protocol):
+    """HTTP transport (NetworkClient, TracedNetworkClient).
+
+    ``emit_request`` takes ``{"url", "headers", "data", "method"}`` and
+    returns the response body as text; ``close`` releases the session.
+    """
+
+    async def emit_request(self, params: dict) -> str: ...
+
+    async def close(self) -> None: ...
+
+
+@runtime_checkable
+class LlmSender(Protocol):
+    """Anything that answers an LLM request (LlmHandler, CachedLlm, offline double).
+
+    ``send`` takes an ``LlmContext`` and returns the parsed JSON answer.
+    """
+
+    async def send(self, context: Any) -> dict: ...
+
+
+@runtime_checkable
+class TraceSink(Protocol):
+    """Anything that takes trace events from a stage (``TraceEmitter``, test doubles).
+
+    The NLP services hold one optionally, so the domain does not import the tracing package.
+    """
+
+    async def emit(self, event: Any) -> None: ...

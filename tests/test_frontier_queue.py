@@ -1,5 +1,5 @@
-from models.node import Node
-from pipelines.base_pipeline import SHUTDOWN
+from crawlviz.events import SHUTDOWN
+from crawlviz.shared import Node
 from pipelines.frontier_queue import FrontierQueue
 
 

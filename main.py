@@ -13,15 +13,24 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import ALLOWED_HOSTS, CORS_ORIGIN_REGEX, CORS_ORIGINS
+from traceability.logging_setup import configure_logging
+from crawlviz.shared import register_secrets
 from routes.config_support import request_validation_response
 from routes.request_guards import RequestGuardMiddleware
 from routes.session_token import SessionTokenMiddleware
+from routes.session_token import get_session_token
 from routes.session_token import router as session_router
 from routes.templates import router as templates_router
 from routes.run import router as run_router
 from routes.validation import router as validation_router
 from routes.config import router as config_router
 from routes.benchmark import router as benchmark_router
+from routes.health import router as health_router
+
+# uvicorn has set up its own logging before it imports this module; this replaces it, so the
+# server's lines and the crawl's lines share one format (CRAWLVIZ_LOG_FORMAT=text for people).
+configure_logging()
+register_secrets([get_session_token()])
 
 app = FastAPI(title="CrawlViz Control API")
 app.add_exception_handler(RequestValidationError, request_validation_response)
@@ -45,6 +54,7 @@ app.add_middleware(
 )
 
 app.include_router(session_router)
+app.include_router(health_router)
 app.include_router(templates_router)
 app.include_router(run_router)
 app.include_router(validation_router)

@@ -1,4 +1,4 @@
-"""A page fetch reads a bounded body, and only of a type the extraction can parse."""
+"""A page fetch reads a bounded body, and only of a type the extraction can parse (SEC-2)."""
 
 import gzip
 from collections.abc import AsyncIterator, Callable
@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 import pytest
 from aiohttp import web
 
-from infrastructure import NetworkClient, ResponseTooLargeError, UnsupportedContentTypeError
+from crawlviz.shared import NetworkClient, ResponseTooLargeError, UnsupportedContentTypeError
 
 HTML_ONLY = ("text/html", "application/xhtml+xml")
 LIMIT = 1000

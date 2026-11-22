@@ -12,15 +12,15 @@ describe("suggest", () => {
   it("flags a fast pause with many workers and offers a fix", () => {
     const c = cfg();
     c.fetch.min_delay = 0.2;
-    c.pipelines.requests.workers = 8;
+    c.pipelines.fetch.workers = 8;
     const [s] = suggest(c);
     expect(s.id).toBe("gentle-delay");
     expect(s.fix.set).toEqual([["fetch.min_delay", 1]]);
   });
   it("flags unbounded queues with many workers and honors dismissals", () => {
     const c = cfg();
-    c.pipelines.filtering.workers = 16;
-    c.pipelines.filtering.max_queue_size = null;
+    c.pipelines.filter.workers = 16;
+    c.pipelines.filter.max_queue_size = null;
     expect(suggest(c).map((s) => s.id)).toContain("unbounded-queue");
     expect(suggest(c, ["unbounded-queue"])).toEqual([]);
   });

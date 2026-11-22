@@ -1,9 +1,8 @@
 import { useRef, useState } from "react";
 import { getTheme } from "../../theme";
-import { Button } from "../common/Form";
+import { Button, nextChoice } from "../common";
 import { HEADER_PRESETS, activePreset } from "./headerPresets";
 import { presetChanges, shown } from "./presetModel";
-import { nextChoice } from "../common/choiceKeys";
 
 const theme = getTheme();
 const { text, background } = theme.colors;

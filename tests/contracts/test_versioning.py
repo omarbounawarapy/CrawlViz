@@ -61,6 +61,24 @@ def test_a_version_that_is_not_a_whole_number_is_refused(bad: object) -> None:
         _two_step_chain().migrate({SCHEMA_VERSION_KEY: bad})
 
 
+@pytest.mark.parametrize(
+    "huge",
+    [
+        "9" * 1_000_000,
+        ["1"] * 100_000,
+        {str(i): i for i in range(100_000)},
+        # The longest whole number JSON parsing accepts by default.
+        10**4299,
+    ],
+    ids=["string", "list", "object", "whole number"],
+)
+def test_a_huge_version_value_is_not_echoed_back_in_full(huge: object) -> None:
+    with pytest.raises(SchemaVersionError) as refused:
+        _two_step_chain().migrate({SCHEMA_VERSION_KEY: huge})
+    # The message names the start of the value and stays short enough to show in a reply.
+    assert len(str(refused.value)) < 400
+
+
 def test_a_missing_step_is_reported_not_skipped() -> None:
     chain = MigrationChain("example file", current_version=2)
     chain.register(1, _add_tags)

@@ -8,15 +8,21 @@ from typing import Any
 import pytest
 
 from config.blueprint_schema import validate_blueprint
+from config.runtime_config import default_runtime_config
 from config.settings_store import load_runtime_config, read_stored
-from crawlviz.contracts import SCHEMA_VERSION_KEY, MigrationChain, SchemaVersionError
+from crawlviz.contracts import (
+    SCHEMA_VERSION_KEY,
+    MigrationChain,
+    SchemaVersionError,
+    StoredFormatError,
+    rename_pipeline_settings,
+)
 from crawlviz.contracts.stored_formats import (
     BLUEPRINT_FILE,
     PRESETS_FILE,
     RUN_MANIFEST,
     SETTINGS_FILE,
     STORED_FORMATS,
-    StoredFormatError,
     dump_blueprint_document,
     dump_presets_document,
     dump_run_manifest,
@@ -81,26 +87,40 @@ def test_a_file_from_a_newer_crawlviz_is_refused_in_plain_words(
         read({SCHEMA_VERSION_KEY: newer})
 
 
-@pytest.mark.parametrize("version", [0, 1])
+@pytest.mark.parametrize("version", [0, 1, 2])
 def test_each_settings_version_loads_as_the_same_valid_patch(version: int) -> None:
     patch = load_settings_document(_fixture("settings", version))
     assert SCHEMA_VERSION_KEY not in patch
-    assert patch == SETTINGS_FILE.strip(_fixture("settings", 1))
+    assert patch == SETTINGS_FILE.strip(_fixture("settings", 2))
     # The loaded patch is what RuntimeConfig accepts today, every value taking effect.
     _assert_applied(patch, load_runtime_config(None, patch).model_dump())
+
+
+def test_a_version_one_settings_file_gets_the_pipeline_section_names() -> None:
+    old = _fixture("settings", 1)
+    assert old["pipelines"] == {"requests": {"workers": 2}}
+    assert load_settings_document(old)["pipelines"] == {"fetch": {"workers": 2}}
+    assert load_settings_document(old) == SETTINGS_FILE.strip(rename_pipeline_settings(old))
+
+
+def test_a_version_one_settings_file_with_a_section_under_both_names_is_refused() -> None:
+    both = {SCHEMA_VERSION_KEY: 1, "pipelines": {"requests": {}, "fetch": {}}}
+    with pytest.raises(StoredFormatError, match=r"Keep only pipelines\.fetch\."):
+        load_settings_document(both)
 
 
 def test_an_unversioned_settings_file_on_disk_still_loads(tmp_path: Path) -> None:
     settings_file = tmp_path / "settings.json"
     settings_file.write_text((FIXTURES / "settings" / "v0.json").read_text(encoding="utf-8"))
-    patch = load_settings_document(read_stored(settings_file))
-    assert patch == SETTINGS_FILE.strip(_fixture("settings", 1))
+    patch = read_stored(settings_file)
+    assert patch == SETTINGS_FILE.strip(_fixture("settings", 2))
     _assert_applied(patch, load_runtime_config(None, patch).model_dump())
 
 
 def test_settings_are_written_at_the_current_version() -> None:
     patch = load_settings_document(_fixture("settings", 0))
-    assert dump_settings_document(patch) == _fixture("settings", 1)
+    assert dump_settings_document(patch) == _fixture("settings", 2)
+    assert SETTINGS_FILE.current_version == 2
 
 
 def test_settings_survive_a_write_and_read_unchanged() -> None:
@@ -108,18 +128,18 @@ def test_settings_survive_a_write_and_read_unchanged() -> None:
     assert load_settings_document(dump_settings_document(patch)) == patch
 
 
-@pytest.mark.parametrize("version", [0, 1])
+@pytest.mark.parametrize("version", [0, 1, 2])
 def test_each_presets_version_loads_as_the_same_presets(version: int) -> None:
     presets = load_presets_document(_fixture("presets", version))
-    assert presets == _fixture("presets", 1)["presets"]
+    assert presets == _fixture("presets", 2)["presets"]
     for values in presets.values():
         _assert_applied(values, load_runtime_config(None, values).model_dump())
 
 
 def test_presets_are_written_at_the_current_version() -> None:
     presets = load_presets_document(_fixture("presets", 0))
-    assert dump_presets_document(presets) == _fixture("presets", 1)
-    assert PRESETS_FILE.version_of(dump_presets_document(presets)) == 1
+    assert dump_presets_document(presets) == _fixture("presets", 2)
+    assert PRESETS_FILE.version_of(dump_presets_document(presets)) == 2
 
 
 def test_a_version_zero_preset_named_like_the_version_key_keeps_its_name() -> None:
@@ -127,6 +147,31 @@ def test_a_version_zero_preset_named_like_the_version_key_keeps_its_name() -> No
     presets = load_presets_document({SCHEMA_VERSION_KEY: patch, "other": {}})
     assert presets == {SCHEMA_VERSION_KEY: patch, "other": {}}
     assert load_presets_document(dump_presets_document(presets)) == presets
+
+
+def test_a_version_zero_preset_named_like_the_version_key_is_migrated_too() -> None:
+    old = {"pipelines": {"scoring": {"workers": 2}}}
+    presets = load_presets_document({SCHEMA_VERSION_KEY: old, "other": old})
+    renamed = {"pipelines": {"score": {"workers": 2}}}
+    assert presets == {SCHEMA_VERSION_KEY: renamed, "other": renamed}
+
+
+def test_a_version_one_preset_with_a_section_under_both_names_is_refused() -> None:
+    both: dict[str, Any] = {"pipelines": {"filtering": {}, "filter": {}}}
+    stored = {SCHEMA_VERSION_KEY: 1, "presets": {"ok": {}, "both": both}}
+    expected = (
+        r"In the saved preset 'both': pipelines\.filtering and pipelines\.filter are the same "
+        r"setting under its old and new name\. Keep only pipelines\.filter\."
+    )
+    with pytest.raises(StoredFormatError, match=expected):
+        load_presets_document(stored)
+
+
+def test_a_malformed_preset_is_left_for_validation_to_report() -> None:
+    stored = {SCHEMA_VERSION_KEY: 1, "presets": {"broken": ["requests"]}}
+    # Typed as object: the reader passes a malformed preset through as stored.
+    presets: object = load_presets_document(stored)
+    assert presets == {"broken": ["requests"]}
 
 
 def test_a_presets_file_with_the_wrong_shape_says_how_to_recover() -> None:
@@ -143,8 +188,48 @@ def test_every_shipped_blueprint_loads_unchanged_and_still_validates(path: Path)
     assert load_blueprint_document(dump_blueprint_document(blueprint)) == blueprint
 
 
-def test_an_unversioned_run_manifest_loads_with_every_field_kept() -> None:
-    stored = _fixture("run_manifest", 0)
+@pytest.mark.parametrize("version", [0, 1, 2])
+def test_each_run_manifest_version_loads_with_every_field_kept(version: int) -> None:
+    stored = _fixture("run_manifest", version)
     manifest = load_run_manifest(stored)
-    assert manifest == {**stored, SCHEMA_VERSION_KEY: RUN_MANIFEST.current_version}
-    assert load_run_manifest(dump_run_manifest(stored)) == manifest
+    assert manifest == _fixture("run_manifest", 2)
+    assert load_run_manifest(dump_run_manifest(manifest)) == manifest
+
+
+def test_a_version_one_run_manifest_gets_the_pipeline_section_names() -> None:
+    stored = _fixture("run_manifest", 1)
+    manifest = load_run_manifest(stored)
+    assert manifest["runtime_config"]["pipelines"] == {
+        "fetch": {"workers": 4},
+        "debug_log": {"workers": 2},
+        "retry": {"workers": 1},
+    }
+    # The rest of the record is kept as it was written.
+    kept = {k: v for k, v in stored.items() if k not in (SCHEMA_VERSION_KEY, "runtime_config")}
+    assert {k: manifest[k] for k in kept} == kept
+    assert manifest["runtime_config"]["fetch"] == stored["runtime_config"]["fetch"]
+
+
+def test_a_version_one_run_manifest_already_on_the_stage_keys_is_unchanged() -> None:
+    # Builds between the settings rename and this version wrote the new keys at version 1.
+    runtime_config = default_runtime_config().model_dump(mode="json")
+    manifest = load_run_manifest({SCHEMA_VERSION_KEY: 1, "runtime_config": runtime_config})
+    assert manifest == {SCHEMA_VERSION_KEY: 2, "runtime_config": runtime_config}
+
+
+@pytest.mark.parametrize("runtime_config", [None, "fetch", ["pipelines"]])
+def test_a_run_manifest_without_a_settings_object_loads_as_written(runtime_config: Any) -> None:
+    stored = {SCHEMA_VERSION_KEY: 1, "crawl_id": "c", "runtime_config": runtime_config}
+    assert load_run_manifest(stored) == {**stored, SCHEMA_VERSION_KEY: 2}
+    assert load_run_manifest({SCHEMA_VERSION_KEY: 1}) == {SCHEMA_VERSION_KEY: 2}
+
+
+def test_a_run_manifest_with_a_section_under_both_names_is_refused() -> None:
+    both: dict[str, Any] = {"pipelines": {"transformation": {}, "transform": {}}}
+    expected = (
+        r"In the run manifest's runtime_config: pipelines\.transformation and "
+        r"pipelines\.transform are the same setting under its old and new name\. "
+        r"Keep only pipelines\.transform\."
+    )
+    with pytest.raises(StoredFormatError, match=expected):
+        load_run_manifest({SCHEMA_VERSION_KEY: 1, "runtime_config": both})

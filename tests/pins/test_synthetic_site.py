@@ -1,6 +1,7 @@
 """The synthetic site is the same graph every time, and a connected one."""
 
 import json
+import os
 import subprocess
 import sys
 
@@ -51,7 +52,9 @@ def test_the_site_does_not_depend_on_the_hash_seed_of_the_process() -> None:
     )
 
     def pages_under(hash_seed: str) -> str:
-        env = {"PYTHONHASHSEED": hash_seed, "PYTHONPATH": str(REPO_ROOT)}
+        # The child imports `core`, which imports the domains under src/, so both roots are needed.
+        python_path = os.pathsep.join([str(REPO_ROOT), str(REPO_ROOT / "src")])
+        env = {"PYTHONHASHSEED": hash_seed, "PYTHONPATH": python_path}
         return subprocess.run(
             [sys.executable, "-c", code, str(PINS_DIR)],
             capture_output=True,

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, waitFor, act } from "@testing-library/react";
 import GoalGuide from "./GoalGuide";
+import GlossaryScope from "./GlossaryScope";
+import { primeGlossary, resetGlossaryForTests } from "./glossary";
 
 const goals = {
   gentler: {
@@ -23,7 +25,10 @@ vi.mock("../../api/client", () => ({
 
 import * as api from "../../api/client";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  resetGlossaryForTests();
+});
 
 const draft = { fetch: { min_delay: 1, jitter_max: 0.2 }, scoring_cascade: { high_score_llm_fraction: 0.3 } };
 
@@ -49,5 +54,15 @@ describe("GoalGuide", () => {
     const matching = { fetch: { min_delay: 2, jitter_max: 0.5 }, scoring_cascade: { high_score_llm_fraction: 0.1 } };
     render(<GoalGuide draft={matching} onChange={() => {}} />);
     await waitFor(() => expect(screen.getAllByText("Your draft already matches this.")).toHaveLength(2));
+  });
+
+  it("explains the glossary words in a goal's description", async () => {
+    act(() => primeGlossary({ requests: "Page fetches the crawler makes." }));
+    render(
+      <GlossaryScope>
+        <GoalGuide draft={draft} onChange={() => {}} />
+      </GlossaryScope>,
+    );
+    expect(await screen.findByRole("button", { name: "requests" })).toBeTruthy();
   });
 });

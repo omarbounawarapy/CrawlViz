@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 /**
- * Writes the design tokens from DESIGN.md's front matter. The UI takes its colour,
- * spacing, type and radius values only from these generated tokens.
+ * Writes the design tokens from DESIGN.md's front matter (CSS-1).
  *
  *   node scripts/build-tokens.mjs           writes src/shared/theme/tokens.css and tokens.ts
  *   node scripts/build-tokens.mjs --check   writes nothing; exits 1 if either file is stale
  *
  * Both modes first check every colour pair the components use, in both themes, and stop
- * with the failing pairs listed if one misses its WCAG 2.2 AA minimum:
- * 4.5:1 for text, 3:1 for control edges, focus rings and graph marks.
+ * with the failing pairs listed if one misses its WCAG minimum (A11Y-1).
  *
  * Needs Node 22.18 or later: the contrast maths is imported from the UI's own TypeScript
  * module through Node's type stripping, so the build and the UI share one implementation.
@@ -28,7 +26,7 @@ const REM_DECIMALS = 4;
 const THEMES = /** @type {const} */ (["light", "dark"]);
 // The front-matter group that holds each theme's colours.
 const COLOUR_GROUP = { light: "colors", dark: "colors-dark" };
-// Groups whose px lengths are written in rem, so they follow the reader's font size.
+// Groups whose px lengths are written in rem, so they follow the reader's font size (CSS-2).
 const REM_GROUPS = new Set(["spacing", "sizes"]);
 const PX_LENGTH = /(-?\d*\.?\d+)px\b/g;
 const DURATION = /^\d*\.?\d+m?s$/;

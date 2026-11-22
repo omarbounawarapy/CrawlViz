@@ -9,26 +9,24 @@ See docs/adr/0003-nlp-service-split.md.
 import logging
 import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 
-from infrastructure import LlmHandler
-from models import ExpansionContext
-from nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
-from traceability.expansion_trace_events import (
+from crawlviz.events import (
     EXP_CandidatePruned,
     EXP_PromptBuilt,
     EXP_SeedsGenerated,
     EXP_SpaceBootstrapped,
     EXP_Triggered,
+    TraceSink,
 )
-from traceability.trace_context import get_trace, new_trace_id
+from crawlviz.llm import LlmHandler
+from crawlviz.nlp import BaseEmbeddingEngine, ExpansionPromptBuilder, VectorSpace
+from crawlviz.shared import get_trace, new_trace_id
+from models import ExpansionContext
 
 from .llm_contracts import Outcomes, parse_expansion_seeds
-
-if TYPE_CHECKING:
-    from traceability.emitter import TraceEmitter
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +46,7 @@ class SpaceBootstrapper:
         llm_handler: Answers the expansion prompt.
         expansion_config: The blueprint's ``expansion`` section (llm_type,
             llm_model, style, num_descriptions, ...).
-        tracer: Optional TraceEmitter; when None, tracing is a no-op.
+        tracer: Optional TraceSink; when None, tracing is a no-op.
     """
 
     def __init__(
@@ -58,7 +56,7 @@ class SpaceBootstrapper:
         llm_handler: LlmHandler,
         # The blueprint's JSON section, as loaded.
         expansion_config: dict[str, Any],
-        tracer: "TraceEmitter | None" = None,
+        tracer: TraceSink | None = None,
     ) -> None:
         self.blueprint_id = blueprint_id
         self.engine = engine
@@ -98,16 +96,7 @@ class SpaceBootstrapper:
 
         expansions = await self.create_expansions(target_topic, self.expansion_config)
         seeds: list[str] = expansions.get("descriptions", [])
-        await self._emit(
-            EXP_SeedsGenerated(
-                trace_id=trace_id,
-                node_id=node_id,
-                blueprint_id=self.blueprint_id,
-                seed_count=len(seeds),
-                seed_previews=[s[:SEED_PREVIEW_CHARS] for s in seeds],
-                source="llm_expansion",
-            )
-        )
+        await self._emit_seeds_generated(seeds, trace_id, node_id)
 
         seed_vectors = await self._encode_seeds(seeds, trace_id, node_id)
         space.add_batch(seed_vectors)
@@ -126,6 +115,18 @@ class SpaceBootstrapper:
                 vectors_added=len(seed_vectors) + 1,
                 space_version=space.version,
                 duration_ms=(time.monotonic() - started) * 1000,
+            )
+        )
+
+    async def _emit_seeds_generated(self, seeds: list[str], trace_id: str, node_id: str) -> None:
+        await self._emit(
+            EXP_SeedsGenerated(
+                trace_id=trace_id,
+                node_id=node_id,
+                blueprint_id=self.blueprint_id,
+                seed_count=len(seeds),
+                seed_previews=[s[:SEED_PREVIEW_CHARS] for s in seeds],
+                source="llm_expansion",
             )
         )
 

@@ -1,12 +1,21 @@
-"""Versioned contracts for the files CrawlViz stores.
+"""Versioned contracts: stored formats, wire messages and their migrations (ADR 5), and the
+subsystem status board (ADR 8)."""
 
-Every stored file carries a ``schema_version``, and one migration chain per format brings
-an older file to the current version when it is loaded.
-"""
-
+from .pipeline_settings import (
+    PIPELINE_SETTING_RENAMES,
+    PIPELINES_SECTION,
+    rename_pipeline_settings,
+)
+from .status_messages import (
+    CRAWL_END_STATES,
+    CRAWL_STATES,
+    SUBSYSTEM_STATUS,
+    CrawlEndState,
+    CrawlState,
+    SubsystemStatusMessage,
+)
 from .stored_formats import (
     STORED_FORMATS,
-    StoredFormatError,
     dump_blueprint_document,
     dump_presets_document,
     dump_run_manifest,
@@ -16,6 +25,29 @@ from .stored_formats import (
     load_run_manifest,
     load_settings_document,
 )
+from .subsystem_status import (
+    SUBSYSTEMS,
+    EmbedderFacts,
+    EmbedderStatus,
+    ExportFacts,
+    ExportStatus,
+    FetchFacts,
+    FetchStatus,
+    LlmFacts,
+    LlmStatus,
+    RobotsFacts,
+    RobotsStatus,
+    SpaceFacts,
+    SpaceStatus,
+    StatusBoardSnapshot,
+    SubsystemFacts,
+    SubsystemName,
+    SubsystemState,
+    SubsystemStatus,
+    apply_report,
+    initial_board,
+    make_report,
+)
 from .versioning import (
     SCHEMA_VERSION_KEY,
     UNVERSIONED,
@@ -23,25 +55,56 @@ from .versioning import (
     Migration,
     MigrationChain,
     SchemaVersionError,
+    StoredFormatError,
     unchanged,
 )
 
 __all__ = [
+    "CRAWL_END_STATES",
+    "CRAWL_STATES",
+    "PIPELINES_SECTION",
+    "PIPELINE_SETTING_RENAMES",
     "SCHEMA_VERSION_KEY",
     "STORED_FORMATS",
+    "SUBSYSTEMS",
+    "SUBSYSTEM_STATUS",
     "UNVERSIONED",
+    "CrawlEndState",
+    "CrawlState",
     "Document",
+    "EmbedderFacts",
+    "EmbedderStatus",
+    "ExportFacts",
+    "ExportStatus",
+    "FetchFacts",
+    "FetchStatus",
+    "LlmFacts",
+    "LlmStatus",
     "Migration",
     "MigrationChain",
+    "RobotsFacts",
+    "RobotsStatus",
     "SchemaVersionError",
+    "SpaceFacts",
+    "SpaceStatus",
+    "StatusBoardSnapshot",
     "StoredFormatError",
+    "SubsystemFacts",
+    "SubsystemName",
+    "SubsystemState",
+    "SubsystemStatus",
+    "SubsystemStatusMessage",
+    "apply_report",
     "dump_blueprint_document",
     "dump_presets_document",
     "dump_run_manifest",
     "dump_settings_document",
+    "initial_board",
     "load_blueprint_document",
     "load_presets_document",
     "load_run_manifest",
     "load_settings_document",
+    "make_report",
+    "rename_pipeline_settings",
     "unchanged",
 ]

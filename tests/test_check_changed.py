@@ -27,6 +27,10 @@ GIT_IDENTITY = (
     "init.defaultBranch=main",
 )
 
+# Checks run with the interpreter that runs the tool, never a nested `uv run`: a worktree
+# without its own environment would otherwise fall back to the system Python.
+PYTHON_M = [sys.executable, "-m"]
+
 
 def git(repo: Path, *args: str) -> None:
     subprocess.run(["git", *GIT_IDENTITY, *args], cwd=repo, check=True, capture_output=True)
@@ -214,6 +218,25 @@ class TestPythonTestsFor:
 
         assert selected_tests(repo, "utils/foo.py") == ["tests/test_foo.py"]
 
+    def test_each_python_file_is_parsed_once_even_when_a_module_was_deleted(
+        self, repo: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        write(repo, "utils/__init__.py")
+        write(repo, "tests/test_foo.py", "from utils.foo import thing\n")
+        write(repo, "tests/test_bar.py", "import utils\n")
+        parsed: list[Path] = []
+        original = tool.import_names_of
+
+        def counting(path: Path) -> set[str]:
+            parsed.append(path)
+            return original(path)
+
+        monkeypatch.setattr(tool, "import_names_of", counting)
+
+        tool.python_tests_for([repo / "utils" / "foo.py"])
+
+        assert sorted(parsed) == sorted(set(parsed))
+
     def test_a_deleted_package_init_selects_tests_that_import_the_package(self, repo: Path) -> None:
         write(repo, "pkg/__init__.py")
         write(repo, "tests/test_pkg.py", "import pkg.sub\n")
@@ -324,6 +347,28 @@ class TestChangedFiles:
 
         assert names(repo, tool.changed_files("main")) == ["new/crawler.py", "old/crawler.py"]
 
+    def test_a_deleted_tooling_file_is_reported(self, repo: Path) -> None:
+        write(repo, "uv.lock")
+        self.commit_all(repo, "Base")
+        git(repo, "checkout", "-b", "feature")
+        git(repo, "rm", "uv.lock")
+        self.commit_all(repo, "Delete lock file")
+
+        assert names(repo, tool.changed_files("main")) == ["uv.lock"]
+
+    def test_a_path_with_spaces_and_a_newline_stays_one_path(self, repo: Path) -> None:
+        write(repo, "kept.py")
+        self.commit_all(repo, "Base")
+        git(repo, "checkout", "-b", "feature")
+        write(repo, "odd dir/line\nbreak.py")
+        git(repo, "add", "-A")
+        write(repo, "untracked é.py")
+
+        assert names(repo, tool.changed_files("main")) == [
+            "odd dir/line\nbreak.py",
+            "untracked é.py",
+        ]
+
     def test_unknown_base_stops_instead_of_skipping_committed_changes(self, repo: Path) -> None:
         write(repo, "base.py")
         self.commit_all(repo, "Base")
@@ -340,8 +385,8 @@ class TestTouchesMethod:
     @pytest.mark.parametrize(
         "relative",
         [
-            "priority/queue_strategy.py",
-            "nlp/embedding_engine.py",
+            "src/crawlviz/priority/queue_strategy.py",
+            "src/crawlviz/nlp/embedding_engine.py",
             "models/prompts.py",
             "core/crawler.py",
             "core/event_broker.py",
@@ -366,7 +411,9 @@ class TestTouchesMethod:
         assert not tool.touches_method(self.paths(repo, relative))
 
     def test_one_method_file_among_others_is_enough(self, repo: Path) -> None:
-        assert tool.touches_method(self.paths(repo, "routes/run.py", "priority/queue.py"))
+        assert tool.touches_method(
+            self.paths(repo, "routes/run.py", "src/crawlviz/priority/queue.py")
+        )
 
     def test_no_files_do_not_touch_the_method(self, repo: Path) -> None:
         assert not tool.touches_method([])
@@ -422,11 +469,10 @@ class TestCheckPython:
 
         assert tool.check_python([mod], tooling_changed=False)
 
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check", "pkg/mod.py"]
-        assert runs.command_for("mypy") == ["uv", "run", "mypy"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check", "pkg/mod.py"]
+        assert runs.command_for("mypy") == [*PYTHON_M, "mypy"]
         assert runs.command_for("pytest") == [
-            "uv",
-            "run",
+            *PYTHON_M,
             "pytest",
             "-q",
             "-m",
@@ -450,8 +496,8 @@ class TestCheckPython:
 
         assert tool.check_python([pyproject], tooling_changed=True)
 
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
-        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check"]
+        assert runs.command_for("pytest") == [*PYTHON_M, "pytest", "-q", "-m", "not slow"]
 
     def test_change_without_covering_tests_skips_pytest(
         self, repo: Path, runs: RecordedRuns
@@ -512,14 +558,14 @@ class TestMain:
         self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         git(repo, "commit", "--allow-empty", "-m", "Base")
-        write(repo, "priority/queue.py")
+        write(repo, "src/crawlviz/priority/queue.py")
 
         assert self.run_main(monkeypatch) == 0
 
         pytest_commands = [
             command for command, _cwd, _accepted in runs.commands if command[2] == "pytest"
         ]
-        assert ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"] in pytest_commands
+        assert [*PYTHON_M, "pytest", "-q", "-m", "pins or method_guard"] in pytest_commands
         assert all(
             "not slow" not in command
             for command in pytest_commands
@@ -533,7 +579,7 @@ class TestMain:
         write(repo, "routes/run.py")
 
         assert self.run_main(monkeypatch) == 0
-        assert ["uv", "run", "pytest", "-q", "-m", "pins or method_guard"] not in [
+        assert [*PYTHON_M, "pytest", "-q", "-m", "pins or method_guard"] not in [
             command for command, _cwd, _accepted in runs.commands
         ]
 
@@ -555,6 +601,19 @@ class TestMain:
         assert all("src/App.tsx" in command for command, _cwd in ui_runs)
         assert all(not any("node_modules" in part for part in command) for command, _cwd in ui_runs)
 
+    def test_a_deleted_ui_file_lints_the_whole_ui_source_folder(
+        self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        write(repo, "crawler-ui/src/Gone.tsx")
+        git(repo, "add", "-A")
+        git(repo, "commit", "-m", "Base")
+        git(repo, "rm", "crawler-ui/src/Gone.tsx")
+
+        assert self.run_main(monkeypatch) == 0
+
+        eslint = next(command for command, _cwd, _ in runs.commands if command[1] == "eslint")
+        assert eslint[2:] == ["src"]
+
     def test_exit_code_is_one_when_any_check_fails(
         self, repo: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
@@ -571,8 +630,8 @@ class TestMain:
         write(repo, "pyproject.toml")
 
         assert self.run_main(monkeypatch) == 0
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
-        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check"]
+        assert runs.command_for("pytest") == [*PYTHON_M, "pytest", "-q", "-m", "not slow"]
 
     def test_changed_ownership_map_selects_the_whole_python_side(
         self, repo: Path, runs: RecordedRuns, monkeypatch: pytest.MonkeyPatch
@@ -581,5 +640,5 @@ class TestMain:
         write(repo, ".claude/ownership.toml")
 
         assert self.run_main(monkeypatch) == 0
-        assert runs.command_for("ruff") == ["uv", "run", "ruff", "check"]
-        assert runs.command_for("pytest") == ["uv", "run", "pytest", "-q", "-m", "not slow"]
+        assert runs.command_for("ruff") == [*PYTHON_M, "ruff", "check"]
+        assert runs.command_for("pytest") == [*PYTHON_M, "pytest", "-q", "-m", "not slow"]

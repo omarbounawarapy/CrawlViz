@@ -22,8 +22,8 @@ def test_queue_depths_name_each_stage_by_its_setting():
         }
     )
     depths = Crawler.queue_depths(fake)
-    assert depths["requests"] == {"size": 3, "max": 10}
-    assert depths["debugging"] == {"size": 2, "max": None}
+    assert depths["fetch"] == {"size": 3, "max": 10}
+    assert depths["debug_log"] == {"size": 2, "max": None}
     assert "logging" not in depths
 
 

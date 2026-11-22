@@ -18,7 +18,7 @@ from pydantic import BaseModel
 from benchmark import POLICIES
 from config import TEMPLATES_DIR
 from config.redaction import MAX_BOUNDED_TEXT_CHARS, TEXT_CUT_MARK, redact_bounded_text
-from utils import load_json, save_json
+from crawlviz.shared import load_json, save_json
 
 from .benchmark_paths import BENCH_DIR, DATA_DIR, RESULTS_DIR, ROOT
 

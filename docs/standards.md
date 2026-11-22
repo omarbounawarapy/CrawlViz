@@ -57,7 +57,7 @@ Sources:
 
 | Code | Example | Checked by |
 |---|---|---|
-| HTML-1 | Shell navigation is `<a href="#/run" aria-current="page">`, not a `<button>` | html-validate, axe, jsx-a11y (planned) |
+| HTML-1 | Shell navigation is `<a href="#/run" aria-current="page">`, not a `<button>` | html-validate, axe, jsx-a11y |
 | CSS-1 | `color: var(--color-ink)`, not `color: "#0f1b2d"` | Stylelint colour rule; token build (planned) |
 | CSS-2 | `GraphControls.module.css` beside `GraphControls.tsx`; `margin-inline-start`, not `marginLeft` | Stylelint (planned), review |
 | CSS-3 | The graph canvas has a fixed `aspect-ratio`; the inspector panel uses `contain: layout paint` | Lighthouse CLS (planned) |

@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchBenchmarkCurves } from "../../api/client";
 import { getTheme } from "../../theme";
-import { SectionTitle } from "../common/Page";
-import { Tabs, TabPanel } from "../common/Form";
-import { Explain } from "../config/Term";
+import { SectionTitle, Tabs, TabPanel, ScrollRegion } from "../common";
+import { Explain } from "../../shared/ui";
 import Loading from "./Loading";
 import { useLoad, POLICY_ORDER, num } from "./shared";
-import ScrollRegion from "../common/ScrollRegion";
 
 const { text, background } = getTheme().colors;
 const W = 640,

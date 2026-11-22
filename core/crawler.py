@@ -6,29 +6,34 @@ space updater and the telemetry bridge and gateway) described in the
 project report's architecture chapters, wires them together through one
 :class:`~core.event_broker.EventBroker`, and runs them concurrently
 until a stop condition fires and every pipeline has drained (see
-``pipelines.stopping_pipeline``), or until the task is cancelled from
+``pipelines.stop_controller``), or until the task is cancelled from
 outside (the manual STOP endpoint in ``routes.run``).
 """
 
 import asyncio
 import logging
+from typing import Any
+from collections.abc import Awaitable
 from contextlib import AsyncExitStack
 from datetime import datetime
 
 from config.paths import RuntimePaths, default_runtime_paths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from config.template_names import template_stem
-from utils.html_utils import configure_url_normalization
-from infrastructure import KeyManager, LlmHandler, NetworkClient
-from infrastructure.call_budget import CallBudget
+from crawlviz.shared import NetworkClient, configure_url_normalization
+from crawlviz.llm import KeyManager, LlmHandler
+from crawlviz.llm import CallBudget
 from models import Storage
-from nlp import BufferManager, SpaceUpdater
-from pipelines.contracts import Fetcher, LlmSender
+from crawlviz.nlp import BufferManager, SpaceUpdater
+from crawlviz.events import Fetcher, LlmSender, StatusReporter
 from services import NLPService, ScoringService
-from ui_bridge.event_recorder import RecordingGateway, git_sha
+from crawlviz.telemetry import StatusBoard
+from ui_bridge.event_recorder import RecordingGateway
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
+from .live_settings import LiveSettingsApplier
+from .run_manifest import RunManifestWriter
 from .stages import STAGES, StageInputs, build_page_fetcher, build_stages, priority_strategy_name
 from .ui_layer import RunRecord, build_ui_layer
 
@@ -37,6 +42,7 @@ from .ui_layer import RunRecord, build_ui_layer
 # clients that emit it -- this is what produces the granular
 # "[NLP] SCORE_EMITTED" / "[LLM] DISPATCHED" trace log lines.
 from traceability.emitter import TraceEmitter
+from traceability.logging_setup import log_context
 from traceability.traced_llm_handler import TracedLlmHandler
 from traceability.traced_network_client import TracedNetworkClient
 
@@ -66,6 +72,7 @@ class Crawler:
         ui_port: int | None = None,
         llm: LlmSender | None = None,
         fetcher: Fetcher | None = None,
+        status_reporter: StatusReporter | None = None,
     ):
         self.config = config if config is not None else default_runtime_config()
         configure_url_normalization(
@@ -77,12 +84,12 @@ class Crawler:
         self.fetch_concurrency = (
             fetch_concurrency
             if fetch_concurrency is not None
-            else self.config.pipelines.requests.workers
+            else self.config.pipelines.fetch.workers
         )
         self.scoring_concurrency = (
             scoring_concurrency
             if scoring_concurrency is not None
-            else self.config.pipelines.scoring.workers
+            else self.config.pipelines.score.workers
         )
         self.paths = paths if paths is not None else default_runtime_paths()
         self.storage = Storage()
@@ -95,17 +102,27 @@ class Crawler:
         # (see the offline package). Without them the crawl needs keys and network.
         self.llm = llm
         self.fetcher = fetcher
+        # What each subsystem reports to. By default a board that the UI watches and GET
+        # /status reads; the null reporter (benchmark, pins) records nothing and has no board.
+        self.status_board: StatusBoard | None = None
+        if status_reporter is None:
+            status_reporter = StatusBoard()
+        if isinstance(status_reporter, StatusBoard):
+            self.status_board = status_reporter
+        self.status_reporter: StatusReporter = status_reporter
         started_at = datetime.now().strftime(CRAWL_ID_TIME_FORMAT)
         self.crawl_id = f"{template_stem(template_file)}-{started_at}"
 
     async def start(self) -> None:
-        blueprint = await BootStrapper(
-            self.event_broker,
-            self.storage,
-            self.template_file,
-            templates_dir=self.paths.templates_dir,
-        ).bootstrap()
-        await self._run_session(blueprint)
+        # Every log line of the crawl, and of the stage tasks it creates, carries this id.
+        with log_context(crawl_id=self.crawl_id):
+            blueprint = await BootStrapper(
+                self.event_broker,
+                self.storage,
+                self.template_file,
+                templates_dir=self.paths.templates_dir,
+            ).bootstrap()
+            await self._run_session(blueprint)
 
     async def _run_session(self, blueprint: dict) -> None:
         """Build the stages for `blueprint` and run them until the crawl ends.
@@ -136,9 +153,13 @@ class Crawler:
             self._wire_subscriptions(pipelines, space_updater)
             ui_gateway = self._build_ui_layer()
             cleanup.push_async_callback(ui_gateway.stop)
+            self._watch_status()
 
-            tasks = self._collect_tasks(pipelines, space_updater, ui_gateway)
-            await self._run_until_stopped(tasks, grace=self.config.run.shutdown_grace)
+            await self._run_until_stopped(
+                [self.event_broker.start(), ui_gateway.start()],
+                self._collect_stage_tasks(pipelines, space_updater),
+                grace=self.config.run.shutdown_grace,
+            )
 
     async def request_stop(self) -> bool:
         """Ask a running crawl to stop the way a stop condition does, so every
@@ -163,34 +184,57 @@ class Crawler:
     def apply_live(self, patch: dict) -> RuntimeConfig:
         """Change live-flagged settings of the running crawl (see
         core/live_settings.py)."""
-        from core.live_settings import apply_live
-
-        self.config = apply_live(self.config, getattr(self, "_pipelines", {}), patch)
+        applier = LiveSettingsApplier(getattr(self, "_pipelines", {}))
+        self.config = applier.apply(self.config, patch)
         return self.config
 
-    async def _run_until_stopped(self, tasks: list, grace: float = 5.0) -> None:
-        """Run every task; once the first one finishes (the broker, on
-        StopCrawlEvent) give the rest `grace` seconds, then cancel any
-        straggler so one hung task cannot keep the crawl "running".
-        A task that raises propagates after the others are cancelled."""
-        running = [asyncio.ensure_future(t) for t in tasks]
+    async def _run_until_stopped(
+        self,
+        closers: list[Awaitable[None]],
+        stages: list[Awaitable[None]],
+        grace: float = 5.0,
+    ) -> None:
+        """Run the closers and the stages. The crawl ends when a closer does (the event
+        broker, on StopCrawlEvent, and the UI gateway, which the telemetry bridge stops on
+        the same event). The stages then get `grace` seconds before any straggler is
+        cancelled, so one hung task cannot keep the crawl "running".
+
+        A stage that returns early, such as a sink that is switched off, does not end the
+        crawl. A task that raises ends it at once: the others are cancelled and the error
+        propagates."""
+        closing = [asyncio.ensure_future(closer) for closer in closers]
+        running = [*closing, *(asyncio.ensure_future(stage) for stage in stages)]
         try:
-            done, pending = await asyncio.wait(running, return_when=asyncio.FIRST_COMPLETED)
-            if pending and not any(d.exception() for d in done if not d.cancelled()):
-                done2, pending = await asyncio.wait(pending, timeout=grace)
-                done |= done2
-            for t in pending:
-                t.cancel()
-            await asyncio.gather(*pending, return_exceptions=True)
-            for d in done:
-                if not d.cancelled() and d.exception():
-                    raise d.exception()
+            if await self._wait_for_end(closing, running):
+                others = [task for task in running if not task.done()]
+                if others:
+                    await asyncio.wait(others, timeout=grace)
+            for task in running:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*running, return_exceptions=True)
+            for task in running:
+                error = None if task.cancelled() else task.exception()
+                if error is not None:
+                    raise error
         finally:
             # Await the cancelled tasks: their own `finally` blocks (the export
             # flush, closing the log files) only run once they get the cancel.
-            for t in running:
-                t.cancel()
+            for task in running:
+                task.cancel()
             await asyncio.gather(*running, return_exceptions=True)
+
+    @staticmethod
+    async def _wait_for_end(closing: list[asyncio.Future], running: list[asyncio.Future]) -> bool:
+        """Wait until a closer has finished (True) or any task has raised (False)."""
+        pending = set(running)
+        while pending:
+            done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+            if any(not task.cancelled() and task.exception() for task in done):
+                return False
+            if any(task in closing for task in done):
+                return True
+        return True
 
     # =========================================================
     # COMPOSITION STEPS
@@ -333,45 +377,41 @@ class Crawler:
 
     def _wire_subscriptions(self, p: dict, space_updater: SpaceUpdater) -> None:
         """Subscribe every stage, then the space updater, to the events it
-        names in `event_types` (pipelines.contracts.EventConsumer). This
+        names in `event_types` (crawlviz.events.EventConsumer). This
         order is the order consumers receive an event in."""
         for consumer in (*p.values(), space_updater):
             self.event_broker.subscribe(consumer, consumer.event_types)
 
-    def _run_manifest(self) -> dict:
-        return {
-            "crawl_id": self.crawl_id,
-            "blueprint": self.blueprint,
-            "runtime_config": self.config.model_dump(mode="json"),
-            "embedding_model": self.config.embeddings.model_name,
-            "llm_model": self.model_information,
-            "git_sha": git_sha(),
-            "seed": self.seed,
-            "fetch_concurrency": self.fetch_concurrency,
-            "scoring_concurrency": self.scoring_concurrency,
-        }
-
     def _build_ui_layer(self) -> RecordingGateway:
-        return build_ui_layer(
+        layer = build_ui_layer(
             config=self.config,
             ui_port=self.ui_port,
             event_broker=self.event_broker,
             priority_strategy=priority_strategy_name(self.blueprint, self.config),
             record=RunRecord(self.paths.export_dir / self.crawl_id, self._run_manifest()),
         )
+        self._telemetry = layer.telemetry
+        return layer.gateway
 
-    def _collect_tasks(
-        self, p: dict, space_updater: SpaceUpdater, ui_gateway: RecordingGateway
-    ) -> list:
+    def _run_manifest(self) -> dict[str, Any]:
+        return RunManifestWriter(
+            crawl_id=self.crawl_id,
+            blueprint=self.blueprint,
+            config=self.config,
+            model_information=self.model_information,
+            seed=self.seed,
+            fetch_concurrency=self.fetch_concurrency,
+            scoring_concurrency=self.scoring_concurrency,
+        ).build()
+
+    def _watch_status(self) -> None:
+        """Stream the status board to the UI. It needs the running event loop, so it is a
+        step of its own after the UI layer is built."""
+        if self.status_board is not None:
+            self._telemetry.watch_status(self.status_board)
+
+    def _collect_stage_tasks(self, p: dict, space_updater: SpaceUpdater) -> list[Awaitable[None]]:
         return [
-            self.event_broker.start(),
             *(stage.start() for stage in p.values()),
-            ui_gateway.start(),
             space_updater.start(),
         ]
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    crawler = Crawler("wikiMD.json")
-    asyncio.run(crawler.start())

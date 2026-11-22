@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ValidationError
 
 from config import RuntimePaths, default_runtime_paths
-from config.settings_store import SettingsFileError
+from config.settings_store import EXTRA_KEY_MESSAGE, SettingsFileError
 
 
 def report_settings_file_errors() -> Iterator[None]:
@@ -34,7 +34,13 @@ def validation_errors(exc: ValidationError | RequestValidationError) -> list[dic
         errors = exc.errors()
     else:
         errors = exc.errors(include_input=False, include_url=False)
-    return [{"path": ".".join(str(p) for p in e["loc"]), "message": e["msg"]} for e in errors]
+    return [
+        {
+            "path": ".".join(str(p) for p in e["loc"]),
+            "message": EXTRA_KEY_MESSAGE if e.get("type") == "extra_forbidden" else e["msg"],
+        }
+        for e in errors
+    ]
 
 
 async def request_validation_response(_request: Request, exc: Exception) -> JSONResponse:

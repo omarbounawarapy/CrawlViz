@@ -11,6 +11,13 @@ from pydantic import ValidationError
 
 from config import settings_store as store
 from config.runtime_config import default_runtime_config
+from crawlviz.contracts import (
+    SchemaVersionError,
+    StoredFormatError,
+    dump_presets_document,
+    load_presets_document,
+)
+from crawlviz.shared import save_json
 
 from .config_support import ConfigPatch, get_paths, validation_http_error
 
@@ -21,11 +28,11 @@ router = APIRouter(tags=["config"])
 BUILTIN_PRESETS: dict[str, dict[str, Any]] = {
     "polite": {
         "fetch": {"min_delay": 2.0, "jitter_max": 0.5},
-        "pipelines": {"requests": {"workers": 2}},
+        "pipelines": {"fetch": {"workers": 2}},
     },
     "fast": {
         "fetch": {"min_delay": 0.2, "jitter_max": 0.05},
-        "pipelines": {"requests": {"workers": 8}},
+        "pipelines": {"fetch": {"workers": 8}},
     },
     "frugal": {
         "scoring_cascade": {"high_score_llm_fraction": 0.1, "low_score_sample_fraction": 0.0},
@@ -44,7 +51,7 @@ def _pct(fraction: float) -> str:
 
 def _pace(values: dict[str, Any]) -> str:
     fetch = values["fetch"]
-    workers = values["pipelines"]["requests"]["workers"]
+    workers = values["pipelines"]["fetch"]["workers"]
     return (
         f"{_num(fetch['min_delay'])} s between requests "
         f"(plus up to {_num(fetch['jitter_max'])} s random) "
@@ -144,7 +151,7 @@ def _presets_file() -> Path:
     return get_paths().settings_file.with_name("presets.json")
 
 
-def _read_presets() -> dict[str, Any]:
+def _read_presets() -> dict[str, dict[str, Any]]:
     try:
         data = json.loads(_presets_file().read_text(encoding="utf-8"))
     except FileNotFoundError:
@@ -152,7 +159,16 @@ def _read_presets() -> dict[str, Any]:
     except (OSError, ValueError):
         logger.warning("could not read the saved presets from %s", _presets_file(), exc_info=True)
         return {}
-    return data if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        logger.warning("the saved presets file %s is not a JSON object", _presets_file())
+        return {}
+    try:
+        return load_presets_document(data)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        # Listing nothing here would let the next save overwrite a file this build cannot read.
+        raise HTTPException(
+            status_code=500, detail=f"{exc} The saved presets file is {_presets_file()}."
+        ) from exc
 
 
 def _check_preset_name(name: str) -> None:
@@ -181,7 +197,7 @@ def save_preset(name: str, body: ConfigPatch | None = None) -> dict[str, Any]:
         raise validation_http_error(exc) from exc
     presets = _read_presets()
     presets[name] = values
-    store._write(_presets_file(), presets)
+    save_json(_presets_file(), dump_presets_document(presets), sort_keys=True)
     return {"saved": name}
 
 
@@ -190,7 +206,7 @@ def delete_preset(name: str) -> dict[str, Any]:
     presets = _read_presets()
     if presets.pop(name, None) is None:
         raise HTTPException(status_code=404, detail="Preset not found")
-    store._write(_presets_file(), presets)
+    save_json(_presets_file(), dump_presets_document(presets), sort_keys=True)
     return {"removed": name}
 
 
@@ -201,6 +217,32 @@ def _preset_values(name: str) -> dict[str, Any]:
     return values
 
 
+def _preset_http_error(name: str, exc: ValidationError) -> HTTPException:
+    """The 422 for a preset that cannot be applied, with every problem naming the preset.
+
+    A saved preset can hold a setting a later CrawlViz removed. The person did not type it
+    into this request, so the bare path list would not say where it comes from. A built-in
+    preset is code and never fails this way, so it keeps the plain report."""
+    if name in BUILTIN_PRESETS:
+        return validation_http_error(exc)
+    errors = [
+        {
+            "path": problem["path"],
+            "message": (
+                f"The saved preset '{name}' cannot be used: "
+                + (
+                    "it has a setting that does not exist in this version of CrawlViz."
+                    if problem["message"] == store.EXTRA_KEY_MESSAGE
+                    else problem["message"]
+                )
+                + " Delete the preset and save it again from your current settings."
+            ),
+        }
+        for problem in store.validation_errors(exc)
+    ]
+    return HTTPException(status_code=422, detail={"errors": errors})
+
+
 @router.post("/config/presets/{name}/preview")
 def preview_preset(name: str) -> dict[str, Any]:
     """What applying the preset would change, without saving anything."""
@@ -209,7 +251,7 @@ def preview_preset(name: str) -> dict[str, Any]:
         current = store.load_runtime_config(get_paths().settings_file)
         after = store.load_runtime_config(get_paths().settings_file, values)
     except ValidationError as exc:
-        raise validation_http_error(exc) from exc
+        raise _preset_http_error(name, exc) from exc
     return {"changes": store.changed_fields(current.model_dump(), after.model_dump())}
 
 
@@ -221,7 +263,7 @@ def apply_preset(name: str) -> dict[str, Any]:
         current = store.load_runtime_config(get_paths().settings_file)
         after = store.save_settings(get_paths().settings_file, values)
     except ValidationError as exc:
-        raise validation_http_error(exc) from exc
+        raise _preset_http_error(name, exc) from exc
     return {
         **after.model_dump(),
         "changes": store.changed_fields(current.model_dump(), after.model_dump()),

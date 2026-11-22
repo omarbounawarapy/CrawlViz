@@ -31,21 +31,21 @@ The control API returns as soon as the crawl task is launched. It does not wait 
 
 `NodeAddedEvent` for a seed node reaches two independent subscribers at once:
 
-- **`RequestsPipeline`** enqueues it for fetching.
-- **`ScoringPipeline`** enqueues it too, but immediately `await`s `node.ready`, a per-node `asyncio.Future` that isn't resolved yet. This is deliberate: the scoring pipeline is allowed to *claim* a node the instant it exists, but it physically cannot start scoring it until the node has content and extracted links. See [§ The `node.ready` synchronization gate](03-deep-dive-event-pipeline.md#the-node-ready-synchronization-gate) for why this matters more than it sounds like it should.
+- **`FetchStage`** enqueues it for fetching.
+- **`ScoreStage`** enqueues it too, but immediately `await`s `node.ready`, a per-node `asyncio.Future` that isn't resolved yet. This is deliberate: the scoring pipeline is allowed to *claim* a node the instant it exists, but it physically cannot start scoring it until the node has content and extracted links. See [§ The `node.ready` synchronization gate](03-deep-dive-event-pipeline.md#the-node-ready-synchronization-gate) for why this matters more than it sounds like it should.
 
 ## 2. Fetch, extract, filter, transform
 
 ```mermaid
 sequenceDiagram
-    participant Req as RequestsPipeline
+    participant Req as FetchStage
     participant Net as NetworkClient
     participant Broker as EventBroker
-    participant Proc as ProcessingPipeline
-    participant Filt as FilteringPipeline
-    participant Trans as TransformationPipeline
-    participant Store as StoragePipeline
-    participant Export as ExportingPipeline
+    participant Proc as ExtractStage
+    participant Filt as FilterStage
+    participant Trans as TransformStage
+    participant Store as StorageSink
+    participant Export as ExportSink
 
     Req->>Net: GET page (rate-limited, 1 req/s/worker)
     Net-->>Req: 200 OK, HTML
@@ -67,27 +67,27 @@ sequenceDiagram
 
 Two details are easy to miss when reading the report's five-state node lifecycle ([§2.7.2: States in a Node's Lifecycle](../report/rapport-english.pdf#page=19), `CREATED → FETCHED → FILTERED → SCORED → EXPANDED`):
 
-- **There's an unlabeled sixth stage.** The `LoggingPipeline` emits a `TRANSFORMED` log line between `FILTERED` and `SCORED` (`pipelines/logging_pipeline.py`), corresponding to `TransformationCompletedEvent`. It is not one of the report's five named states, but it is a separate, logged step in the pipeline.
-- **The scoring gate is transformation-complete, not filtering-complete.** `node.ready` is resolved by `StoragePipeline._on_transformation_completed`, which fires only after *both* the filtered links are known *and* the item transformation chain has finished. A node whose extracted items are slow to transform (e.g., a long transform chain) delays scoring for that node's links too, even though link scoring conceptually has nothing to do with item transformation. This coupling exists in the current implementation.
+- **There's an unlabeled sixth stage.** The `CrawlLogSink` emits a `TRANSFORMED` log line between `FILTERED` and `SCORED` (`pipelines/crawl_log_sink.py`), corresponding to `TransformationCompletedEvent`. It is not one of the report's five named states, but it is a separate, logged step in the pipeline.
+- **The scoring gate is transformation-complete, not filtering-complete.** `node.ready` is resolved by `StorageSink._on_transformation_completed`, which fires only after *both* the filtered links are known *and* the item transformation chain has finished. A node whose extracted items are slow to transform (e.g., a long transform chain) delays scoring for that node's links too, even though link scoring conceptually has nothing to do with item transformation. This coupling exists in the current implementation.
 
 ## 3. Scoring: the cascade
 
-`ScoringPipeline`'s worker, having been unblocked by `node.ready`, now has a `Node` with a list of candidate `Link` objects. For each link:
+`ScoreStage`'s worker, having been unblocked by `node.ready`, now has a `Node` with a list of candidate `Link` objects. For each link:
 
 1. **NLP pass (always, local, no network):** `NLPService.score_link()` builds a feature vector (target similarity, novelty, coverage, lexical overlap, and other signals; [full list in the deep dive](04-deep-dive-semantic-scoring.md)) and reduces it to a single composite `_nlp_score` used only for bucketing.
 2. **Bucketing:** every link in the node is sorted into `low` / `mid` / `high` against two configurable thresholds. `mid` always goes to the LLM. `low` and `high` are each *sampled*: a small random slice from `low` (to avoid the crawl converging on one semantic neighborhood) and a top-K-plus-random slice from `high` (to spend LLM budget confirming the crawler's most confident guesses, not just its uncertain ones). Everything not sampled is either dropped (`low`) or fast-tracked without an LLM call (`high`, tagged `trusted_no_llm`).
-3. **LLM pass (selective, budgeted):** the sampled links are batched into one prompt (`ScoringPromptBuilder`, strategy-selected, e.g. `TOPICAL`), sent through `LlmHandler` → `KeyManager` (picks a non-cooling-down API key) → `NetworkClient` (the actual HTTP call; it does not retry, 401/403 key rotation lives in `LlmHandler` and fetch retries in `RetryProcessor`) → `OpenRouterTranslator` (parses the response) → `ResultMapper` (attaches `score`, `relevance_type`, and `expansions` back onto each `Link`).
+3. **LLM pass (selective, budgeted):** the sampled links are batched into one prompt (`ScoringPromptBuilder`, strategy-selected, e.g. `TOPICAL`), sent through `LlmHandler` → `KeyManager` (picks a non-cooling-down API key) → `NetworkClient` (the actual HTTP call; it does not retry, 401/403 key rotation lives in `LlmHandler` and fetch retries in `RetryStage`) → `OpenRouterTranslator` (parses the response) → `ResultMapper` (attaches `score`, `relevance_type`, and `expansions` back onto each `Link`).
 
-`ScoringPipeline` emits `LinksScoredEvent` for LLM-scored links and `HighScoreLinksEvent` for the `trusted_no_llm` fast-tracked ones. These are two separate event types precisely because one carries an LLM score and the other doesn't, and `PriorityPipeline` needs to treat them differently (see next step).
+`ScoreStage` emits `LinksScoredEvent` for LLM-scored links and `HighScoreLinksEvent` for the `trusted_no_llm` fast-tracked ones. These are two separate event types precisely because one carries an LLM score and the other doesn't, and `PrioritizeStage` needs to treat them differently (see next step).
 
 ## 4. Priority and node creation
 
 ```mermaid
 sequenceDiagram
-    participant Score as ScoringPipeline
+    participant Score as ScoreStage
     participant Broker as EventBroker
-    participant Prio as PriorityPipeline
-    participant Store as StoragePipeline
+    participant Prio as PrioritizeStage
+    participant Store as StorageSink
 
     Score->>Broker: emit LinksScoredEvent / HighScoreLinksEvent
     Broker->>Prio: dispatch (subscribed to both)
@@ -102,7 +102,7 @@ This is where the frontier actually grows: each scored link becomes a brand-new 
 
 ## 5. Stopping
 
-`StoppingPipeline` subscribes to the node-count and depth signals it needs and evaluates the blueprint's stop conditions (`max_nodes`, `max_depth`, `max_time`) after relevant events. When one is met, it emits `StopCrawlEvent`, which every pipeline treats as a drain-and-halt signal: `ExportingPipeline` flushes its buffer, `RequestsPipeline` stops pulling new fetches, and `TelemetryBridge` stops the WebSocket gateway when it sees the stop event.
+`StopController` subscribes to the node-count and depth signals it needs and evaluates the blueprint's stop conditions (`max_nodes`, `max_duration`, `no_progress_timeout`, `stop_url`) and also stops the crawl with `FRONTIER_EXHAUSTED` when nothing is left to fetch. The reasons are listed in [`06-algorithms.md`](06-algorithms.md#7-budget-and-depth-semantics). When one is met, it emits `StopCrawlEvent`, which every pipeline treats as a drain-and-halt signal: `ExportSink` flushes its buffer, `FetchStage` stops pulling new fetches, and `TelemetryBridge` stops the WebSocket gateway when it sees the stop event.
 
 ## 6. What the browser sees, the whole time
 

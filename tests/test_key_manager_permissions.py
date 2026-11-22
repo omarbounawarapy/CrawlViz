@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from infrastructure.key_manager import KeyManager
+from crawlviz.llm.key_manager import KeyManager
 
 pytestmark = pytest.mark.skipif(os.name == "nt", reason="POSIX file modes")
 

@@ -1,4 +1,4 @@
-"""RequestsPipeline paces requests per host, even with several workers."""
+"""FetchStage paces requests per host, even with several workers."""
 
 import asyncio
 import time
@@ -6,8 +6,8 @@ from itertools import pairwise
 from typing import Any
 
 from core.event_broker import EventBroker
-from models import Domain, Node
-from pipelines.requests_pipeline import RequestsPipeline
+from crawlviz.shared import Domain, Node
+from pipelines.fetch_stage import FetchStage
 
 MIN_DELAY = 0.05
 # Timer granularity: a gap this far under the delay still counts as honoured.
@@ -35,7 +35,7 @@ def make_node(node_id: int, host: str) -> Node:
 
 async def fetch_all(nodes: list[Node], workers: int) -> dict[str, list[float]]:
     fetcher = TimingFetcher()
-    pipeline = RequestsPipeline(
+    pipeline = FetchStage(
         EventBroker(), max_concurrency=workers, fetcher=fetcher, min_delay=MIN_DELAY, jitter_max=0
     )
     for node in nodes:

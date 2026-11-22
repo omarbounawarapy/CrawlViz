@@ -21,12 +21,13 @@ The class does three jobs that change for different reasons:
    into the composite NLP score. This is the scoring hot path the research method depends on.
 3. **Space ownership.** Start, load, save, buffered growth (`update_space`, `flush_buffer`)
    and the accessors `SpaceUpdater` uses through the `SpaceOwner` protocol
-   (`nlp/space_updater.py:13`).
+   (`src/crawlviz/nlp/space_updater.py:13`).
 
 Callers depend only on the third job's surface plus `score_links`:
-`ScoringPipeline` (`score_links`, `update_space`), `SpaceUpdater` (`space`, `save_space`,
+`ScoreStage` (`score_links`, `update_space`), `SpaceUpdater` (`space`, `save_space`,
 `space_size`), the benchmark runner and `tools/nlp_eval.py` (constructor, `start`,
-`score_links`), and the `RelevanceScorer` contract (`pipelines/contracts.py:12`). The behaviour
+`score_links`), and the `RelevanceScorer` contract
+(`src/crawlviz/events/contracts.py:38`). The behaviour
 pins run the real `NLPService` (`tests/pins/pin_crawl.py:4`), so any change to its numbers
 shows up there.
 
@@ -58,10 +59,9 @@ seed loop from the logic around them.
   Cleaner on paper, but it changes `ScoringPipeline`, `SpaceUpdater`, the benchmark runner,
   `tools/nlp_eval.py` and the contracts at once, which is a bulk change across four areas.
   `NLPService` can still be removed later, one caller at a time.
-- **Move the code into `nlp/`.** `nlp/` must not import `services/` or the LLM handler, and
-  the bootstrap needs both (`services/llm_contracts.py`, `infrastructure`). The link features
-  could live there, but they emit trace events that `nlp/` does not use today. When the
-  backend moves to `src/crawlviz/<domain>/`, both helpers move with the NLP domain.
+- **Move the code into `src/crawlviz/nlp/`.** When this ADR was written, `src/crawlviz/nlp/` was not to
+  import `services/` or the LLM handler, and the bootstrap needs both (`services/llm_contracts.py`,
+  `crawlviz.llm`). ADR 4 has since put `nlp` above `llm`; see the update below.
 - **Only shorten the long functions.** Leaves the module over 400 lines and keeps the
   bootstrap and the hot path in one file, where the LLM layer work would touch method code.
 
@@ -79,7 +79,7 @@ seed loop from the logic around them.
 
 ## Standards affected
 
-ARCH-3, ARCH-5 (`nlp/` still does not import `services/`), PY-1, TEST-2, LLM-1 (the bootstrap
+ARCH-3, ARCH-5 (`src/crawlviz/nlp/` still does not import `services/`), PY-1, TEST-2, LLM-1 (the bootstrap
 is now one module to move onto `LlmClient`).
 
 ## Migration and commit plan
@@ -93,3 +93,19 @@ is now one module to move onto `LlmClient`).
 
 Each commit runs the pins and the method guards (`make check-changed` adds them for method
 files) and needs research-scientist review.
+
+## Update, 2026-11-06
+
+The decision stands; only where the helpers live has changed.
+
+- `LinkFeatureScorer` is in `src/crawlviz/nlp/link_features.py`. Its trace events are in
+  `crawlviz.events`, emitted through the `TraceSink` protocol in `src/crawlviz/events/contracts.py`.
+- Importing `LlmHandler` from `crawlviz.llm` is allowed in `nlp` under ADR 4.
+- `SpaceBootstrapper` and `NLPService` stay in `services/` because of three imports from
+  packages that are not below `nlp`:
+  - `ExpansionContext` and its base `LlmContext` move to `crawlviz.llm`.
+  - `Outcomes` moves to `crawlviz.llm`, because scoring uses it too.
+  - `ExpansionSeeds` and `parse_expansion_seeds` move to `crawlviz.nlp`, because only the
+    bootstrap uses them.
+- After those moves, `space_bootstrap.py` and then `nlp_service.py` move in the ADR 1 series,
+  with the pins unchanged.

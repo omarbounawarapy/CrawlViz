@@ -44,6 +44,8 @@ New in V2 (see docs/crawl_messages.ts):
                             promote to a node -- the "what didn't happen" signal
     NODE_SCORED_DETAIL   -- the cascade's full explanation for one node's score
     NODE_ERROR           -- a pipeline failure, tied to a node where possible
+    SUBSYSTEM_STATUS     -- one subsystem's status entry changed (not from an event:
+                            from the status board, see watch_status)
 """
 
 from __future__ import annotations
@@ -52,6 +54,46 @@ import logging
 import time
 from typing import Callable, Dict, Optional
 from urllib.parse import unquote
+
+from crawlviz.contracts import SubsystemStatus, SubsystemStatusMessage
+from crawlviz.events import (
+    ContentFilteredEvent,
+    ExportBatchCompletedEvent,
+    ExportBatchFailedEvent,
+    ExportBatchStartedEvent,
+    ExportRowFailedEvent,
+    ExtractionStartedEvent,
+    FilteringEnqueuedEvent,
+    FilteringPipelineErrorEvent,
+    FilteringWorkerCycleStartedEvent,
+    HighScoreLinksEvent,
+    ItemExtractionCompletedEvent,
+    LinkExtractionCompletedEvent,
+    LinksScoredEvent,
+    LowScoreLinksEvent,
+    NodeAddedEvent,
+    PageFetchedEvent,
+    PriorityCalculatedEvent,
+    PriorityCalculationFailedEvent,
+    PriorityCalculationStartedEvent,
+    ProcessingExtractionFailedEvent,
+    RequestEnqueuedEvent,
+    RequestFailedEvent,
+    RequestResponseReceivedEvent,
+    RequestStartedEvent,
+    RetryOperationFailedEvent,
+    ScoringCompletedEvent,
+    ScoringEnqueuedEvent,
+    ScoringFailedEvent,
+    ScoringStartedEvent,
+    StopCrawlEvent,
+    StorageNodeUpdatedEvent,
+    StorageOperationFailedEvent,
+    TransformationCompletedEvent,
+    TransformationFailedEvent,
+    TransformationStartedEvent,
+)
+from crawlviz.telemetry import StatusBoard, StatusObserver
 
 from .crawl_state_snapshot import CrawlStateSnapshot
 
@@ -69,7 +111,7 @@ class TelemetryBridge:
     """
     Thin, stateless-except-for-the-shared-snapshot translation layer.
 
-    Wired into EventBroker exactly like LoggingPipeline / DebuggingPipeline
+    Wired into EventBroker exactly like CrawlLogSink / DebugLogSink
     — one subscribe() call per event type, one put() method. No queue sits
     between the broker and this class.
     """
@@ -97,6 +139,8 @@ class TelemetryBridge:
         # handlers for the full explanation of why this indirection exists.
         self._pending_detail: Dict[str, dict] = {}
 
+        self._status_observer: StatusObserver | None = None
+
     # ------------------------------------------------------------------
     # Lifecycle — called once by crawler.start()
     # ------------------------------------------------------------------
@@ -105,49 +149,9 @@ class TelemetryBridge:
         """
         Bind event types to handler methods.
 
-        Separated from __init__ so imports of event dataclasses happen
-        after the full events package is initialised (same pattern used
-        by other pipelines in the codebase).
+        Builds the dispatch table. The crawler calls it once at start, before
+        it reads event_types to subscribe the bridge to the broker.
         """
-        from events import (
-            ContentFilteredEvent,
-            ExportBatchCompletedEvent,
-            ExportBatchFailedEvent,
-            ExportBatchStartedEvent,
-            ExportRowFailedEvent,
-            ExtractionStartedEvent,
-            FilteringEnqueuedEvent,
-            FilteringPipelineErrorEvent,
-            FilteringWorkerCycleStartedEvent,
-            HighScoreLinksEvent,
-            ItemExtractionCompletedEvent,
-            LinkExtractionCompletedEvent,
-            LinksScoredEvent,
-            LowScoreLinksEvent,
-            NodeAddedEvent,
-            PageFetchedEvent,
-            PriorityCalculatedEvent,
-            PriorityCalculationFailedEvent,
-            PriorityCalculationStartedEvent,
-            ProcessingExtractionFailedEvent,
-            RequestEnqueuedEvent,
-            RequestFailedEvent,
-            RequestResponseReceivedEvent,
-            RequestStartedEvent,
-            RetryOperationFailedEvent,
-            ScoringCompletedEvent,
-            ScoringEnqueuedEvent,
-            ScoringFailedEvent,
-            ScoringStartedEvent,
-            StopCrawlEvent,
-            StorageNodeUpdatedEvent,
-            StorageOperationFailedEvent,
-            TransformationCompletedEvent,
-            TransformationFailedEvent,
-            TransformationStartedEvent,
-            TransformationStepSkippedEvent,
-        )
-
         self._dispatch = {
             # --- V1 node lifecycle (unchanged behavior)
             NodeAddedEvent: self._on_node_added,
@@ -185,7 +189,6 @@ class TelemetryBridge:
             TransformationStartedEvent: self._on_transformation_started,
             TransformationCompletedEvent: self._on_transformation_completed,
             TransformationFailedEvent: self._on_transformation_failed,
-            TransformationStepSkippedEvent: self._on_transformation_step_skipped,
             # --- V2: export stage
             ExportBatchStartedEvent: self._on_export_started,
             ExportBatchCompletedEvent: self._on_export_completed,
@@ -195,6 +198,21 @@ class TelemetryBridge:
             StorageOperationFailedEvent: self._on_storage_failed,
             RetryOperationFailedEvent: self._on_retry_failed,
         }
+
+    def watch_status(self, board: StatusBoard) -> None:
+        """Send SUBSYSTEM_STATUS to the UI whenever an entry on ``board`` changes (ADR 8).
+
+        Call it on the event loop the gateway runs on, once the gateway exists. Changes are
+        coalesced per subsystem by ``StatusObserver``. ``put`` stops the watch when the
+        crawl's stop event arrives.
+        """
+        self._status_observer = StatusObserver(board, self._send_status)
+        self._status_observer.start()
+
+    async def _send_status(self, entry: SubsystemStatus) -> None:
+        """Broadcast ``{"type": "SUBSYSTEM_STATUS", "ts": ..., "entry": {...}}``."""
+        message = SubsystemStatusMessage(ts=time.time(), entry=entry).model_dump(mode="json")
+        await self.gateway.broadcast(message)
 
     @property
     def event_types(self) -> tuple[type, ...]:
@@ -231,8 +249,11 @@ class TelemetryBridge:
             log.exception("Translation failed for event %s", type(event).__name__)
 
         if type(event).__name__ == "StopCrawlEvent":
-            # The final CRAWL_STOPPED has been sent; close the server so
-            # gateway.start() returns and Crawler.start() can finish.
+            # The final CRAWL_STOPPED has been sent. Send the last status changes the
+            # observer still holds, then close the server so gateway.start() returns and
+            # Crawler.start() can finish.
+            if self._status_observer is not None:
+                await self._status_observer.stop()
             await self.gateway.stop()
 
     # ==================================================================
@@ -346,7 +367,7 @@ class TelemetryBridge:
         # URL so _on_node_added can attach it once the node itself exists.
         # This is the only point in the pipeline where a Link object still
         # carries both its NLP vector *and* its LLM score (if any) together
-        # -- one hop later, StoragePipeline mints a fresh Node and the Link
+        # -- one hop later, StorageSink mints a fresh Node and the Link
         # is no longer directly reachable from any subsequent event.
         for entry in event.links:
             link = entry["link"]
@@ -513,7 +534,7 @@ class TelemetryBridge:
         ]
 
     # ==================================================================
-    # V2 handlers — extraction stage (ProcessingPipeline)
+    # V2 handlers — extraction stage (ExtractStage)
     # ==================================================================
 
     def _on_extraction_started(self, event) -> dict:
@@ -717,18 +738,6 @@ class TelemetryBridge:
                 error_message=event.error_message,
             ),
         ]
-
-    def _on_transformation_step_skipped(self, event) -> dict:
-        return self._error(
-            node_id=str(event.node.get_id()),
-            stage="transformation",
-            error_type="TransformSkipped",
-            error_message=(
-                f"The {event.transform_type} step was skipped: the field is "
-                f"{event.input_length} characters and the limit is {event.limit}. "
-                "The field keeps its value from before the step."
-            ),
-        )
 
     # ==================================================================
     # V2 handlers — export stage (table-level, not node-level)

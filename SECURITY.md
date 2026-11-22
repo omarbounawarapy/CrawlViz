@@ -14,15 +14,15 @@ Include:
 ## What's in scope
 
 - The FastAPI control API (`routes/`), including the read-only SQL layer in `routes/validation_db.py`.
-- Handling of LLM provider API keys (`infrastructure/key_manager.py`, `keys.json`).
+- Handling of LLM provider API keys (`src/crawlviz/llm/key_manager.py`, `keys.json`).
 - The WebSocket data plane (`ui_bridge/ui_websocket_gateway.py`).
-- Page fetching and robots.txt handling (`pipelines/requests_pipeline.py`, `pipelines/robots.py`, `infrastructure/network_client.py`).
+- Page fetching and robots.txt handling (`pipelines/fetch_stage.py`, `pipelines/robots.py`, `src/crawlviz/shared/network_client.py`).
 - Blueprints, settings and presets written through the API (`routes/templates.py`, `routes/config*.py`).
 
 ## What's out of scope
 
 - Denial-of-service reports against the control API itself. The crawler is a single-process, single-machine app with no built-in rate limiting. This is a known limitation of the current architecture, and it is not tracked as a vulnerability.
-- Open decision: denial of service from crawled content, such as oversized or compressed response bodies that exhaust the API process (threat T6 below). It is undecided whether this class is in scope. The threat model below treats it as in scope until the maintainer decides.
+- Open decision for Omar: denial of service from crawled content, such as oversized or compressed response bodies that exhaust the API process (threat T6 below). It is undecided whether this class is in scope. The threat model below treats it as in scope until he decides.
 - Issues that only manifest with a maliciously crafted `keys.json` that you would have to place there yourself (you already have local filesystem access). Blueprints are different: they can be written through the API without a token today (T2, T21, T22), so a hostile blueprint is in scope.
 
 ## Response
@@ -31,26 +31,28 @@ This is maintained by one person outside of full-time work, so there's no formal
 
 ## Threat model
 
-This section covers access control, untrusted input, secrets and crawl politeness for
-CrawlViz as it stands on `main` at commit `0d21314`. It ranks the planned security and
-politeness fixes.
+This section covers SEC-1, SEC-2, SEC-3 and ETH-1 for CrawlViz as it stands on `main` at
+commit `0d21314`. It sets the order of the Phase C security and politeness fixes.
 
-Each threat names its evidence as `file:line`. A threat marked **Unverified** was worked out
+Each threat names its evidence as `file:line`. Paths and line numbers describe commit
+`0d21314`, before the fixes and the package moves. Modules have since been renamed or moved
+(`pipelines/requests_pipeline.py` is now `pipelines/fetch_stage.py`; the LLM, NLP and shared
+code is under `src/crawlviz/`), so open a citation at that commit to read it. Where a
+finding is marked fixed, its evidence is historical. A threat marked **Unverified** was worked out
 from the code but not shown by a test or a run. The section "What this model did not verify"
 lists those threats.
 
 ### Scope and method
 
 - **In scope:** the FastAPI control API (`main.py`, `routes/`), the crawl WebSocket
-  (`ui_bridge/`), page fetching and robots handling (`pipelines/requests_pipeline.py`,
-  `pipelines/robots.py`, `infrastructure/network_client.py`), the LLM path
-  (`infrastructure/llm_handler.py`, translators, `models/prompts.py`), keys
-  (`infrastructure/key_manager.py`, `routes/keys.py`), settings and blueprints (`config/`,
+  (`ui_bridge/`), page fetching and robots handling (`pipelines/fetch_stage.py`,
+  `pipelines/robots.py`, `src/crawlviz/shared/network_client.py`), the LLM path
+  (`src/crawlviz/llm/llm_handler.py`, the translators beside it, `models/prompts.py`), keys
+  (`src/crawlviz/llm/key_manager.py`, `routes/keys.py`), settings and blueprints (`config/`,
   `routes/templates.py`, `routes/config*.py`), crawl outputs (`ui_bridge/event_recorder.py`,
   logging and debug sinks) and the benchmark job runner (`routes/benchmark_jobs.py`).
-- **Not reviewed:** the React UI (`crawler-ui/`), the `Makefile`, the transformation and
-  exporting pipelines, `nlp/` internals. The contents of `keys.json` and `.env` were not
-  inspected.
+- **Not read:** the React UI (`crawler-ui/`), the `Makefile`, the transformation and
+  exporting pipelines, `src/crawlviz/nlp/` internals. `keys.json` and `.env` were deliberately not read.
 - **Threat actors:**
   1. A web page open in the same browser as the UI. It can send simple cross-site requests
      (CSRF), it may be served from another localhost port, and it can use DNS rebinding to
@@ -76,12 +78,12 @@ lists those threats.
 | A1 | LLM provider API keys (`keys.json`, `KeyManager` memory, outgoing request headers) | Direct money and account abuse |
 | A2 | LLM spend on the user's accounts | Every crawl and benchmark run can spend it |
 | A3 | Hosts the crawler can reach: loopback (the API itself), cloud metadata at 169.254.169.254, the LAN | SSRF targets |
-| A4 | Third-party sites being crawled, and the reputation of the User-Agent contact | Politeness limits protect them |
+| A4 | Third-party sites being crawled, and the reputation of the User-Agent contact | ETH-1 |
 | A5 | Settings, presets and blueprints (`settings.json`, `presets.json`, `templates/*.json`) | They control politeness, prompts and where keys are sent |
 | A6 | Crawl outputs: `items.db`, `export/<crawl_id>/events.jsonl` and `manifest.json`, `logs/`, `debug/`, `.space_store/` | Research integrity; may hold headers or credentials the user configured |
-| A7 | Benchmark data, results and audit labels (`benchmark/data`, `benchmark/results`) | Integrity of the benchmark study |
+| A7 | Benchmark data, results and audit labels (`benchmark/data`, `benchmark/results`) | Phase G study integrity |
 | A8 | Availability of the API process; the crawler runs inside it (`routes/run.py:90`) | One bad page can take down the app |
-| A9 | Prompts and scoring method | Scores and fetch order; method changes need review and a pin update |
+| A9 | Prompts and scoring method | Scores and fetch order; method changes need sign-off |
 
 ### Trust boundaries
 
@@ -89,9 +91,9 @@ lists those threats.
 |---|---|---|---|
 | B1 | Browser to the control API on :8000 | The UI on :5173 (trusted). Any other page in the browser (untrusted). | CORS only (`main.py:23-29`). The token is optional and covers only the config router (`routes/config.py:60`, `routes/config_support.py:13-19`). No Host or Origin check. |
 | B2 | Browser to the crawl WebSocket on :8765 | The UI; any other page in the browser | None: no Origin check, no token (`ui_bridge/ui_websocket_gateway.py:67-73`) |
-| B3 | Local users and processes to the API ports and the repo files | Anyone with a shell on the machine | `keys.json` is mode 0600 only when the app writes it (`infrastructure/key_manager.py:142-149`, `routes/keys.py:18-23`). Every other file uses the umask. |
+| B3 | Local users and processes to the API ports and the repo files | Anyone with a shell on the machine | `keys.json` is mode 0600 only when the app writes it (`src/crawlviz/llm/key_manager.py`, `save()`, `routes/keys.py:18-23`). Every other file uses the umask. |
 | B4 | Crawler to fetched pages and their hosts | Untrusted HTML, redirects, robots.txt | robots.txt is honoured by default (`config/config.py:60`). No host, size or redirect checks. |
-| B5 | Crawler to LLM providers | API keys and prompts go out; JSON comes back | Keys are sent in headers, never in URLs (`infrastructure/gemini_translator.py:21-26`). LLM output is mapped only onto known links (`services/results_mapper.py:39-50`). The endpoint can be any URL (`config/runtime_config.py:815-830`). |
+| B5 | Crawler to LLM providers | API keys and prompts go out; JSON comes back | Keys are sent in headers, never in URLs (`src/crawlviz/llm/gemini_translator.py:22-43`). LLM output is mapped only onto known links (`services/results_mapper.py:39-50`). The endpoint can be any URL (`config/runtime_config.py:815-830`). |
 | B6 | Process to `keys.json` | A secret at rest | Atomic 0600 write. The mode is not checked on load. |
 | B7 | Process to `settings.json`, `presets.json` and `templates/` | Config at rest, written by unauthenticated API calls | Pydantic validation. No integrity check, no size caps. |
 | B8 | API to the benchmark subprocess | Whitelisted CLI flags | Flag whitelist, `exec` with no shell (`routes/benchmark_jobs.py:79-103`, `:203-208`). Path flags are limited only to "somewhere inside the repo". |
@@ -99,7 +101,7 @@ lists those threats.
 
 ### Threats
 
-#### Access control: who may call the API and the WebSocket
+#### SEC-1: who may call the API and the WebSocket
 
 **T1. Critical: an unauthenticated caller can send the API keys to a server it controls.**
 - Evidence:
@@ -108,7 +110,7 @@ lists those threats.
   - `providers.endpoints` accepts any `http://` or `https://` URL
     (`config/runtime_config.py:815-830`).
   - `LlmHandler` sends the request, key header included, to that URL
-    (`infrastructure/llm_handler.py:56-58`, `:78-84`, `:100-107`).
+    (`src/crawlviz/llm/llm_handler.py`, `_apply_endpoint`, `:211-217`).
   - `PUT /config` does the same persistently, and is open when `CRAWLVIZ_API_TOKEN` is unset,
     which is the default (`routes/config_support.py:14-16`, `routes/config.py:88-93`).
 - Exploit path: a caller that can send a JSON body sets
@@ -156,14 +158,14 @@ lists those threats.
 - Exploit path: a hidden form on any site posts to `http://localhost:8000/config/presets/fast/apply`.
   No preflight happens. The `fast` preset sets a 0.2 s delay and 8 fetch workers
   (`routes/config_presets.py:26-29`), so the user's next crawl is harder on third-party sites
-  (see T12). The same trick wipes settings or stops a crawl or benchmark job. The token blocks
+  (ETH-1). The same trick wipes settings or stops a crawl or benchmark job. The token blocks
   this only on the config router, and only when it is set.
 - **Unverified:** that the installed Starlette `CORSMiddleware` hands simple cross-origin
   requests to the app and only withholds `Access-Control-Allow-Origin`. That is its
   documented behaviour, but the installed version was not checked.
 - Fix: the token from T2, or a required custom header or JSON content type on every
   state-changing route, plus the Origin check.
-- Test: a cross-origin form POST to `/stop` is rejected.
+- Test: a cross-origin form POST to `/stop` is rejected (`docs/standards.md:87`).
 
 **T15. Medium: the WebSocket accepts any Origin and any number of clients.**
 - Evidence: `serve()` is called without `origins=` (`ui_bridge/ui_websocket_gateway.py:67-73`).
@@ -182,16 +184,16 @@ lists those threats.
 - **Unverified:** the host that `make dev` and uvicorn bind to. If it is `0.0.0.0`, every
   threat above is open to the LAN, not just to the browser.
 
-#### Untrusted input
+#### SEC-2: untrusted input
 
 **T5. High: SSRF. The crawler follows any link to any host, and follows redirects without checking them.**
 - Evidence:
   - Child nodes inherit the seed's domain whatever host their link points to
-    (`models/node.py:64-73`).
-  - `get_full_url` is `urljoin(base, link.url)`, which keeps absolute foreign URLs
-    (`models/node.py:181-182`).
-  - Filtering only removes duplicates (`pipelines/filtering_pipeline.py:108-122`).
-  - The fetch uses the default aiohttp redirect handling (`infrastructure/network_client.py:17-22`).
+    (`src/crawlviz/shared/node.py:58-67`).
+  - `get_full_url` joins the domain base URL and `link.url`, which keeps absolute foreign URLs
+    (`src/crawlviz/shared/node.py:145-146`).
+  - Filtering only removes duplicates (`pipelines/filter_stage.py:108-122`).
+  - The fetch uses the default aiohttp redirect handling (`src/crawlviz/shared/network_client.py`, before the guarded redirects).
   - There is no `ipaddress`, `is_private` or hostname check anywhere in the backend.
 - Exploit path: a crawled page links to `http://127.0.0.1:8000/config/export`, to
   `http://169.254.169.254/...` (cloud metadata), or to a LAN device. Or a seed redirects
@@ -203,18 +205,18 @@ lists those threats.
   Turn off automatic redirects and re-check every `Location`, with at most 5 hops. Pin the
   checked IP for the connection (a custom resolver or connector) so DNS rebinding cannot
   switch it after the check.
-- Test: a seed that redirects to 169.254.169.254 is blocked.
+- Test: a seed that redirects to 169.254.169.254 is blocked (`docs/standards.md:88`).
 
 **T6. High: no limit on response size, content type or decompression.**
 - Evidence: `await response.text()` and `await response.json()` read whole bodies
-  (`infrastructure/network_client.py:21-22`, `:32-33`). `Accept-Encoding: gzip, deflate`
+  (`src/crawlviz/shared/network_client.py`, before the response cap). `Accept-Encoding: gzip, deflate`
   is the default and aiohttp decompresses it transparently (`config/runtime_config.py:426-433`).
   The crawler runs inside the API process (`routes/run.py:90`).
 - Exploit path: a hostile page sends a multi-gigabyte body, or a small gzip that expands to
   gigabytes. The API process runs out of memory and the UI goes down with it. Binary files
   are decoded and parsed as HTML.
-- Open decision: whether denial of service from crawled content is in scope. See
-  "What's out of scope" above. Until it is decided, this model treats it as in scope.
+- Open decision for Omar: whether denial of service from crawled content is in scope. See
+  "What's out of scope" above. Until he decides, this model treats it as in scope.
 - Fix: stream with a cap on decompressed bytes, for example 5 MB for pages and 500 KiB for
   robots.txt (RFC 9309 asks crawlers to parse at least 500 KiB). Reject early on
   `Content-Length`. Accept only HTML, XHTML and XML content types. Cap LLM response bodies
@@ -240,9 +242,8 @@ lists those threats.
 - Fix: cap anchor and URL length before prompting, and cap the number and length of
   expansions. State in the system prompt that the CANDIDATES block is data. Set a default
   call cap.
-- This is a prompt and method change. The scoring prompt's JSON output format is locked
-  (`models/prompts.py`), so the change needs method review and a reviewed update of the
-  behaviour pins (`tests/pins/README.md`).
+- This is a prompt and method change: it needs research-scientist sign-off and a reviewed
+  pin update (AGENTS.md, Invariants).
 
 **T16. Medium: `/run` does not sanitise the template name, so paths escape the templates directory.**
 - Evidence:
@@ -250,7 +251,7 @@ lists those threats.
     (`routes/run.py:75-83`).
   - The crawl id comes from that name (`core/crawler.py:92-96`).
   - That id builds the export, log and debug paths (`core/crawler.py:331`,
-    `pipelines/logging_pipeline.py:42-45`, `pipelines/debugging_pipeline.py:105-108`).
+    `pipelines/crawl_log_sink.py:42-45`, `pipelines/debug_log_sink.py:105-108`).
 - Exploit path: `templateName="../x.json"` or an absolute path answers 404 or 422, which tells
   the caller whether any file exists on disk. A valid blueprint anywhere on disk can be run,
   and its crawl id then writes export, log and debug files outside the repo. The template
@@ -286,7 +287,7 @@ lists those threats.
   `max_nodes`, `max_depth` or `max_duration` (`config/blueprint_schema.py:174-178`).
 - Fix: request body size limit, field bounds.
 
-#### Secrets
+#### SEC-3: secrets
 
 **T13. Medium: manifests and config exports write request headers without redaction.**
 - Evidence:
@@ -302,20 +303,25 @@ lists those threats.
 - Fix: one redaction helper applied to manifests, exports, logs and traces. It covers header
   names matching authorization, cookie, `*key*` and `*token*`, plus URL userinfo and query
   values.
-- Test: the manifest shows `Authorization: [redacted]`.
+- Test: the manifest shows `Authorization: [redacted]` (`docs/standards.md:89`).
 
 **T14. Medium: `keys.json` permissions are enforced only on files the app creates itself.**
-- Evidence:
-  - `routes/keys.py:18-23` creates the file with mode 0600.
-  - `save()` opens the temp file with 0600, but `O_CREAT` sets the mode only when the temp
-    file is new (`infrastructure/key_manager.py:142-149`).
-  - `load_keys()` never checks the mode (`:151-182`), and its error message tells users to
-    copy `keys.example.json`, which gives a file with umask permissions (`:163-167`).
-  - A file named `keys.json.bak-20260930-193053` sits at the repo root.
-- **Unverified:** the current modes of `keys.json` and the backup, and whether `.gitignore`
-  covers the backup. Neither file was read or checked.
-- Fix: on load, if any group or other bits are set, chmod to 0600 and log a warning. Call
-  `fchmod` after opening in `save()`. Make `.gitignore` cover `keys.json*`.
+- **Status: partly fixed** by "Keys: keys.json is restricted to its owner on load and on
+  save". Loading now checks the mode. What remains is Low and listed below.
+- Before the fix, `load_keys()` read the file without checking its mode, and the setup docs
+  gave a file with umask permissions.
+- Now: `load_keys()` calls `_restrict_permissions()` before it opens the file
+  (`src/crawlviz/llm/key_manager.py:161-181` and `:202`). If group or other bits are set it
+  changes the mode to 0600 and logs a warning; if chmod fails it logs an error saying to run
+  `chmod 600` and carries on. Windows is skipped (known limitation, no ACL check). `save()`
+  opens the temp file with 0600 and chmods it; `os.replace` keeps the mode. Tests:
+  `tests/test_key_manager_permissions.py`.
+- Still open (Low), being fixed: a failed `save()` leaves `keys.json.tmp` holding every key;
+  `save()` reuses an existing temp file; `save()` does not fsync before the rename. Git now
+  ignores `keys.json*`.
+- Fix remaining: create the temp file exclusively at 0600, fsync it, delete it on failure.
+  Test: a failing save leaves no temp file; a reader opened on a readable leftover does not
+  see later keys.
 
 **T20. Low: error text with URLs reaches logs, traces, the event log and the UI.**
 - Evidence: aiohttp error strings include the request URL. They are stored verbatim in
@@ -329,18 +335,20 @@ lists those threats.
 **T19. Low: raw exception text in API responses.**
 - Evidence: `routes/validation.py:40-41`, `:61-62` and `:95-96` return `str(exc)` with status
   500. Crawl failures are logged but not shown to the user (`routes/run.py:62-63`), which is
-  also a gap: errors are neither surfaced to the user nor explained.
+  also CODE-5 and UX-1.
 - Fix: log with context, return a plain message, and show crawl failure state in the UI.
 
-#### Politeness towards crawled sites
+#### ETH-1: politeness
 
 **T10. High: the rate limit is global rather than per host, and workers can race past it.**
 - Evidence: each worker computes its delay from `last_request_time` before it sleeps, and
-  only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228`). Workers
+  only updates the value after it wakes (`pipelines/requests_pipeline.py:219-228` at `0d21314`; `pipelines/fetch_stage.py` now paces per host). Workers
   that start together compute the same delay and send together. There is no per-host state.
-- **Unverified:** worked out from the code. No test or run showed it.
+- **Status: fixed** by "Fetch: rate limit holds across workers, per host".
+- **Unverified before the fix:** worked out from the code. No test or run showed it.
 - Fix: a per-host limiter that books the next slot under a lock before sleeping.
-- Test: four workers still send at most one request per `min_delay` to a host.
+- Test: four workers still send at most one request per `min_delay` to a host
+  (`docs/standards.md:90`).
 
 **T8. Medium: robots.txt fails open on every error, including 5xx and timeouts.**
 - Evidence: `pipelines/robots.py:57-59` parses an empty file on any exception.
@@ -354,25 +362,27 @@ lists those threats.
 - Fix: per-host delay = max(`min_delay`, Crawl-delay), with a capped maximum.
 
 **T11. Medium: Retry-After is ignored, and 503 does not trigger backoff.**
-- Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` look only at status 429,
+- Evidence: `pipelines/requests_pipeline.py:27-29` and `:264-272` at `0d21314` (`pipelines/fetch_stage.py` now also handles 503 and Retry-After) looked only at status 429,
   and the shared backoff ignores the header.
+- **Status: fixed** by "Retry: Retry-After and 503 are honoured, other 4xx are not retried" and
+  "Fetch: a Retry-After answer holds the whole host off, and 503 backs the crawler off".
 - Fix: honour Retry-After in both its forms (seconds or an HTTP date), per host and with a
   cap. Treat 503 like 429.
 
 **T12. Medium: politeness can be turned off with no floor and no record.**
 - Evidence:
   - `user_agent` is free text with no minimum (`config/runtime_config.py:411-417`), and
-    `extra_headers` can replace it (`pipelines/requests_pipeline.py:84`).
+    `extra_headers` can replace it (`pipelines/fetch_stage.py:87`).
   - The robots toggle (`config/runtime_config.py:395-401`), `min_delay >= 0` (`:318-326`)
     and up to 64 workers (`:468-477`).
-  - The constructor default is `respect_robots=False` (`pipelines/requests_pipeline.py:54`);
+  - The constructor default is `respect_robots=False` (`pipelines/fetch_stage.py:57`);
     the config default is True (`config/config.py:60`).
   - The default User-Agent is honest and carries a contact (`config/config.py:57-59`).
   - With T4, a third party can apply the `fast` preset.
 - Fix: a per-host delay floor (except loopback test hosts), a User-Agent that must keep a
   contact, `extra_headers` not allowed to replace User-Agent, a safe constructor default,
   and "robots off" recorded in the manifest. Where the floors sit is a product decision
-  and is still open.
+  (ux-researcher, then Omar).
 
 ### Controls worth keeping
 
@@ -383,52 +393,53 @@ lists those threats.
 - Benchmark jobs: flag whitelist and `exec` with no shell; arguments cannot start with `-`
   (`routes/benchmark_jobs.py:28`, `:79-103`, `:203-208`).
 - Keys: masked snapshot, atomic 0600 save, constant-time token compare, key in a header and
-  not the URL (`infrastructure/key_manager.py:79-92`, `:142-149`;
-  `routes/config_support.py:18`; `infrastructure/gemini_translator.py:21-26`).
+  not the URL (`src/crawlviz/llm/key_manager.py`, `snapshot()` and `save()`;
+  `routes/config_support.py:18`; `src/crawlviz/llm/gemini_translator.py:22-43`).
 - LLM output can only score links from the batch (`services/results_mapper.py:39-50`).
 - Traces record whether an auth header was present, never its value
   (`traceability/network_trace_events.py:16`).
 
-### Fix priorities
+### Phase C priorities
 
-Each fix should land as its own change, with a test that fails before the fix. "Pins" means
-the fix may change fetch order or scores, so the behaviour pins (`tests/pins/README.md`)
-need a reviewed update.
+Each fix lands as its own commit, failing test first (TEST-1). "Pins" means the fix may
+change fetch order or scores, so it needs a reviewed pin update with research-scientist
+sign-off (TEST-2).
 
-| Rank | Fix | Threats | Area | Pins |
+| Rank | Fix | Threats | Standard | Pins |
 |---|---|---|---|---|
-| 1 | Token on every route, a per-session token when unset; Host allowlist; Origin check on state-changing requests; exact CORS origins | T2, T3, T4, T18 | Access control | No |
-| 2 | Lock LLM endpoints: no per-run override; a non-default host needs the token and a confirmation; https except loopback; keys sent only to the configured host | T1 | Access control, secrets | No |
-| 3 | SSRF guard: scheme allowlist, IP class checks, manual redirects re-checked (at most 5), IP pinning | T5 | Untrusted input | Possibly (fetch set) |
-| 4 | Response caps: decompressed byte cap, content type check, robots.txt cap | T6 | Untrusted input | No for the fixtures, unless a fixture page is over the cap |
-| 5 | WebSocket origins allowlist, token on connect, client cap, send timeout | T15 | Access control | No |
-| 6 | Per-host rate limiter with slot booking; Retry-After; 503 backoff | T10, T11 | Politeness | Yes |
-| 7 | robots.txt 5xx fails closed; Crawl-delay honoured | T8, T9 | Politeness | Yes |
-| 8 | Secrets: `keys.json` mode check and `fchmod`; one redaction helper for manifests, exports, traces and errors | T13, T14, T20 | Secrets | No (manifest fields change; the manifest schema needs a version bump if it changes) |
-| 9 | Paths: `/run` template name and crawl id; benchmark write paths | T16, T17 | Untrusted input | No |
-| 10 | Prompt safety and cost: anchor, URL and expansion caps; data framing in the prompt; default call cap | T7 | Untrusted input | Yes; a prompt change that needs method review |
-| 11 | Politeness floors and User-Agent validation; safe constructor default | T12 | Politeness | Yes for the defaults; the floors are an open product decision |
-| 12 | Hardening: error detail in responses, regex input caps, body size limits | T19, T21, T22 | Untrusted input, error handling | No |
+| 1 | Token on every route, a per-session token when unset; Host allowlist; Origin check on state-changing requests; exact CORS origins | T2, T3, T4, T18 | SEC-1 | No |
+| 2 | Lock LLM endpoints: no per-run override; a non-default host needs the token and a confirmation; https except loopback; keys sent only to the configured host | T1 | SEC-1, SEC-3 | No |
+| 3 | SSRF guard: scheme allowlist, IP class checks, manual redirects re-checked (at most 5), IP pinning | T5 | SEC-2 | Possibly (fetch set) |
+| 4 | Response caps: decompressed byte cap, content type check, robots.txt cap | T6 | SEC-2 | No for the fixtures, unless a fixture page is over the cap |
+| 5 | WebSocket origins allowlist, token on connect, client cap, send timeout | T15 | SEC-1 | No |
+| 6 | Per-host rate limiter with slot booking; Retry-After; 503 backoff | T10, T11 | ETH-1 | Yes |
+| 7 | robots.txt 5xx fails closed; Crawl-delay honoured | T8, T9 | ETH-1 | Yes |
+| 8 | Secrets: `keys.json` mode check and `fchmod`; one redaction helper for manifests, exports, traces and errors | T13, T14, T20 | SEC-3 | No (manifest fields change; contracts-steward if the schema changes) |
+| 9 | Paths: `/run` template name and crawl id; benchmark write paths | T16, T17 | SEC-2 | No |
+| 10 | Prompt safety and cost: anchor, URL and expansion caps; data framing in the prompt; default call cap | T7 | SEC-2, LLM-1 | Yes; prompt change, research-scientist and Omar |
+| 11 | Politeness floors and User-Agent validation; safe constructor default | T12 | ETH-1 | Yes for the defaults; ux-researcher decides the floors |
+| 12 | Hardening: error detail in responses, regex input caps, body size limits | T19, T21, T22 | SEC-2, CODE-5 | No |
 
 Ranks 1 and 2 come first because together they close the only Critical path, and every
 later API-side fix assumes the API is no longer open to the browser. Ranks 6, 7, 10 and 11
-change the method's fetch behaviour, so they land only with the pin update process.
+change the method's fetch behaviour. They can be built in Phase C, but they land only with
+the pin process.
 
 ### What this model did not verify
 
-- Earlier security audit notes kept outside the repository were not read, so these
-  priorities have not been checked against them.
+- The plan files in `~/.claude/plans/`: the Phase B7 and Phase C sections and the earlier
+  security audit. The file-read tool blocks paths outside the repo, and they were not read,
+  so these priorities have not been checked against the audit's findings.
 - Starlette `CORSMiddleware` passing simple cross-origin requests to the app (T4), and
   FastAPI rejecting non-JSON content types for model bodies. Both were taken from the
   libraries' documented behaviour; the installed versions were not checked. If FastAPI
   accepts `text/plain` JSON, every JSON-body route is also open to CSRF.
 - The host `make dev` binds to (T18), and whether the UI sends `CRAWLVIZ_API_TOKEN`.
-- The modes of `keys.json` and `keys.json.bak-*`, and their `.gitignore` coverage (T14).
 - The rate limiter race (T10) and WebSocket back-pressure (T15): worked out from the code,
   not run.
 - Whether the benchmark CLI writes to the API-supplied paths (T17).
 - How regex transforms are applied (T21).
 - aiohttp redirect defaults and which headers it strips on a cross-host redirect
   (T1, T5): documented behaviour, not checked in the installed version.
-- No tests or dependency audits were run for this document, because it changes no code and
-  no dependencies.
+- No tests, `make check-changed`, `pip-audit` or `npm audit` were run for this document,
+  because it changes no code and no dependencies.

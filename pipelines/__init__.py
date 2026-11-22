@@ -1,30 +1,30 @@
-from .canonicalization_pipeline import CanonicalizationPipeline
-from .debugging_pipeline import DebuggingPipeline
-from .exporting_pipeline import ExportingPipeline
-from .filtering_pipeline import FilteringPipeline
-from .logging_pipeline import LoggingPipeline
-from .priority_pipeline import PriorityPipeline
-from .processing_pipeline import ProcessingPipeline
-from .requests_pipeline import RequestsPipeline
-from .retry_processor import RetryProcessor
-from .scoring_pipeline import ScoringPipeline
-from .stopping_pipeline import StopConditions, StoppingPipeline
-from .storage_pipeline import StoragePipeline
-from .transformation_pipeline import TransformationPipeline
+from .canonicalize_stage import CanonicalizeStage
+from .crawl_log_sink import CrawlLogSink
+from .debug_log_sink import DebugLogSink
+from .export_sink import ExportSink
+from .extract_stage import ExtractStage
+from .fetch_stage import FetchStage
+from .filter_stage import FilterStage
+from .prioritize_stage import PrioritizeStage
+from .retry_stage import RetryStage
+from .score_stage import ScoreStage
+from .stop_controller import StopConditions, StopController
+from .storage_sink import StorageSink
+from .transform_stage import TransformStage
 
 __all__ = [
-    "CanonicalizationPipeline",
-    "DebuggingPipeline",
-    "ExportingPipeline",
-    "FilteringPipeline",
-    "LoggingPipeline",
-    "PriorityPipeline",
-    "ProcessingPipeline",
-    "RequestsPipeline",
-    "RetryProcessor",
-    "ScoringPipeline",
+    "CanonicalizeStage",
+    "CrawlLogSink",
+    "DebugLogSink",
+    "ExportSink",
+    "ExtractStage",
+    "FetchStage",
+    "FilterStage",
+    "PrioritizeStage",
+    "RetryStage",
+    "ScoreStage",
     "StopConditions",
-    "StoppingPipeline",
-    "StoragePipeline",
-    "TransformationPipeline",
+    "StopController",
+    "StorageSink",
+    "TransformStage",
 ]

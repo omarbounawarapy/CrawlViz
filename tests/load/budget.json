@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "smoke: about 5x a measured 200-page run (2.9 s, 170 pages/s, 180 MB RSS, loop lag p99 320 ms, max 570 ms on one machine). full: placeholders, generous on purpose, to be set from a measured 50k run.",
+  "runs": {
+    "smoke": {
+      "max_wall_seconds": 60,
+      "min_pages_per_second": 20,
+      "max_peak_rss_mb": 1024,
+      "max_loop_lag_p99_ms": 1500,
+      "max_loop_lag_max_ms": 3000
+    },
+    "full": {
+      "max_wall_seconds": 7200,
+      "min_pages_per_second": 5,
+      "max_peak_rss_mb": 8192,
+      "max_loop_lag_p99_ms": 1000,
+      "max_loop_lag_max_ms": 10000
+    }
+  }
+}

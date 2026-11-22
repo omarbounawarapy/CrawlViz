@@ -8,13 +8,15 @@ from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from email.utils import format_datetime
+from pathlib import Path
 
 import aiohttp
 import pytest
 from aiohttp import test_utils, web
 
-from infrastructure import KeyManager, LlmHandler, NetworkClient
-from infrastructure.llm_handler import RetryPolicy, parse_retry_after
+from crawlviz.llm import KeyManager, LlmHandler
+from crawlviz.llm.llm_handler import RetryPolicy, parse_retry_after
+from crawlviz.shared import NetworkClient
 from models import ScoringContext
 
 PROVIDER = "openai"
@@ -51,7 +53,7 @@ class SleepRecorder:
 @pytest.fixture
 def key_manager(monkeypatch: pytest.MonkeyPatch) -> KeyManager:
     monkeypatch.setattr(KeyManager, "load_keys", lambda self: {PROVIDER: [SECRET_KEY]})
-    return KeyManager()
+    return KeyManager(keys_file=Path("unused-keys.json"))
 
 
 @pytest.fixture
@@ -184,7 +186,7 @@ async def test_a_retry_moves_to_the_next_key(
     monkeypatch.setattr(KeyManager, "load_keys", lambda self: {PROVIDER: ["key-a", "key-b"]})
     provider = ScriptedProvider([(429, {})])
 
-    await send(provider, KeyManager(), network, SleepRecorder())
+    await send(provider, KeyManager(keys_file=Path("unused-keys.json")), network, SleepRecorder())
     assert provider.keys == ["key-a", "key-b"]
 
 
@@ -207,12 +209,12 @@ async def test_each_retry_is_logged_with_context_and_without_the_key(
     sleep = SleepRecorder()
 
     with (
-        caplog.at_level("WARNING", logger="infrastructure.llm_handler"),
+        caplog.at_level("WARNING", logger="crawlviz.llm.llm_handler"),
         pytest.raises(aiohttp.ClientResponseError),
     ):
         await send(provider, key_manager, network, sleep, RetryPolicy(max_retries=2))
 
-    messages = [r.getMessage() for r in caplog.records if r.name == "infrastructure.llm_handler"]
+    messages = [r.getMessage() for r in caplog.records if r.name == "crawlviz.llm.llm_handler"]
     assert len(messages) == 3  # two retries, then giving up
     assert "openai" in messages[0] and "model-x" in messages[0]
     assert "429" in messages[0] and "retry 1 of 2" in messages[0] and "Retry-After" in messages[0]

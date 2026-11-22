@@ -1,6 +1,6 @@
 import { fetchBenchmarkOverview } from "../../api/client";
 import { getTheme } from "../../theme";
-import { SectionTitle, Row } from "../common/Page";
+import { SectionTitle, Row } from "../common";
 import Loading from "./Loading";
 import { useLoad, num } from "./shared";
 

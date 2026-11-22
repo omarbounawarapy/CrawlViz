@@ -1,8 +1,8 @@
 """Fixtures that pin the Config page explainers to the Python implementation.
 
 Writes crawler-ui/src/features/config/explainers/fixtures/python_cases.json
-from the real ScoringPipeline.bucket_links, priority strategies, the
-RequestsPipeline backoff loop, DBSCAN and the link context extractor. The
+from the real ScoreStage.bucket_links, priority strategies, the
+FetchStage backoff loop, DBSCAN and the link context extractor. The
 JS calculators are tested against that file; tests/test_explainer_fixtures.py
 fails when the committed file no longer matches what this script produces.
 
@@ -22,12 +22,12 @@ from multidict import CIMultiDict, CIMultiDictProxy
 from sklearn.cluster import DBSCAN
 from yarl import URL
 
-import pipelines.requests_pipeline as rp
+import pipelines.fetch_stage as rp
+from crawlviz.priority import strategy as strat
 from models.links_extractor import LinkExtractor
 from pipelines import host_pacer
-from pipelines.requests_pipeline import RequestsPipeline
-from pipelines.scoring_pipeline import ScoringPipeline
-from priority import strategy as strat
+from pipelines.fetch_stage import FetchStage
+from pipelines.score_stage import ScoreStage
 
 ROOT = Path(__file__).resolve().parent.parent
 EXPLAINERS = ROOT / "crawler-ui/src/features/config/explainers"
@@ -76,7 +76,7 @@ def cascade_cases() -> list[dict]:
     cases = []
     for extra in variants:
         cfg = {**CASCADE_BASE, **extra}
-        p = ScoringPipeline(None, None, None, rng=random.Random(0), **cfg)
+        p = ScoreStage(None, None, None, rng=random.Random(0), **cfg)
         links = [_L(s) for s in scores]
         sampled, skipped, dropped = p.bucket_links(links)
         cases.append(
@@ -164,7 +164,7 @@ async def _backoff_run(cfg: dict, outcomes: list[str]) -> list[float]:
     rp.asyncio.sleep = fake_sleep
     host_pacer.time = SimpleNamespace(monotonic=lambda: clock.now)
     try:
-        pipe = RequestsPipeline(
+        pipe = FetchStage(
             _Broker(),
             max_concurrency=1,
             fetcher=_Scripted(outcomes, log),
@@ -176,7 +176,7 @@ async def _backoff_run(cfg: dict, outcomes: list[str]) -> list[float]:
             backoff_success_decay=cfg["backoff_success_decay"],
             backoff_failure_decay=cfg["backoff_failure_decay"],
         )
-        from models import Domain, Node
+        from crawlviz.shared import Domain, Node
 
         domain = Domain("d", "https://example.test", ".//a")
         for i in range(len(outcomes)):

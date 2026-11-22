@@ -49,7 +49,7 @@ function widgetFor(field, node) {
  * Flatten RuntimeConfig's schema into editable leaves:
  * { path: "fetch.min_delay", key, title, description, widget, type, nullable,
  *   minimum, maximum, unit, apply, advanced, options, section, group }
- * Nested objects that are plain settings groups (pipelines.filtering.*) are
+ * Nested objects that are plain settings groups (pipelines.filter.*) are
  * descended into; `group` names that sub-object so a table can lay it out.
  */
 export function buildFields(schema) {

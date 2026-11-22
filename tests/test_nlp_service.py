@@ -1,12 +1,14 @@
 """NLPService end to end with the hashing embedding engine: no MiniLM, no LLM, no network."""
 
 import asyncio
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
-from models.link import Link
-from nlp.embedding_engine import HashingEmbeddingEngine, create_embedding_engine
+from crawlviz.nlp.embedding_engine import HashingEmbeddingEngine, create_embedding_engine
+from crawlviz.shared import Link
 from services.nlp_service import NLPService
 
 TOPIC = "insulin resistance and type 2 diabetes treatment"
@@ -23,7 +25,7 @@ class SeedLlm:
         return {"descriptions": SEEDS}
 
 
-def make(tmp_path, engine=None, **kw):
+def make(tmp_path: Path, engine: HashingEmbeddingEngine | None = None, **kw: Any) -> NLPService:
     return NLPService(
         blueprint_id="bp",
         target_topic=TOPIC,

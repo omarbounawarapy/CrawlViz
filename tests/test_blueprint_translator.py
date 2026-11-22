@@ -95,7 +95,7 @@ class TestPriorityStrategy:
     def test_allowed_set_matches_strategy_registry(self):
         # Guards against the exact bug class: this set must be *sourced
         # from*, not hand-copied from, priority.strategy.STRATEGY_REGISTRY.
-        from priority.strategy import STRATEGY_REGISTRY
+        from crawlviz.priority.strategy import STRATEGY_REGISTRY
 
         assert ALLOWED_PRIORITY_STRATEGIES == frozenset(STRATEGY_REGISTRY)
 

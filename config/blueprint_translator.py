@@ -240,7 +240,7 @@ class BlueprintTranslator:
                 raise BlueprintValidationError(f"stop_conditions is missing required key {sk!r}.")
         # priority_strategy is optional -- falls back to
         # config.DEFAULT_PRIORITY_STRATEGY when omitted -- but if the
-        # user did supply one, it must be a real priority/strategy.py entry.
+        # user did supply one, it must be a real src/crawlviz/priority/strategy.py entry.
         if "priority_strategy" in sc:
             _validate_priority_strategy(sc["priority_strategy"])
 

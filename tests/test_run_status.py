@@ -6,7 +6,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from infrastructure.call_budget import CallBudget
+from crawlviz.llm import CallBudget
+from crawlviz.telemetry import StatusBoard
 from routes import run as run_routes
 
 
@@ -17,6 +18,7 @@ def client(monkeypatch):
     monkeypatch.setattr(run_routes, "_current_task", None)
     monkeypatch.setattr(run_routes, "_current_crawler", None)
     monkeypatch.setattr(run_routes, "_last_outcome", None)
+    monkeypatch.setattr(run_routes, "_stop_requested", False)
     return TestClient(app)
 
 
@@ -32,6 +34,9 @@ def test_idle_reports_no_budget(client):
         "queues": None,
         "last_outcome": None,
         "last_error": None,
+        "crawl_state": "idle",
+        "crawl_id": None,
+        "board": None,
     }
 
 
@@ -45,6 +50,9 @@ def test_running_reports_calls_used_and_the_cap(client, monkeypatch):
         "queues": None,
         "last_outcome": None,
         "last_error": None,
+        "crawl_state": "running",
+        "crawl_id": None,
+        "board": None,
     }
 
 
@@ -73,4 +81,58 @@ def test_crawler_without_a_budget_reports_none(client, monkeypatch):
         "queues": None,
         "last_outcome": None,
         "last_error": None,
+        "crawl_state": "running",
+        "crawl_id": None,
+        "board": None,
     }
+
+
+def test_a_task_without_a_crawler_yet_is_starting(client, monkeypatch):
+    _running(monkeypatch, None)
+    assert client.get("/status").json()["crawl_state"] == "starting"
+
+
+def test_a_stop_request_while_running_is_stopping(client, monkeypatch):
+    _running(monkeypatch, SimpleNamespace())
+    monkeypatch.setattr(run_routes, "_stop_requested", True)
+    assert client.get("/status").json()["crawl_state"] == "stopping"
+
+
+@pytest.mark.parametrize("ended", ["finished", "stopped", "failed"])
+def test_an_ended_crawl_reports_how_it_ended(client, monkeypatch, ended):
+    outcome = (
+        run_routes._failed_outcome("demo.json", RuntimeError("boom"))
+        if ended == "failed"
+        else run_routes.CrawlOutcome("demo.json", ended)
+    )
+    monkeypatch.setattr(run_routes, "_last_outcome", outcome)
+    reply = client.get("/status").json()
+    assert (reply["running"], reply["crawl_state"], reply["last_outcome"]) == (False, ended, ended)
+
+
+def test_a_running_crawl_reports_its_id_and_its_board(client, monkeypatch):
+    board = StatusBoard()
+    board.report("embedder", "starting", "loading_model")
+    _running(monkeypatch, SimpleNamespace(crawl_id="demo-20261107", status_board=board))
+    reply = client.get("/status").json()
+    assert reply["crawl_id"] == "demo-20261107"
+    assert reply["board"]["subsystems"]["embedder"]["reason"] == "loading_model"
+    assert list(reply["board"]["subsystems"]) == list(board.snapshot().subsystems)
+
+
+def test_the_board_and_id_of_an_ended_crawl_stay_until_the_next_one(client, monkeypatch):
+    board = StatusBoard()
+    board.report("fetch", "ready")
+    ended = run_routes.CrawlOutcome(
+        "demo.json", "finished", crawl_id="demo-20261107", board=board.snapshot()
+    )
+    monkeypatch.setattr(run_routes, "_last_outcome", ended)
+    reply = client.get("/status").json()
+    assert reply["crawl_id"] == "demo-20261107"
+    assert reply["board"]["subsystems"]["fetch"]["state"] == "ready"
+
+
+def test_the_reply_is_declared_in_the_openapi_document(client):
+    paths = client.app.openapi()["paths"]
+    schema = paths["/status"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    assert schema == {"$ref": "#/components/schemas/CrawlStatusReply"}

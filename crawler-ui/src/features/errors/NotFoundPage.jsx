@@ -1,5 +1,4 @@
-import { Page } from "../common/Page";
-import { Button } from "../common/Form";
+import { Page, Button } from "../common";
 
 /** An address that matches no section. Shown inside the shell so the nav stays usable. */
 export default function NotFoundPage({ route, onNavigate }) {

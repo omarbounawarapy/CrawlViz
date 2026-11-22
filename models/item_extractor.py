@@ -1,6 +1,6 @@
 from typing import Any
 
-from utils import apply_selector
+from crawlviz.shared import apply_selector
 
 
 class ItemExtractor:

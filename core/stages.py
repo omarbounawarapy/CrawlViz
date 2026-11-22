@@ -11,30 +11,29 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from config import parse_content_types
 from config.blueprint_schema import stop_condition_defaults
 from config.paths import RuntimePaths
 from config.runtime_config import FetchConfig, RuntimeConfig
-from infrastructure import NetworkClient
-from infrastructure.call_budget import CallBudget
+from crawlviz.events import Annotator, CrawlStage, Fetcher, RelevanceScorer, WorkTracker
+from crawlviz.llm import CallBudget
+from crawlviz.shared import NetworkClient
 from models import Storage
 from pipelines import (
-    CanonicalizationPipeline,
-    DebuggingPipeline,
-    ExportingPipeline,
-    FilteringPipeline,
-    LoggingPipeline,
-    PriorityPipeline,
-    ProcessingPipeline,
-    RequestsPipeline,
-    RetryProcessor,
-    ScoringPipeline,
+    CanonicalizeStage,
+    CrawlLogSink,
+    DebugLogSink,
+    ExportSink,
+    ExtractStage,
+    FetchStage,
+    FilterStage,
+    PrioritizeStage,
+    RetryStage,
+    ScoreStage,
     StopConditions,
-    StoppingPipeline,
-    StoragePipeline,
-    TransformationPipeline,
+    StopController,
+    StorageSink,
+    TransformStage,
 )
-from pipelines.contracts import Annotator, CrawlStage, Fetcher, RelevanceScorer
 
 from .event_broker import EventBroker
 
@@ -101,18 +100,16 @@ Built = Mapping[str, CrawlStage]
 
 
 def _logging(inputs: StageInputs, built: Built) -> CrawlStage:
-    return LoggingPipeline(inputs.broker, inputs.crawl_id, log_root=inputs.paths.log_dir)
+    return CrawlLogSink(inputs.broker, inputs.crawl_id, log_root=inputs.paths.log_dir)
 
 
 def _canonicalization(inputs: StageInputs, built: Built) -> CrawlStage:
-    return CanonicalizationPipeline(
-        inputs.crawl_id, inputs.broker, export_path=inputs.paths.export_dir
-    )
+    return CanonicalizeStage(inputs.crawl_id, inputs.broker, export_path=inputs.paths.export_dir)
 
 
 def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.debugging
-    return DebuggingPipeline(
+    settings = inputs.config.pipelines.debug_log
+    return DebugLogSink(
         inputs.broker,
         inputs.crawl_id,
         enabled=inputs.config.observability.debug_enabled,
@@ -123,8 +120,8 @@ def _debugging(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _processing(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.processing
-    return ProcessingPipeline(
+    settings = inputs.config.pipelines.extract
+    return ExtractStage(
         inputs.broker,
         inputs.extraction,
         max_concurrency=settings.workers,
@@ -140,16 +137,15 @@ def build_page_fetcher(fetch: FetchConfig) -> NetworkClient:
         fetch.http_connect_timeout,
         allow_private_addresses=fetch.allow_private_addresses,
         max_response_bytes=fetch.max_response_bytes,
-        max_redirects=fetch.max_redirects,
     )
 
 
 def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
     fetch = inputs.config.fetch
-    return RequestsPipeline(
+    return FetchStage(
         inputs.broker,
         max_concurrency=inputs.fetch_concurrency,
-        max_queue_size=_queue_size(inputs.config.pipelines.requests.max_queue_size),
+        max_queue_size=_queue_size(inputs.config.pipelines.fetch.max_queue_size),
         fetcher=inputs.fetcher if inputs.fetcher is not None else build_page_fetcher(fetch),
         min_delay=fetch.min_delay,
         user_agent=fetch.user_agent,
@@ -166,14 +162,14 @@ def _requests(inputs: StageInputs, built: Built) -> CrawlStage:
         accept=fetch.accept,
         accept_encoding=fetch.accept_encoding,
         accept_language=fetch.accept_language,
-        content_types=parse_content_types(fetch.accepted_content_types),
+        page_budget=inputs.stop_conditions["max_nodes"],
     )
 
 
 def _retry(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.retry
     retries = inputs.config.retries
-    return RetryProcessor(
+    return RetryStage(
         inputs.storage,
         inputs.broker,
         requests_pipeline=built["requests"],
@@ -190,7 +186,7 @@ def _retry(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
     cascade = inputs.config.scoring_cascade
-    return ScoringPipeline(
+    return ScoreStage(
         inputs.scoring_service,
         inputs.nlp_service,
         inputs.broker,
@@ -199,7 +195,7 @@ def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
         high_score_llm_fraction=cascade.high_score_llm_fraction,
         low_score_sample_fraction=cascade.low_score_sample_fraction,
         high_score_random_fraction=cascade.high_score_random_fraction,
-        max_queue_size=_queue_size(inputs.config.pipelines.scoring.max_queue_size),
+        max_queue_size=_queue_size(inputs.config.pipelines.score.max_queue_size),
         percentile_bucketing=cascade.percentile_bucketing,
         low_percentile=cascade.low_percentile,
         high_percentile=cascade.high_percentile,
@@ -213,8 +209,8 @@ def _scoring(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _filtering(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.filtering
-    return FilteringPipeline(
+    settings = inputs.config.pipelines.filter
+    return FilterStage(
         inputs.broker,
         inputs.storage,
         max_concurrency=settings.workers,
@@ -223,10 +219,10 @@ def _filtering(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _priority(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.priority
+    settings = inputs.config.pipelines.prioritize
     priority = inputs.config.priority
     strategy = inputs.priority_strategy
-    return PriorityPipeline(
+    return PrioritizeStage(
         inputs.storage,
         inputs.broker,
         nlp_bias=priority.nlp_bias,
@@ -239,19 +235,18 @@ def _priority(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _transformation(inputs: StageInputs, built: Built) -> CrawlStage:
-    settings = inputs.config.pipelines.transformation
-    return TransformationPipeline(
+    settings = inputs.config.pipelines.transform
+    return TransformStage(
         inputs.broker,
         inputs.extraction,
         max_queue_size=_queue_size(settings.max_queue_size),
         max_concurrency=settings.workers,
-        max_regex_input_chars=settings.max_regex_input_chars,
     )
 
 
 def _storage(inputs: StageInputs, built: Built) -> CrawlStage:
     settings = inputs.config.pipelines.storage
-    return StoragePipeline(
+    return StorageSink(
         inputs.storage,
         inputs.broker,
         max_queue_size=_queue_size(settings.max_queue_size),
@@ -261,7 +256,7 @@ def _storage(inputs: StageInputs, built: Built) -> CrawlStage:
 
 
 def _exporting(inputs: StageInputs, built: Built) -> CrawlStage:
-    return ExportingPipeline(
+    return ExportSink(
         inputs.crawl_id,
         inputs.blueprint.get("blueprint_id"),
         inputs.blueprint,
@@ -273,16 +268,35 @@ def _exporting(inputs: StageInputs, built: Built) -> CrawlStage:
 
 def _stopping(inputs: StageInputs, built: Built) -> CrawlStage:
     conditions = inputs.stop_conditions
-    return StoppingPipeline(
+    return StopController(
         inputs.broker,
         StopConditions(
             max_nodes=conditions["max_nodes"],
             max_duration=conditions["max_duration"],
             no_progress_timeout=conditions["no_progress_timeout"],
             target_url=conditions["stop_url"],
+            frontier_idle=_frontier_probe(inputs.broker, built),
         ),
         check_interval=inputs.config.run.stop_check_interval,
     )
+
+
+def _frontier_probe(broker: EventBroker, built: Built) -> Callable[[], bool]:
+    """A check that no event is on the bus or being handled and no stage that feeds the
+    frontier holds work. The stages are checked once, here, so a stage that cannot report
+    pending work fails the build and not the stop controller's timer."""
+    trackers: list[WorkTracker] = []
+    for spec in STAGES:
+        if not spec.feeds_frontier:
+            continue
+        stage = built[spec.key]
+        if not isinstance(stage, WorkTracker):
+            raise TypeError(
+                f"{type(stage).__name__} feeds the frontier but reports no pending work; "
+                "give it has_pending_work or set feeds_frontier=False on its StageSpec"
+            )
+        trackers.append(stage)
+    return lambda: broker.is_idle and not any(stage.has_pending_work for stage in trackers)
 
 
 @dataclass(frozen=True)
@@ -292,23 +306,27 @@ class StageSpec:
     # for stages without one.
     setting: str | None
     build: Callable[[StageInputs, Built], CrawlStage]
+    # True unless the stage only records the crawl (a sink) or is the stop controller itself.
+    # The stop controller treats the frontier as drained when no stage that feeds it holds
+    # work, so a new stage counts by default and must opt out to be left out.
+    feeds_frontier: bool = True
 
 
 # Build, subscription and start order. A builder may use any stage above it.
 STAGES: tuple[StageSpec, ...] = (
-    StageSpec("logging", None, _logging),
-    StageSpec("canon", None, _canonicalization),
-    StageSpec("debug", "debugging", _debugging),
-    StageSpec("processing", "processing", _processing),
-    StageSpec("requests", "requests", _requests),
+    StageSpec("logging", None, _logging, feeds_frontier=False),
+    StageSpec("canon", None, _canonicalization, feeds_frontier=False),
+    StageSpec("debug", "debug_log", _debugging, feeds_frontier=False),
+    StageSpec("processing", "extract", _processing),
+    StageSpec("requests", "fetch", _requests),
     StageSpec("retry", "retry", _retry),
-    StageSpec("scoring", "scoring", _scoring),
-    StageSpec("filtering", "filtering", _filtering),
-    StageSpec("priority", "priority", _priority),
-    StageSpec("transformation", "transformation", _transformation),
+    StageSpec("scoring", "score", _scoring),
+    StageSpec("filtering", "filter", _filtering),
+    StageSpec("priority", "prioritize", _priority),
+    StageSpec("transformation", "transform", _transformation),
     StageSpec("storage", "storage", _storage),
-    StageSpec("exporting", None, _exporting),
-    StageSpec("stopping", None, _stopping),
+    StageSpec("exporting", None, _exporting, feeds_frontier=False),
+    StageSpec("stopping", None, _stopping, feeds_frontier=False),
 )
 
 

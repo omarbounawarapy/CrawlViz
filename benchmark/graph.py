@@ -24,7 +24,7 @@ import aiohttp
 from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
-from utils.html_utils import normalize_url
+from crawlviz.shared import normalize_url
 
 BASE_URL = "https://frozen.test"
 
@@ -66,7 +66,7 @@ MIN_RELEVANT_PAGES = 30
 
 
 def page_key(name: str) -> str:
-    """A page name as the crawler identifies it (utils.html_utils.normalize_url).
+    """A page name as the crawler identifies it (crawlviz.shared.normalize_url).
 
     The fetcher is asked for the crawler's canonical URL, so a graph keyed by
     raw non-ASCII names would answer 404 for every one of them."""

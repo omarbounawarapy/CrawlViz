@@ -3,6 +3,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from config.redaction import is_secret_name, safe_error_message, sanitize_url
+from crawlviz.shared import get_trace
 
 from .network_trace_events import (
     NET_RequestCreated,
@@ -10,10 +11,9 @@ from .network_trace_events import (
     NET_RequestFailed,
     NET_ResponseReceived,
 )
-from .trace_context import get_trace
 
 if TYPE_CHECKING:
-    from infrastructure import NetworkClient
+    from crawlviz.shared import NetworkClient
 
     from .emitter import TraceEmitter
 

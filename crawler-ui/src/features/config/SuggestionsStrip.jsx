@@ -1,5 +1,5 @@
 import { getTheme } from "../../theme";
-import { Button } from "../common/Form";
+import { Button } from "../common";
 
 const theme = getTheme();
 

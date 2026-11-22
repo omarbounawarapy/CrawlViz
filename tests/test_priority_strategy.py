@@ -10,7 +10,7 @@ just that it runs).
 
 import pytest
 
-from priority.strategy import (
+from crawlviz.priority.strategy import (
     STRATEGY_REGISTRY,
     aggressive,
     balanced,
@@ -66,7 +66,7 @@ class TestRegisterStrategy:
 class TestStrategiesShareContract:
     """All three strategies must satisfy the same signature and basic
     output contract, regardless of their internal weighting -- this is
-    what lets PriorityPipeline call `self.strategy(node, link, nlp_bias,
+    what lets PrioritizeStage call `self.strategy(node, link, nlp_bias,
     llm_bias)` without caring which one was configured.
     """
 
@@ -183,13 +183,13 @@ class TestBalancedWeighting:
 
 
 class TestPipelinePriorityScale:
-    """PriorityPipeline ranks LLM-scored and trusted links on one scale."""
+    """PrioritizeStage ranks LLM-scored and trusted links on one scale."""
 
     @staticmethod
     def _pipe():
-        from pipelines import PriorityPipeline
+        from pipelines import PrioritizeStage
 
-        return PriorityPipeline(storage=None, event_broker=None)
+        return PrioritizeStage(storage=None, event_broker=None)
 
     @staticmethod
     def _link(score):

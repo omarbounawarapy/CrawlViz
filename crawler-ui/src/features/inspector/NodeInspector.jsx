@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
 import { formatDuration, hasScore, hostnameOf, pathOf, shortId } from "../../utils/formatters";
-import { Tabs, TabPanel } from "../common/Form";
+import { Tabs, TabPanel } from "../common";
 
 const theme = getTheme();
 const S = createComponentStyles(theme);

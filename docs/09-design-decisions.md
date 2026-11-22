@@ -30,11 +30,11 @@ Each rationale is cited where the repository or the report gives direct evidence
 
 ### D3. The `node.ready` Future instead of a single unified queue
 
-**Problem:** `RequestsPipeline` and `ScoringPipeline` both react to a node's creation, but scoring can't meaningfully start until fetching, extraction, filtering, and transformation have all completed for that specific node. A naive shared trigger risks the scoring pipeline picking up a node before its data exists (the report's [§2.6.3, "Simultaneous Triggering and Synchronization Mechanism"](../report/rapport-english.pdf#page=17) out-of-order problem).
+**Problem:** `FetchStage` and `ScoreStage` both react to a node's creation, but scoring can't meaningfully start until fetching, extraction, filtering, and transformation have all completed for that specific node. A naive shared trigger risks the scoring pipeline picking up a node before its data exists (the report's [§2.6.3, "Simultaneous Triggering and Synchronization Mechanism"](../report/rapport-english.pdf#page=17) out-of-order problem).
 
 **Options/constraints:** A single combined fetch-then-score pipeline (removes the race, but serializes what could otherwise run concurrently, and re-couples two conceptually separate stages); polling / retry-until-ready (works, but wastes cycles and adds latency); a synchronization primitive scoped to the individual node.
 
-**Decision:** Each `Node` carries its own `asyncio.Future` (`node.ready`), resolved once that specific node's transformation completes. `ScoringPipeline` claims a node immediately on creation but blocks on that node's future before doing any work.
+**Decision:** Each `Node` carries its own `asyncio.Future` (`node.ready`), resolved once that specific node's transformation completes. `ScoreStage` claims a node immediately on creation but blocks on that node's future before doing any work.
 
 **Consequences:** No polling and no wasted cycles, and the two pipelines stay decoupled and independently concurrent. The trade-off is that the future's resolution point is coupled to *transformation* completing, which bundles item-shaping (conceptually unrelated to link scoring) into the gate that unblocks scoring; see `03-deep-dive-event-pipeline.md` for the detail.
 
@@ -56,7 +56,7 @@ Each rationale is cited where the repository or the report gives direct evidence
 
 **Problem:** The live crawl graph (for visualization) and the extracted data (for downstream use) have different lifetimes, different consumers, and different consistency needs. The graph needs to be mutated and queried constantly during a crawl; the export data needs to be durable and queryable after the crawl ends, independent of whether the process is still running.
 
-**Decision:** Two separate stores: in-memory `Storage`, owned exclusively by `StoragePipeline`, holding the live graph; SQLite `items.db`, written exclusively by `ExportingPipeline`, holding only extracted items (not links, not graph structure).
+**Decision:** Two separate stores: in-memory `Storage`, owned exclusively by `StorageSink`, holding the live graph; SQLite `items.db`, written exclusively by `ExportSink`, holding only extracted items (not links, not graph structure).
 
 **Consequences:** `routes/validation.py` reads `items.db` as a read-only SQL source, whether or not a crawl is running. The validation API (`routes/validation_db.py`) therefore needs no live-state concurrency handling. The cost is that the live graph is not durable: closing the process drops the in-memory nodes and links, while extracted items survive in SQLite. See the next document for the details.
 

@@ -1,6 +1,7 @@
 {
   "$defs": {
     "EmbeddingConfig": {
+      "additionalProperties": false,
       "description": "Semantic-space embedding backend (nlp/vector_space.py, nlp/space_updater.py).",
       "properties": {
         "backend": {
@@ -71,7 +72,8 @@
       "type": "object"
     },
     "ExportConfig": {
-      "description": "Item export / persistence batching (pipelines/exporting_pipeline.py).",
+      "additionalProperties": false,
+      "description": "Item export / persistence batching (pipelines/export_sink.py).",
       "properties": {
         "batch_size": {
           "default": 1,
@@ -91,7 +93,8 @@
       "type": "object"
     },
     "FetchConfig": {
-      "description": "Page fetching: politeness, backoff, timeouts and request headers\n(pipelines/requests_pipeline.py, infrastructure/network_client.py).",
+      "additionalProperties": false,
+      "description": "Page fetching: politeness, backoff, timeouts and request headers\n(pipelines/fetch_stage.py, infrastructure/network_client.py).",
       "properties": {
         "min_delay": {
           "default": 1.0,
@@ -313,31 +316,6 @@
           "ui_unit": "bytes",
           "ui_widget": "number"
         },
-        "accepted_content_types": {
-          "default": "text/html, application/xhtml+xml",
-          "description": "Content types a page fetch accepts, separated by commas.",
-          "minLength": 1,
-          "title": "Accepted Content Types",
-          "type": "string",
-          "ui_advanced": true,
-          "ui_apply": "next_run",
-          "ui_effect": "A page of any other content type is refused unread. Add a type here, for example text/plain, to crawl pages served that way.",
-          "ui_section": "Fetch",
-          "ui_widget": "text"
-        },
-        "max_redirects": {
-          "default": 5,
-          "description": "Redirects followed for one page.",
-          "minimum": 0,
-          "title": "Max Redirects",
-          "type": "integer",
-          "ui_advanced": true,
-          "ui_apply": "next_run",
-          "ui_effect": "A page that redirects more often than this is given up on, which stops a redirect loop. Each redirect is another request to the site.",
-          "ui_section": "Fetch",
-          "ui_unit": "",
-          "ui_widget": "number"
-        },
         "allow_private_addresses": {
           "default": false,
           "description": "Fetch pages from private, loopback and link-local addresses.",
@@ -354,6 +332,7 @@
       "type": "object"
     },
     "LlmConfig": {
+      "additionalProperties": false,
       "description": "Request parameters shared by every LLM provider call.",
       "properties": {
         "max_calls_per_crawl": {
@@ -436,6 +415,7 @@
       "type": "object"
     },
     "NlpConfig": {
+      "additionalProperties": false,
       "description": "NLP composite score (services/nlp_service.py).",
       "properties": {
         "composite_weights": {
@@ -510,6 +490,7 @@
       "type": "object"
     },
     "ObservabilityConfig": {
+      "additionalProperties": false,
       "properties": {
         "debug_enabled": {
           "default": true,
@@ -534,34 +515,6 @@
           "ui_effect": "Changing it means the live graph page has to connect to the new port.",
           "ui_section": "Observability",
           "ui_unit": "",
-          "ui_widget": "number"
-        },
-        "ui_ping_interval": {
-          "default": 20.0,
-          "description": "Seconds between keep-alive pings to the live graph.",
-          "exclusiveMinimum": 0.0,
-          "title": "Ui Ping Interval",
-          "type": "number",
-          "ui_advanced": true,
-          "ui_apply": "next_run",
-          "ui_effect": "Shorter notices a closed browser tab sooner but sends more small messages.",
-          "ui_section": "Observability",
-          "ui_step": 0.1,
-          "ui_unit": "s",
-          "ui_widget": "number"
-        },
-        "ui_ping_timeout": {
-          "default": 10.0,
-          "description": "Seconds the live graph has to answer a ping before the connection is dropped.",
-          "exclusiveMinimum": 0.0,
-          "title": "Ui Ping Timeout",
-          "type": "number",
-          "ui_advanced": true,
-          "ui_apply": "next_run",
-          "ui_effect": "Longer keeps a slow browser connected; shorter drops a vanished one sooner.",
-          "ui_section": "Observability",
-          "ui_step": 0.1,
-          "ui_unit": "s",
           "ui_widget": "number"
         },
         "snapshot_max_candidates": {
@@ -593,6 +546,7 @@
       "type": "object"
     },
     "PipelineSettings": {
+      "additionalProperties": false,
       "description": "Worker count and queue bound of one pipeline.",
       "properties": {
         "workers": {
@@ -635,30 +589,31 @@
       "type": "object"
     },
     "PipelinesConfig": {
-      "description": "Per-pipeline parallelism (core/crawler.py:_build_pipelines). Logging\nand canonicalization stay single-worker so output order is preserved.",
+      "additionalProperties": false,
+      "description": "Per-stage parallelism (core/stages.py:build_stages), one section per stage.\nLogging and canonicalization stay single-worker so output order is preserved.",
       "properties": {
-        "processing": {
+        "extract": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "requests": {
+        "fetch": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "scoring": {
+        "score": {
           "$ref": "#/$defs/PipelineSettings"
         },
         "storage": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "filtering": {
+        "filter": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "priority": {
+        "prioritize": {
           "$ref": "#/$defs/PipelineSettings"
         },
-        "transformation": {
-          "$ref": "#/$defs/TransformationSettings"
+        "transform": {
+          "$ref": "#/$defs/PipelineSettings"
         },
-        "debugging": {
+        "debug_log": {
           "$ref": "#/$defs/PipelineSettings"
         },
         "retry": {
@@ -669,7 +624,8 @@
       "type": "object"
     },
     "PriorityConfig": {
-      "description": "Mix of NLP and LLM scores in a link's priority (priority_pipeline.py).",
+      "additionalProperties": false,
+      "description": "Mix of NLP and LLM scores in a link's priority (prioritize_stage.py).",
       "properties": {
         "nlp_bias": {
           "default": 60,
@@ -743,6 +699,7 @@
       "type": "object"
     },
     "PromptsConfig": {
+      "additionalProperties": false,
       "description": "Wording of the scoring prompt (models/prompts.py). The output format\nand JSON constraints are fixed because the response parser depends on\nthem.",
       "properties": {
         "scoring_system": {
@@ -787,6 +744,7 @@
       "type": "object"
     },
     "ProvidersConfig": {
+      "additionalProperties": false,
       "description": "Request URL per LLM provider (config/config.py). Point a\nprovider at any compatible server; Gemini takes a base URL.",
       "properties": {
         "endpoints": {
@@ -807,7 +765,8 @@
       "type": "object"
     },
     "RetryConfig": {
-      "description": "Retry policy (pipelines/retry_processor.py).",
+      "additionalProperties": false,
+      "description": "Retry policy (pipelines/retry_stage.py).",
       "properties": {
         "max_request_retries": {
           "default": 3,
@@ -893,6 +852,7 @@
       "type": "object"
     },
     "RunConfig": {
+      "additionalProperties": false,
       "properties": {
         "seed": {
           "anyOf": [
@@ -946,6 +906,7 @@
       "type": "object"
     },
     "ScoringCascadeConfig": {
+      "additionalProperties": false,
       "description": "The two-stage NLP -> LLM relevance cascade's tunable thresholds and\nsampling fractions (report section 0.13, \"Evaluation multi-etapes\").",
       "properties": {
         "percentile_bucketing": {
@@ -1153,62 +1114,8 @@
       "title": "ScoringCascadeConfig",
       "type": "object"
     },
-    "TransformationSettings": {
-      "description": "Worker count and queue bound of the transformation pipeline, and its regex input cap.",
-      "properties": {
-        "workers": {
-          "default": 1,
-          "description": "Concurrent worker loops.",
-          "maximum": 64,
-          "minimum": 1,
-          "title": "Workers",
-          "type": "integer",
-          "ui_advanced": false,
-          "ui_apply": "live",
-          "ui_effect": "More workers drain this stage's queue faster, so the crawl moves faster, but more work is held in memory at once and more calls go out in parallel.",
-          "ui_section": "Pipelines",
-          "ui_unit": "",
-          "ui_widget": "stepper"
-        },
-        "max_queue_size": {
-          "anyOf": [
-            {
-              "minimum": 1,
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Queue bound; empty is unbounded.",
-          "title": "Max Queue Size",
-          "ui_advanced": false,
-          "ui_apply": "next_run",
-          "ui_effect": "Caps how much work waits for this stage. Once it is full, the stage before it waits, so memory stays flat and the crawl slows. Empty lets memory grow without limit.",
-          "ui_section": "Pipelines",
-          "ui_step": 100,
-          "ui_unit": "items",
-          "ui_widget": "limit"
-        },
-        "max_regex_input_chars": {
-          "default": 100000,
-          "description": "Longest text a regex transform step runs on.",
-          "exclusiveMinimum": 0,
-          "title": "Max Regex Input Chars",
-          "type": "integer",
-          "ui_advanced": true,
-          "ui_apply": "next_run",
-          "ui_effect": "A regex step skips a field longer than this and reports it as an error on the page, which keeps a slow pattern from stalling a worker. Raising it lets longer fields be transformed.",
-          "ui_section": "Pipelines",
-          "ui_unit": "characters",
-          "ui_widget": "number"
-        }
-      },
-      "title": "TransformationSettings",
-      "type": "object"
-    },
     "UrlConfig": {
+      "additionalProperties": false,
       "description": "Node identity rules (utils/html_utils.py:normalize_url). Changing them\nchanges which links count as the same page.",
       "properties": {
         "strip_fragment": {
@@ -1238,6 +1145,7 @@
       "type": "object"
     }
   },
+  "additionalProperties": false,
   "description": "Top-level runtime configuration: everything a researcher would want\nto see before trusting a crawl's results, beyond the per-run blueprint\n(target topic, seeds, extraction schema) already covered by\nconfig/blueprint_schema.py.",
   "properties": {
     "scoring_cascade": {

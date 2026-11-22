@@ -14,23 +14,23 @@ Before any relevance judgment happens, a candidate link has to become something 
 - the target URL,
 - local textual context (text near the link in the parent DOM node).
 
-This multi-source representation exists specifically because any one signal can be uninformative alone. A generic anchor text like "read more" or an empty local context wouldn't tell you much on its own, but combined with the other two sources, `FeatureExtractor` can still produce a useful comparison. `nlp/feature_extractor.py` builds a composite text string from these three sources and encodes it with `EmbeddingEngine` (`sentence-transformers/all-MiniLM-L6-v2`, loaded once and shared; `encode()` is not cached, so repeated strings are re-encoded).
+This multi-source representation exists specifically because any one signal can be uninformative alone. A generic anchor text like "read more" or an empty local context wouldn't tell you much on its own, but combined with the other two sources, `FeatureExtractor` can still produce a useful comparison. `src/crawlviz/nlp/feature_extractor.py` builds a composite text string from these three sources and encodes it with `EmbeddingEngine` (`sentence-transformers/all-MiniLM-L6-v2`, loaded once and shared; `encode()` is not cached, so repeated strings are re-encoded).
 
 Anchor text, URL, and local DOM context are combined into one composite string before a single embedding call, not compared as three separate signals.
 
 ## Stage 2: the semantic basis and the cold-start problem
 
-A link's relevance is computed as a similarity against a set of *basis vectors* representing the target topic, not against a single "topic vector." `nlp/vector_space.py`'s `VectorSpace` holds this set and answers two questions: how similar is a candidate to the *closest* basis vector (`max` cosine similarity, not average; a link only needs to match one facet of the topic well), and how novel or under-covered is a candidate relative to what's already been visited (via a `DBSCAN` clustering pass over visited-content embeddings, so "novelty" means "far from existing clusters," not just "different from the single most recent item").
+A link's relevance is computed as a similarity against a set of *basis vectors* representing the target topic, not against a single "topic vector." `src/crawlviz/nlp/vector_space.py`'s `VectorSpace` holds this set and answers two questions: how similar is a candidate to the *closest* basis vector (`max` cosine similarity, not average; a link only needs to match one facet of the topic well), and how novel or under-covered is a candidate relative to what's already been visited (via a `DBSCAN` clustering pass over visited-content embeddings, so "novelty" means "far from existing clusters," not just "different from the single most recent item").
 
 At the start of a crawl, this basis is thin. Only the seed pages and a short configured topic description exist. The report names this the cold-start problem ([§2.1.3: Multi-Facet Representation of the Topic](../report/rapport-english.pdf#page=11)): with too few basis vectors, the "semantic" similarity score degenerates into something closer to lexical overlap. CrawlViz's answer, also from the report, is LLM-generated **conceptual expansions**. At bootstrap, the LLM is prompted to generate a configurable number of topic-adjacent descriptions (the report's reference run used 50), which are embedded and added to the basis before crawling starts. This is a real, load-bearing use of the LLM that happens *before* any link scoring, not a fallback path.
 
-**The basis keeps growing during the crawl, not just at bootstrap.** `nlp/space_updater.py`'s `SpaceUpdater` subscribes to scoring-adjacent events, buffers incoming signal via `BufferManager`, and periodically (by count threshold or time threshold, whichever comes first) commits new vectors to the space through `NLPService`, never bypassing it, so the vector space always has one write path. This is what the report's [§2.4: Dynamic Enrichment of the Semantic Basis](../report/rapport-english.pdf#page=13) describes: LLM-produced expansions discovered *during* the crawl (from links the LLM did score) get folded back into the basis, so later-discovered regions of the topic benefit from what was learned scoring earlier ones. `space_store.py` persists this basis to disk, which is also what makes cross-session reuse of a learned semantic basis possible.
+**The basis keeps growing during the crawl, not just at bootstrap.** `src/crawlviz/nlp/space_updater.py`'s `SpaceUpdater` subscribes to scoring-adjacent events, buffers incoming signal via `BufferManager`, and periodically (by count threshold or time threshold, whichever comes first) commits new vectors to the space through `NLPService`, never bypassing it, so the vector space always has one write path. This is what the report's [§2.4: Dynamic Enrichment of the Semantic Basis](../report/rapport-english.pdf#page=13) describes: LLM-produced expansions discovered *during* the crawl (from links the LLM did score) get folded back into the basis, so later-discovered regions of the topic benefit from what was learned scoring earlier ones. `space_store.py` persists this basis to disk, which is also what makes cross-session reuse of a learned semantic basis possible.
 
 ## Stage 3: the composite NLP score and bucketing
 
 `LinkFeatureScorer.composite_score()` (`services/link_features.py`) combines several scalar signals, target similarity (dominant weight), coverage of under-explored regions, novelty versus visited content, contextual coherence with the parent page, and lexical keyword overlap, into a single number per link, `link._nlp_score`. This single score exists for one purpose: **deciding which bucket a link falls into**, not ranking the frontier (that's a separate, later computation, see below).
 
-`ScoringPipeline.bucket_links()` sorts every link in a node against two configurable thresholds (`LOW`, `HIGH`):
+`ScoreStage.bucket_links()` sorts every link in a node against two configurable thresholds (`LOW`, `HIGH`):
 
 | Bucket | Condition | What happens to it |
 |---|---|---|
@@ -47,19 +47,19 @@ Sampled links are batched, not sent one per request, into a single prompt built 
 **Do not confuse this with the priority strategy.** CrawlViz has two separately named, separately configured strategy concepts that share vocabulary:
 
 - **LLM scoring strategy** (`TOPICAL`, `PATHFINDING`, `EXPLORATION`, ...): defined in `models/prompts.py`, controls what the LLM is asked to optimize for when judging a link's relevance.
-- **Priority strategy** (`aggressive`, `balanced`, `exploration`): defined in `priority/strategy.py`, controls how a link's NLP signals and LLM score are weighted into the final number that ranks the crawl frontier.
+- **Priority strategy** (`aggressive`, `balanced`, `exploration`): defined in `src/crawlviz/priority/strategy.py`, controls how a link's NLP signals and LLM score are weighted into the final number that ranks the crawl frontier.
 
-Both use the name `exploration` for different concepts. `priority/strategy.py`'s module docstring flags the overlap.
+Both use the name `exploration` for different concepts. `src/crawlviz/priority/strategy.py`'s module docstring flags the overlap.
 
 ## Stage 5: priority, where NLP and LLM signals actually combine
 
-`priority/strategy.py` defines three named functions (`aggressive`, `balanced`, `exploration`), each taking a node, a link, and two bias weights (`nlp_bias`, `llm_bias`), and returning one number:
+`src/crawlviz/priority/strategy.py` defines three named functions (`aggressive`, `balanced`, `exploration`), each taking a node, a link, and two bias weights (`nlp_bias`, `llm_bias`), and returning one number:
 
 - **`aggressive`** weights raw target similarity heavily and applies a depth penalty, favoring staying close to the topic and to the seed.
 - **`balanced`** splits weight evenly between the LLM score and a blend of NLP signals.
 - **`exploration`** weights novelty and coverage-of-underexplored-regions more heavily than raw similarity, favoring breadth over tight topical focus.
 
-`PriorityPipeline` calls the configured strategy with `nlp_bias=60, llm_bias=40` for any link that has an LLM score, or `(1, 0)`, pure NLP, no LLM contribution, for `trusted_no_llm` links that skipped the LLM stage entirely. This second case is a direct implementation of the report's claim, in the same section, that fast-tracked high-confidence links get their priority "computed uniquely from NLP signals depending on the strategy."
+`PrioritizeStage` calls the configured strategy with `nlp_bias=60, llm_bias=40` for any link that has an LLM score, or `(1, 0)`, pure NLP, no LLM contribution, for `trusted_no_llm` links that skipped the LLM stage entirely. This second case is a direct implementation of the report's claim, in the same section, that fast-tracked high-confidence links get their priority "computed uniquely from NLP signals depending on the strategy."
 
 ```mermaid
 flowchart LR
@@ -76,8 +76,8 @@ flowchart LR
     LLM --> LLMScore["link.llm_score"]
     LLM --> Expansions["conceptual expansions"]
     Expansions -.feeds back.-> VS
-    LLMScore --> Priority["PriorityPipeline<br/>strategy(node, link, 60, 40)"]
-    Trusted --> Priority2["PriorityPipeline<br/>strategy(node, link, 1, 0)"]
+    LLMScore --> Priority["PrioritizeStage<br/>strategy(node, link, 60, 40)"]
+    Trusted --> Priority2["PrioritizeStage<br/>strategy(node, link, 1, 0)"]
     Priority --> NewNode["new child Node<br/>priority = computed value"]
     Priority2 --> NewNode
 ```

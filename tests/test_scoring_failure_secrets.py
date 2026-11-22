@@ -11,8 +11,8 @@ from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
 from config.redaction import MAX_BOUNDED_TEXT_CHARS, TEXT_CUT_MARK
-from events import ScoringFailedEvent
-from pipelines.scoring_pipeline import ScoringPipeline
+from crawlviz.events import ScoringFailedEvent
+from pipelines.score_stage import ScoreStage
 
 FAKE_KEY = "FAKEKEY-0123456789"
 
@@ -50,8 +50,8 @@ class _FailingNlp:
         raise aiohttp.ClientResponseError(info, (), status=429, message="Too Many Requests")
 
 
-def _pipeline(broker: _Broker, nlp: _FailingNlp) -> ScoringPipeline:
-    return ScoringPipeline(
+def _pipeline(broker: _Broker, nlp: _FailingNlp) -> ScoreStage:
+    return ScoreStage(
         scoring_service=object(),  # type: ignore[arg-type]
         nlp_service=nlp,  # type: ignore[arg-type]
         event_broker=broker,

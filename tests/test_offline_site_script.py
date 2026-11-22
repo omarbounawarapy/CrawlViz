@@ -6,14 +6,15 @@ from typing import Any
 
 import aiohttp
 import pytest
+from pydantic import ValidationError
 
 from config import TEMPLATES_DIR
 from config.blueprint_schema import validate_blueprint
 from config.runtime_config import default_runtime_config
-from offline import build_offline_session
-from offline.session import SITE_SCRIPTS_DIR, find_site_script
-from offline.site_script import SiteScript
-from pipelines.requests_pipeline import is_rate_limited
+from crawlviz.offline import build_offline_session
+from crawlviz.offline.session import SITE_SCRIPTS_DIR, find_site_script
+from crawlviz.offline.site_script import SiteScript
+from pipelines.fetch_stage import is_rate_limited
 
 LONG_DEMO = "offline_demo_long.json"
 
@@ -75,7 +76,7 @@ def test_the_script_budget_and_pace_apply_over_the_defaults() -> None:
     config = script.apply_config(default_runtime_config())
 
     assert config.llm.max_calls_per_crawl == script.config["llm"]["max_calls_per_crawl"]
-    assert config.pipelines.requests.workers == script.config["pipelines"]["requests"]["workers"]
+    assert config.pipelines.fetch.workers == script.config["pipelines"]["fetch"]["workers"]
 
 
 def test_a_setting_the_caller_changed_wins_over_the_script() -> None:
@@ -88,7 +89,7 @@ def test_a_setting_the_caller_changed_wins_over_the_script() -> None:
     config = script.apply_config(chosen)
 
     assert config.llm.max_calls_per_crawl == caller_budget
-    assert config.pipelines.requests.workers == script.config["pipelines"]["requests"]["workers"]
+    assert config.pipelines.fetch.workers == script.config["pipelines"]["fetch"]["workers"]
 
 
 async def test_the_site_answers_429_during_an_episode_then_recovers() -> None:
@@ -135,5 +136,17 @@ def test_a_script_with_an_unknown_key_is_refused() -> None:
                 "rate_limit_episodes": [],
                 "config": {},
                 "episodes": [],
+            }
+        )
+
+
+def test_a_setting_the_config_does_not_have_is_refused_when_the_script_loads() -> None:
+    with pytest.raises(ValidationError, match="min_delay_typo"):
+        SiteScript.model_validate(
+            {
+                "schema_version": 1,
+                "site": {"n_pages": 20, "out_degree": 3, "relevant_fraction": 0.3, "seed": 1},
+                "rate_limit_episodes": [],
+                "config": {"fetch": {"min_delay_typo": 1.0}},
             }
         )

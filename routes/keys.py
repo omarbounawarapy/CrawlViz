@@ -1,13 +1,12 @@
 """Masked API key management. Full keys are never returned."""
 
-import os
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from infrastructure.key_manager import KeyManager
-from infrastructure.llm_handler import LlmHandler
+from crawlviz.llm.key_manager import KeyManager
+from crawlviz.llm.llm_handler import LlmHandler
 
 from . import run as run_routes
 from .config_support import get_paths
@@ -16,11 +15,7 @@ router = APIRouter(tags=["config"])
 
 
 def get_key_manager() -> KeyManager:
-    path = get_paths().keys_file
-    if not path.exists():
-        path.write_text("{}", encoding="utf-8")
-        os.chmod(path, 0o600)
-    return KeyManager(keys_file=path)
+    return KeyManager.load_or_create(get_paths().keys_file)
 
 
 def _reload_running_keys() -> None:

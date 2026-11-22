@@ -75,7 +75,7 @@
   }
 }
 
-/* Touch and stylus: every button reaches the 44px touch target. */
+/* Touch and stylus: every button reaches the 44px target (A11Y-1). */
 @media (pointer: coarse) {
   .button {
     min-block-size: var(--size-target-touch);

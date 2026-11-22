@@ -3,6 +3,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from config.redaction import safe_error_message
+from crawlviz.shared import get_trace
 
 from .llm_trace_events import (
     LLM_PromptBuilt,
@@ -11,10 +12,9 @@ from .llm_trace_events import (
     LLM_ResponseParsed,
     LLM_ResponseReceived,
 )
-from .trace_context import get_trace
 
 if TYPE_CHECKING:
-    from infrastructure import LlmHandler
+    from crawlviz.llm import LlmHandler
 
     from .emitter import TraceEmitter
 
@@ -85,7 +85,11 @@ class TracedLlmHandler:
             )
 
             output_keys = list(result.keys()) if isinstance(result, dict) else []
-            token_usage = result.get("usage") if isinstance(result, dict) else None
+            # The parsed reply holds no usage; LlmHandler leaves it on the context.
+            token_usage = None
+            if hasattr(context, "get_usage"):
+                input_tokens, output_tokens = context.get_usage()
+                token_usage = {"input_tokens": input_tokens, "output_tokens": output_tokens}
             await self._tracer.emit(
                 LLM_ResponseParsed(
                     trace_id=trace_id,

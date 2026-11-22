@@ -31,7 +31,7 @@ from config import (
     PERCENTILE_MIN_LINKS,
 )
 from core.event_broker import EventBroker
-from events import (
+from crawlviz.events import (
     EmptyScoreResultsEvent,
     HighScoreLinksEvent,
     LinksScoredEvent,
@@ -43,18 +43,19 @@ from events import (
     ScoringFailedEvent,
     StopCrawlEvent,
 )
-from models import Domain, Link, Node, Storage
+from crawlviz.shared import Domain, Link, Node
+from models import Storage
 from pipelines import (
-    FilteringPipeline,
-    PriorityPipeline,
-    ProcessingPipeline,
-    RequestsPipeline,
-    RetryProcessor,
-    ScoringPipeline,
+    FilterStage,
+    PrioritizeStage,
+    ExtractStage,
+    FetchStage,
+    RetryStage,
+    ScoreStage,
     StopConditions,
-    StoppingPipeline,
-    StoragePipeline,
-    TransformationPipeline,
+    StopController,
+    StorageSink,
+    TransformStage,
 )
 
 BASE_URL = "https://synthetic.test"
@@ -134,9 +135,9 @@ class Recorder:
 # =========================================================
 
 
-def make_scoring(broker, nlp, llm, rng=None) -> ScoringPipeline:
-    """ScoringPipeline built with the same arguments core.Crawler passes."""
-    return ScoringPipeline(
+def make_scoring(broker, nlp, llm, rng=None) -> ScoreStage:
+    """ScoreStage built with the same arguments core.Crawler passes."""
+    return ScoreStage(
         llm,
         nlp,
         broker,
@@ -194,7 +195,7 @@ class Crawl:
         self.recorder = Recorder()
 
         b, s = self.broker, self.storage
-        self.requests = RequestsPipeline(
+        self.requests = FetchStage(
             b,
             max_concurrency=1,
             fetcher=site,
@@ -202,15 +203,15 @@ class Crawl:
             rng=random.Random(f"{seed}:requests"),
         )
         self.scoring = make_scoring(b, nlp, llm, rng=random.Random(f"{seed}:scoring"))
-        self.retry = RetryProcessor(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
+        self.retry = RetryStage(s, b, requests_pipeline=self.requests, retry_base_delay=0.01)
         self.pipelines = [
             self.requests,
-            ProcessingPipeline(b, EXTRACTION),
-            FilteringPipeline(b, s),
-            TransformationPipeline(b, EXTRACTION),
-            StoragePipeline(s, b),
+            ExtractStage(b, EXTRACTION),
+            FilterStage(b, s),
+            TransformStage(b, EXTRACTION),
+            StorageSink(s, b),
             self.scoring,
-            PriorityPipeline(s, b),
+            PrioritizeStage(s, b),
             self.retry,
         ]
         for pipeline in self.pipelines:
@@ -254,7 +255,7 @@ class Crawl:
 
 async def test_higher_priority_node_is_fetched_first():
     site = SyntheticSite({})
-    requests = RequestsPipeline(EventBroker(), max_concurrency=1, fetcher=site, min_delay=0)
+    requests = FetchStage(EventBroker(), max_concurrency=1, fetcher=site, min_delay=0)
     domain = Domain("synthetic", BASE_URL, ".//a")
 
     for node_id, (page, priority) in enumerate([("mid", 20.0), ("best", 40.0), ("worst", 0.5)]):
@@ -312,9 +313,9 @@ async def _score_one_ready_node(nlp_score: float, run_for: float):
     scoring = make_scoring(broker, nlp, FixedLlm())
     pipelines = [
         scoring,
-        RetryProcessor(storage, broker),
-        PriorityPipeline(storage, broker),
-        StoragePipeline(storage, broker),
+        RetryStage(storage, broker),
+        PrioritizeStage(storage, broker),
+        StorageSink(storage, broker),
     ]
     recorder = Recorder()
     broker.subscribe(scoring, [NodeAddedEvent, ScoreRescheduledEvent])
@@ -385,11 +386,11 @@ async def test_scoring_finishes_after_stop_with_a_node_in_flight():
 
 
 async def test_gateway_stops_when_the_crawl_stops():
-    from ui_bridge import CrawlStateSnapshot, KeepAlive, TelemetryBridge, UIWebSocketGateway
+    from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
 
     broker = EventBroker()
     snapshot = CrawlStateSnapshot()
-    gateway = UIWebSocketGateway(snapshot, KeepAlive(20, 10), port=0)
+    gateway = UIWebSocketGateway(snapshot, port=0)
     telemetry = TelemetryBridge(snapshot, gateway)
     telemetry.register_handlers()
     broker.subscribe(telemetry, [StopCrawlEvent])
@@ -413,7 +414,7 @@ async def test_gateway_stops_when_the_crawl_stops():
 
 async def test_time_limit_fires_without_further_events():
     broker = EventBroker()
-    stopping = StoppingPipeline(
+    stopping = StopController(
         broker, StopConditions(max_nodes=100, max_duration=0.2, no_progress_timeout=60)
     )
     task = asyncio.create_task(stopping.start())
@@ -435,7 +436,7 @@ async def test_link_back_to_the_seed_creates_no_child():
     storage = Storage()
     domain = Domain("synthetic", BASE_URL, ".//a")
     seed = seed_node(storage, domain, "page")
-    pipeline = StoragePipeline(storage, _Broker())
+    pipeline = StorageSink(storage, _Broker())
 
     await pipeline._on_priority_calculated(
         types.SimpleNamespace(
@@ -458,7 +459,7 @@ async def _run_stopping_crawl(max_nodes: int, max_depth: int):
     crawl = Crawl(SyntheticSite(CHAIN), FixedRelevance(0.5), FixedLlm())
     storage_pipeline = crawl.pipelines[4]
     storage_pipeline.max_depth = max_depth
-    stopping = StoppingPipeline(
+    stopping = StopController(
         crawl.broker,
         StopConditions(max_nodes=max_nodes, max_duration=60, no_progress_timeout=60),
     )
@@ -510,7 +511,7 @@ async def test_decision_events_keep_values_after_rescore():
 
 async def test_scoring_runs_under_a_trace_bound_to_the_node():
     """Trace events emitted while scoring a node carry a non-empty trace_id."""
-    from traceability import get_trace
+    from crawlviz.shared import get_trace
 
     seen = []
 

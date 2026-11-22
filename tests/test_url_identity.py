@@ -1,5 +1,4 @@
-from models.link import Link
-from utils.html_utils import normalize_url
+from crawlviz.shared import Link, normalize_url
 
 
 def test_fragment_and_trailing_slash_map_to_one_url():

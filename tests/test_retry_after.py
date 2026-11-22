@@ -9,10 +9,10 @@ import pytest
 from multidict import CIMultiDict, CIMultiDictProxy
 from yarl import URL
 
-from events import RequestFailedEvent
-from models import Domain, Node
+from crawlviz.events import RequestFailedEvent
+from crawlviz.shared import Domain, Node
+from pipelines.fetch_stage import FetchStage, is_rate_limited
 from pipelines.http_failure import MAX_RETRY_AFTER_SECONDS, retry_after_seconds, status_of
-from pipelines.requests_pipeline import RequestsPipeline, is_rate_limited
 
 HOST = "slow.test"
 RETRY_AFTER_SECONDS = 120.0
@@ -96,9 +96,9 @@ class RefusingFetcher:
 
 async def fail_one_fetch(
     error: aiohttp.ClientResponseError,
-) -> tuple[RequestsPipeline, RecordingBroker]:
+) -> tuple[FetchStage, RecordingBroker]:
     broker = RecordingBroker()
-    pipeline = RequestsPipeline(
+    pipeline = FetchStage(
         broker,
         max_concurrency=1,
         fetcher=RefusingFetcher(error),

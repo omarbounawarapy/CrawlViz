@@ -358,6 +358,7 @@ export default function GraphView({
   const svgRef = useRef(null);
   const canvasRef = useRef(null);
   const engineRef = useRef(null);
+  const graphWrapRef = useRef(null);
   const nodeMapRef = useRef(new Map());
   const zoomRef = useRef(null);
   const userZoomed = useRef(false);
@@ -1307,27 +1308,35 @@ export default function GraphView({
 
   // Keyboard: + and - step, 0 fits the plate, F centres on the selection. Only while focus is in
   // the graph (a single-key shortcut must not fire from anywhere on the page), never while typing.
-  const onGraphKey = (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const t = e.target;
-    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable))
-      return;
-    const eng = engineRef.current;
-    if (!eng) return;
-    if (e.key === "+" || e.key === "=") {
-      e.preventDefault();
-      eng.zoomBy(ZOOM_STEP);
-    } else if (e.key === "-" || e.key === "_") {
-      e.preventDefault();
-      eng.zoomBy(1 / ZOOM_STEP);
-    } else if (e.key === "0") {
-      e.preventDefault();
-      eng.fit();
-    } else if ((e.key === "f" || e.key === "F") && selectedRef.current) {
-      e.preventDefault();
-      eng.focusOn(selectedRef.current);
-    }
-  };
+  // The listener sits on the wrapper because the keys come from the toolbar, the zoom buttons and
+  // the nodes the d3 engine draws; the wrapper itself is not a control.
+  useEffect(() => {
+    const wrap = graphWrapRef.current;
+    if (!wrap) return undefined;
+    const onGraphKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable))
+        return;
+      const eng = engineRef.current;
+      if (!eng) return;
+      if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        eng.zoomBy(ZOOM_STEP);
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        eng.zoomBy(1 / ZOOM_STEP);
+      } else if (e.key === "0") {
+        e.preventDefault();
+        eng.fit();
+      } else if ((e.key === "f" || e.key === "F") && selectedRef.current) {
+        e.preventDefault();
+        eng.focusOn(selectedRef.current);
+      }
+    };
+    wrap.addEventListener("keydown", onGraphKey);
+    return () => wrap.removeEventListener("keydown", onGraphKey);
+  }, []);
 
   const fold = auto.folded
     ? {
@@ -1343,7 +1352,7 @@ export default function GraphView({
     : null;
 
   return (
-    <div style={styles.graphWrap} onKeyDown={onGraphKey}>
+    <div ref={graphWrapRef} style={styles.graphWrap}>
       {heading && <h1 className="sr-only">{heading}</h1>}
       {/* The toolbar comes first in the tab order, as it reads on screen: find, then the plate. */}
       {nodes.size > 0 && (

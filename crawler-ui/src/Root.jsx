@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import App from "./App.jsx";
-import Landing from "./features/landing/Landing.jsx";
-import SpiderLoader from "./features/loading/SpiderLoader.jsx";
+import { GlossaryScope } from "./features/config";
+import { Landing } from "./features/landing";
+import { SpiderLoader } from "./features/loading";
 import { useRoute } from "./hooks/useRoute";
 
 const BOOT_MS = 1200; // long enough for the spider to land and the ring to close
@@ -87,7 +88,13 @@ export default function Root() {
 
   return (
     <>
-      {isLanding ? <Landing onEnter={enter} instant={!playIntro} /> : <App />}
+      {isLanding ? (
+        <Landing onEnter={enter} instant={!playIntro} />
+      ) : (
+        <GlossaryScope>
+          <App />
+        </GlossaryScope>
+      )}
       {loading && <SpiderLoader progress={progress} done={ready} onExit={onExit} onSkip={() => setReady(true)} />}
     </>
   );

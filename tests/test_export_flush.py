@@ -7,18 +7,18 @@ from pathlib import Path
 import pytest
 
 from core.event_broker import EventBroker
-from pipelines.exporting_pipeline import ExportingPipeline
+from pipelines.export_sink import ExportSink
 
 BLUEPRINT = {"extraction": {"fields": {"title": {"export_type": "text"}}}}
 
 
-def _pipeline(db_path: str) -> ExportingPipeline:
-    pipe = ExportingPipeline("c1", "bp", BLUEPRINT, EventBroker(), db_path=db_path)
+def _pipeline(db_path: str) -> ExportSink:
+    pipe = ExportSink("c1", "bp", BLUEPRINT, EventBroker(), db_path=db_path)
     pipe._init_db()
     return pipe
 
 
-def _buffer_row(pipe: ExportingPipeline, table: str, item_hash: str) -> None:
+def _buffer_row(pipe: ExportSink, table: str, item_hash: str) -> None:
     node = types.SimpleNamespace(get_full_url=lambda: "https://example.com/a")
     pipe._buffer.append((table, node, {"title": "kept"}, BLUEPRINT["extraction"], item_hash))
 

@@ -5,15 +5,33 @@ All notable changes to this project are documented here. Format follows [Keep a 
 ## [Unreleased]
 
 ### Recent changes
+- `BasePipeline` and the stage contracts moved from `pipelines/base_pipeline.py` and `pipelines/contracts.py` to `src/crawlviz/events/`. Import them with `from crawlviz.events import BasePipeline`. The old `pipelines/` paths are gone.
+- The `llm` package lives under `src/crawlviz/llm/`: `LlmHandler`, the six provider translators, `KeyManager`, token usage, endpoints, the call budget and the typed layer. Import them with `from crawlviz.llm import ...`. The old `infrastructure/` paths are gone.
+- `Link`, `Node` and `Domain` moved from `models/` to `src/crawlviz/shared/`. Import them with `from crawlviz.shared import Link, Node, Domain`. The old `models/` paths are gone.
+- The shared kernel lives under `src/crawlviz/shared/`: the guarded network client, URL guard, fetch errors, trace context, log redaction, atomic writes, hashing and HTML helpers. Import them with `from crawlviz.shared import ...`. The `utils/` folder is gone, and `infrastructure/` keeps only the async file handler and the log writer.
+- The `events`, `nlp`, `priority` and `offline` packages live under `src/crawlviz/`. Imports use `from crawlviz.nlp import ...` and the same form for the other three.
+- `settings.json`, `presets.json`, saved blueprints and run `manifest.json` carry `schema_version`. Files without it still load, a file with a newer version is refused with an "Update CrawlViz" message, and a settings reset replaces a refused settings file. `presets.json` nests the presets under a `presets` key.
+- The `pipelines.<key>` settings sections are `extract`, `fetch`, `score`, `storage`, `filter`, `prioritize`, `transform`, `debug_log` and `retry`. The old names are still read in files, presets, REST patches and live patches; a patch with both names for one section is refused. The `queues` object of `GET /status` uses the new keys.
+- Unknown settings keys are refused with a message that names the key path.
 - Blueprints reject a topic with no word characters.
 - Landing and graph copy uses plain words.
-- The development server no longer restarts when files under a local `.claude` folder change.
+- The dev server reload ignores `.claude`, so agent worktrees no longer restart the API.
 - New `offline_demo_long.json` blueprint for a longer offline run with two 429 episodes and an LLM call budget (see the README).
+- Logs are JSON lines on stderr by default, with `ts`, `level`, `logger`, `message`, `exception` and the `crawl_id`, `node_id` and `trace_id` that are set. `CRAWLVIZ_LOG_FORMAT=text` gives readable lines and `CRAWLVIZ_LOG_LEVEL` sets the level.
+- Log text has registered secrets (session token, provider keys) and credential-shaped text (`Bearer` headers, `key=` and `token=` pairs) replaced with `[redacted]`.
+- `GET /health` reports that the process is up and `GET /ready` reports whether settings load and the write folders are usable, with 503 and the failed check names when not. Both need the session token.
 - A provider endpoint URL with a user name, password or key is refused when saved. A settings file saved earlier with one is cleaned when loaded (the credential is removed, the file is rewritten, a warning names the provider). Keys belong in the keys store.
 - Traces and scoring failure events record an error's class and HTTP status, not its text; network trace URLs drop user info, query and fragment. The scoring failure log keeps the error text with secrets masked.
 - The benchmark job log masks secrets and cuts lines over 4096 characters with a ` ...[cut]` mark; a job always ends, even if its output cannot be read.
 - Request validation errors (422) from every route return `{"detail": {"errors": [{"path", "message"}]}}` and never echo the submitted value. `GET /config` returns 422 with a message when the stored settings are invalid, instead of 500.
 - Security and politeness hardening in progress, see SECURITY.md.
+- `max_nodes` is a hard cap: a run stopped by `MAX_NODES_REACHED` fetches exactly `max_nodes` pages whatever the worker count. Failed requests do not count, so requests sent can exceed it.
+- A crawl whose frontier drains stops at once with the new stop reason `FRONTIER_EXHAUSTED`, instead of waiting for `NO_PROGRESS`.
+- The crawl ends when the event broker or the UI gateway ends. A stage that returns early, such as the debug log sink with debug off, no longer ends it.
+- A stopped crawl no longer keeps fetching nodes that wait in a bounded fetch queue.
+- `GET /status` returns the crawl id, its state and a subsystem status board, and the UI socket can send `SUBSYSTEM_STATUS`. No subsystem reports to the board yet, so every entry shows `off`.
+- Token usage is read from provider responses and recorded in the LLM trace events.
+- A load harness in `tests/load/` measures a crawl on a synthetic site; a 200-page smoke run is in the normal test suite.
 
 ### Added
 - Multi-provider LLM support: OpenRouter, OpenAI, Anthropic, Gemini, NVIDIA (NIM), and Groq, selectable per blueprint via `scoring.params.scoring_type` / `expansion.llm_type`, behind a shared `LlmHandler` abstraction.

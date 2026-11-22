@@ -11,6 +11,8 @@ GET  /config/stored     only the values that differ from the defaults
 PUT  /config            merge a partial config, validate, persist
 PUT  /config/replace    replace the stored settings with a full config
 POST /config/validate   validate a partial config without saving
+                        (/config/replace too: an uploaded settings.json copy may carry
+                        schema_version and the old pipeline section names)
 POST /config/effective  saved settings with per-run overrides applied
 GET  /config/export     the stored settings, for download
 GET  /config/presets    built-in and saved presets
@@ -32,7 +34,6 @@ construction. Fields flagged ``ui_apply: live`` can also be pushed to the
 running crawl with PATCH /config/live (not persisted; PUT /config does that).
 """
 
-import json
 import os
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -41,8 +42,8 @@ from pydantic import BaseModel, ValidationError
 from config import settings_store as store
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core.live_settings import LiveSettingsError
-from infrastructure.llm_handler import LlmHandler
-from models.link import Link
+from crawlviz.llm.llm_handler import LlmHandler
+from crawlviz.shared import Link, load_json
 from models.prompts import STRATEGIES, PromptBuilder
 
 from . import run as run_routes
@@ -51,7 +52,6 @@ from .config_support import (
     ConfigPatch,
     get_paths,
     report_settings_file_errors,
-    validation_errors,
     validation_http_error,
 )
 from .keys import get_key_manager
@@ -60,6 +60,11 @@ from .keys import router as keys_router
 router = APIRouter(tags=["config"], dependencies=[Depends(report_settings_file_errors)])
 router.include_router(presets_router)
 router.include_router(keys_router)
+
+
+SAVED_SETTINGS_INVALID_MESSAGE = (
+    "The saved settings are not valid. Fix the listed settings, or reset them from the config page."
+)
 
 
 @router.get("/config/schema")
@@ -75,11 +80,12 @@ def get_config() -> dict:
     try:
         return store.load_runtime_config(get_paths().settings_file).model_dump()
     except ValidationError as exc:
-        raise validation_http_error(
-            exc,
-            "The saved settings are not valid. Fix the listed settings, or reset them "
-            "from the config page.",
-        )
+        raise validation_http_error(exc, SAVED_SETTINGS_INVALID_MESSAGE)
+    except store.SettingsFileError as exc:
+        # Settings that parse but hold invalid values list each entry, so the form can show them.
+        if isinstance(exc.__cause__, ValidationError):
+            raise validation_http_error(exc.__cause__, str(exc)) from exc
+        raise
 
 
 @router.get("/config/defaults")
@@ -103,7 +109,8 @@ def put_config(body: ConfigPatch) -> dict:
 @router.put("/config/replace")
 def replace_config(body: ConfigPatch) -> dict:
     try:
-        return store.replace_settings(get_paths().settings_file, body.values).model_dump()
+        uploaded = store.load_uploaded_settings(body.values)
+        return store.replace_settings(get_paths().settings_file, uploaded).model_dump()
     except ValidationError as exc:
         raise validation_http_error(exc)
 
@@ -111,9 +118,10 @@ def replace_config(body: ConfigPatch) -> dict:
 @router.post("/config/validate")
 def validate_config(body: ConfigPatch) -> dict:
     try:
-        store.load_runtime_config(get_paths().settings_file, body.values)
+        uploaded = store.load_uploaded_settings(body.values)
+        store.load_runtime_config(get_paths().settings_file, uploaded)
     except ValidationError as exc:
-        return {"valid": False, "errors": validation_errors(exc)}
+        return {"valid": False, "errors": store.validation_errors(exc)}
     return {"valid": True, "errors": []}
 
 
@@ -228,8 +236,7 @@ def get_providers() -> dict:
         if not name.endswith(".json"):
             continue
         try:
-            with open(os.path.join(templates_dir, name), encoding="utf-8") as f:
-                bp = json.load(f)
+            bp = load_json(os.path.join(templates_dir, name))
             pairs = [
                 (
                     bp["scoring"]["params"]["scoring_type"],

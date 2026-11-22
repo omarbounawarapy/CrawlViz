@@ -7,10 +7,10 @@ from config.paths import RuntimePaths
 from config.runtime_config import PipelinesConfig, RuntimeConfig, default_runtime_config
 from core.event_broker import EventBroker
 from core.stages import STAGES, StageInputs, build_stages, priority_strategy_name
-from infrastructure.call_budget import CallBudget
+from crawlviz.events import CrawlStage
+from crawlviz.llm import CallBudget
 from models import Storage
-from pipelines import FilteringPipeline, RetryProcessor
-from pipelines.contracts import CrawlStage
+from pipelines import FilterStage, RetryStage
 
 BLUEPRINT: dict[str, Any] = {
     "blueprint_id": "test-bp",
@@ -72,11 +72,11 @@ def test_build_stages_follows_the_registry_order(tmp_path: Path) -> None:
 
 def test_settings_reach_the_stage_they_name(tmp_path: Path) -> None:
     config = default_runtime_config()
-    config.pipelines.filtering.workers = 7
+    config.pipelines.filter.workers = 7
     stages = build_stages(inputs(tmp_path, config))
     filtering, retry = stages["filtering"], stages["retry"]
-    assert isinstance(filtering, FilteringPipeline) and filtering.max_concurrency == 7
-    assert isinstance(retry, RetryProcessor) and retry.requests_pipeline is stages["requests"]
+    assert isinstance(filtering, FilterStage) and filtering.max_concurrency == 7
+    assert isinstance(retry, RetryStage) and retry.requests_pipeline is stages["requests"]
 
 
 def test_priority_strategy_defaults_to_the_configured_one() -> None:

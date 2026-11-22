@@ -6,13 +6,17 @@ from pathlib import Path
 
 import pytest
 
-from crawlviz.score.llm import (
+from crawlviz.llm import (
     LLM_CALLS_FILE_NAME,
+    CallBudget,
+    CallOutcome,
     CostTable,
     LlmCallRecord,
     LlmCallRecorder,
     ModelPrice,
 )
+from crawlviz.llm.call_recorder import MAX_STORED_TEXT_CHARS
+from crawlviz.shared import REDACTED
 
 STARTED = datetime(2026, 10, 30, 12, 0, tzinfo=UTC)
 TABLE = CostTable(
@@ -58,6 +62,41 @@ async def test_totals_count_calls_tokens_cost_and_budget() -> None:
     assert (totals.budget_calls, totals.remaining_calls) == (3, 0)
 
 
+@pytest.mark.parametrize(
+    "outcome", ["invalid_output", "http_error", "network_error", "timeout", "bad_response"]
+)
+async def test_a_call_without_a_valid_answer_counts_as_failed(outcome: str) -> None:
+    recorder = LlmCallRecorder(None)
+    await recorder.record(make_record(outcome=outcome))
+    assert recorder.totals.failed_calls == 1
+
+
+async def test_totals_count_calls_by_outcome() -> None:
+    recorder = LlmCallRecorder(None)
+    assert set(recorder.totals.outcomes.values()) == {0}
+    for outcome in ("ok", "ok", "timeout", "repaired"):
+        await recorder.record(make_record(outcome=outcome))
+    outcomes = recorder.totals.outcomes
+    assert outcomes[CallOutcome.OK] == 2
+    assert outcomes[CallOutcome.TIMEOUT] == outcomes[CallOutcome.REPAIRED] == 1
+    assert sum(outcomes.values()) == 4
+    assert set(outcomes) == set(CallOutcome)
+    assert json.loads(recorder.totals.model_dump_json())["outcomes"]["timeout"] == 1
+
+
+async def test_the_budget_is_charged_for_calls_that_reached_the_provider() -> None:
+    budget = CallBudget(None, max_tokens=2_000_000)
+    recorder = LlmCallRecorder(None, cost_table=TABLE, budget=budget)
+    await recorder.record(make_record(cache_hit=True, attempts=0))
+    assert (budget.tokens_used, budget.cost_usd) == (0, 0.0)
+    await recorder.record(make_record())
+    assert budget.tokens_used == 1_500_000
+    assert budget.cost_usd == pytest.approx(3.0)
+    await recorder.record(make_record(model="unpriced-model"))
+    assert budget.cost_usd == pytest.approx(3.0)
+    assert budget.exhausted
+
+
 async def test_cost_is_unknown_until_a_priced_call_is_recorded() -> None:
     recorder = LlmCallRecorder(None)
     priced = await recorder.record(make_record())
@@ -96,3 +135,29 @@ async def test_a_failed_write_is_raised_after_the_call_is_counted(tmp_path: Path
     with pytest.raises(OSError):
         await recorder.record(make_record())
     assert recorder.totals.calls == 1
+
+
+async def test_secrets_in_the_error_and_the_text_are_redacted_before_writing(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / LLM_CALLS_FILE_NAME
+    leaked = "Authorization: Bearer sk-live-0123456789abcdef"
+    record = make_record(outcome="http_error", error=leaked, raw_reply=leaked)
+    await LlmCallRecorder(path, store_text=True).record(record)
+    text = path.read_text()
+    assert "sk-live-0123456789abcdef" not in text
+    assert REDACTED in json.loads(text)["error"]
+
+
+async def test_stored_text_longer_than_the_cap_is_cut_and_says_so(tmp_path: Path) -> None:
+    path = tmp_path / LLM_CALLS_FILE_NAME
+    long_reply = "x" * (MAX_STORED_TEXT_CHARS + 50)
+    await LlmCallRecorder(path, store_text=True).record(make_record(raw_reply=long_reply))
+    stored = json.loads(path.read_text())["raw_reply"]
+    assert stored.startswith("x" * MAX_STORED_TEXT_CHARS)
+    assert stored.endswith("[cut: 50 more characters]")
+
+
+async def test_the_returned_record_is_the_one_written(tmp_path: Path) -> None:
+    returned = await LlmCallRecorder(tmp_path / LLM_CALLS_FILE_NAME).record(make_record())
+    assert (returned.rendered_prompt, returned.raw_reply) == (None, None)

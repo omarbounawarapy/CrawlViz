@@ -13,30 +13,30 @@ const ROWS = [0, 96, 192];
 const col = (i) => i * (NODE_W + GAP);
 
 // Where each stage sits. The main path runs left to right along the top row; the scheduling
-// lane is the second row; retries feed back to the fetch stage; debugging is a side channel.
+// lane is the second row; retries feed back to the fetch stage; the debug log is a side channel.
 // Export is not a pipeline in the settings: its batch size lives in the Export section.
 const STAGES = {
-  requests: { name: STAGE_NAMES.requests, x: col(0), y: ROWS[0] },
-  processing: { name: STAGE_NAMES.processing, x: col(1), y: ROWS[0] },
-  filtering: { name: STAGE_NAMES.filtering, x: col(2), y: ROWS[0] },
-  transformation: { name: STAGE_NAMES.transformation, x: col(3), y: ROWS[0] },
+  fetch: { name: STAGE_NAMES.fetch, x: col(0), y: ROWS[0] },
+  extract: { name: STAGE_NAMES.extract, x: col(1), y: ROWS[0] },
+  filter: { name: STAGE_NAMES.filter, x: col(2), y: ROWS[0] },
+  transform: { name: STAGE_NAMES.transform, x: col(3), y: ROWS[0] },
   exporting: { name: "Export", x: col(4), y: ROWS[0] },
-  scoring: { name: STAGE_NAMES.scoring, x: col(0), y: ROWS[1] },
-  priority: { name: STAGE_NAMES.priority, x: col(1), y: ROWS[1] },
+  score: { name: STAGE_NAMES.score, x: col(0), y: ROWS[1] },
+  prioritize: { name: STAGE_NAMES.prioritize, x: col(1), y: ROWS[1] },
   storage: { name: STAGE_NAMES.storage, x: col(2), y: ROWS[1] },
   retry: { name: STAGE_NAMES.retry, x: col(0), y: ROWS[2] },
-  debugging: { name: STAGE_NAMES.debugging, x: col(1), y: ROWS[2] },
+  debug_log: { name: STAGE_NAMES.debug_log, x: col(1), y: ROWS[2] },
 };
 
 const MAIN = [
-  ["requests", "processing"],
-  ["processing", "filtering"],
-  ["filtering", "transformation"],
-  ["transformation", "exporting"],
+  ["fetch", "extract"],
+  ["extract", "filter"],
+  ["filter", "transform"],
+  ["transform", "exporting"],
 ];
 const LANE = [
-  ["scoring", "priority"],
-  ["priority", "storage"],
+  ["score", "prioritize"],
+  ["prioritize", "storage"],
 ];
 
 const edge = (a, b) => {
@@ -108,8 +108,8 @@ export default function PipelineFlow({ pipelines, batchSize, queues = null }) {
               height={NODE_H}
               rx="6"
               fill={background.primary}
-              stroke={b.key === "debugging" ? background.border : text.secondary}
-              strokeDasharray={b.key === "debugging" ? "3 3" : undefined}
+              stroke={b.key === "debug_log" ? background.border : text.secondary}
+              strokeDasharray={b.key === "debug_log" ? "3 3" : undefined}
             />
             <text
               x={b.x + NODE_W / 2}

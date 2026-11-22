@@ -5,6 +5,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import tseslint from "typescript-eslint";
 import { defineConfig, globalIgnores } from "eslint/config";
+import { featureBoundaryConfigs } from "./src/lint/featureBoundaries.js";
 
 export default defineConfig([
   globalIgnores(["dist"]),
@@ -43,24 +44,5 @@ export default defineConfig([
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
     },
   },
-  {
-    // Baseline from when jsx-a11y was added (2026-10-29): these ten findings are open and the
-    // list only shrinks. Fix the element, then delete its entry here.
-    files: [
-      "src/features/benchmark/AuditTab.jsx",
-      "src/features/benchmark/RunsTab.jsx",
-      "src/features/common/Form.jsx",
-      "src/features/common/ScrollRegion.jsx",
-      "src/features/graph/GraphView.jsx",
-      "src/features/landing/Landing.jsx",
-      "src/features/loading/SpiderLoader.jsx",
-    ],
-    rules: {
-      "jsx-a11y/click-events-have-key-events": "off",
-      "jsx-a11y/interactive-supports-focus": "off",
-      "jsx-a11y/no-noninteractive-element-interactions": "off",
-      "jsx-a11y/no-noninteractive-tabindex": "off",
-      "jsx-a11y/no-static-element-interactions": "off",
-    },
-  },
+  ...featureBoundaryConfigs,
 ]);

@@ -62,9 +62,9 @@ P2.5 does not use `asyncio.TaskGroup`. The bounded shutdown in `_run_until_stopp
 | P3.5 | A hashing embedding engine lets NLP scoring be tested without MiniLM | `8d76a01` |
 | P3.6 | Documentation claims the code does not back were removed, including references to the missing `V2_ARCHITECTURE.md` | `e3b1fc5` |
 
-Fixed after the phase: `ExportingPipeline` flushes its buffer when cancelled, so `POST /stop` keeps the rows already collected (`test_cancelled_exporter_flushes_its_buffer`). The CORS origin regex is now `CRAWLVIZ_CORS_ORIGIN_REGEX`, so a deployment can turn off the localhost-only default.
+Fixed after the phase: `ExportSink` flushes its buffer when cancelled, so `POST /stop` keeps the rows already collected (`test_cancelled_exporter_flushes_its_buffer`). The CORS origin regex is now `CRAWLVIZ_CORS_ORIGIN_REGEX`, so a deployment can turn off the localhost-only default.
 
-Two fixes landed alongside the tiers: a `ScoringPipeline` worker stops waiting on `node.ready` once the crawl stops (`3a313c0`), and the UI no longer reconnects a stale WebSocket, so events are not delivered twice (`8c2d4f9`, after the phase).
+Two fixes landed alongside the tiers: a `ScoreStage` worker stops waiting on `node.ready` once the crawl stops (`3a313c0`), and the UI no longer reconnects a stale WebSocket, so events are not delivered twice (`8c2d4f9`, after the phase).
 
 ## Exit criteria
 
@@ -83,6 +83,7 @@ The backend suite has 248 tests in 26 files, all passing, with no xfail markers.
 
 These describe the code as it is today:
 
-- LLM token usage is always `None`. The translators discard the `usage` field from provider responses, so `TracedLlmHandler` has nothing to record. `benchmark/__main__.py` prints the same caveat.
+- Token usage is read from provider responses. Each translator passes the `usage` field to `src/crawlviz/llm/token_usage.py`, `LlmHandler` leaves the counts on the context, and `TracedLlmHandler` puts them in the `LLM_ResponseParsed` trace event. A response with no usage data counts as zero tokens, and `benchmark/__main__.py` warns when a run used LLM answers but recorded no tokens.
+- The typed LLM layer in `src/crawlviz/llm/` is built but not used by a live crawl. Its call records carry the outcome, temperature, reasoning effort, tokens, cost estimate, latency, attempts and cache hit, and `CallBudget` can cap calls, tokens and estimated cost. A live crawl calls `LlmHandler` directly, and the only cap it applies is `llm.max_calls_per_crawl` through `CallBudget`. No call records are written, and the token and cost caps and the typed layer's request timeout are not wired in yet.
 - `Crawler.start()` builds every service, including the NLP service and the LLM handler, whether or not a run uses them.
 - The frozen-graph benchmark in `benchmark/` compares crawl policies on recorded pages. See `benchmark/README.md`.

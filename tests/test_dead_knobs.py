@@ -2,9 +2,9 @@ import asyncio
 
 import numpy as np
 
-from nlp.buffer_manager import BufferManager
-from nlp.expansion_prompt_builder import ExpansionConfig, ExpansionPromptBuilder
-from nlp.space_updater import SpaceUpdater
+from crawlviz.nlp.buffer_manager import BufferManager
+from crawlviz.nlp.expansion_prompt_builder import ExpansionConfig, ExpansionPromptBuilder
+from crawlviz.nlp.space_updater import SpaceUpdater
 
 
 def test_prompt_honours_max_sentences_for_dict_and_dataclass():

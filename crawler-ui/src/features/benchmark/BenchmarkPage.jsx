@@ -4,8 +4,7 @@
  * inspect), Graph (the labelled frozen graph) and Audit (blind annotation).
  */
 import { useState } from "react";
-import { Page } from "../common/Page";
-import { Tabs, TabPanel } from "../common/Form";
+import { Page, Tabs, TabPanel } from "../common";
 import OverviewTab from "./OverviewTab";
 import ResultsTab from "./ResultsTab";
 import RunsTab from "./RunsTab";

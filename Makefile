@@ -31,6 +31,7 @@ dev-frontend:
 lint:
 	uv run ruff check .
 	uv run ruff format --check .
+	uv run lint-imports
 	cd crawler-ui && npm run lint && npm run lint:css && npm run lint:html && npm run format:check
 
 # Formats Python and the UI. A formatting-only commit goes in .git-blame-ignore-revs.
@@ -64,8 +65,10 @@ check: lint typecheck check-baselines test hook-test
 	cd crawler-ui && npm run build
 
 # Lint and tests for the files this branch changed (see tools/check_changed.py).
+# BASE is the branch to compare with: `make check-changed BASE=phase-d-architecture`.
+BASE ?= main
 check-changed:
-	uv run python tools/check_changed.py
+	uv run python tools/check_changed.py --base $(BASE)
 
 # The agent guard hooks (.claude/hooks) block what AGENTS.md says they block.
 hook-test:

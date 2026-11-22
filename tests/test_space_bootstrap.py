@@ -5,8 +5,8 @@ from typing import Any
 
 import numpy as np
 
-from nlp import VectorSpace
-from nlp.embedding_engine import HashingEmbeddingEngine
+from crawlviz.nlp import VectorSpace
+from crawlviz.nlp.embedding_engine import HashingEmbeddingEngine
 from services.space_bootstrap import SpaceBootstrapper
 
 TOPIC = "insulin resistance and type 2 diabetes"
@@ -40,7 +40,7 @@ def test_seeds_and_target_reach_the_space_before_bootstrap_is_reported() -> None
         HashingEmbeddingEngine(),
         SeedLlm(),  # type: ignore[arg-type]
         EXPANSION,
-        tracer=RecordingTracer(log),  # type: ignore[arg-type]
+        tracer=RecordingTracer(log),
     )
     asyncio.run(bootstrapper.build(TOPIC, adopt))
 

@@ -1,8 +1,8 @@
 # Python
 __pycache__/
 *.pyc
-keys.json
-keys.json.bak-*
+keys.json*
+!keys.example.json
 *.db
 
 # Node
@@ -55,3 +55,8 @@ benchmark/data/exp_runs.json
 .claude/briefs/
 .claude/agent-memory/
 .mypy_cache/
+.env
+.env.*
+*.swp
+.*.sw?
+#*#

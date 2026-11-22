@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getTheme } from "../../theme";
-import { Page } from "../common/Page";
-import { Button, Chip, ConfirmButton, TextInput } from "../common/Form";
+import { Page, Button, Chip, ConfirmButton, TextInput } from "../common";
 import {
   fetchConfigSchema,
   fetchConfig,
@@ -44,6 +43,7 @@ import {
   setIn,
   validateField,
 } from "./configModel";
+import GlossaryScope from "./GlossaryScope";
 import { primeGlossary } from "./glossary";
 
 const theme = getTheme();
@@ -64,7 +64,7 @@ const START = { name: "Start here", slug: "start" };
 const PRESETS = { name: "Presets and files", slug: "presets" };
 const KEYS = { name: "API keys", slug: "api-keys" };
 
-export default function ConfigPage() {
+function ConfigPageContent() {
   const [dismissed, setDismissed] = useState([]);
   const [schema, setSchema] = useState(null);
   const [saved, setSaved] = useState(null);
@@ -325,7 +325,7 @@ export default function ConfigPage() {
     Fetch: (d) => (
       <FetchExplainers
         cfg={d.fetch}
-        workers={d.pipelines.requests.workers}
+        workers={d.pipelines.fetch.workers}
         maxRetries={d.retries.max_request_retries}
         onChange={change}
       />
@@ -507,5 +507,14 @@ export default function ConfigPage() {
         </>
       )}
     </Page>
+  );
+}
+
+/** The settings page. It carries its own glossary scope, so its words are explained on their own. */
+export default function ConfigPage() {
+  return (
+    <GlossaryScope>
+      <ConfigPageContent />
+    </GlossaryScope>
   );
 }

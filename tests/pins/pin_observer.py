@@ -17,7 +17,7 @@ from typing import Any
 
 from pin_doubles import RecordingGateway
 
-from events import (
+from crawlviz.events import (
     HighScoreLinksEvent,
     LowScoreLinksEvent,
     PriorityCalculatedEvent,

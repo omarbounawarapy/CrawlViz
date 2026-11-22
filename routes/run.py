@@ -3,7 +3,7 @@
 Only one crawl runs at a time, tracked by the module-level
 ``_current_task``. Manual stop (POST /stop) works in two phases: it asks the
 crawl to stop the way a stop condition does (a StopCrawlEvent, see
-pipelines/stopping_pipeline.py), so every stage drains and flushes, and waits
+pipelines/stop_controller.py), so every stage drains and flushes, and waits
 for the task to end; only if the crawl does not end in time does it cancel the
 task and wait for that too. Cancellation works even when a pipeline is stuck
 mid-request, and the crawl's own cleanup (core/crawler.py) still runs.
@@ -15,7 +15,7 @@ failure) is kept in ``_last_outcome`` and reported by GET /status.
 import asyncio
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -23,13 +23,19 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import TEMPLATES_DIR, default_runtime_paths
+from config.blueprint_file import load_blueprint_file
 from config.blueprint_schema import Blueprint, BlueprintSchemaError, validate_blueprint
-from config.settings_store import SettingsFileError, load_runtime_config
+from config.settings_store import SettingsFileError, load_runtime_config, validation_errors
 from config.template_names import InvalidTemplateNameError, resolve_template_path
 from core import Crawler, find_preflight_problems
-from offline import build_offline_session, is_offline
-
-from .config_support import validation_errors
+from crawlviz.api.schemas import CrawlStatusReply
+from crawlviz.contracts import (
+    CrawlState,
+    SchemaVersionError,
+    StatusBoardSnapshot,
+    StoredFormatError,
+)
+from crawlviz.offline import build_offline_session, is_offline
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +50,15 @@ router = APIRouter(tags=["run"])
 
 @dataclass(frozen=True)
 class CrawlOutcome:
-    """How the last crawl ended, kept after it so GET /status can report it."""
+    """How the last crawl ended, kept after it so GET /status can report it, with the id
+    and the final status board of that crawl. The next run clears it."""
 
     template: str
     state: Literal["finished", "stopped", "failed"]
     error_type: str | None = None
     message: str | None = None
+    crawl_id: str | None = None
+    board: StatusBoardSnapshot | None = None
 
 
 _current_task: asyncio.Task | None = None
@@ -73,6 +82,24 @@ def _failed_outcome(template_name: str, error: Exception) -> CrawlOutcome:
     )
 
 
+def _crawl_identity(crawler: object) -> tuple[str | None, StatusBoardSnapshot | None]:
+    """The crawl's id and the status board as it is now; null for what the crawler lacks."""
+    status_board = getattr(crawler, "status_board", None)
+    return (
+        getattr(crawler, "crawl_id", None),
+        status_board.snapshot() if status_board is not None else None,
+    )
+
+
+def _crawl_state(running: bool, last: CrawlOutcome | None) -> CrawlState:
+    """Where the crawl is in its life: the end state of the last one when none runs."""
+    if running:
+        if _stop_requested:
+            return "stopping"
+        return "running" if _current_crawler is not None else "starting"
+    return last.state if last is not None else "idle"
+
+
 def _refuse_endpoint_overrides(overrides: dict | None) -> None:
     """Per-run overrides may not redirect an LLM provider: the request carries the API key,
     so a changed URL would send the key to whoever runs that server. Saved settings
@@ -94,14 +121,15 @@ def _refuse_if_running() -> None:
 def _read_blueprint(template_path: Path, template_name: str) -> Blueprint:
     """The validated blueprint, or a 422 that names the file and what to fix."""
     try:
-        with open(template_path, encoding="utf-8") as f:
-            return validate_blueprint(json.load(f))
+        return validate_blueprint(load_blueprint_file(template_path))
     except json.JSONDecodeError as exc:
         reason = f"it is not valid JSON ({exc})"
     except OSError as exc:
         reason = f"it could not be read ({exc.strerror or exc})"
     except BlueprintSchemaError as exc:
         reason = str(exc)
+    except (SchemaVersionError, StoredFormatError) as exc:
+        reason = str(exc).rstrip(".")
     raise HTTPException(
         status_code=422,
         detail=f"The blueprint {template_name} cannot be used: {reason}. "
@@ -146,8 +174,9 @@ async def _run_crawler(template_name: str, config=None, seed: int | None = None)
         logger.exception("Crawler failed for template '%s'", template_name)
         outcome = _failed_outcome(template_name, error)
     finally:
+        crawl_id, board = _crawl_identity(_current_crawler)
         _current_crawler = None
-        _last_outcome = outcome
+        _last_outcome = replace(outcome, crawl_id=crawl_id, board=board)
 
 
 @router.post("/run")
@@ -225,10 +254,11 @@ async def stop_crawl() -> dict[str, bool | str]:
     return {"stopped": task.done(), "graceful": False}
 
 
-@router.get("/status")
-def crawl_status():
-    """Whether a crawl is running and, while one is, its LLM call budget (calls used, the cap, calls refused)
-    and the items waiting in each pipeline queue, so the pages can show both live."""
+@router.get("/status", response_model=CrawlStatusReply)
+def crawl_status() -> dict[str, object]:
+    """Whether a crawl is running and how the last one ended; the crawl's id, lifecycle state
+    and status board; and, while one runs, its LLM call budget (calls used, the cap, calls
+    refused) and the items waiting in each pipeline queue, so the pages can show them live."""
     running = bool(_current_task and not _current_task.done())
     budget = getattr(_current_crawler, "call_budget", None) if running else None
     queues = (
@@ -237,6 +267,9 @@ def crawl_status():
         else None
     )
     last = _last_outcome
+    crawl_id, board = _crawl_identity(_current_crawler) if running else (None, None)
+    if not running and last is not None:
+        crawl_id, board = last.crawl_id, last.board
     return {
         "running": running,
         "llm_calls": budget.snapshot() if budget is not None else None,
@@ -247,4 +280,7 @@ def crawl_status():
             if last is not None and last.state == "failed"
             else None
         ),
+        "crawl_state": _crawl_state(running, last),
+        "crawl_id": crawl_id,
+        "board": board,
     }

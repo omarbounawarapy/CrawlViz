@@ -1,6 +1,7 @@
 import os
 
-from models import Link, Node, PromptBuilder, ScoringContext
+from crawlviz.shared import Link, Node
+from models import PromptBuilder, ScoringContext
 
 from .results_mapper import ResultMapper
 
@@ -8,7 +9,7 @@ from .results_mapper import ResultMapper
 class ScoringService:
     """Builds an LLM scoring prompt for a batch of links and maps the
     response back onto them. The NLP pre-filtering that decides *which*
-    links reach here lives in pipelines/scoring_pipeline.py.
+    links reach here lives in pipelines/score_stage.py.
 
     Args:
         llm_handler: Client used to actually send the scoring request.

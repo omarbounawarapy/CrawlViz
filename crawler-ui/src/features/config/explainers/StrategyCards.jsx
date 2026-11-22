@@ -4,8 +4,7 @@ import ExplainerFrame from "./ExplainerFrame";
 import useReducedMotion from "./useReducedMotion";
 import { FEATURES, priorityParts, rank, topFiveSummary, weightTotal } from "./strategyModel";
 import sample from "./sampleData.json";
-import { Button } from "../../common/Form";
-import { nextChoice } from "../../common/choiceKeys";
+import { Button, nextChoice } from "../../common";
 
 const theme = getTheme();
 const { text, background } = theme.colors;

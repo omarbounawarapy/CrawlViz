@@ -44,8 +44,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 import config as _config
 from config.redaction import url_carries_credentials
 from config.user_agent import require_contact
+from crawlviz.contracts import StoredFormatError, rename_pipeline_settings
+from crawlviz.priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 from models.prompts import SCORING_RULES, SCORING_SYSTEM_PROMPT, STRATEGIES
-from priority.strategy import DEFAULT_WEIGHTS, WEIGHT_KEYS
 
 
 def _f(
@@ -104,7 +105,14 @@ def _f(
     return Field(default=default, description=description, json_schema_extra=extra, **constraints)
 
 
-class ScoringCascadeConfig(BaseModel):
+class ConfigSection(BaseModel):
+    """Base of every settings model: a key the model does not have is an error, not a
+    silent drop, so a misspelt or unmigrated stored key is reported with its path."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ScoringCascadeConfig(ConfigSection):
     """The two-stage NLP -> LLM relevance cascade's tunable thresholds and
     sampling fractions (report section 0.13, "Evaluation multi-etapes")."""
 
@@ -256,7 +264,7 @@ class ScoringCascadeConfig(BaseModel):
         return self
 
 
-class EmbeddingConfig(BaseModel):
+class EmbeddingConfig(ConfigSection):
     """Semantic-space embedding backend (nlp/vector_space.py, nlp/space_updater.py)."""
 
     backend: str = _f(
@@ -300,8 +308,8 @@ class EmbeddingConfig(BaseModel):
     )
 
 
-class ExportConfig(BaseModel):
-    """Item export / persistence batching (pipelines/exporting_pipeline.py)."""
+class ExportConfig(ConfigSection):
+    """Item export / persistence batching (pipelines/export_sink.py)."""
 
     batch_size: int = _f(
         _config.EXPORT_BATCH_SIZE,
@@ -313,9 +321,9 @@ class ExportConfig(BaseModel):
     )
 
 
-class FetchConfig(BaseModel):
+class FetchConfig(ConfigSection):
     """Page fetching: politeness, backoff, timeouts and request headers
-    (pipelines/requests_pipeline.py, infrastructure/network_client.py)."""
+    (pipelines/fetch_stage.py, infrastructure/network_client.py)."""
 
     min_delay: float = _f(
         1.0,
@@ -458,24 +466,6 @@ class FetchConfig(BaseModel):
         gt=0,
         effect="A page or robots.txt larger than this is refused instead of read, which protects memory from huge or compressed-bomb responses.",
     )
-    accepted_content_types: str = _f(
-        _config.ACCEPTED_CONTENT_TYPES,
-        "Content types a page fetch accepts, separated by commas.",
-        "Fetch",
-        "text",
-        advanced=True,
-        min_length=1,
-        effect="A page of any other content type is refused unread. Add a type here, for example text/plain, to crawl pages served that way.",
-    )
-    max_redirects: int = _f(
-        _config.MAX_REDIRECTS,
-        "Redirects followed for one page.",
-        "Fetch",
-        unit="",
-        advanced=True,
-        ge=0,
-        effect="A page that redirects more often than this is given up on, which stops a redirect loop. Each redirect is another request to the site.",
-    )
     allow_private_addresses: bool = _f(
         False,
         "Fetch pages from private, loopback and link-local addresses.",
@@ -484,12 +474,6 @@ class FetchConfig(BaseModel):
         advanced=True,
         effect="Off: links to this machine, your local network or a cloud metadata address are refused. On: they are fetched, which only a crawl of your own test site needs.",
     )
-
-    @field_validator("accepted_content_types")
-    @classmethod
-    def _content_types_are_media_types(cls, v: str) -> str:
-        _config.parse_content_types(v)
-        return v
 
     @field_validator("user_agent")
     @classmethod
@@ -521,7 +505,7 @@ class FetchConfig(BaseModel):
         return self
 
 
-class PipelineSettings(BaseModel):
+class PipelineSettings(ConfigSection):
     """Worker count and queue bound of one pipeline."""
 
     workers: int = _f(
@@ -553,43 +537,41 @@ class PipelineSettings(BaseModel):
         return None if v == 0 else v
 
 
-class TransformationSettings(PipelineSettings):
-    """Worker count and queue bound of the transformation pipeline, and its regex input cap."""
-
-    max_regex_input_chars: int = _f(
-        _config.MAX_REGEX_INPUT_CHARS,
-        "Longest text a regex transform step runs on.",
-        "Pipelines",
-        unit="characters",
-        advanced=True,
-        gt=0,
-        effect="A regex step skips a field longer than this and reports it as an error on the page, which keeps a slow pattern from stalling a worker. Raising it lets longer fields be transformed.",
-    )
-
-
 def _pl(workers: int) -> Any:
     return Field(default_factory=lambda: PipelineSettings(workers=workers))
 
 
-class PipelinesConfig(BaseModel):
-    """Per-pipeline parallelism (core/crawler.py:_build_pipelines). Logging
-    and canonicalization stay single-worker so output order is preserved."""
+class PipelinesConfig(ConfigSection):
+    """Per-stage parallelism (core/stages.py:build_stages), one section per stage.
+    Logging and canonicalization stay single-worker so output order is preserved."""
 
-    processing: PipelineSettings = _pl(1)
-    requests: PipelineSettings = _pl(4)
-    scoring: PipelineSettings = _pl(1)
+    extract: PipelineSettings = _pl(1)
+    fetch: PipelineSettings = _pl(4)
+    score: PipelineSettings = _pl(1)
     storage: PipelineSettings = _pl(1)
-    filtering: PipelineSettings = _pl(10)
-    priority: PipelineSettings = _pl(10)
-    transformation: TransformationSettings = Field(
-        default_factory=lambda: TransformationSettings(workers=3)
-    )
-    debugging: PipelineSettings = _pl(2)
+    filter: PipelineSettings = _pl(10)
+    prioritize: PipelineSettings = _pl(10)
+    transform: PipelineSettings = _pl(3)
+    debug_log: PipelineSettings = _pl(2)
     retry: PipelineSettings = _pl(1)
 
+    @model_validator(mode="before")
+    @classmethod
+    def _read_old_section_names(cls, data: Any) -> Any:
+        """Move sections under their old names (``requests`` for ``fetch``) to the new ones,
+        so presets, stored settings and patches from older clients keep working. A section
+        given under both names is refused, naming both keys, because either value could be
+        the one meant."""
+        if not isinstance(data, dict):
+            return data
+        try:
+            return rename_pipeline_settings({"pipelines": data})["pipelines"]
+        except StoredFormatError as exc:
+            raise ValueError(str(exc)) from exc
 
-class RetryConfig(BaseModel):
-    """Retry policy (pipelines/retry_processor.py)."""
+
+class RetryConfig(ConfigSection):
+    """Retry policy (pipelines/retry_stage.py)."""
 
     max_request_retries: int = _f(
         3,
@@ -643,7 +625,7 @@ class RetryConfig(BaseModel):
     )
 
 
-class UrlConfig(BaseModel):
+class UrlConfig(ConfigSection):
     """Node identity rules (utils/html_utils.py:normalize_url). Changing them
     changes which links count as the same page."""
 
@@ -677,8 +659,8 @@ def _weights(name: str) -> Any:
     )
 
 
-class PriorityConfig(BaseModel):
-    """Mix of NLP and LLM scores in a link's priority (priority_pipeline.py)."""
+class PriorityConfig(ConfigSection):
+    """Mix of NLP and LLM scores in a link's priority (prioritize_stage.py)."""
 
     nlp_bias: float = _f(
         60,
@@ -723,7 +705,7 @@ class PriorityConfig(BaseModel):
         return self
 
 
-class NlpConfig(BaseModel):
+class NlpConfig(ConfigSection):
     """NLP composite score (services/nlp_service.py)."""
 
     composite_weights: dict[str, float] = _f(
@@ -773,7 +755,7 @@ class NlpConfig(BaseModel):
     )
 
 
-class LlmConfig(BaseModel):
+class LlmConfig(ConfigSection):
     """Request parameters shared by every LLM provider call."""
 
     max_calls_per_crawl: int | None = _f(
@@ -811,7 +793,7 @@ class LlmConfig(BaseModel):
     )
 
 
-class ObservabilityConfig(BaseModel):
+class ObservabilityConfig(ConfigSection):
     debug_enabled: bool = _f(
         _config.DEBUG,
         "Write the per-crawl debug trace file.",
@@ -827,24 +809,6 @@ class ObservabilityConfig(BaseModel):
         ge=1,
         le=65535,
         effect="Changing it means the live graph page has to connect to the new port.",
-    )
-    ui_ping_interval: float = _f(
-        20.0,
-        "Seconds between keep-alive pings to the live graph.",
-        "Observability",
-        unit="s",
-        advanced=True,
-        gt=0.0,
-        effect="Shorter notices a closed browser tab sooner but sends more small messages.",
-    )
-    ui_ping_timeout: float = _f(
-        10.0,
-        "Seconds the live graph has to answer a ping before the connection is dropped.",
-        "Observability",
-        unit="s",
-        advanced=True,
-        gt=0.0,
-        effect="Longer keeps a slow browser connected; shorter drops a vanished one sooner.",
     )
     snapshot_max_candidates: int = _f(
         4000,
@@ -864,7 +828,7 @@ class ObservabilityConfig(BaseModel):
     )
 
 
-class PromptsConfig(BaseModel):
+class PromptsConfig(ConfigSection):
     """Wording of the scoring prompt (models/prompts.py). The output format
     and JSON constraints are fixed because the response parser depends on
     them."""
@@ -901,7 +865,7 @@ class PromptsConfig(BaseModel):
         return self
 
 
-class ProvidersConfig(BaseModel):
+class ProvidersConfig(ConfigSection):
     """Request URL per LLM provider (config/config.py). Point a
     provider at any compatible server; Gemini takes a base URL."""
 
@@ -931,7 +895,7 @@ class ProvidersConfig(BaseModel):
         return self
 
 
-class RunConfig(BaseModel):
+class RunConfig(ConfigSection):
     seed: int | None = _f(
         None,
         "Seed for every random stream; empty is unseeded.",
@@ -1039,7 +1003,7 @@ GLOSSARY = {
 }
 
 
-class RuntimeConfig(BaseModel):
+class RuntimeConfig(ConfigSection):
     """Top-level runtime configuration: everything a researcher would want
     to see before trusting a crawl's results, beyond the per-run blueprint
     (target topic, seeds, extraction schema) already covered by

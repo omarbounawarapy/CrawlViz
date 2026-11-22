@@ -10,6 +10,9 @@ CORS origin) can be overridden with an environment variable.
 import os
 from pathlib import Path
 
+from crawlviz.llm import default_llm_endpoints
+from crawlviz.nlp import default_composite_weights
+
 # =========================================================================
 # PATHS
 # =========================================================================
@@ -75,14 +78,6 @@ USER_AGENT: str = "CrawlViz/1.0 (+https://github.com/omarbounawarapy/crawlviz)"
 RESPECT_ROBOTS: bool = True
 # Largest page body read, after decompression; a bigger response is refused.
 MAX_RESPONSE_BYTES: int = 5 * 1024 * 1024
-# Content types a page fetch accepts, comma-separated; anything else is refused unread.
-ACCEPTED_CONTENT_TYPES: str = "text/html, application/xhtml+xml"
-# Longest text a blueprint regex step runs on; a longer input skips the step. Regex steps run
-# patterns from a blueprint against page text we do not control, so a backtracking pattern
-# must not stall a worker.
-MAX_REGEX_INPUT_CHARS: int = 100_000
-# Redirects followed per page; each target is checked before it is fetched.
-MAX_REDIRECTS: int = 5
 
 # =========================================================================
 # SCORING CASCADE (REPORT SECTION 0.13 "EVALUATION MULTI-ETAPES")
@@ -113,20 +108,14 @@ PERCENTILE_MIN_LINKS: int = 10
 # provider token limits). Overflow is kept, ranked by NLP score only.
 MAX_LLM_LINKS_PER_NODE: int = 60
 
-# Composite NLP score weights (nlp/feature_extractor signals). Fitted with
-# tools/nlp_eval.py against LLM labels: target similarity carries the score,
-# boilerplate similarity (contact/privacy/... pages) pulls navigation down.
-# The other signals stay in `nlp_vector` for the priority strategies.
-NLP_COMPOSITE_WEIGHTS: dict[str, float] = {
-    "target_similarity": 0.80,
-    "contextual_consistency": 0.05,
-    "boilerplate_score": -0.35,
-}
+# Composite NLP score weights (nlp/feature_extractor signals); the default values live
+# with the scorer in crawlviz.nlp.
+NLP_COMPOSITE_WEIGHTS: dict[str, float] = default_composite_weights()
 
 DEFAULT_PRIORITY_STRATEGY: str = "balanced"
 
 # Stop conditions a blueprint gets when it does not set its own: a crawl that ends on
-# its own after a modest, bounded amount of work, so a default run is polite to the sites it visits.
+# its own after a modest, bounded amount of work (ETH-1).
 DEFAULT_MAX_NODES: int = 500
 DEFAULT_MAX_DEPTH: int = 5
 DEFAULT_MAX_DURATION_SECONDS: float = 3600.0
@@ -134,16 +123,8 @@ DEFAULT_MAX_DURATION_SECONDS: float = 3600.0
 # =========================================================================
 # LLM PROVIDERS
 # =========================================================================
-# Request URL per provider (Gemini: base URL, the model is appended). The
-# keys are the provider names a blueprint sets as scoring_type / llm_type.
-LLM_DEFAULT_ENDPOINTS: dict[str, str] = {
-    "openrouter": "https://openrouter.ai/api/v1/chat/completions",
-    "openai": "https://api.openai.com/v1/chat/completions",
-    "anthropic": "https://api.anthropic.com/v1/messages",
-    "gemini": "https://generativelanguage.googleapis.com/v1beta/models",
-    "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
-    "groq": "https://api.groq.com/openai/v1/chat/completions",
-}
+# Request URL per provider lives with the LLM adapters; re-exported for config users.
+LLM_DEFAULT_ENDPOINTS: dict[str, str] = default_llm_endpoints()
 
 # =========================================================================
 # EXPORT

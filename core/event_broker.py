@@ -2,7 +2,7 @@ import asyncio
 import logging
 from typing import Any
 
-from events import StopCrawlEvent
+from crawlviz.events import StopCrawlEvent
 
 from .event_registry import EventRegistry
 
@@ -24,6 +24,11 @@ class EventBroker:
         self.running = True
         self.active_tasks: set[asyncio.Task] = set()
         self._seq = 0
+
+    @property
+    def is_idle(self) -> bool:
+        """True when no event waits on the bus and no consumer is handling one."""
+        return self.event_bus.empty() and not self.active_tasks
 
     async def start(self) -> None:
         """Drain the event bus, fanning each event out to its subscribers.
@@ -98,9 +103,9 @@ class EventBroker:
         # ones individually subscribed to StopCrawlEvent for their own
         # cleanup logic. Before this, a pipeline sitting on an empty
         # queue when the crawl ended had no guaranteed way to notice and
-        # exit its worker loop -- which meant Crawler.start()'s
-        # asyncio.gather(*tasks) could hang indefinitely even after the
-        # crawl had genuinely finished.
+        # exit its worker loop, so its start() never returned and
+        # Crawler._run_until_stopped had to wait out the shutdown grace
+        # before it could cancel the stage.
         for consumer in self.registry.all_consumers():
             stop = getattr(consumer, "stop", None)
             if stop is None:

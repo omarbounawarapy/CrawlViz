@@ -8,12 +8,21 @@ import {
   stopBenchmarkJob,
 } from "../../api/client";
 import { getTheme } from "../../theme";
-import { SectionTitle } from "../common/Page";
-import { Button, Chip, Field, Grid, Select, Status, TextInput } from "../common/Form";
+import {
+  SectionTitle,
+  Button,
+  Chip,
+  Field,
+  Grid,
+  Select,
+  Status,
+  TextInput,
+  ScrollRegion,
+  useFocusableWhenScrolling,
+} from "../common";
+import { NumberField } from "../../shared/ui";
 import Loading from "./Loading";
 import { LABEL, useLoad, num } from "./shared";
-import NumberField from "../config/NumberField";
-import ScrollRegion from "../common/ScrollRegion";
 
 const { text, background } = getTheme().colors;
 
@@ -132,11 +141,10 @@ function JobPanel() {
         <Field label="Repeats">
           <NumberField
             integer
-            min={1}
-            max={10}
+            nullable
             value={form.reps}
             disabled={running}
-            onChange={(v) => setForm((f) => ({ ...f, reps: String(v) }))}
+            onChange={(reps) => setForm((f) => ({ ...f, reps }))}
           />
         </Field>
         <Field label="LLM cache" hint="Replay and no_llm read it; keep it the same across the grid.">
@@ -190,28 +198,36 @@ function JobPanel() {
             {job.expected_results ? ` of ${job.expected_results}` : ""} result files written · {job.rate_limit_mentions}{" "}
             rate-limit lines
           </p>
-          <pre
-            role="log"
-            aria-label="Job output"
-            tabIndex={0}
-            className="focus-box"
-            style={{
-              fontFamily: getTheme().typography.fontData,
-              fontSize: 12,
-              maxHeight: 220,
-              overflow: "auto",
-              background: background.panel,
-              border: `1px solid ${background.border}`,
-              padding: 10,
-              margin: 0,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {job.log.join("\n")}
-          </pre>
+          <JobLog lines={job.log} />
         </>
       )}
     </>
+  );
+}
+
+// The job output scrolls past a fixed height; it takes keyboard focus once it does, so arrow keys scroll it.
+function JobLog({ lines }) {
+  const ref = useFocusableWhenScrolling();
+  return (
+    <pre
+      ref={ref}
+      role="log"
+      aria-label="Job output"
+      className="focus-box"
+      style={{
+        fontFamily: getTheme().typography.fontData,
+        fontSize: 12,
+        maxHeight: 220,
+        overflow: "auto",
+        background: background.panel,
+        border: `1px solid ${background.border}`,
+        padding: 10,
+        margin: 0,
+        whiteSpace: "pre-wrap",
+      }}
+    >
+      {lines.join("\n")}
+    </pre>
   );
 }
 

@@ -4,8 +4,8 @@ core/crawler.py's _wire_subscriptions used to be a flat, hand-maintained list
 mapping event types to the pipelines that should receive them. That shape made
 it easy for a pipeline to be built to handle an event (its handler table maps
 it) without ever being subscribed to receive it -- which is exactly what
-happened to HighScoreLinksEvent: PriorityPipeline has always known how to
-process it, but nothing subscribed PriorityPipeline to receive it, so every
+happened to HighScoreLinksEvent: PrioritizeStage has always known how to
+process it, but nothing subscribed PrioritizeStage to receive it, so every
 link the cascade was confident enough to trust without an LLM call was
 silently dropped from the crawl instead of being fast-tracked into it. Each
 consumer now names its events in ``event_types`` and is subscribed to exactly
@@ -21,7 +21,8 @@ import pytest
 
 from config.paths import RuntimePaths
 from core.crawler import Crawler
-from events import (
+from crawlviz.events import (
+    EventConsumer,
     FilteringPipelineErrorEvent,
     HighScoreLinksEvent,
     LowScoreLinksEvent,
@@ -30,8 +31,7 @@ from events import (
     RequestFailedEvent,
     StopCrawlEvent,
 )
-from nlp import BufferManager, SpaceUpdater
-from pipelines.contracts import EventConsumer
+from crawlviz.nlp import BufferManager, SpaceUpdater
 from ui_bridge import CrawlStateSnapshot, TelemetryBridge
 
 FAKE_BLUEPRINT = {
@@ -87,8 +87,8 @@ class TestCascadeSubscriptionGap:
 
     def test_priority_pipeline_receives_high_score_links(self, wired_crawler):
         consumers = consumers_of(wired_crawler, HighScoreLinksEvent)
-        assert "PriorityPipeline" in consumers, (
-            "PriorityPipeline is not subscribed to HighScoreLinksEvent -- "
+        assert "PrioritizeStage" in consumers, (
+            "PrioritizeStage is not subscribed to HighScoreLinksEvent -- "
             "high-confidence links will be scored, bucketed, and then "
             "silently dropped instead of fast-tracked into the frontier."
         )
@@ -113,7 +113,7 @@ class TestFailureEventsAreNoLongerSilent:
     )
     def test_failure_reaches_debug_log_and_ui(self, wired_crawler, event_type):
         consumers = consumers_of(wired_crawler, event_type)
-        assert "DebuggingPipeline" in consumers
+        assert "DebugLogSink" in consumers
         assert "TelemetryBridge" in consumers
 
 
@@ -148,23 +148,24 @@ class TestConsumersNameTheirEvents:
     def test_consumers_hear_an_event_in_subscription_order(self, wired_crawler):
         # The stage registry order, then the space updater, then the UI bridge.
         assert consumers_of(wired_crawler, StopCrawlEvent) == [
-            "LoggingPipeline",
-            "ExportingPipeline",
-            "StoppingPipeline",
+            "CrawlLogSink",
+            "FetchStage",
+            "ExportSink",
+            "StopController",
             "SpaceUpdater",
             "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, RequestFailedEvent) == [
-            "DebuggingPipeline",
-            "RetryProcessor",
+            "DebugLogSink",
+            "RetryStage",
             "TelemetryBridge",
         ]
         assert consumers_of(wired_crawler, PageFetchedEvent) == [
-            "LoggingPipeline",
-            "CanonicalizationPipeline",
-            "ProcessingPipeline",
-            "StoragePipeline",
-            "StoppingPipeline",
+            "CrawlLogSink",
+            "CanonicalizeStage",
+            "ExtractStage",
+            "StorageSink",
+            "StopController",
             "TelemetryBridge",
         ]
 

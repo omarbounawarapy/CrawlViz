@@ -3,11 +3,10 @@ import { fetchTemplates, fetchTemplate, runCrawl, stopCrawl, crawlStatus } from 
 import { getTheme } from "../../theme";
 import { formatDuration } from "../../utils/formatters";
 import { crawlStatusWords } from "../../state/crawlStatus";
-import { Page, SectionTitle, Row } from "../common/Page";
-import { buttonPrimary, buttonOutline } from "../common/buttons";
+import { Page, SectionTitle, Row, buttonPrimary, buttonOutline } from "../common";
 import RunOverrides from "./RunOverrides";
-import { useCrawlCost } from "../config/crawlCost";
-import { Explain } from "../config/Term";
+import { useCrawlCost } from "../config";
+import { Explain } from "../../shared/ui";
 
 const theme = getTheme();
 
@@ -86,31 +85,23 @@ export default function RunPage({ onNavigate, state, metrics, onUserStopped }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // An answer that arrives after the page has gone must not touch state.
-    let cancelled = false;
     const poll = async () => {
       try {
         const s = await crawlStatus();
-        if (cancelled) return;
         setRunning(s.running);
         setLlmCalls(s.llm_calls ?? null);
       } catch (err) {
-        if (!cancelled) console.warn("Status poll failed:", err);
+        console.warn("Status poll failed:", err);
       }
     };
     poll();
     const id = setInterval(poll, 3000);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
     fetchTemplates()
       .then((d) => {
-        if (cancelled) return;
         setTemplates(d.templates);
         // Blueprints can hand over "run this one" through sessionStorage.
         let wanted = null;
@@ -122,10 +113,7 @@ export default function RunPage({ onNavigate, state, metrics, onUserStopped }) {
         }
         if (d.templates.length > 0) setSelected(d.templates.includes(wanted) ? wanted : d.templates[0]);
       })
-      .catch((e) => !cancelled && setMsg({ ok: false, text: e.message }));
-    return () => {
-      cancelled = true;
-    };
+      .catch((e) => setMsg({ ok: false, text: e.message }));
   }, []);
 
   useEffect(() => {

@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 from pin_observer import PinObserver
 
-from events import (
+from crawlviz.events import (
     HighScoreLinksEvent,
     LowScoreLinksEvent,
     PriorityCalculatedEvent,

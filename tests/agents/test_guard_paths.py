@@ -16,7 +16,7 @@ from tests.agents.hook_runner import BLOCKED, ROOT, edit, run_hook
     [
         ("backend-engineer", "pipelines/requests_pipeline.py"),
         ("backend-engineer", "tests/test_robots.py"),
-        ("llm-engineer", "infrastructure/groq_translator.py"),
+        ("llm-engineer", "src/crawlviz/llm/groq_translator.py"),
         ("frontend-engineer", "crawler-ui/src/features/graph/GraphView.jsx"),
         ("design-system-engineer", "crawler-ui/src/shared/theme/tokens.css"),
         ("research-scientist", "benchmark/analyze.py"),
@@ -35,7 +35,7 @@ def test_owner_may_edit_own_area(agent: str, path: str) -> None:
     ("agent", "path", "owner"),
     [
         ("frontend-engineer", "pipelines/requests_pipeline.py", "backend-engineer"),
-        ("backend-engineer", "infrastructure/llm_handler.py", "llm-engineer"),
+        ("backend-engineer", "src/crawlviz/llm/llm_handler.py", "llm-engineer"),
         ("backend-engineer", "crawler-ui/src/App.jsx", "frontend-engineer"),
         ("frontend-engineer", "crawler-ui/src/shared/theme/tokens.css", "design-system-engineer"),
         ("backend-engineer", "tests/pins/golden.json", "test-engineer"),

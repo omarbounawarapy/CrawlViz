@@ -22,10 +22,10 @@ from config.paths import RuntimePaths
 from config.runtime_config import RuntimeConfig, default_runtime_config
 from core import Crawler
 from core.stages import StageInputs, priority_strategy_name
-from events import NodeAddedEvent, StopCrawlEvent
-from offline import build_offline_session
+from crawlviz.events import NodeAddedEvent, StopCrawlEvent
+from crawlviz.offline import build_offline_session
 from pipelines import StopConditions as StageStopConditions
-from pipelines import StoppingPipeline
+from pipelines import StopController
 from tests.test_stages import BLUEPRINT, inputs
 
 BLUEPRINT_NAME = "offline_demo.json"
@@ -180,7 +180,7 @@ class _Broker:
         self.emitted.append(event)
 
 
-def _stopping_with_target(target_url: str | None) -> tuple[StoppingPipeline, _Broker]:
+def _stopping_with_target(target_url: str | None) -> tuple[StopController, _Broker]:
     broker = _Broker()
     conditions = StageStopConditions(
         max_nodes=SMALL_PAGE_BUDGET,
@@ -188,7 +188,7 @@ def _stopping_with_target(target_url: str | None) -> tuple[StoppingPipeline, _Br
         no_progress_timeout=STOP_NEVER_SECONDS,
         target_url=target_url,  # type: ignore[arg-type]  # a blueprint may hand over None
     )
-    return StoppingPipeline(broker, conditions), broker
+    return StopController(broker, conditions), broker
 
 
 def _node_added(url: str) -> NodeAddedEvent:
