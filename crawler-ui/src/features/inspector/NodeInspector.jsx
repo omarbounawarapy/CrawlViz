@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { getTheme } from "../../theme";
 import { createComponentStyles } from "../../theme/components";
-import { formatDuration, hostnameOf, pathOf, shortId } from "../../utils/formatters";
+import { formatDuration, hasScore, hostnameOf, pathOf, shortId } from "../../utils/formatters";
 import { Tabs, TabPanel } from "../common/Form";
 
 const theme = getTheme();
@@ -113,7 +113,7 @@ function OverviewTab({ node, children, onSelectNode }) {
         <Row label="State" value={<StateBadge state={node.state} />} />
         <Row label="Depth" value={node.depth} />
         <Row label="Queue priority" value={typeof node.priority === "number" ? node.priority.toFixed(3) : "—"} />
-        <Row label="LLM score (0–100)" value={node.llm_score || node.llm_score === 0 ? node.llm_score : "—"} />
+        <Row label="LLM score (0–100)" value={hasScore(node.llm_score) ? node.llm_score : "—"} />
         <Row
           label="Parent"
           value={
