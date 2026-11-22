@@ -1,0 +1,29 @@
+/* Box, unit, then the sentence that says what to type on its own line. */
+.root {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+  max-inline-size: 100%;
+
+  /* Nested so it wins over the TextInput's full width, whatever order the sheets load in. */
+  & .input {
+    inline-size: 11ch;
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.unit {
+  color: var(--color-muted);
+  font-size: var(--type-label-size);
+  line-height: var(--type-label-line-height);
+}
+
+.problem {
+  flex-basis: 100%;
+  color: var(--color-plum-error);
+  font-size: var(--type-label-size);
+  font-weight: var(--type-label-weight);
+  line-height: var(--type-label-line-height);
+}

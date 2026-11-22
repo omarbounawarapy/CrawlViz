@@ -27,6 +27,10 @@ Answer with JSON only: {{"labels": {{"1": 0, "2": 1, ...}}}} \
 with one integer 0, 1 or 2 per page number."""
 
 
+class NoUsableAnswerError(RuntimeError):
+    """Every attempt left at least one page without a 0, 1 or 2 label."""
+
+
 class LlmSender(Protocol):
     async def send(self, context: LlmContext) -> dict[str, Any]: ...  # Any: provider JSON
 
@@ -70,4 +74,4 @@ async def judge(llm: LlmSender, rows: list[dict[str, str]]) -> dict[str, int]:
         if all(grade is not None for grade in grades.values()):
             return {row_id: grade for row_id, grade in grades.items() if grade is not None}
         await asyncio.sleep(BACKOFF_SECONDS * (attempt + 1))
-    raise RuntimeError("no usable answer")
+    raise NoUsableAnswerError("no usable answer")

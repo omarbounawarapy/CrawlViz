@@ -2,6 +2,8 @@ import time
 import uuid
 from typing import TYPE_CHECKING
 
+from config.redaction import safe_error_message
+
 from .llm_trace_events import (
     LLM_PromptBuilt,
     LLM_RequestDispatched,
@@ -105,7 +107,7 @@ class TracedLlmHandler:
                     request_id=request_id,
                     stage="dispatch",
                     error_type=type(exc).__name__,
-                    error_message=str(exc),
+                    error_message=safe_error_message(exc),
                 )
             )
             raise

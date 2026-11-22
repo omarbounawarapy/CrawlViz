@@ -1,4 +1,5 @@
-from core.manifest_redaction import REDACTED, redact_manifest
+from config.redaction import REDACTED
+from core.manifest_redaction import redact_manifest
 
 
 def test_extra_header_values_are_redacted_and_names_kept() -> None:

@@ -2,8 +2,6 @@ import logging
 from asyncio import Future
 from typing import Any
 
-import numpy as np
-
 from utils import build_url
 
 from .domain import Domain
@@ -55,9 +53,6 @@ class Node:
         self.links: list[Link] = []
         self.content: str = ""
 
-        # NLP embedding (set by NLPService after content fetch)
-        self._embedding: np.ndarray | None = None
-
         # Graph depth
         self.depth = 0 if parent is None else parent.get_depth() + 1
 
@@ -91,9 +86,6 @@ class Node:
     def get_domain(self) -> Domain:
         return self.domain
 
-    def get_domain_name(self) -> str:
-        return self.domain.get_name()
-
     def get_domain_base_url(self) -> str:
         return self.domain.get_base_url()
 
@@ -115,17 +107,11 @@ class Node:
     def get_depth(self) -> int:
         return self.depth
 
-    def get_parent(self) -> "Node | None":
-        return self.parent
-
     # =========================================================
     # CONTENT & EXTRACTION
     # =========================================================
     def set_content(self, content: str) -> None:
         self.content = content
-
-    def set_items(self, items: dict[str, Any]) -> None:
-        self.items = items
 
     def add_item(self, item: Any, item_hash: str) -> None:
         self.items[item_hash] = item
@@ -133,21 +119,12 @@ class Node:
     def set_links(self, links: list[Link]) -> None:
         self.links = links
 
-    def get_items(self) -> dict[str, Any]:
-        return self.items
-
     def get_links(self) -> list[Link]:
         return self.links
-
-    def get_content(self) -> str:
-        return self.content
 
     # =========================================================
     # SCORING STATE
     # =========================================================
-    def set_llm_score(self, score: int) -> None:
-        self.llm_score = score
-
     def get_llm_score(self) -> int:
         return self.llm_score
 
@@ -156,18 +133,6 @@ class Node:
 
     def decrease_priority(self, value: int) -> None:
         self.priority -= value
-
-    # =========================================================
-    # NLP EMBEDDING
-    # =========================================================
-    def set_embedding(self, vec: np.ndarray) -> None:
-        self._embedding = vec
-
-    def get_embedding(self) -> np.ndarray | None:
-        return self._embedding
-
-    def has_embedding(self) -> bool:
-        return self._embedding is not None
 
     # =========================================================
     # URL HANDLING

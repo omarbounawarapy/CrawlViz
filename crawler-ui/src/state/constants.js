@@ -10,6 +10,7 @@ export const TYPE_BADGE = {
   NODE_EXPANDED: { bg: "#dfe5ec", fg: "#0f1b2d", label: "Expanded" },
   CRAWL_STOPPED: { bg: "#f1e3ec", fg: "#7a1f5c", label: "Stopped" },
   __WS_CONNECTED: { bg: "#e9edf1", fg: "#33435a", label: "Connected" },
+  __USER_STOPPED: { bg: "#f1e3ec", fg: "#7a1f5c", label: "You stopped it" },
   __WS_DISCONNECTED: { bg: "#f1e3ec", fg: "#7a1f5c", label: "Disconnected" },
   // V2 additions
   PIPELINE_EVENT: { bg: "#e9edf1", fg: "#33435a", label: "Pipeline" },
