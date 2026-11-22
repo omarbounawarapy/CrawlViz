@@ -3,6 +3,7 @@ import time
 from dataclasses import dataclass
 
 from events import NodeAddedEvent, PageFetchedEvent, StopCrawlEvent, StorageNodeUpdatedEvent
+from utils import BackgroundTasks
 
 from .base_pipeline import BasePipeline
 
@@ -71,11 +72,12 @@ class StoppingPipeline(BasePipeline):
     async def start(self) -> None:
         # Time conditions must fire on a quiet crawl too, not only when
         # an event arrives.
-        timer = asyncio.create_task(self._time_watch())
+        timer = BackgroundTasks()
+        timer.spawn(self._time_watch(), name="StoppingPipeline-time-watch")
         try:
             await super().start()
         finally:
-            timer.cancel()
+            await timer.cancel_all()
 
     async def _time_watch(self) -> None:
         while not self.stopped:
@@ -116,6 +118,10 @@ class StoppingPipeline(BasePipeline):
 
         if now - self.last_activity_time >= self.no_progress_timeout:
             await self._stop("NO_PROGRESS")
+
+    async def stop_on_request(self) -> None:
+        """Stop the crawl because the user asked to (POST /stop)."""
+        await self._stop("MANUAL_STOP")
 
     async def _stop(self, reason: str, detail: str | None = None) -> None:
         async with self._stop_lock:

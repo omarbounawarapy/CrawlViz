@@ -12,3 +12,6 @@
 - [ ] Omar approved pushing this branch and opening the PR
 - [ ] CI `backend` and `frontend` are green on the PR before it is merged; a red run is read and
       fixed on the branch, never bypassed
+- [ ] If the PR changes `uv.lock`, `pyproject.toml` or `crawler-ui/package*.json`, the
+      Dependency audit workflow is green on it, or each advisory is triaged in the PR text
+      (the audit is not a required check)

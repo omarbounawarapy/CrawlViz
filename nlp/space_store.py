@@ -1,7 +1,8 @@
-import json
 import re
 from datetime import datetime
 from pathlib import Path
+
+from utils import load_json, save_json
 
 from .vector_space import VectorSpace
 
@@ -53,13 +54,11 @@ class SpaceStore:
 
     def _load_index(self) -> dict:
         if self._index_path.exists():
-            with open(self._index_path) as f:
-                return json.load(f)
+            return load_json(self._index_path)
         return {}
 
     def _save_index(self) -> None:
-        with open(self._index_path, "w") as f:
-            json.dump(self._index, f, indent=2)
+        save_json(self._index_path, self._index)
 
     def record_save(self, blueprint_id: str, n_vectors: int, version: int) -> None:
         self._index[self._key(blueprint_id)] = {
@@ -73,6 +72,3 @@ class SpaceStore:
 
     def get_metadata(self, blueprint_id: str) -> dict | None:
         return self._index.get(self._key(blueprint_id))
-
-    def list_spaces(self) -> list[str]:
-        return list(self._index.keys())
