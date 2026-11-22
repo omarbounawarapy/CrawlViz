@@ -115,6 +115,8 @@ describe("schemaGaps", () => {
   });
   it("names what a stale server lacks", async () => {
     const { schemaGaps } = await import("./configModel");
-    expect(schemaGaps(schema, fields)).toEqual(expect.arrayContaining(["the glossary"]));
+    const withoutGlossary = { ...schema, ui_glossary: undefined };
+    const withoutAnnotations = fields.map((f) => ({ ...f, pair: undefined, effect: undefined }));
+    expect(schemaGaps(withoutGlossary, withoutAnnotations)).toEqual(["the glossary", "range pairs", "effect lines"]);
   });
 });
