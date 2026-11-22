@@ -11,7 +11,7 @@ from .fetch_errors import (
 from .gemini_translator import GeminiTranslator
 from .groq_translator import GroqTranslator
 from .key_manager import KeyManager
-from .llm_handler import LlmHandler
+from .llm_handler import LlmHandler, RetryPolicy
 from .log_writer import LogWriter
 from .network_client import NetworkClient
 from .nvidia_translator import NvidiaTranslator
@@ -34,6 +34,7 @@ __all__ = [
     "OpenAITranslator",
     "OpenRouterTranslator",
     "ResponseTooLargeError",
+    "RetryPolicy",
     "TooManyRedirectsError",
     "UnsupportedContentTypeError",
 ]
