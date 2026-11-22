@@ -12,6 +12,7 @@ outside (the manual STOP endpoint in ``routes.run``).
 
 import asyncio
 import logging
+from typing import Any
 from collections.abc import Awaitable
 from contextlib import AsyncExitStack
 from datetime import datetime
@@ -26,16 +27,15 @@ from models import Storage
 from crawlviz.nlp import BufferManager, SpaceUpdater
 from crawlviz.events import Fetcher, LlmSender, StatusReporter
 from services import NLPService, ScoringService
-from ui_bridge import CrawlStateSnapshot, TelemetryBridge, UIWebSocketGateway
-from ui_bridge.event_recorder import EventRecorder, RecordingGateway
-
 from crawlviz.telemetry import StatusBoard
+from ui_bridge.event_recorder import RecordingGateway
 
 from .boot_strapper import BootStrapper
 from .event_broker import EventBroker
 from .live_settings import LiveSettingsApplier
 from .run_manifest import RunManifestWriter
-from .stages import STAGES, StageInputs, build_stages, priority_strategy_name
+from .stages import STAGES, StageInputs, build_page_fetcher, build_stages, priority_strategy_name
+from .ui_layer import RunRecord, build_ui_layer
 
 # Traceability is a second, finer-grained event stream (see
 # traceability/emitter.py) plus thin wrappers around the network/LLM
@@ -138,15 +138,20 @@ class Crawler:
             if traced_network is not None:
                 cleanup.push_async_callback(traced_network.close)
 
+            # Built here, so it is closed even when a later stage fails to build.
+            fetcher = (
+                self.fetcher if self.fetcher is not None else build_page_fetcher(self.config.fetch)
+            )
+            cleanup.push_async_callback(fetcher.close)
+
             nlp_service, space_updater, scoring_service = await self._build_nlp_subsystem(
                 traced_llm, tracer
             )
             cleanup.push_async_callback(space_updater.force_flush)
 
-            pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service)
-            cleanup.push_async_callback(pipelines["requests"].network_client.close)
+            pipelines = self._build_pipelines(blueprint, nlp_service, scoring_service, fetcher)
             self._wire_subscriptions(pipelines, space_updater)
-            ui_gateway = self._build_ui_layer(pipelines)
+            ui_gateway = self._build_ui_layer()
             cleanup.push_async_callback(ui_gateway.stop)
             self._watch_status()
 
@@ -341,7 +346,11 @@ class Crawler:
         return nlp_service, space_updater, scoring_service
 
     def _build_pipelines(
-        self, blueprint: dict, nlp_service: NLPService, scoring_service: ScoringService
+        self,
+        blueprint: dict,
+        nlp_service: NLPService,
+        scoring_service: ScoringService,
+        fetcher: Fetcher | None = None,
     ) -> dict:
         """Build every stage from the registry in core/stages.py, keyed by
         stage, and keep them for `queue_depths` and `apply_live`."""
@@ -361,7 +370,7 @@ class Crawler:
                 fetch_concurrency=self.fetch_concurrency,
                 scoring_concurrency=self.scoring_concurrency,
                 seed=self.seed,
-                fetcher=self.fetcher,
+                fetcher=fetcher,
             )
         )
         return self._pipelines
@@ -373,17 +382,19 @@ class Crawler:
         for consumer in (*p.values(), space_updater):
             self.event_broker.subscribe(consumer, consumer.event_types)
 
-    def _build_ui_layer(self, p: dict) -> RecordingGateway:
-        """Build the UI bridge: the WebSocket gateway, the event recorder
-        and the TelemetryBridge, subscribed to every event it translates."""
-        obs = self.config.observability
-        snapshot = CrawlStateSnapshot(
-            max_candidates=obs.snapshot_max_candidates, max_errors=obs.snapshot_max_errors
+    def _build_ui_layer(self) -> RecordingGateway:
+        layer = build_ui_layer(
+            config=self.config,
+            ui_port=self.ui_port,
+            event_broker=self.event_broker,
+            priority_strategy=priority_strategy_name(self.blueprint, self.config),
+            record=RunRecord(self.paths.export_dir / self.crawl_id, self._run_manifest()),
         )
-        ui_gateway = UIWebSocketGateway(snapshot, host="localhost", port=self.ui_port)
-        recorder = EventRecorder(self.paths.export_dir / self.crawl_id)
-        recorder.record(snapshot.to_full_snapshot())
-        RunManifestWriter(
+        self._telemetry = layer.telemetry
+        return layer.gateway
+
+    def _run_manifest(self) -> dict[str, Any]:
+        return RunManifestWriter(
             crawl_id=self.crawl_id,
             blueprint=self.blueprint,
             config=self.config,
@@ -391,19 +402,7 @@ class Crawler:
             seed=self.seed,
             fetch_concurrency=self.fetch_concurrency,
             scoring_concurrency=self.scoring_concurrency,
-        ).write(recorder)
-        recording_gateway = RecordingGateway(ui_gateway, recorder)
-        telemetry = TelemetryBridge(
-            snapshot,
-            recording_gateway,
-            priority_strategy_name=priority_strategy_name(self.blueprint, self.config),
-        )
-        telemetry.register_handlers()
-        self._telemetry = telemetry
-
-        self.event_broker.subscribe(telemetry, telemetry.event_types)
-        # Stopping this one closes the event log as well as the server.
-        return recording_gateway
+        ).build()
 
     def _watch_status(self) -> None:
         """Stream the status board to the UI. It needs the running event loop, so it is a
