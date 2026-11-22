@@ -52,6 +52,8 @@ const CONTRAST_PAIRS = [
   ["plum-error", "paper", MIN_CONTRAST_TEXT, "error text"],
   ["plum-error", "sheet", MIN_CONTRAST_TEXT, "error text in a toast or field"],
   ["on-ink", "ink", MIN_CONTRAST_TEXT, "pressed button, primary button"],
+  ["on-ink", "ink-2", MIN_CONTRAST_TEXT, "primary button on hover"],
+  ["ink", "row-rule", MIN_CONTRAST_TEXT, "outline button on hover"],
   ["on-plum", "plum-error", MIN_CONTRAST_TEXT, "armed confirm button"],
   ["ink", "rule", MIN_CONTRAST_TEXT, "state chip"],
   ["control", "paper", MIN_CONTRAST_NON_TEXT, "control edges"],
