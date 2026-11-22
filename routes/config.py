@@ -70,7 +70,14 @@ def get_config_schema() -> dict:
 @router.get("/config")
 def get_config() -> dict:
     """The runtime configuration currently in effect."""
-    return store.load_runtime_config(get_paths().settings_file).model_dump()
+    try:
+        return store.load_runtime_config(get_paths().settings_file).model_dump()
+    except ValidationError as exc:
+        raise validation_http_error(
+            exc,
+            "The saved settings are not valid. Fix the listed settings, or reset them "
+            "from the config page.",
+        )
 
 
 @router.get("/config/defaults")
