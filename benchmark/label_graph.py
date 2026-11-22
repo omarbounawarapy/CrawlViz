@@ -20,15 +20,37 @@ from infrastructure import KeyManager, LlmHandler
 
 from .graph import FrozenGraph, page_key
 from .judge import judge
-from .llm_cache import CachedLlm
+from .llm_cache import CHARS_PER_TOKEN, CachedLlm
 from .label import BATCH, EXCERPT_CHARS, TOKENS_PER_MINUTE
 
 RUBRIC = Path(__file__).with_name("rubric.md")
 # Batches that fail in a row before the run stops. A provider's daily token cap
-# answers 429 to everything, which the judge reports as "no usable answer";
+# answers 429 to everything, which the judge reports as NoUsableAnswerError;
 # going on would only spend a few minutes per batch for nothing.
 MAX_CONSECUTIVE_FAILURES = 3
+FAILED_BATCH_WAIT_SECONDS = 60
+# A batch that fails with one of these is skipped and left for a rerun: the judge got
+# no usable answer, the provider refused or dropped the call, or the call timed out
+# (aiohttp's total timeout raises a plain TimeoutError, not a ClientError).
+BATCH_FAILURES = (RuntimeError, aiohttp.ClientError, TimeoutError)
+# Estimated tokens a judge call spends besides its page rows: the rubric prompt
+# (about 1100 at today's rubric) plus room for the answer.
+JUDGE_CALL_OVERHEAD_TOKENS = 1400
+SECONDS_PER_MINUTE = 60
 CACHE = Path("benchmark/data/label_graph_cache.jsonl")
+
+
+def failure_summary(error: BaseException) -> str:
+    """The error class, plus the HTTP status of a provider response; never the error's text.
+
+    This output becomes the benchmark job log the UI shows, and an aiohttp error's repr
+    carries the request headers, provider API key included. No part of the text is kept,
+    not even an allowlisted part: error text can carry keys, URLs or prompt text, and the
+    class already names the cause.
+    """
+    if isinstance(error, aiohttp.ClientResponseError) and error.status:  # 0: no status known
+        return f"{type(error).__name__} (HTTP {error.status})"
+    return type(error).__name__
 
 
 def rubric_sha() -> str:
@@ -49,9 +71,17 @@ def done(labels: Path) -> dict[str, int]:
 
 
 async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
+    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
+    try:
+        await label_batches(graph, llm, labels)
+    finally:
+        await llm.inner.client.close()
+
+
+async def label_batches(graph: FrozenGraph, llm: CachedLlm, labels: Path) -> None:
+    """Labels the pages not yet in the label log, one judge batch at a time."""
     got = done(labels)
     todo = [n for n in sorted(graph.pages) if n not in got]
-    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), CACHE)
     failures = 0
     for s in range(0, len(todo), BATCH):
         batch = todo[s : s + BATCH]
@@ -66,9 +96,13 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
         before = llm.misses
         try:
             result = await judge(llm, rows)
-        except (RuntimeError, aiohttp.ClientError) as e:
+        except BATCH_FAILURES as error:
             failures += 1
-            print(f"\nbatch at {batch[0]} failed: {e!r}; waiting 60 s", flush=True)
+            print(
+                f"\nbatch at {batch[0]} failed: {failure_summary(error)}; "
+                f"waiting {FAILED_BATCH_WAIT_SECONDS} s",
+                flush=True,
+            )
             if failures >= MAX_CONSECUTIVE_FAILURES:
                 print(
                     f"\n{failures} batches in a row failed (likely the provider's daily token cap); "
@@ -76,18 +110,18 @@ async def label(graph: FrozenGraph, keys: Path, labels: Path) -> None:
                     flush=True,
                 )
                 break
-            await asyncio.sleep(60)
+            await asyncio.sleep(FAILED_BATCH_WAIT_SECONDS)
             continue
         failures = 0
         with labels.open("a") as f:
             for n, v in result.items():
                 f.write(json.dumps({"page": n, "label": v}, ensure_ascii=False) + "\n")
         if llm.misses > before:
-            tokens = sum(len(r["excerpt"]) + len(r["title"]) for r in rows) / 3.5 + 1400
-            await asyncio.sleep(60 * tokens / TOKENS_PER_MINUTE)
+            row_chars = sum(len(r["excerpt"]) + len(r["title"]) for r in rows)
+            tokens = row_chars / CHARS_PER_TOKEN + JUDGE_CALL_OVERHEAD_TOKENS
+            await asyncio.sleep(SECONDS_PER_MINUTE * tokens / TOKENS_PER_MINUTE)
         print(f"\r{len(got) + s + len(batch)}/{len(graph.pages)}", end="", flush=True)
     print()
-    await llm.inner.client.close()
 
 
 def merge(graph: FrozenGraph, path: Path, labels: Path) -> None:
