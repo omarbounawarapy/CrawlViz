@@ -88,9 +88,7 @@ def report(name: str, runs: list, budget: int) -> None:
 
 async def cascade_row(graphs, args, sink: ResultSink) -> None:
     """The real cascade; needs a labelled recorded graph and the blueprint's settings."""
-    from infrastructure import KeyManager, LlmHandler
-
-    from .llm_cache import CachedLlm, PacedLlm, ReplayMiss
+    from .llm_cache import CachedLlm, PacedLlm, ReplayMiss, retry_free_handler
     from .provenance import file_sha256, prompt_version
 
     bp = json.loads(Path(args.template).read_text())
@@ -110,7 +108,7 @@ async def cascade_row(graphs, args, sink: ResultSink) -> None:
     # no_llm replays the recorded expansion and makes no scoring call, so it
     # never talks to a provider; every other arm does unless replaying.
     offline = args.replay_only or arm == "no_llm"
-    live = None if offline else PacedLlm(LlmHandler(KeyManager(keys_file=Path("keys.json"))))
+    live = None if offline else PacedLlm(retry_free_handler(Path("keys.json")))
     # The cache key carries the model, provider, prompt version and graph hash
     # (besides the prompt), so an answer is never replayed for another graph or prompt.
     cache_id = dict(
