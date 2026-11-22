@@ -8,7 +8,7 @@ import aiohttp
 
 from models.llm_context import LlmContext
 
-from .label import EXCERPT_CHARS, MODEL, PROVIDER
+from .label import EXCERPT_CHARS, MODEL, PROVIDER, answer_labels
 
 RUBRIC = Path(__file__).with_name("rubric.md")
 MAX_ATTEMPTS = 4
@@ -27,6 +27,10 @@ Answer with JSON only: {{"labels": {{"1": 0, "2": 1, ...}}}} \
 with one integer 0, 1 or 2 per page number."""
 
 
+class NoUsableAnswerError(RuntimeError):
+    """Every attempt left at least one page without a 0, 1 or 2 label."""
+
+
 class LlmSender(Protocol):
     async def send(self, context: LlmContext) -> dict[str, Any]: ...  # Any: provider JSON
 
@@ -41,8 +45,15 @@ def retry_note(attempt: int) -> str:
     return f"\n(Attempt {attempt + 1}: answer every page number.)" if attempt else ""
 
 
-def is_valid_label(value: object) -> bool:
-    return isinstance(value, int) and value in VALID_LABELS
+def as_grade(value: object) -> int | None:
+    """The grade a JSON value stands for, or None when it is not the integer 0, 1 or 2.
+
+    `bool` is a subclass of `int`, so an `isinstance` check would accept `true` as grade 1
+    and a binary "yes" could never become 2. Only an exact `int` is a grade.
+    """
+    if type(value) is int and value in VALID_LABELS:
+        return value
+    return None
 
 
 async def judge(llm: LlmSender, rows: list[dict[str, str]]) -> dict[str, int]:
@@ -58,8 +69,9 @@ async def judge(llm: LlmSender, rows: list[dict[str, str]]) -> dict[str, int]:
             if e.status not in RETRYABLE_STATUSES:
                 raise
             result = {}
-        labels = result.get("labels", {})
-        if all(is_valid_label(labels.get(str(i))) for i in range(1, len(rows) + 1)):
-            return {r["id"]: labels[str(i)] for i, r in enumerate(rows, 1)}
+        labels = answer_labels(result)
+        grades = {r["id"]: as_grade(labels.get(str(i))) for i, r in enumerate(rows, 1)}
+        if all(grade is not None for grade in grades.values()):
+            return {row_id: grade for row_id, grade in grades.items() if grade is not None}
         await asyncio.sleep(BACKOFF_SECONDS * (attempt + 1))
-    raise RuntimeError("no usable answer")
+    raise NoUsableAnswerError("no usable answer")

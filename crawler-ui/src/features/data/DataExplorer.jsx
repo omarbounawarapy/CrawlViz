@@ -6,9 +6,10 @@
  * page also exists in the current graph, its LLM score (the one place
  * vermilion means "promising") and an "Open in graph" link appear beside it.
  */
-import { useState, useEffect, useMemo } from "react";
-import { fetchValidationTables, fetchValidationCrawls, fetchValidationSample } from "../../api/client";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { fetchValidationTables, fetchValidationCrawls, fetchValidationSample, isAbortError } from "../../api/client";
 import { getTheme } from "../../theme";
+import { hasScore } from "../../utils/formatters";
 import { Page } from "../common/Page";
 import { Field, Select, Button } from "../common/Form";
 
@@ -104,7 +105,7 @@ function Specimen({ row, fields, node, onOpenNode }) {
   const title = row.title || row.name || row.url || row.id;
   const excerpt = excerptOf(row);
   const census = censusOf(row, fields);
-  const score = node && (node.llm_score || node.llm_score === 0) ? node.llm_score : null;
+  const score = node && hasScore(node.llm_score) ? node.llm_score : null;
 
   return (
     <article style={{ borderTop: `1px solid ${background.border}`, padding: "18px 0 6px" }}>
@@ -229,15 +230,26 @@ export default function DataExplorer({ graphNodes, onOpenNode }) {
   const [error, setError] = useState(null);
   const [offset, setOffset] = useState(0);
 
+  // The latest request of each kind. A newer choice aborts the older one, so a slow answer for the
+  // dataset you left cannot land on top of the one you are looking at.
+  const crawlsRequest = useRef(null);
+  const sampleRequest = useRef(null);
+
   useEffect(() => {
-    let cancelled = false;
-    fetchValidationTables()
-      .then((d) => !cancelled && setTables(d.tables || []))
-      .catch((e) => !cancelled && setError(e.message));
-    return () => {
-      cancelled = true;
-    };
+    const controller = new AbortController();
+    fetchValidationTables(controller.signal)
+      .then((d) => setTables(d.tables || []))
+      .catch((e) => !isAbortError(e) && setError(e.message));
+    return () => controller.abort();
   }, []);
+
+  useEffect(
+    () => () => {
+      crawlsRequest.current?.abort();
+      sampleRequest.current?.abort();
+    },
+    [],
+  );
 
   // page URL -> node, so a stored page can point back at the graph.
   const nodeByUrl = useMemo(() => {
@@ -247,19 +259,26 @@ export default function DataExplorer({ graphNodes, onOpenNode }) {
   }, [graphNodes]);
 
   const load = (t, c, l, o = 0) => {
+    sampleRequest.current?.abort();
     if (!t) {
       setResult(null);
+      setLoading(false);
       return;
     }
+    const controller = new AbortController();
+    sampleRequest.current = controller;
     setLoading(true);
     setError(null);
-    fetchValidationSample(t, c || null, l, o)
+    fetchValidationSample(t, c || null, l, o, controller.signal)
       .then((d) => {
         setResult({ rows: d.rows || [], count: d.count });
         setOffset(o);
       })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e) => !isAbortError(e) && setError(e.message))
+      .finally(() => {
+        // Only the latest request owns the loading flag; an aborted one must not clear it.
+        if (sampleRequest.current === controller) setLoading(false);
+      });
   };
 
   const onTable = (t) => {
@@ -269,10 +288,14 @@ export default function DataExplorer({ graphNodes, onOpenNode }) {
     setResult(null);
     setOffset(0);
     setError(null);
-    if (!t) return;
-    fetchValidationCrawls(t)
-      .then((d) => setCrawls(d.crawls || []))
-      .catch((e) => setError(e.message));
+    crawlsRequest.current?.abort();
+    if (t) {
+      const controller = new AbortController();
+      crawlsRequest.current = controller;
+      fetchValidationCrawls(t, controller.signal)
+        .then((d) => setCrawls(d.crawls || []))
+        .catch((e) => !isAbortError(e) && setError(e.message));
+    }
     load(t, "", limit, 0);
   };
   const onCrawl = (c) => {

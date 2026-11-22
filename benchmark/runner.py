@@ -9,6 +9,7 @@ ranked by the policy's own score.
 import asyncio
 import logging
 import random
+import re
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
@@ -387,6 +388,26 @@ class RunResult:
         return sum(1 for v in self.labels[:k] if v == 2)
 
 
+TOPIC_WORD = re.compile(r"\w")
+
+
+def require_topic(topic: str, allow_empty: bool = False) -> None:
+    """Refuse a topic with no word character unless the caller allows it.
+
+    Such a topic embeds to an all-zero vector. The cosine similarity of any link
+    to that vector is NaN, so ``novelty_injection`` is NaN and every link gets
+    priority 0. The run would then measure insertion order, not the method, so
+    the cascade refuses such a graph.
+    """
+    if allow_empty or TOPIC_WORD.search(topic or ""):
+        return
+    raise ValueError(
+        f"The graph's topic {topic!r} has no word in it, so the cascade has nothing to "
+        "score links against. Set the topic when labelling the graph "
+        "(benchmark.label --topic) or in the graph file's 'topic' field."
+    )
+
+
 def _thresholds(kwargs: dict, percentiles) -> dict:
     """The bucketing a run used, absolute and percentile values both."""
     if kwargs.get("percentile_bucketing"):
@@ -606,6 +627,7 @@ async def run_cascade(
     low_pct: float | None = None,
     high_pct: float | None = None,
     extra_components: Sequence[object] = (),
+    allow_empty_topic: bool = True,
 ) -> RunResult:
     """The real cascade (embedding model, topic expansion, LLM scoring,
     bucketing, priority strategy) on a frozen graph. `llm` is anything with
@@ -635,7 +657,13 @@ async def run_cascade(
     ``extra_components`` are subscribed like pipelines, after the stage pipelines
     and before the health monitor (see ``_run``); observers such as the behaviour
     pins use it.
+
+    With ``allow_empty_topic=False`` a graph whose topic has no word character
+    is refused (see ``require_topic``). The default is True only until the
+    lockstep pin, which runs the untopical synthetic graph to check wiring,
+    passes it explicitly; then the default becomes False.
     """
+    require_topic(graph.topic, allow_empty=allow_empty_topic)
     from config.runtime_config import default_runtime_config
     from nlp import BufferManager, SpaceUpdater
     from priority.strategy import get_strategy

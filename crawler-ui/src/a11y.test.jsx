@@ -12,6 +12,7 @@ vi.mock("./api/client", () => {
   const ok = (v) => vi.fn(() => Promise.resolve(v));
   return {
     API_STATUS_EVENT: "crawlviz:api-status",
+    isAbortError: (error) => error?.name === "AbortError",
     fetchTemplates: ok({ templates: ["wikiMD.json", "isi.json"] }),
     fetchTemplate: ok({
       content: {

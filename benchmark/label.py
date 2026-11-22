@@ -25,7 +25,7 @@ from infrastructure import KeyManager, LlmHandler
 from models.llm_context import LlmContext
 
 from .graph import FrozenGraph
-from .llm_cache import CachedLlm
+from .llm_cache import CHARS_PER_TOKEN, CachedLlm
 
 PROVIDER, MODEL = (
     "groq",
@@ -35,6 +35,8 @@ BATCH = 8
 EXCERPT_CHARS = 450
 TOKENS_PER_MINUTE = 5500  # Groq's cap on this key is 8000
 SPOT_CHECK = 60
+MAX_ATTEMPTS = 6
+BACKOFF_SECONDS = 20  # times the attempt number, between answers that miss a page
 
 PROMPT = """You label web pages for a topical crawler benchmark.
 
@@ -61,9 +63,23 @@ def make_prompt(topic: str, batch: list[tuple[str, dict]]) -> str:
     return PROMPT.format(topic=topic, pages=pages)
 
 
+def answer_labels(result: object) -> dict[str, object]:
+    """The answer's page-number-to-label map, or an empty map when the answer has none."""
+    labels = result.get("labels") if isinstance(result, dict) else None
+    return labels if isinstance(labels, dict) else {}
+
+
+def as_binary_label(value: object) -> bool | None:
+    """The label a JSON value stands for, or None when it is not `true` or `false`.
+
+    Coercing with `bool()` would read the string "false" (or "no", or 2) as relevant.
+    """
+    return value if isinstance(value, bool) else None
+
+
 async def judge(llm, topic: str, batch: list[tuple[str, dict]]) -> dict[str, bool]:
     prompt = make_prompt(topic, batch)
-    for attempt in range(6):
+    for attempt in range(MAX_ATTEMPTS):
         try:
             result = await llm.send(
                 LlmContext(
@@ -77,10 +93,13 @@ async def judge(llm, topic: str, batch: list[tuple[str, dict]]) -> dict[str, boo
             if e.status != 429:
                 raise
             result = {}
-        labels = result.get("labels", {}) if isinstance(result, dict) else {}
-        if all(str(i) in labels for i in range(1, len(batch) + 1)):
-            return {name: bool(labels[str(i)]) for i, (name, _) in enumerate(batch, 1)}
-        await asyncio.sleep(20 * (attempt + 1))
+        labels = answer_labels(result)
+        answers = {
+            name: as_binary_label(labels.get(str(i))) for i, (name, _) in enumerate(batch, 1)
+        }
+        if all(answer is not None for answer in answers.values()):
+            return {name: answer is True for name, answer in answers.items()}
+        await asyncio.sleep(BACKOFF_SECONDS * (attempt + 1))
     raise RuntimeError(f"no usable answer for batch starting at {batch[0][0]}")
 
 
@@ -93,7 +112,7 @@ async def label_graph(graph: FrozenGraph, cache: Path, keys: Path, limit: int | 
         for name, label in (await judge(llm, graph.topic, batch)).items():
             graph.pages[name]["relevant"] = label
         if llm.misses > before:  # a real call: stay under the token cap
-            prompt_tokens = len(make_prompt(graph.topic, batch)) / 3.5 + 120
+            prompt_tokens = len(make_prompt(graph.topic, batch)) / CHARS_PER_TOKEN + 120
             await asyncio.sleep(60 * prompt_tokens / TOKENS_PER_MINUTE)
         print(f"\r{min(start + BATCH, len(items))}/{len(items)}", end="", flush=True)
     print()
