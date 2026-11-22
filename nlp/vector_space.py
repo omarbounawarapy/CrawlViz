@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from scipy.spatial.distance import cosine
 from sklearn.cluster import DBSCAN
 
 logger = logging.getLogger(__name__)
@@ -114,38 +113,6 @@ class VectorSpace:
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:top_k]
 
-    def mean_similarity(self, query: np.ndarray) -> float:
-        """Average cosine similarity of `query` to every vector in the space."""
-        mat = self.get_matrix()
-        if mat.shape[0] == 0:
-            return 0.0
-        sims = [1 - cosine(query, e.vector) for e in self.entries]
-        return float(np.mean(sims))
-
-    def novelty_score(self, query: np.ndarray, top_k: int = 5) -> float:
-        """How novel is `query` relative to the space?
-
-        Returns:
-            A score from 0.0 (not novel) to 1.0 (very novel).
-        """
-        results = self.similarity_search(query, top_k=top_k)
-        if not results:
-            return 1.0
-        top_sim = results[0][1]
-        return float(1.0 - top_sim)
-
-    def density_score(self, query: np.ndarray, radius: float = 0.3) -> float:
-        """Fraction of space vectors within cosine distance `radius` of `query`.
-
-        Measures how dense the region around `query` is.
-        """
-        mat = self.get_matrix()
-        if mat.shape[0] == 0:
-            return 0.0
-        distances = np.array([cosine(query, e.vector) for e in self.entries])
-        count_nearby = np.sum(distances <= radius)
-        return float(count_nearby / len(self.entries))
-
     # =========================================================
     # CLUSTERING
     # =========================================================
@@ -173,14 +140,6 @@ class VectorSpace:
             clusters.setdefault(int(label), []).append(self.entries[idx].key)
 
         return clusters
-
-    def coverage_gap_score(self, query: np.ndarray) -> float:
-        """Estimate whether `query` falls in an under-covered region.
-
-        Uses the inverse of density as a proxy.
-        """
-        density = self.density_score(query)
-        return float(1.0 - density)
 
     # =========================================================
     # PERSISTENCE

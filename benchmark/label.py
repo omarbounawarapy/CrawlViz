@@ -21,11 +21,10 @@ from pathlib import Path
 
 import aiohttp
 
-from infrastructure import KeyManager, LlmHandler
 from models.llm_context import LlmContext
 
 from .graph import FrozenGraph
-from .llm_cache import CachedLlm
+from .llm_cache import CHARS_PER_TOKEN, CachedLlm, retry_free_handler
 
 PROVIDER, MODEL = (
     "groq",
@@ -104,7 +103,7 @@ async def judge(llm, topic: str, batch: list[tuple[str, dict]]) -> dict[str, boo
 
 
 async def label_graph(graph: FrozenGraph, cache: Path, keys: Path, limit: int | None) -> CachedLlm:
-    llm = CachedLlm(LlmHandler(KeyManager(keys_file=keys)), cache)
+    llm = CachedLlm(retry_free_handler(keys), cache)
     items = sorted(graph.pages.items())[:limit]
     for start in range(0, len(items), BATCH):
         batch = items[start : start + BATCH]
@@ -112,7 +111,7 @@ async def label_graph(graph: FrozenGraph, cache: Path, keys: Path, limit: int | 
         for name, label in (await judge(llm, graph.topic, batch)).items():
             graph.pages[name]["relevant"] = label
         if llm.misses > before:  # a real call: stay under the token cap
-            prompt_tokens = len(make_prompt(graph.topic, batch)) / 3.5 + 120
+            prompt_tokens = len(make_prompt(graph.topic, batch)) / CHARS_PER_TOKEN + 120
             await asyncio.sleep(60 * prompt_tokens / TOKENS_PER_MINUTE)
         print(f"\r{min(start + BATCH, len(items))}/{len(items)}", end="", flush=True)
     print()

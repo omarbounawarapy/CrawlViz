@@ -18,8 +18,10 @@ export const INITIAL_STATE = {
   nodes: new Map(), // node_id → NodeRecord
   edges: new Set(), // "parent_id→child_id" strings
   metrics: null,
-  status: "CONNECTING", // crawl lifecycle: CONNECTING | RUNNING | STOPPED
+  status: "IDLE", // crawl lifecycle: IDLE (no crawl seen yet) | RUNNING | STOPPED
   stop_reason: null,
+  stop_detail: null, // the sentence behind stop_reason, e.g. which limit was reached
+  stopped_by_user: false, // set client-side when the user's stop request was accepted
   eventLog: [], // append-only; used for replay
   _replayIndex: null,
   _checkpoints: [], // [{ index, state }] periodic full-state snapshots for O(1)-ish seeking
