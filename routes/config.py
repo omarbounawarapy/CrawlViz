@@ -15,7 +15,8 @@ POST /config/effective  saved settings with per-run overrides applied
 GET  /config/export     the stored settings, for download
 GET  /config/presets    built-in and saved presets
 PUT  /config/presets/{name}          save a preset (body: values, or empty for the current settings)
-POST /config/presets/{name}/apply    replace the settings with a preset
+POST /config/presets/{name}/preview  what applying a preset would change (nothing is saved)
+POST /config/presets/{name}/apply    merge a preset over the current settings; replies with the config and `changes`
 DELETE /config/presets/{name}
 PATCH /config/live      change ui_apply=live fields of the running crawl
 POST /config/reset      drop one section (?section=) or everything
@@ -34,7 +35,7 @@ running crawl with PATCH /config/live (not persisted; PUT /config does that).
 import json
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ValidationError
 
 from config import settings_store as store
@@ -49,13 +50,14 @@ from .config_presets import router as presets_router
 from .config_support import (
     ConfigPatch,
     get_paths,
+    report_settings_file_errors,
     validation_errors,
     validation_http_error,
 )
 from .keys import get_key_manager
 from .keys import router as keys_router
 
-router = APIRouter(tags=["config"])
+router = APIRouter(tags=["config"], dependencies=[Depends(report_settings_file_errors)])
 router.include_router(presets_router)
 router.include_router(keys_router)
 
@@ -70,7 +72,14 @@ def get_config_schema() -> dict:
 @router.get("/config")
 def get_config() -> dict:
     """The runtime configuration currently in effect."""
-    return store.load_runtime_config(get_paths().settings_file).model_dump()
+    try:
+        return store.load_runtime_config(get_paths().settings_file).model_dump()
+    except ValidationError as exc:
+        raise validation_http_error(
+            exc,
+            "The saved settings are not valid. Fix the listed settings, or reset them "
+            "from the config page.",
+        )
 
 
 @router.get("/config/defaults")

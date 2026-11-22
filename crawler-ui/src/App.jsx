@@ -163,6 +163,17 @@ export default function App() {
   useCrawlStream(demoMode ? () => {} : liveDispatch, wsUrl);
   useDemoMode(liveDispatch, demoMode);
 
+  // Remember the stop as the user's once the backend accepted it. A failed request is shown by the
+  // API banner (the client announces an unreachable backend); the crawl then simply keeps running.
+  const handleUserStopped = useCallback(() => liveDispatch({ type: "__USER_STOPPED" }), [liveDispatch]);
+  const handleStop = useCallback(() => {
+    stopCrawl()
+      .then((res) => {
+        if (res?.stopped) handleUserStopped();
+      })
+      .catch(() => {});
+  }, [handleUserStopped]);
+
   const handleSeek = useCallback((index) => dispatch({ type: "__REPLAY_SEEK", index }), []);
   const handleExitReplay = useCallback(() => dispatch({ type: "__REPLAY_EXIT" }), []);
 
@@ -184,8 +195,7 @@ export default function App() {
       />
     ) : null;
 
-  const summary =
-    state.nodes.size > 0 ? `${state.nodes.size} pages · ${metrics.candidatesDropped} links skipped` : null;
+  const summary = state.nodes.size > 0 ? `${metrics.nodes_fetched} fetched · ${state.nodes.size} found` : null;
 
   const offline =
     apiDown && !demoMode ? (
@@ -259,6 +269,7 @@ export default function App() {
       status={state.status}
       connectionStatus={demoMode ? "SAMPLE" : state.connectionStatus}
       stopReason={state.status === "STOPPED" ? state.stop_reason : null}
+      stoppedByUser={state.stopped_by_user}
       summary={onGraph ? summary : null}
       errorCount={state.errors.length}
       measuresOpen={onGraph ? measuresOpen : undefined}
@@ -267,9 +278,7 @@ export default function App() {
         navigate("/graph");
         setMeasuresOpen(true);
       }}
-      onStop={() => {
-        stopCrawl().catch(() => {});
-      }}
+      onStop={handleStop}
       banner={banner}
       inspector={inspector}
     >
@@ -350,7 +359,9 @@ export default function App() {
         </div>
       )}
 
-      {activeSection === "run" && <RunPage onNavigate={navigateSection} state={state} metrics={metrics} />}
+      {activeSection === "run" && (
+        <RunPage onNavigate={navigateSection} state={state} metrics={metrics} onUserStopped={handleUserStopped} />
+      )}
       {activeSection === "blueprints" && <BlueprintManager onNavigate={navigateSection} />}
       {activeSection === "data" && (
         <DataExplorer

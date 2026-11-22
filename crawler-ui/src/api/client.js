@@ -30,13 +30,21 @@ const STATUS_UNAUTHORIZED = 401;
 const configuredToken = () => import.meta.env.VITE_API_TOKEN || null;
 let sessionTokenRequest = null;
 
-async function send(method, path, { headers, body } = {}) {
+/** True for the error a request throws when its AbortSignal fired: a cancel, not a failure. */
+export function isAbortError(error) {
+  return error?.name === "AbortError";
+}
+
+async function send(method, path, { headers, body, signal } = {}) {
   const opts = { method, headers };
   if (body !== undefined) opts.body = JSON.stringify(body);
+  if (signal) opts.signal = signal;
   let res;
   try {
     res = await fetch(`${BASE}${path}`, opts);
-  } catch {
+  } catch (e) {
+    // A cancelled request says nothing about whether the backend is up.
+    if (isAbortError(e)) throw e;
     announce(false);
     throw new Error(`Cannot reach the backend at ${BASE}.`);
   }
@@ -72,20 +80,21 @@ function fetchSessionToken() {
   return sessionTokenRequest;
 }
 
-async function authorizedSend(method, path, body) {
+async function authorizedSend(method, path, body, signal) {
   const token = configuredToken() ?? (await fetchSessionToken());
   // Content-Type stays on every call, DELETE and bodyless POST included: the backend answers
   // 415 to a request without it.
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-  return send(method, path, { headers, body });
+  return send(method, path, { headers, body, signal });
 }
 
-async function req(method, path, body) {
-  let res = await authorizedSend(method, path, body);
+// `signal` is optional: pass an AbortController's signal to cancel a request a newer one replaces.
+async function req(method, path, body, signal) {
+  let res = await authorizedSend(method, path, body, signal);
   // The backend restarted and made a new token: drop ours, ask again, retry once.
   if (res.status === STATUS_UNAUTHORIZED && configuredToken() === null) {
     sessionTokenRequest = null;
-    res = await authorizedSend(method, path, body);
+    res = await authorizedSend(method, path, body, signal);
   }
   if (!res.ok) throw await failureOf(res, path);
   return res.json();
@@ -107,12 +116,13 @@ export const stopCrawl = () => req("POST", "/stop");
 export const crawlStatus = () => req("GET", "/status");
 
 // ── Validation Layer ────────────────────────────────────────────────────────
-export const fetchValidationTables = () => req("GET", "/validation/tables");
-export const fetchValidationCrawls = (table) => req("GET", `/validation/${encodeURIComponent(table)}/crawls`);
-export const fetchValidationSample = (table, crawlId, limit = 20, offset = 0) => {
+export const fetchValidationTables = (signal) => req("GET", "/validation/tables", undefined, signal);
+export const fetchValidationCrawls = (table, signal) =>
+  req("GET", `/validation/${encodeURIComponent(table)}/crawls`, undefined, signal);
+export const fetchValidationSample = (table, crawlId, limit = 20, offset = 0, signal) => {
   const params = new URLSearchParams({ limit, offset });
   if (crawlId) params.set("crawl_id", crawlId);
-  return req("GET", `/validation/${encodeURIComponent(table)}/sample?${params}`);
+  return req("GET", `/validation/${encodeURIComponent(table)}/sample?${params}`, undefined, signal);
 };
 
 // ── Configuration (V2) ──────────────────────────────────────────────────────
